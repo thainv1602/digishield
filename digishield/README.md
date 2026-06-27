@@ -1,7 +1,7 @@
 # DigiShield
 
-Skeleton of a **modular monolith** built on **Spring Boot 3.4.1** + **Spring Modulith 1.3.1**,
-managed with **Gradle Kotlin DSL** (multi-module), Java toolchain **25**.
+Skeleton of a **modular monolith** built on **Spring Boot 4.1.0** + **Spring Modulith 2.1.0**,
+managed with **Gradle Kotlin DSL** (multi-module, Gradle **9.6.1** wrapper), Java toolchain **25**.
 
 - `group = com.digishield`, `version = 0.1.0-SNAPSHOT`
 - Base package: `com.digishield`
@@ -16,8 +16,9 @@ managed with **Gradle Kotlin DSL** (multi-module), Java toolchain **25**.
 ```
 digishield/
 ├── settings.gradle.kts          # declares all subprojects
-├── build.gradle.kts             # common configuration (group/version/repositories)
+├── build.gradle.kts             # common config + aggregated JaCoCo report
 ├── gradle.properties            # enables caching + parallel
+├── gradlew / gradle/wrapper/    # Gradle 9.6.1 wrapper (committed)
 ├── buildSrc/                    # shared convention plugins
 │   └── src/main/kotlin/
 │       ├── digishield.spring-module-conventions.gradle.kts
@@ -28,17 +29,26 @@ digishield/
 │       └── src/main/java/com/digishield/
 │           ├── DigishieldApplication.java
 │           └── AppRunModes.java  # api / worker / scheduler by profile
-├── contracts/                   # (created by another agent) API/event contracts
-├── shared/                      # (created by another agent) shared libraries
+├── contracts/                   # API/event contracts (DTOs + events)
+├── shared/                      # shared libraries
 │   ├── persistence/  tenant-context/  messaging/  security/  observability/
-├── modules/                     # (created by another agent) 9 business modules
+├── modules/                     # 9 business modules
 │   ├── auth/ tenancy/ learning/ simulation/ reporting/
 │   └── analytics/ notification/ ai/ interception/
-└── deploy/
-    ├── docker/Dockerfile        # multi-stage temurin 25, layered jar
-    ├── compose/docker-compose.yml
-    └── helm/digishield/         # Chart + values + templates
+├── db/
+│   ├── migration/               # Flyway migrations (V2026.06.27.001 init, .002 fe_alignment)
+│   └── SCHEMA_AUDIT.md          # JPA entities vs V001 audit (basis for .002)
+├── deploy/
+│   ├── docker/Dockerfile        # multi-stage temurin 25, layered jar
+│   ├── compose/docker-compose.yml          # full api/worker/scheduler + infra
+│   ├── compose/docker-compose.prodlike.yml # single api on real Postgres+Flyway (see RUN_PRODLIKE.md)
+│   └── helm/digishield/         # Chart + values + templates
+└── RUN_PRODLIKE.md              # run the backend prod-like (Postgres + Flyway)
 ```
+
+> The **React frontend** lives in a sibling repository (`../frontend`), not inside this
+> Gradle build — it is a self-contained Vite/TypeScript toolchain. Product/architecture
+> docs (including `DigiShield_openapi.yaml`) live in the sibling `../docs` folder.
 
 ### Convention plugins
 
@@ -60,20 +70,17 @@ digishield/
 
 ## Build
 
-The repo does **not** include a Gradle wrapper yet. Gradle 8.11 must be installed to generate the wrapper:
+The Gradle **9.6.1** wrapper is committed, so no local Gradle install is needed:
 
 ```bash
-# 1. Generate the Gradle wrapper (one-time only)
-gradle wrapper --gradle-version 8.11
-
-# 2. Build everything
+# Build everything
 ./gradlew build
 
 # Verify the Modulith structure (boundaries + documentation generation)
 ./gradlew :boot:app:test
 ```
 
-> Requires JDK 21 (the Gradle toolchain will download it automatically if toolchain provisioning is configured).
+> Requires **JDK 25** (the Gradle toolchain will download it automatically if toolchain provisioning is configured).
 
 ---
 
@@ -117,7 +124,8 @@ Optional H2 web console: `http://localhost:8080/h2-console`
 
 ### Frontend `.env`
 
-Point the frontend at the dev backend (already the default in `frontend/.env`):
+The frontend lives in the sibling `../frontend` repo. Point it at the dev backend via
+its `.env`:
 
 ```dotenv
 VITE_API_BASE_URL=http://localhost:8080/api/v1
@@ -164,7 +172,7 @@ run *after* the unit `test` task. `check` depends on both.
 
 The `jacoco` plugin is applied by both convention plugins. Running `test` finalises with
 `jacocoTestReport`; `check` also runs `jacocoTestCoverageVerification`
-(bundle **LINE** coverage minimum **0.40** — a lenient skeleton threshold, see the
+(bundle **LINE** coverage minimum **0.10** — a lenient skeleton threshold, see the
 `// TODO raise threshold as coverage grows` comment). Exclusions cover generated /
 boilerplate code (`**/*Application*`, `**/config/**`, `**/*Config*`, `**/package-info*`);
 the service `application/**` classes stay in scope.
@@ -213,6 +221,17 @@ docker compose -f deploy/compose/docker-compose.yml up --build
 - Postgres: `localhost:5432` (db/user/pass = `digishield`)
 - RabbitMQ UI: http://localhost:15672
 - Redis: `localhost:6379`
+
+### Prod-like (real Postgres + Flyway)
+
+To exercise the actual migration path against a real PostgreSQL — while keeping the
+permissive dev security and demo seeders so the frontend works end-to-end — use the
+**prod-like** compose stack (single `api` on `dev,pgdemo` profiles). See
+[`RUN_PRODLIKE.md`](RUN_PRODLIKE.md) for details:
+
+```bash
+docker compose -f deploy/compose/docker-compose.prodlike.yml up --build
+```
 
 ---
 
