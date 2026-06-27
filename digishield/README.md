@@ -264,7 +264,10 @@ before rolling out the Deployments.
      verification, per-module reports and the aggregated coverage report.
    - Checkstyle and test reports are uploaded on failure; JaCoCo per-module and
      aggregated coverage reports are uploaded always.
-2. Build the Docker image (`context: digishield`, `file: digishield/deploy/docker/Dockerfile`).
+2. Build the Docker image (`context: digishield`, `file: digishield/deploy/docker/Dockerfile`)
+   and, **on pushes to `main`**, push it to **GHCR** (`ghcr.io/<owner>/<repo>/app`) tagged
+   `latest`, `0.1.0-SNAPSHOT` and the short commit SHA (auth via the built-in
+   `GITHUB_TOKEN`; PRs build only, no push).
 
 **`frontend-ci.yml`** (runs on `frontend/**` or `docs/DigiShield_openapi.yaml`), in
 `working-directory: frontend`: `npm ci` → `npm run gen:api` (generate the typed client
