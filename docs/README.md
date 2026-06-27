@@ -16,7 +16,7 @@ Updated: 27/06/2026
 
 ### 3. Technical Design (for development)
 - **DigiShield_Technical_Design.md** — Design document (19 chapters, ~29 Mermaid diagrams): architecture, ER, sequence, state, flowchart, use case, BPMN, DFD, and **Chapter 19 — Multi-tenant SaaS Architecture** (Pool/Bridge/Silo isolation models, Row-Level Security, tenant lifecycle, billing). Includes a description of each diagram.
-- **DigiShield_openapi.yaml** — OpenAPI 3.0 API specification (**56 endpoints, 30 schemas**, including Auth/MFA, business operations, and Tenancy/Billing) — import into Swagger/Postman or generate an SDK.
+- **DigiShield_openapi.yaml** — OpenAPI 3.0.3 API specification (**56 paths · 74 operations · 30 schemas**, including Auth/MFA, business operations, and Tenancy/Billing) — import into Swagger/Postman or generate an SDK (the frontend generates its typed client from this file via orval).
 - **DigiShield_bpmn_incident_response.bpmn** — Report handling & alert dispatch process.
 - **DigiShield_bpmn_content_approval.bpmn** — AI content approval process.
 - **DigiShield_bpmn_sim_campaign.bpmn** — Simulation campaign process.
@@ -28,13 +28,16 @@ Updated: 27/06/2026
 ### 4. Interface Design
 - **DigiShield_UIUX_Spec.md** — UI/UX specification: design system, app shell, complete wireframes for 6 roles (Admin, Manager, Analyst, Content Editor, Super Admin, Learner) plus auth, mobile, intervention SDK, and error states.
 
-### 5. Code Skeleton
-- **digishield-skeleton/** — Backend: Gradle multi-module + Spring Modulith skeleton (Java 21, Spring Boot 3.5) realizing ADR-001 & ADR-002: 16 subprojects (boot/app, contracts, 5 shared, 9 business modules), convention plugin in buildSrc, tenant-context + RLS aspect, inter-module events (Modulith events), Dockerfile/Helm/CI, JaCoCo, Checkstyle, UT (`*Test`) + IT (`*IT`, Testcontainers), sample Flyway migrations. See `digishield-skeleton/README.md`. Build: `gradle wrapper --gradle-version 8.11` then `./gradlew build`.
-- **frontend/** — Frontend: monorepo-lite skeleton (Vite + React 18 + TypeScript) per ADR-004: design tokens from the UI/UX spec, App Shell with role-based navigation, RBAC routing for 6 roles, shared UI components, sample pages (Login, Admin Dashboard, Learner Portal, Quiz, SOC Inbox), and a typed API client generated from `DigiShield_openapi.yaml` (orval / TanStack Query). Separate pnpm toolchain & CI — NOT a Gradle subproject. Run: `pnpm install && pnpm dev`.
+### 5. Code (sibling directories in this monorepo)
+- **digishield/** — Backend: Gradle multi-module + Spring Modulith app (Java **25**, Spring Boot **4.1.0**, Spring Modulith **2.1.0**, Gradle **9.6.1** wrapper) realizing ADR-001 & ADR-002: 16 subprojects (boot/app, contracts, 5 shared, 9 business modules), convention plugins in buildSrc, tenant-context + RLS aspect, inter-module events (Modulith events), Dockerfile/Helm/CI, JaCoCo, Checkstyle, UT (`*Test`) + IT (`*IT`, Testcontainers), Flyway migrations under `db/migration`. See `digishield/README.md`. Build: `./gradlew build` (wrapper committed — no separate install). A `dev` H2 profile and a prod-like Postgres+Flyway compose are documented in its README / `RUN_PRODLIKE.md`.
+  > **Note:** ADR-002 originally pinned Java 21 LTS; the code has since taken the forward-compatible upgrade path it described (Java 25 + Boot 4.x + Gradle ≥ 9.1). The ADR / Architecture docs still describe the Java 21 step.
+- **frontend/** — Frontend: React 18 + TypeScript (strict) + Vite 5 app per ADR-004: design tokens from the UI/UX spec, App Shell with role-based navigation, RBAC routing for 6 roles, shared UI components, ~29 feature pages (auth, dashboard, campaigns, learning, soc, super, …), and a typed API client generated from `DigiShield_openapi.yaml` (orval / TanStack Query). Self-contained **npm** toolchain — NOT a Gradle subproject. Run: `npm install && npm run dev`. See `frontend/README.md`.
+
+> CI/CD lives at the **monorepo root** `.github/workflows/` (`backend-ci.yml`, `frontend-ci.yml`) with path filters; the backend workflow pushes its image to GHCR on `main`.
 
 ## Suggested Next Steps
-- Generate the server code skeleton (NestJS) + client SDK from `DigiShield_openapi.yaml`.
-- Build an HTML/Figma prototype from `DigiShield_UIUX_Spec.md`.
+- Keep `DigiShield_openapi.yaml` as the contract source of truth; regenerate the frontend client (`npm run gen:api`) when it changes.
+- Build an HTML/Figma prototype from `DigiShield_UIUX_Spec.md` (see also `design_handoff_digishield/`).
 - Plan sprints from the backlog section in the consolidated document v2.
 
 ---
