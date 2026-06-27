@@ -2,6 +2,8 @@ package com.digishield.reporting.api;
 
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
+import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
+import com.digishield.reporting.api.dto.ThreatIntelDto;
 import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
@@ -59,4 +61,36 @@ public interface ReportingService {
      * @return the created entry view
      */
     BlacklistEntryDto addBlacklist(BlacklistType type, String value, String source);
+
+    /**
+     * Lists threat-intel records for the current tenant (newest first).
+     *
+     * @return threat-intel views
+     */
+    List<ThreatIntelDto> listThreatIntel();
+
+    /**
+     * Ingests a new threat-intel record from a feed/NCSC for the current tenant.
+     *
+     * @param source     origin of the intel (e.g. "NCSC")
+     * @param rawPayload raw payload of the threat sample
+     * @return the created threat-intel view
+     */
+    ThreatIntelDto ingestThreatIntel(String source, String rawPayload);
+
+    /**
+     * Converts a real threat into a de-identified template/coaching draft and
+     * marks the intel record as converted.
+     *
+     * @param threatIntelId the intel to convert
+     * @return identifiers of the generated template and coaching page drafts
+     */
+    ThreatIntelConvertResultDto convertThreatIntel(UUID threatIntelId);
+
+    /**
+     * Flags a phishing report as flipped into training content.
+     *
+     * @param reportId the report to convert
+     */
+    void convertReportToTraining(UUID reportId);
 }

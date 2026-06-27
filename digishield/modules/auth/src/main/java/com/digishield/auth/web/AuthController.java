@@ -2,8 +2,10 @@ package com.digishield.auth.web;
 
 import com.digishield.auth.api.AuthService;
 import com.digishield.auth.api.CurrentUser;
+import com.digishield.auth.api.MfaSetupView;
 import com.digishield.auth.api.TokenPair;
 import com.digishield.auth.domain.Role;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -50,11 +54,64 @@ class AuthController {
     }
 
     /**
+     * SSO callback (SAML/OAuth). Dev: accepts {@code {org, assertion}} without
+     * verification and returns demo tokens.
+     */
+    @PostMapping("/sso/callback")
+    ResponseEntity<TokenPair> ssoCallback(@RequestBody SsoCallbackRequest request) {
+        return ResponseEntity.ok(authService.ssoCallback(request.org(), request.assertion()));
+    }
+
+    /**
      * Refresh access token.
      */
     @PostMapping("/refresh")
     ResponseEntity<TokenPair> refresh(@RequestBody RefreshRequest request) {
         return ResponseEntity.ok(authService.refresh(request.refresh_token()));
+    }
+
+    /**
+     * Request a password-reset email. Dev: no-op; always {@code 202} so the
+     * response does not reveal whether the account exists.
+     */
+    @PostMapping("/forgot-password")
+    ResponseEntity<Void> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.email());
+        return ResponseEntity.accepted().build();
+    }
+
+    /**
+     * Reset a password using a token. Dev: accepts {@code {token, new_password}}.
+     */
+    @PostMapping("/reset-password")
+    ResponseEntity<Void> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.token(), request.new_password());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Initialize MFA: returns {@code {secret, otpauth_url, qr_svg}}.
+     */
+    @PostMapping("/mfa/setup")
+    ResponseEntity<MfaSetupView> mfaSetup() {
+        return ResponseEntity.ok(authService.mfaSetup());
+    }
+
+    /**
+     * Confirm MFA activation. Dev: accepts any code and returns recovery codes.
+     */
+    @PostMapping("/mfa/verify")
+    ResponseEntity<Map<String, List<String>>> mfaVerify(@RequestBody MfaVerifyRequest request) {
+        return ResponseEntity.ok(Map.of("recovery_codes", authService.mfaVerify(request.code())));
+    }
+
+    /**
+     * Verify an MFA code during login. Dev: accepts any code and returns tokens.
+     */
+    @PostMapping("/mfa/challenge")
+    ResponseEntity<TokenPair> mfaChallenge(@RequestBody MfaChallengeRequest request) {
+        return ResponseEntity.status(HttpStatus.OK).body(
+                authService.mfaChallenge(request.mfa_token(), request.code(), request.trust_device()));
     }
 
     /**
@@ -75,6 +132,26 @@ class AuthController {
 
     /** Refresh request body (snake_case to match the OpenAPI contract). */
     record RefreshRequest(String refresh_token) {
+    }
+
+    /** SSO callback request body. */
+    record SsoCallbackRequest(String org, String assertion) {
+    }
+
+    /** Forgot-password request body. */
+    record ForgotPasswordRequest(String email) {
+    }
+
+    /** Reset-password request body (snake_case {@code new_password}). */
+    record ResetPasswordRequest(String token, String new_password) {
+    }
+
+    /** MFA verify request body. */
+    record MfaVerifyRequest(String code) {
+    }
+
+    /** MFA challenge request body (snake_case {@code mfa_token}, {@code trust_device}). */
+    record MfaChallengeRequest(String mfa_token, String code, boolean trust_device) {
     }
 
     /**

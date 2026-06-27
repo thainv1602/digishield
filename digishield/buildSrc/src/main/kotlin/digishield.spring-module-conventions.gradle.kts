@@ -43,10 +43,10 @@ dependencies {
     "implementation"("org.springframework.modulith:spring-modulith-starter-core")
     "implementation"("org.springframework.modulith:spring-modulith-events-api")
 
-    // Jackson annotations for DTO wire-format mapping (@JsonProperty).
-    // spring-web does not pull jackson-annotations transitively; the version is
-    // managed by the spring-boot-dependencies BOM applied above.
+    // Jackson for DTO wire-format mapping (@JsonProperty) and JSON (rule_json,
+    // settings, ...) serialization in services. Versions managed by the BOM.
     "implementation"("com.fasterxml.jackson.core:jackson-annotations")
+    "implementation"("com.fasterxml.jackson.core:jackson-databind")
 
     "testImplementation"("org.springframework.boot:spring-boot-starter-test")
     "testImplementation"("org.springframework.modulith:spring-modulith-starter-test")

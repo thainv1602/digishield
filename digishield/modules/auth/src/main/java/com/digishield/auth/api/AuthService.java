@@ -36,6 +36,36 @@ public interface AuthService {
     List<UserView> listUsers();
 
     /**
+     * Returns a single user of the current tenant.
+     *
+     * @throws java.util.NoSuchElementException if no such user exists in the tenant
+     */
+    UserView getUser(UUID userId);
+
+    /**
+     * Creates a new user in the current tenant.
+     *
+     * @param input the user attributes ({@code email} and {@code role} expected)
+     * @return the created user
+     */
+    UserView createUser(UserUpsert input);
+
+    /**
+     * Applies a partial update (role / department / locale / email) to a user of
+     * the current tenant. {@code null} fields are left unchanged.
+     *
+     * @return the updated user
+     * @throws java.util.NoSuchElementException if no such user exists in the tenant
+     */
+    UserView updateUser(UUID userId, UserUpsert changes);
+
+    /**
+     * Bulk-imports users into the current tenant. In dev this is synchronous; the
+     * returned {@link ImportResult#accepted()} reflects the number created.
+     */
+    ImportResult importUsers(List<UserUpsert> users);
+
+    /**
      * Authenticates and returns a token pair. In the dev profile this does not
      * validate credentials and returns static demo tokens; {@code roleHint}
      * selects the demo persona.
@@ -50,6 +80,42 @@ public interface AuthService {
      * Issues a fresh token pair from a refresh token.
      */
     TokenPair refresh(String refreshToken);
+
+    /**
+     * Completes an SSO (SAML/OAuth) sign-in. In dev the {@code org} and
+     * {@code assertion} are accepted without verification and demo tokens are returned.
+     */
+    TokenPair ssoCallback(String org, String assertion);
+
+    /**
+     * Records a password-reset request for the given email. In dev this is a no-op
+     * (no email is sent) and never reveals whether the account exists.
+     */
+    void forgotPassword(String email);
+
+    /**
+     * Resets a password using a reset token. In dev the token and new password are
+     * accepted without verification.
+     */
+    void resetPassword(String token, String newPassword);
+
+    /**
+     * Initializes MFA enrollment, returning a fresh TOTP secret, an
+     * {@code otpauth://} URL and an inline QR SVG.
+     */
+    MfaSetupView mfaSetup();
+
+    /**
+     * Confirms MFA activation with the first code and returns one-time recovery
+     * codes. In dev any code is accepted.
+     */
+    List<String> mfaVerify(String code);
+
+    /**
+     * Verifies an MFA challenge during login and returns a token pair. In dev any
+     * code is accepted for the given temporary {@code mfaToken}.
+     */
+    TokenPair mfaChallenge(String mfaToken, String code, boolean trustDevice);
 
     /**
      * Checks whether the current user has the given role.

@@ -6,6 +6,7 @@ import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
 import com.digishield.reporting.infrastructure.BlacklistEntryRepository;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
+import com.digishield.reporting.infrastructure.ThreatIntelRepository;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.junit.jupiter.api.AfterEach;
@@ -44,6 +45,9 @@ class ReportingServiceImplTest {
 
     @Mock
     private BlacklistEntryRepository blacklistRepository;
+
+    @Mock
+    private ThreatIntelRepository threatIntelRepository;
 
     @Mock
     private EventPublisher eventPublisher;

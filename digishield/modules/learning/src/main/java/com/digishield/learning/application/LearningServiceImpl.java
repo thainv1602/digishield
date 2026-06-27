@@ -2,8 +2,11 @@ package com.digishield.learning.application;
 
 import com.digishield.contracts.events.EnrollmentAssignedEvent;
 import com.digishield.learning.api.AssessmentResultView;
+import com.digishield.learning.api.AssessmentResultsView;
+import com.digishield.learning.api.AssessmentView;
 import com.digishield.learning.api.BadgeView;
 import com.digishield.learning.api.CertificateView;
+import com.digishield.learning.api.CoachingPageView;
 import com.digishield.learning.api.CompliancePolicyView;
 import com.digishield.learning.api.ComplianceStatusView;
 import com.digishield.learning.api.CourseView;
@@ -11,9 +14,14 @@ import com.digishield.learning.api.EnrollmentView;
 import com.digishield.learning.api.LeaderboardRowView;
 import com.digishield.learning.api.LearningService;
 import com.digishield.learning.api.LessonView;
+import com.digishield.learning.api.PlacementResultView;
 import com.digishield.learning.api.QuizView;
+import com.digishield.learning.api.UserCertificateView;
+import com.digishield.learning.domain.Assessment;
+import com.digishield.learning.domain.AssessmentType;
 import com.digishield.learning.domain.Badge;
 import com.digishield.learning.domain.Certificate;
+import com.digishield.learning.domain.CoachingPage;
 import com.digishield.learning.domain.CompliancePolicy;
 import com.digishield.learning.domain.Course;
 import com.digishield.learning.domain.Enrollment;
@@ -21,14 +29,17 @@ import com.digishield.learning.domain.EnrollmentStatus;
 import com.digishield.learning.domain.GamificationProfile;
 import com.digishield.learning.domain.Lesson;
 import com.digishield.learning.domain.QuizQuestion;
+import com.digishield.learning.infrastructure.AssessmentRepository;
 import com.digishield.learning.infrastructure.BadgeRepository;
 import com.digishield.learning.infrastructure.CertificateRepository;
+import com.digishield.learning.infrastructure.CoachingPageRepository;
 import com.digishield.learning.infrastructure.CompliancePolicyRepository;
 import com.digishield.learning.infrastructure.CourseRepository;
 import com.digishield.learning.infrastructure.EnrollmentRepository;
 import com.digishield.learning.infrastructure.GamificationProfileRepository;
 import com.digishield.learning.infrastructure.LessonRepository;
 import com.digishield.learning.infrastructure.QuizQuestionRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +64,10 @@ public class LearningServiceImpl implements LearningService {
     private final BadgeRepository badgeRepository;
     private final GamificationProfileRepository gamificationProfileRepository;
     private final CompliancePolicyRepository compliancePolicyRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final CoachingPageRepository coachingPageRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     public LearningServiceImpl(CourseRepository courseRepository,
                                EnrollmentRepository enrollmentRepository,
@@ -63,7 +77,10 @@ public class LearningServiceImpl implements LearningService {
                                BadgeRepository badgeRepository,
                                GamificationProfileRepository gamificationProfileRepository,
                                CompliancePolicyRepository compliancePolicyRepository,
-                               ApplicationEventPublisher eventPublisher) {
+                               AssessmentRepository assessmentRepository,
+                               CoachingPageRepository coachingPageRepository,
+                               ApplicationEventPublisher eventPublisher,
+                               ObjectMapper objectMapper) {
         this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lessonRepository = lessonRepository;
@@ -72,7 +89,10 @@ public class LearningServiceImpl implements LearningService {
         this.badgeRepository = badgeRepository;
         this.gamificationProfileRepository = gamificationProfileRepository;
         this.compliancePolicyRepository = compliancePolicyRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.coachingPageRepository = coachingPageRepository;
         this.eventPublisher = eventPublisher;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -272,6 +292,104 @@ public class LearningServiceImpl implements LearningService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<UserCertificateView> listCertificates(UUID tenantId, UUID userId) {
+        return certificateRepository.findByTenantIdAndUserId(tenantId, userId).stream()
+                .map(this::toUserCertificateView)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AssessmentView> listAssessments(UUID tenantId, String type) {
+        List<Assessment> assessments;
+        if (type != null && !type.isBlank()) {
+            assessments = assessmentRepository.findByTenantIdAndType(
+                    tenantId, AssessmentType.valueOf(type.trim().toUpperCase()));
+        } else {
+            assessments = assessmentRepository.findByTenantId(tenantId);
+        }
+        return assessments.stream().map(this::toAssessmentView).toList();
+    }
+
+    @Override
+    public AssessmentView createAssessment(UUID tenantId, AssessmentView request) {
+        AssessmentType type = request.type() != null
+                ? AssessmentType.valueOf(request.type().trim().toUpperCase())
+                : AssessmentType.KNOWLEDGE;
+        Assessment assessment = new Assessment(
+                request.id() != null ? request.id() : UUID.randomUUID(),
+                tenantId,
+                type,
+                request.anonymous(),
+                writeJson(request.questionsJson()),
+                request.period(),
+                0);
+        return toAssessmentView(assessmentRepository.save(assessment));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AssessmentResultsView getAssessmentResults(UUID tenantId, UUID assessmentId) {
+        Assessment assessment = assessmentRepository.findByTenantIdAndId(tenantId, assessmentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy bài đánh giá: " + assessmentId));
+        int count = assessment.getResponseCount();
+        // Anonymized aggregate summary used by the results dashboard.
+        Map<String, Object> summary = new java.util.LinkedHashMap<>();
+        summary.put("type", assessment.getType().name().toLowerCase());
+        summary.put("anonymous", assessment.isAnonymous());
+        summary.put("period", assessment.getPeriod());
+        summary.put("completion_rate", count > 0 ? 100 : 0);
+        return new AssessmentResultsView(count, summary);
+    }
+
+    @Override
+    public PlacementResultView placement(UUID tenantId, UUID userId,
+                                         Map<String, Object> answers) {
+        int total = answers != null ? answers.size() : 0;
+        int correct = 0;
+        if (answers != null) {
+            for (Object value : answers.values()) {
+                if (isCorrectSignal(value)) {
+                    correct++;
+                }
+            }
+        }
+        double ratio = total > 0 ? (double) correct / total : 0d;
+        String level;
+        if (ratio >= 0.9) {
+            level = "advanced";
+        } else if (ratio >= 0.7) {
+            level = "intermediate";
+        } else if (ratio >= 0.4) {
+            level = "beginner";
+        } else {
+            level = "basic";
+        }
+        return new PlacementResultView(level);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CoachingPageView> listCoachingPages(UUID tenantId) {
+        return coachingPageRepository.findByTenantId(tenantId).stream()
+                .map(this::toCoachingPageView)
+                .toList();
+    }
+
+    @Override
+    public CoachingPageView createCoachingPage(UUID tenantId, CoachingPageView request) {
+        CoachingPage page = new CoachingPage(
+                request.id() != null ? request.id() : UUID.randomUUID(),
+                tenantId,
+                request.templateId(),
+                request.contentRef(),
+                writeJson(request.signalsJson()));
+        return toCoachingPageView(coachingPageRepository.save(page));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<LeaderboardRowView> getLeaderboard(UUID tenantId) {
         List<GamificationProfile> profiles =
                 gamificationProfileRepository.findByTenantIdOrderByPointsDesc(tenantId);
@@ -305,6 +423,19 @@ public class LearningServiceImpl implements LearningService {
         return compliancePolicyRepository.findByTenantId(tenantId).stream()
                 .map(this::toCompliancePolicyView)
                 .toList();
+    }
+
+    @Override
+    public CompliancePolicyView createCompliancePolicy(UUID tenantId, String name, String framework,
+                                                       String dueRule, boolean mandatory,
+                                                       int completionPct) {
+        String resolvedName = name != null && !name.isBlank()
+                ? name
+                : (framework != null && !framework.isBlank() ? framework : "Chính sách tuân thủ");
+        int clamped = Math.max(0, Math.min(100, completionPct));
+        CompliancePolicy policy = new CompliancePolicy(
+                UUID.randomUUID(), tenantId, resolvedName, framework, dueRule, mandatory, clamped);
+        return toCompliancePolicyView(compliancePolicyRepository.save(policy));
     }
 
     @Override
@@ -363,5 +494,62 @@ public class LearningServiceImpl implements LearningService {
     private CompliancePolicyView toCompliancePolicyView(CompliancePolicy p) {
         return new CompliancePolicyView(p.getId(), p.getName(), p.getFramework(),
                 p.getDueRule(), p.isMandatory(), p.getCompletionPct());
+    }
+
+    private UserCertificateView toUserCertificateView(Certificate c) {
+        return new UserCertificateView(
+                c.getId(), c.getUserId(), c.getCourseId(), c.getSerial(),
+                c.getVerifyUrl(), c.getIssuedAt());
+    }
+
+    private AssessmentView toAssessmentView(Assessment a) {
+        return new AssessmentView(
+                a.getId(),
+                a.getType() != null ? a.getType().name().toLowerCase() : null,
+                a.isAnonymous(),
+                readJson(a.getQuestionsJson()),
+                a.getPeriod());
+    }
+
+    private CoachingPageView toCoachingPageView(CoachingPage p) {
+        return new CoachingPageView(
+                p.getId(), p.getTemplateId(), p.getContentRef(), readJson(p.getSignalsJson()));
+    }
+
+    private static boolean isCorrectSignal(Object value) {
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        if (value instanceof Number n) {
+            return n.doubleValue() > 0;
+        }
+        if (value instanceof String s) {
+            return "correct".equalsIgnoreCase(s.trim()) || "true".equalsIgnoreCase(s.trim());
+        }
+        return false;
+    }
+
+    /** Parses a stored JSON document into a generic object (empty map on failure). */
+    private Object readJson(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(json, Object.class);
+        } catch (Exception e) {
+            return Map.of();
+        }
+    }
+
+    /** Serializes a generic object into a JSON document (null when empty). */
+    private String writeJson(Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }

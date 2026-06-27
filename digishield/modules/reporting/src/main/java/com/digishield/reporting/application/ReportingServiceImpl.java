@@ -4,13 +4,17 @@ import com.digishield.contracts.events.PhishingReportConfirmedEvent;
 import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
+import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
+import com.digishield.reporting.api.dto.ThreatIntelDto;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.BlacklistEntry;
 import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
+import com.digishield.reporting.domain.ThreatIntel;
 import com.digishield.reporting.infrastructure.BlacklistEntryRepository;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
+import com.digishield.reporting.infrastructure.ThreatIntelRepository;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.stereotype.Service;
@@ -30,13 +34,16 @@ public class ReportingServiceImpl implements ReportingService {
 
     private final PhishingReportRepository reportRepository;
     private final BlacklistEntryRepository blacklistRepository;
+    private final ThreatIntelRepository threatIntelRepository;
     private final EventPublisher eventPublisher;
 
     public ReportingServiceImpl(PhishingReportRepository reportRepository,
                                 BlacklistEntryRepository blacklistRepository,
+                                ThreatIntelRepository threatIntelRepository,
                                 EventPublisher eventPublisher) {
         this.reportRepository = reportRepository;
         this.blacklistRepository = blacklistRepository;
+        this.threatIntelRepository = threatIntelRepository;
         this.eventPublisher = eventPublisher;
     }
 
@@ -95,6 +102,64 @@ public class ReportingServiceImpl implements ReportingService {
         BlacklistEntry entry = new BlacklistEntry(
                 UUID.randomUUID(), tenantId, type, value, source);
         return toBlacklistDto(blacklistRepository.save(entry));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ThreatIntelDto> listThreatIntel() {
+        UUID tenantId = TenantContext.requireUuid();
+        return threatIntelRepository.findByTenantIdOrderByCollectedAtDesc(tenantId).stream()
+                .map(this::toThreatIntelDto)
+                .toList();
+    }
+
+    @Override
+    public ThreatIntelDto ingestThreatIntel(String source, String rawPayload) {
+        UUID tenantId = TenantContext.requireUuid();
+        ThreatIntel intel = new ThreatIntel(
+                UUID.randomUUID(), tenantId, source, rawPayload, null, Instant.now());
+        return toThreatIntelDto(threatIntelRepository.save(intel));
+    }
+
+    @Override
+    public ThreatIntelConvertResultDto convertThreatIntel(UUID threatIntelId) {
+        UUID tenantId = TenantContext.requireUuid();
+        ThreatIntel intel = threatIntelRepository.findById(threatIntelId)
+                .filter(t -> tenantId.equals(t.getTenantId()))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy threat intel: " + threatIntelId));
+
+        // Generate de-identified template + coaching page drafts. The actual
+        // content lives in the training module; here we mint the identifiers and
+        // record the link so the intel is marked as converted.
+        UUID templateId = intel.getConvertedTemplateId() != null
+                ? intel.getConvertedTemplateId()
+                : UUID.randomUUID();
+        UUID coachingPageId = UUID.randomUUID();
+        intel.setConvertedTemplateId(templateId);
+        threatIntelRepository.save(intel);
+
+        return new ThreatIntelConvertResultDto(templateId, coachingPageId);
+    }
+
+    @Override
+    public void convertReportToTraining(UUID reportId) {
+        UUID tenantId = TenantContext.requireUuid();
+        PhishingReport report = reportRepository.findById(reportId)
+                .filter(r -> tenantId.equals(r.getTenantId()))
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy báo cáo phishing: " + reportId));
+        report.setConvertedToTraining(true);
+        reportRepository.save(report);
+    }
+
+    private ThreatIntelDto toThreatIntelDto(ThreatIntel t) {
+        return new ThreatIntelDto(
+                t.getId(),
+                t.getSource(),
+                t.getRawPayload(),
+                t.getConvertedTemplateId(),
+                t.getCollectedAt());
     }
 
     private PhishingReportDto toDto(PhishingReport r, Instant now) {

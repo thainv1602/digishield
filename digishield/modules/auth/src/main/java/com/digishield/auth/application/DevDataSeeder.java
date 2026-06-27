@@ -69,8 +69,10 @@ public class DevDataSeeder implements CommandLineRunner {
 
     private static AppUser user(String id, UUID tenant, String email, String name,
                                 Role role, String department, int riskScore) {
-        return new AppUser(
+        AppUser u = new AppUser(
                 UUID.fromString(id), tenant, email, role, UserStatus.ACTIVE,
                 name, department, riskScore);
+        u.setLocale("vi");
+        return u;
     }
 }

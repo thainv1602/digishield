@@ -70,5 +70,19 @@ class NotificationDevSeeder implements CommandLineRunner {
                 "Cập nhật chính sách bảo mật",
                 "Chính sách PDPA đã được cập nhật. Vui lòng đọc và xác nhận.",
                 now.minus(5, ChronoUnit.DAYS)));
+
+        // Created ad-hoc via POST /notifications (alert pushed to a user).
+        repository.save(new Notification(UUID.randomUUID(), TENANT, DEMO_USER,
+                NotificationType.ALERT, NotificationChannel.EMAIL, NotificationStatus.SENT,
+                "Đăng nhập bất thường được phát hiện",
+                "Tài khoản của bạn vừa đăng nhập từ thiết bị lạ. Hãy kiểm tra ngay nếu không phải bạn.",
+                now.minus(30, ChronoUnit.MINUTES)));
+
+        // Scheduled batch via POST /notifications/reminders (due_rule "before_due:3d", email channel).
+        repository.save(new Notification(UUID.randomUUID(), TENANT, DEMO_USER,
+                NotificationType.REMINDER, NotificationChannel.EMAIL, NotificationStatus.SCHEDULED,
+                "Nhắc hoàn thành đào tạo bắt buộc",
+                "Bạn có khoá đào tạo bắt buộc cần hoàn thành (quy tắc: before_due:3d).",
+                now.plus(3, ChronoUnit.DAYS)));
     }
 }

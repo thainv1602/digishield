@@ -11,6 +11,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.springframework.boot:spring-boot-starter-cache")
 
+    // Jackson ObjectMapper for the shared JacksonConfig bean (modules inject it
+    // for JSON columns). Spring Boot 4 does not expose one on the app classpath
+    // by default.
+    implementation("com.fasterxml.jackson.core:jackson-databind")
+
     // Spring Modulith
     implementation("org.springframework.modulith:spring-modulith-starter-core")
 

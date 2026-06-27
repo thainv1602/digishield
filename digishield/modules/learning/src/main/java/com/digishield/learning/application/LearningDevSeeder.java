@@ -1,7 +1,10 @@
 package com.digishield.learning.application;
 
+import com.digishield.learning.domain.Assessment;
+import com.digishield.learning.domain.AssessmentType;
 import com.digishield.learning.domain.Badge;
 import com.digishield.learning.domain.Certificate;
+import com.digishield.learning.domain.CoachingPage;
 import com.digishield.learning.domain.CompliancePolicy;
 import com.digishield.learning.domain.Course;
 import com.digishield.learning.domain.CourseLevel;
@@ -10,8 +13,10 @@ import com.digishield.learning.domain.EnrollmentStatus;
 import com.digishield.learning.domain.GamificationProfile;
 import com.digishield.learning.domain.Lesson;
 import com.digishield.learning.domain.QuizQuestion;
+import com.digishield.learning.infrastructure.AssessmentRepository;
 import com.digishield.learning.infrastructure.BadgeRepository;
 import com.digishield.learning.infrastructure.CertificateRepository;
+import com.digishield.learning.infrastructure.CoachingPageRepository;
 import com.digishield.learning.infrastructure.CompliancePolicyRepository;
 import com.digishield.learning.infrastructure.CourseRepository;
 import com.digishield.learning.infrastructure.EnrollmentRepository;
@@ -53,6 +58,8 @@ class LearningDevSeeder implements CommandLineRunner {
     private final BadgeRepository badgeRepository;
     private final GamificationProfileRepository gamificationProfileRepository;
     private final CompliancePolicyRepository compliancePolicyRepository;
+    private final AssessmentRepository assessmentRepository;
+    private final CoachingPageRepository coachingPageRepository;
 
     LearningDevSeeder(CourseRepository courseRepository,
                       LessonRepository lessonRepository,
@@ -61,7 +68,9 @@ class LearningDevSeeder implements CommandLineRunner {
                       CertificateRepository certificateRepository,
                       BadgeRepository badgeRepository,
                       GamificationProfileRepository gamificationProfileRepository,
-                      CompliancePolicyRepository compliancePolicyRepository) {
+                      CompliancePolicyRepository compliancePolicyRepository,
+                      AssessmentRepository assessmentRepository,
+                      CoachingPageRepository coachingPageRepository) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
         this.quizQuestionRepository = quizQuestionRepository;
@@ -70,6 +79,8 @@ class LearningDevSeeder implements CommandLineRunner {
         this.badgeRepository = badgeRepository;
         this.gamificationProfileRepository = gamificationProfileRepository;
         this.compliancePolicyRepository = compliancePolicyRepository;
+        this.assessmentRepository = assessmentRepository;
+        this.coachingPageRepository = coachingPageRepository;
     }
 
     @Override
@@ -152,6 +163,41 @@ class LearningDevSeeder implements CommandLineRunner {
         compliancePolicyRepository.save(new CompliancePolicy(UUID.randomUUID(), TENANT,
                 "An toàn thiết bị di động", "NIST",
                 "Hạn: 31/10/2026 · Khuyến nghị", false, 62));
+
+        // A second certificate (completed "An toàn cơ bản" course) for the demo learner.
+        certificateRepository.save(new Certificate(
+                UUID.randomUUID(), TENANT, DEMO_USER_ID, basic.getId(),
+                "DS-2026-01B7-2D4E", "An toàn cơ bản", "Nguyễn Minh", 88,
+                Instant.parse("2026-05-10T00:00:00Z"),
+                Instant.parse("2027-05-10T00:00:00Z"),
+                "portal.digishield.vn"));
+
+        // 3 assessments: a knowledge check, a culture survey and a placement test.
+        assessmentRepository.save(new Assessment(UUID.randomUUID(), TENANT,
+                AssessmentType.KNOWLEDGE, false,
+                "{\"questions\":[{\"q\":\"Dấu hiệu email lừa đảo?\",\"options\":"
+                        + "[\"Logo ngân hàng\",\"Tên miền sai chính tả\"]}]}",
+                "2026-Q2", 128));
+        assessmentRepository.save(new Assessment(UUID.randomUUID(), TENANT,
+                AssessmentType.CULTURE, true,
+                "{\"questions\":[{\"q\":\"Bạn có thoải mái báo cáo sự cố bảo mật?\","
+                        + "\"scale\":5}]}",
+                "2026-Q2", 96));
+        assessmentRepository.save(new Assessment(UUID.randomUUID(), TENANT,
+                AssessmentType.PLACEMENT, false,
+                "{\"questions\":[{\"q\":\"Phishing là gì?\"},{\"q\":\"Vishing là gì?\"},"
+                        + "{\"q\":\"Deepfake là gì?\"}]}",
+                "2026-Q2", 42));
+
+        // 2 just-in-time coaching pages shown after a risky action.
+        coachingPageRepository.save(new CoachingPage(UUID.randomUUID(), TENANT,
+                UUID.randomUUID(), "coaching/phishing-click-vi",
+                "{\"signals\":[\"Link rút gọn (bit.ly)\",\"Yêu cầu bấm ngay\","
+                        + "\"Tên miền sai chính tả\"]}"));
+        coachingPageRepository.save(new CoachingPage(UUID.randomUUID(), TENANT,
+                UUID.randomUUID(), "coaching/vishing-callback-vi",
+                "{\"signals\":[\"Gọi từ số lạ\",\"Tạo cảm giác khẩn cấp\","
+                        + "\"Yêu cầu cung cấp OTP\"]}"));
     }
 
     private void seedQuiz(UUID lessonId) {

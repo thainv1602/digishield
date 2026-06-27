@@ -73,6 +73,50 @@ public interface LearningService {
     CertificateView getCertificate(UUID tenantId, UUID certificateId);
 
     /**
+     * Lists the certificates issued to a user.
+     */
+    List<UserCertificateView> listCertificates(UUID tenantId, UUID userId);
+
+    /**
+     * Lists the assessments of a tenant, optionally filtered by type.
+     *
+     * @param tenantId tenant
+     * @param type     lower-case type filter (knowledge|culture|placement),
+     *                 or {@code null} for all
+     */
+    List<AssessmentView> listAssessments(UUID tenantId, String type);
+
+    /**
+     * Creates a new assessment for a tenant.
+     */
+    AssessmentView createAssessment(UUID tenantId, AssessmentView request);
+
+    /**
+     * Gets the aggregated (anonymized) results of an assessment.
+     */
+    AssessmentResultsView getAssessmentResults(UUID tenantId, UUID assessmentId);
+
+    /**
+     * Runs an adaptive placement assessment and returns the recommended level.
+     *
+     * @param tenantId tenant
+     * @param userId   user being placed
+     * @param answers  map of question id -&gt; submitted answer value
+     */
+    PlacementResultView placement(UUID tenantId, UUID userId,
+                                  java.util.Map<String, Object> answers);
+
+    /**
+     * Lists the just-in-time coaching pages of a tenant.
+     */
+    List<CoachingPageView> listCoachingPages(UUID tenantId);
+
+    /**
+     * Creates (or updates) a coaching page for a tenant.
+     */
+    CoachingPageView createCoachingPage(UUID tenantId, CoachingPageView request);
+
+    /**
      * Gets the leaderboard rows for a tenant.
      */
     List<LeaderboardRowView> getLeaderboard(UUID tenantId);
@@ -91,6 +135,20 @@ public interface LearningService {
      * Lists the compliance policies of a tenant.
      */
     List<CompliancePolicyView> listCompliancePolicies(UUID tenantId);
+
+    /**
+     * Creates a compliance policy (mandatory training) for a tenant.
+     *
+     * @param tenantId      tenant
+     * @param name          policy name (may be null; falls back to the framework)
+     * @param framework     mapped compliance framework
+     * @param dueRule       human-readable due rule / deadline text
+     * @param mandatory     whether the policy is mandatory
+     * @param completionPct initial completion percentage (0..100)
+     */
+    CompliancePolicyView createCompliancePolicy(UUID tenantId, String name, String framework,
+                                                String dueRule, boolean mandatory,
+                                                int completionPct);
 
     /**
      * Gets the aggregated compliance status of a tenant.

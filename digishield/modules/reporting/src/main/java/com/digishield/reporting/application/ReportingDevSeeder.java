@@ -5,8 +5,10 @@ import com.digishield.reporting.domain.BlacklistEntry;
 import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
+import com.digishield.reporting.domain.ThreatIntel;
 import com.digishield.reporting.infrastructure.BlacklistEntryRepository;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
+import com.digishield.reporting.infrastructure.ThreatIntelRepository;
 import com.digishield.shared.tenantcontext.DemoTenants;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -31,11 +33,14 @@ public class ReportingDevSeeder implements CommandLineRunner {
 
     private final PhishingReportRepository reportRepository;
     private final BlacklistEntryRepository blacklistRepository;
+    private final ThreatIntelRepository threatIntelRepository;
 
     public ReportingDevSeeder(PhishingReportRepository reportRepository,
-                              BlacklistEntryRepository blacklistRepository) {
+                              BlacklistEntryRepository blacklistRepository,
+                              ThreatIntelRepository threatIntelRepository) {
         this.reportRepository = reportRepository;
         this.blacklistRepository = blacklistRepository;
+        this.threatIntelRepository = threatIntelRepository;
     }
 
     @Override
@@ -91,6 +96,37 @@ public class ReportingDevSeeder implements CommandLineRunner {
                 UUID.randomUUID(), DEMO_TENANT, BlacklistType.PHONE, "+84900111222", "A05"));
         blacklistRepository.save(new BlacklistEntry(
                 UUID.randomUUID(), DEMO_TENANT, BlacklistType.DOMAIN, "win-prizes.biz", "Internal"));
+
+        seedThreatIntel();
+    }
+
+    private void seedThreatIntel() {
+        if (!threatIntelRepository.findByTenantId(DEMO_TENANT).isEmpty()) {
+            return;
+        }
+
+        Instant now = Instant.now();
+
+        // One sample already converted into a training template.
+        threatIntelRepository.save(new ThreatIntel(
+                UUID.randomUUID(), DEMO_TENANT, "NCSC",
+                "Chiến dịch giả mạo cổng dịch vụ công yêu cầu cập nhật định danh điện tử VNeID",
+                UUID.randomUUID(), now.minus(2, ChronoUnit.HOURS)));
+
+        threatIntelRepository.save(new ThreatIntel(
+                UUID.randomUUID(), DEMO_TENANT, "NCSC",
+                "Email giả mạo ngân hàng ACB cảnh báo giao dịch bất thường, dẫn về acb-online.help",
+                null, now.minus(5, ChronoUnit.HOURS)));
+
+        threatIntelRepository.save(new ThreatIntel(
+                UUID.randomUUID(), DEMO_TENANT, "A05",
+                "Tin nhắn brandname giả mạo cơ quan thuế yêu cầu cài app hoàn thuế ngoài store",
+                null, now.minus(1, ChronoUnit.DAYS)));
+
+        threatIntelRepository.save(new ThreatIntel(
+                UUID.randomUUID(), DEMO_TENANT, "feed",
+                "Tên miền mới đăng ký bank-vn.support nằm trong cụm hạ tầng lừa đảo tài chính",
+                null, now.minus(2, ChronoUnit.DAYS)));
     }
 
     @SuppressWarnings("checkstyle:ParameterNumber")
