@@ -1,0 +1,10 @@
+# Terraform working files — never commit these.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+.terraform.tfstate.lock.info
+override.tf
+override.tf.json
+# Keep .terraform.lock.hcl committed for reproducible provider versions.
