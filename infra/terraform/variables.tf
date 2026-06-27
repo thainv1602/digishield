@@ -109,6 +109,18 @@ variable "frontend_acm_certificate_arn" {
   default     = ""
 }
 
+variable "backend_api_origin_domain" {
+  description = "Public DNS of the backend API (the ALB created by the Helm Ingress, or a custom domain in front of it). When set, CloudFront routes /api/* to it so the SPA calls the API same-origin (no CORS). Empty = S3-only; the SPA must then call the API on a full cross-origin URL."
+  type        = string
+  default     = ""
+}
+
+variable "backend_api_origin_protocol_policy" {
+  description = "How CloudFront connects to the API origin: https-only (custom domain + ACM on the ALB) or http-only (raw *.elb.amazonaws.com has no public cert)."
+  type        = string
+  default     = "https-only"
+}
+
 variable "github_repository" {
   description = "owner/repo allowed to assume the CI deploy role via OIDC."
   type        = string

@@ -61,9 +61,12 @@ jobs:
       - name: Generate API client
         run: npm run gen:api
 
+      # Default to the same-origin path: CloudFront routes /api/* to the backend
+      # (see infra/terraform backend_api_origin_domain), so no CORS and one URL
+      # per env. Override the env var only to call a separate cross-origin API.
       - name: Build SPA
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || '/api/v1' }}
         run: npm run build
 
       # Until the CDN infra + DEPLOY_ENABLED exist, just keep the build artifact.
@@ -127,9 +130,12 @@ jobs:
       - name: Generate API client
         run: npm run gen:api
 
+      # Default to the same-origin path: CloudFront routes /api/* to the backend
+      # (see infra/terraform backend_api_origin_domain), so no CORS and one URL
+      # per env. Override the env var only to call a separate cross-origin API.
       - name: Build SPA
         env:
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || '/api/v1' }}
         run: npm run build
 
       - name: Upload build artifact (placeholder)

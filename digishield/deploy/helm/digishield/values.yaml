@@ -82,3 +82,16 @@ flyway:
 service:
   type: ClusterIP
   port: 80
+
+# Public ingress for the API. Disabled by default (local/on-prem reach the API
+# differently); enabled on AWS so an ALB exposes it as CloudFront's /api origin.
+ingress:
+  enabled: false
+  className: alb
+  # Path prefix the API serves under (matches CloudFront's /api/* behavior and
+  # the SPA's VITE_API_BASE_URL=/api/v1).
+  path: /api
+  # Optional host for host-based routing; empty = match all hosts on the ALB.
+  host: ""
+  # ALB Controller annotations (set per env in values-<env>.yaml).
+  annotations: {}

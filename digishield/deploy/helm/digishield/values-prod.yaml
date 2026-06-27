@@ -51,5 +51,19 @@ externalSecrets:
   enabled: true
   remotePrefix: digishield/prod
 
+# Internet-facing ALB so CloudFront can reach the API as its /api/* origin.
+# Feed the resulting ALB DNS (kubectl get ingress) into Terraform
+# backend_api_origin_domain. Set <acm-cert-arn> for HTTPS on the ALB.
+ingress:
+  enabled: true
+  className: alb
+  path: /api
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: <acm-cert-arn>
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
+
 flyway:
   enabled: true

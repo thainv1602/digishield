@@ -59,6 +59,23 @@ After `apply`, `terraform output` gives everything the app side needs:
 Then set the repo variable **`DEPLOY_ENABLED=true`** so `cd.yml` runs the real
 `helm upgrade` instead of the placeholder.
 
+## API routing (SPA -> backend, same-origin)
+
+The SPA calls the API same-origin via `VITE_API_BASE_URL=/api/v1`: CloudFront
+routes `/api/*` to the backend, so there is no CORS and one URL per env. Wiring,
+after the backend is deployed with `ingress.enabled=true`:
+
+1. The Helm Ingress provisions an internet-facing ALB. Read its DNS:
+   `kubectl -n digishield-<env> get ingress digishield-api`.
+2. Put that DNS (or a Route53 record fronting it) into the Terraform var
+   **`backend_api_origin_domain`** (`envs/<env>.tfvars`) and re-apply — CloudFront
+   gains the `/api/*` behavior pointing at it. Use a custom ALB domain + ACM cert
+   for `backend_api_origin_protocol_policy = "https-only"` (the default).
+
+Leave `backend_api_origin_domain` empty to skip the `/api/*` behavior; the SPA
+must then target a full cross-origin API URL (set GH Actions var
+`VITE_API_BASE_URL`) and the backend must send CORS headers.
+
 ## Create the ClusterSecretStore (after ESO is installed)
 
 ```yaml

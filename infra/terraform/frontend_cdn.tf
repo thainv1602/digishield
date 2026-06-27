@@ -56,6 +56,8 @@ resource "aws_cloudfront_origin_access_control" "frontend" {
 locals {
   frontend_origin_id = "s3-${aws_s3_bucket.frontend.id}"
   frontend_use_acm   = var.frontend_acm_certificate_arn != ""
+  api_origin_id      = "api-${local.name}"
+  has_api_origin     = var.backend_api_origin_domain != ""
 }
 
 resource "aws_cloudfront_distribution" "frontend" {
@@ -69,6 +71,41 @@ resource "aws_cloudfront_distribution" "frontend" {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = local.frontend_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.frontend.id
+  }
+
+  # Optional API origin: the backend ALB (Helm Ingress) or a domain fronting it.
+  # Present only when backend_api_origin_domain is set.
+  dynamic "origin" {
+    for_each = local.has_api_origin ? [1] : []
+    content {
+      domain_name = var.backend_api_origin_domain
+      origin_id   = local.api_origin_id
+      custom_origin_config {
+        http_port              = 80
+        https_port             = 443
+        origin_protocol_policy = var.backend_api_origin_protocol_policy
+        origin_ssl_protocols   = ["TLSv1.2"]
+      }
+    }
+  }
+
+  # Route /api/* to the backend: no caching, forward everything (auth headers,
+  # all methods). Lets the SPA call the API same-origin -> no CORS.
+  dynamic "ordered_cache_behavior" {
+    for_each = local.has_api_origin ? [1] : []
+    content {
+      path_pattern           = "/api/*"
+      target_origin_id       = local.api_origin_id
+      viewer_protocol_policy = "redirect-to-https"
+      allowed_methods        = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+      cached_methods         = ["GET", "HEAD"]
+      compress               = true
+
+      # AWS managed policies: CachingDisabled + AllViewer (forwards all headers,
+      # cookies and query strings, including Authorization, to the origin).
+      cache_policy_id          = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+      origin_request_policy_id = "216adef6-5c7f-47e4-b989-5492eb8d9be4"
+    }
   }
 
   default_cache_behavior {
