@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#
+# commit-msg hook: enforce Conventional Commits + English subject locally.
+# Enable with:  git config core.hooksPath .githooks   (or run scripts/setup-hooks.sh)
+
+set -euo pipefail
+
+msg_file="$1"
+repo_root="$(git rev-parse --show-toplevel)"
+
+# First non-empty, non-comment line = the subject.
+subject="$(grep -vE '^[[:space:]]*#' "$msg_file" | sed '/^[[:space:]]*$/d' | head -n1 || true)"
+
+bash "$repo_root/scripts/validate-commit-subject.sh" "$subject"

@@ -1,0 +1,14 @@
+# Code owners — GitHub auto-requests review from these accounts on every PR.
+# Combined with "Require review from Code Owners" in branch protection, this
+# enforces that an admin / team lead must approve before a PR can be merged.
+#
+# TODO: replace the placeholders with real GitHub usernames or @org/team slugs.
+#       Lines are last-match-wins; the catch-all below covers the whole repo.
+
+# Whole repository (admins / team leads):
+*               @ADMIN_USERNAME @TEAMLEAD_USERNAME
+
+# Examples of finer-grained ownership (optional — uncomment & adjust):
+# /digishield/   @BACKEND_LEAD
+# /frontend/     @FRONTEND_LEAD
+# /.github/      @ADMIN_USERNAME

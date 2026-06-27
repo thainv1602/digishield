@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+#
+# pre-push hook: block direct pushes to protected branches. All changes must go
+# through a feature branch + Pull Request (server-side branch protection is the
+# authoritative enforcement; this is fast local feedback).
+# Enable with:  git config core.hooksPath .githooks   (or run scripts/setup-hooks.sh)
+
+set -euo pipefail
+
+# stdin: <local ref> <local sha> <remote ref> <remote sha>
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master|refs/heads/develop)
+      branch="${remote_ref#refs/heads/}"
+      echo "✗ Direct pushes to '$branch' are not allowed." >&2
+      echo "" >&2
+      echo "  Create a feature branch and open a Pull Request instead:" >&2
+      echo "    git switch -c feat/your-change" >&2
+      echo "    git push -u origin feat/your-change" >&2
+      echo "" >&2
+      echo "  '$branch' only accepts merges from approved, CI-passing PRs." >&2
+      exit 1
+      ;;
+  esac
+done
+
+exit 0

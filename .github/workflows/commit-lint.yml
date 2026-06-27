@@ -1,0 +1,25 @@
+# Validate that every commit in a PR follows Conventional Commits and is in
+# English. This is the server-side, non-bypassable counterpart to the local
+# commit-msg hook — make it a REQUIRED status check in branch protection.
+
+name: commit-lint
+
+on:
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+jobs:
+  commitlint:
+    name: Validate commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # need full history to diff against the base branch
+
+      - name: Validate commit messages
+        run: bash scripts/check-commits.sh "origin/${{ github.base_ref }}" "${{ github.event.pull_request.head.sha }}"
