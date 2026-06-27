@@ -1,29 +1,40 @@
 package com.digishield.ai.api;
 
-import com.digishield.ai.domain.TemplateDraft;
+import com.digishield.ai.api.dto.ClassificationView;
+import com.digishield.ai.api.dto.ModerationView;
+import com.digishield.ai.api.dto.SimTemplateView;
+import com.digishield.ai.domain.TemplateChannel;
+
+import java.util.UUID;
 
 /**
  * Public API of the AI module.
+ * <p>
+ * The current implementation uses deterministic, dependency-free stubs (no LLM
+ * SDK). Every method marks the real model call as TODO.
  */
 public interface AiService {
 
     /**
-     * Generates a template draft (e.g. a simulated phishing email or training content).
+     * Generates a simulated phishing template draft (pending approval) for the
+     * given channel / industry / season and persists it for the current tenant.
      */
-    TemplateDraft generateTemplate(String prompt);
+    SimTemplateView generateTemplate(TemplateChannel channel, String industry, String season);
 
     /**
-     * Classifies a report (e.g. determines the phishing level) and returns a label.
+     * Classifies a reported email payload and returns a label, confidence and
+     * reasoning.
      */
-    String classifyReport(String content);
+    ClassificationView classify(String payload);
 
     /**
-     * Moderates content and returns a verdict.
+     * Moderates AI-generated content and returns a verdict with reasons.
      */
-    String moderate(String content);
+    ModerationView moderate(String content);
 
     /**
-     * Runs a multi-step AI orchestration flow and returns a summary result.
+     * Runs the AIDA orchestration flow (recompute risk and auto-enroll) for the
+     * given scope. In dev this acknowledges and logs the intent (no-op).
      */
-    String runOrchestration(String input);
+    void runOrchestration(String scope, UUID scopeId);
 }

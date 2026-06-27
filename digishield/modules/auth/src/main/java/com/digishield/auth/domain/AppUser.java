@@ -44,6 +44,14 @@ public class AppUser {
     @Column(name = "department")
     private String department;
 
+    /** Department / org unit identifier (optional, OpenAPI {@code department_id}). */
+    @Column(name = "department_id")
+    private UUID departmentId;
+
+    /** Preferred UI locale (e.g. {@code vi}); optional, OpenAPI {@code locale}. */
+    @Column(name = "locale")
+    private String locale;
+
     /** Cached risk score 0..100 (optional, surfaced on the Users screen). */
     @Column(name = "risk_score")
     private Integer riskScore;
@@ -100,6 +108,14 @@ public class AppUser {
         return riskScore;
     }
 
+    public UUID getDepartmentId() {
+        return departmentId;
+    }
+
+    public String getLocale() {
+        return locale;
+    }
+
     public void setEmail(String email) {
         this.email = email;
     }
@@ -122,5 +138,13 @@ public class AppUser {
 
     public void setRiskScore(Integer riskScore) {
         this.riskScore = riskScore;
+    }
+
+    public void setDepartmentId(UUID departmentId) {
+        this.departmentId = departmentId;
+    }
+
+    public void setLocale(String locale) {
+        this.locale = locale;
     }
 }

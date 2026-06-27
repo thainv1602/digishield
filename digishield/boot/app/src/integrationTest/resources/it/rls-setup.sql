@@ -49,6 +49,7 @@ CREATE TABLE phishing_report (
     sender          varchar(255),
     ai_reason       text,
     blacklist_match boolean          NOT NULL DEFAULT false,
+    converted_to_training boolean    NOT NULL DEFAULT false,
     reported_at     timestamptz
 );
 

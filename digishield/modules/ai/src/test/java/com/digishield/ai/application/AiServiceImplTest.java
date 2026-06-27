@@ -1,60 +1,120 @@
 package com.digishield.ai.application;
 
-import com.digishield.ai.domain.TemplateDraft;
+import com.digishield.ai.api.dto.ClassificationView;
+import com.digishield.ai.api.dto.ModerationView;
+import com.digishield.ai.api.dto.SimTemplateView;
+import com.digishield.ai.domain.AiTemplate;
+import com.digishield.ai.domain.TemplateChannel;
+import com.digishield.ai.infrastructure.AiTemplateRepository;
+import com.digishield.shared.tenantcontext.TenantContext;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link AiServiceImpl}.
  * <p>
- * The implementation returns deterministic stubbed samples (the real LLM calls are
- * marked TODO). The tests assert the returned shape, non-null values and the
- * deterministic content that the stub embeds.
+ * The implementation uses deterministic, dependency-free stubs (the real LLM
+ * calls are marked TODO). Pure Mockito unit tests: no Spring context, no DB.
  */
+@ExtendWith(MockitoExtension.class)
 class AiServiceImplTest {
 
-    private final AiServiceImpl aiService = new AiServiceImpl();
+    private static final UUID TENANT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
+
+    @Mock
+    private AiTemplateRepository templateRepository;
+
+    @InjectMocks
+    private AiServiceImpl aiService;
+
+    @BeforeEach
+    void setUp() {
+        TenantContext.set(TENANT_ID.toString());
+    }
+
+    @AfterEach
+    void tearDown() {
+        TenantContext.clear();
+    }
 
     @Test
-    void generateTemplate_returnsDraftEchoingPromptWithReviewVerdict() {
+    void generateTemplate_persistsDraftAndReturnsSimTemplateShape() {
         // Arrange
-        String prompt = "account security warning";
+        when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        TemplateDraft draft = aiService.generateTemplate(prompt);
+        SimTemplateView view = aiService.generateTemplate(TemplateChannel.EMAIL, "banking", "summer");
 
         // Assert
-        assertThat(draft).isNotNull();
-        assertThat(draft.subject()).isNotBlank();
-        assertThat(draft.body()).contains(prompt);
-        assertThat(draft.verdict()).isEqualTo("NEEDS_REVIEW");
+        assertThat(view).isNotNull();
+        assertThat(view.id()).isNotNull();
+        assertThat(view.channel()).isEqualTo("email");
+        assertThat(view.subject()).contains("banking");
+        assertThat(view.bodyRef()).isNotBlank();
+        assertThat(view.difficulty()).isIn("easy", "medium", "hard");
+        assertThat(view.status()).isEqualTo("draft");
+        verify(templateRepository).save(any(AiTemplate.class));
     }
 
     @Test
-    void classifyReport_returnsDeterministicLabel() {
+    void classify_flagsThreatSignals() {
         // Act
-        String label = aiService.classifyReport("please verify your password now");
+        ClassificationView result = aiService.classify("Please verify your account and enter your password");
 
         // Assert
-        assertThat(label).isEqualTo("LIKELY_PHISHING");
+        assertThat(result.label()).isEqualTo("threat");
+        assertThat(result.confidence()).isBetween(0.0, 1.0);
+        assertThat(result.reason()).isNotBlank();
     }
 
     @Test
-    void moderate_returnsSafeVerdict() {
+    void classify_returnsCleanForBenignContent() {
         // Act
-        String verdict = aiService.moderate("hello world");
+        ClassificationView result = aiService.classify("Hello, see you at the team lunch tomorrow.");
 
         // Assert
-        assertThat(verdict).isEqualTo("SAFE");
+        assertThat(result.label()).isEqualTo("clean");
     }
 
     @Test
-    void runOrchestration_returnsCompletionMarker() {
+    void moderate_passesSafeContent() {
         // Act
-        String result = aiService.runOrchestration("input");
+        ModerationView result = aiService.moderate("hello world");
 
         // Assert
-        assertThat(result).isEqualTo("ORCHESTRATION_COMPLETED");
+        assertThat(result.verdict()).isEqualTo("pass");
+        assertThat(result.reasons()).isEmpty();
+    }
+
+    @Test
+    void moderate_blocksContentWithMultipleUnsafeWords() {
+        // Act
+        ModerationView result = aiService.moderate("this ransomware can exploit your system");
+
+        // Assert
+        assertThat(result.verdict()).isEqualTo("block");
+        assertThat(result.reasons()).hasSizeGreaterThanOrEqualTo(2);
+    }
+
+    @Test
+    void runOrchestration_isANoOpThatDoesNotTouchRepository() {
+        // Act
+        aiService.runOrchestration("org", UUID.randomUUID());
+
+        // Assert
+        verifyNoInteractions(templateRepository);
     }
 }

@@ -68,6 +68,10 @@ public class PhishingReport {
     @Column(name = "reported_at")
     private Instant reportedAt;
 
+    /** Whether this report has been flipped into training content. */
+    @Column(name = "converted_to_training")
+    private boolean convertedToTraining;
+
     protected PhishingReport() {
         // Required by JPA.
     }
@@ -166,5 +170,13 @@ public class PhishingReport {
 
     public Instant getReportedAt() {
         return reportedAt;
+    }
+
+    public boolean isConvertedToTraining() {
+        return convertedToTraining;
+    }
+
+    public void setConvertedToTraining(boolean convertedToTraining) {
+        this.convertedToTraining = convertedToTraining;
     }
 }

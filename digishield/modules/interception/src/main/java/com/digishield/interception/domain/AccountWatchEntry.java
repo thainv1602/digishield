@@ -6,6 +6,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -37,6 +38,10 @@ public class AccountWatchEntry {
     @Column(name = "source", length = 128)
     private String source;
 
+    /** When this entry was added to / synced into the watchlist. */
+    @Column(name = "added_at", nullable = false)
+    private Instant addedAt;
+
     /** Default constructor required by JPA. */
     protected AccountWatchEntry() {
     }
@@ -47,12 +52,23 @@ public class AccountWatchEntry {
                             String value,
                             RiskLevel riskLevel,
                             String source) {
+        this(id, tenantId, type, value, riskLevel, source, Instant.now());
+    }
+
+    public AccountWatchEntry(UUID id,
+                            UUID tenantId,
+                            WatchType type,
+                            String value,
+                            RiskLevel riskLevel,
+                            String source,
+                            Instant addedAt) {
         this.id = id;
         this.tenantId = tenantId;
         this.type = type;
         this.value = value;
         this.riskLevel = riskLevel;
         this.source = source;
+        this.addedAt = addedAt;
     }
 
     public UUID getId() {
@@ -77,5 +93,9 @@ public class AccountWatchEntry {
 
     public String getSource() {
         return source;
+    }
+
+    public Instant getAddedAt() {
+        return addedAt;
     }
 }
