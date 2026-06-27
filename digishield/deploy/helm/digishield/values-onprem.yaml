@@ -1,0 +1,25 @@
+# On-premises overrides. Use with: helm install ... -f values-onprem.yaml
+image:
+  repository: registry.internal.local/digishield/app
+  tag: 0.1.0-SNAPSHOT
+  pullPolicy: Always
+
+api:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+database:
+  url: jdbc:postgresql://onprem-postgres.db.svc:5432/digishield
+  username: digishield
+  existingSecret: digishield-db
+  passwordKey: password
+
+service:
+  type: NodePort
+  port: 80

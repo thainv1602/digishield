@@ -1,0 +1,89 @@
+name: digishield
+
+x-app-image: &app-image
+  image: digishield/app:0.1.0-SNAPSHOT
+  build:
+    context: ../..
+    dockerfile: deploy/docker/Dockerfile
+
+x-app-env: &app-env
+  DB_URL: jdbc:postgresql://postgres:5432/digishield
+  DB_USERNAME: digishield
+  DB_PASSWORD: digishield
+  SPRING_RABBITMQ_HOST: rabbitmq
+  SPRING_DATA_REDIS_HOST: redis
+
+services:
+  api:
+    <<: *app-image
+    container_name: digishield-api
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: api
+    command: ["--spring.profiles.active=api"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+
+  worker:
+    <<: *app-image
+    container_name: digishield-worker
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: worker
+    command: ["--spring.profiles.active=worker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+
+  scheduler:
+    <<: *app-image
+    container_name: digishield-scheduler
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: scheduler
+    command: ["--spring.profiles.active=scheduler"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: digishield-postgres
+    environment:
+      POSTGRES_DB: digishield
+      POSTGRES_USER: digishield
+      POSTGRES_PASSWORD: digishield
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U digishield"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: digishield-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: digishield-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  postgres-data:

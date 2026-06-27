@@ -1,0 +1,90 @@
+# =============================================================================
+# DigiShield - "prod-LIKE" runnable stack.
+#
+# Self-contained compose project that boots a REAL PostgreSQL + Flyway stack and
+# runs the backend with the combined `dev,pgdemo` profile so the existing React
+# frontend works end-to-end against a real database + migrations.
+#
+#   docker compose -f deploy/compose/docker-compose.prodlike.yml up --build
+#
+# The api activates `dev,pgdemo`:
+#   * dev    -> permissive security, CORS for http://localhost:5173, demo tenant
+#               1111..., and the demo seeders (the JWT issuer is not built yet).
+#   * pgdemo -> PostgreSQL + Flyway + ddl-auto=validate (overrides dev's H2).
+#
+# Flyway runs automatically on api startup (pgdemo enables it), applying
+# V2026.06.27.001 (init) + V2026.06.27.002 (fe_alignment). There is NO separate
+# migrate job — the api container performs the migration before serving traffic.
+#
+# CORS note: DevSecurityConfig + CorsConfig already allow http://localhost:5173,
+# so the Vite dev server can call the api at http://localhost:8080 without extra
+# config.
+#
+# The api connects as the `digishield` Postgres superuser; the official postgres
+# image makes that role a SUPERUSER, which BYPASSES row-level security (even
+# FORCE RLS). That is intentional for this single-tenant demo, since the dev RLS
+# aspect is disabled and never sets the `app.tenant_id` GUC.
+# =============================================================================
+name: digishield-prodlike
+
+x-app-env: &app-env
+  DB_URL: jdbc:postgresql://postgres:5432/digishield
+  DB_USERNAME: digishield
+  DB_PASSWORD: digishield
+  SPRING_RABBITMQ_HOST: rabbitmq
+  SPRING_DATA_REDIS_HOST: redis
+
+services:
+  api:
+    image: digishield/app:prodlike
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    container_name: digishield-prodlike-api
+    environment:
+      <<: *app-env
+    # Combined profile: dev (permissive security + seeders) on pgdemo (Postgres
+    # + Flyway). Flyway migrations are applied automatically here on startup.
+    command: ["--spring.profiles.active=dev,pgdemo"]
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: digishield-prodlike-postgres
+    environment:
+      POSTGRES_DB: digishield
+      POSTGRES_USER: digishield
+      POSTGRES_PASSWORD: digishield
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U digishield"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: digishield-prodlike-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: digishield-prodlike-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+volumes:
+  postgres-data:

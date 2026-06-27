@@ -1,0 +1,39 @@
+image:
+  repository: digishield/app
+  tag: 0.1.0-SNAPSHOT
+  pullPolicy: IfNotPresent
+
+api:
+  replicaCount: 2
+  profile: api
+  port: 8080
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+worker:
+  replicaCount: 1
+  profile: worker
+
+scheduler:
+  replicaCount: 1
+  profile: scheduler
+
+database:
+  url: jdbc:postgresql://postgres:5432/digishield
+  username: digishield
+  # In real deployments this comes from a Secret, not values.
+  existingSecret: digishield-db
+  passwordKey: password
+
+flyway:
+  enabled: true
+  profile: flyway
+
+service:
+  type: ClusterIP
+  port: 80

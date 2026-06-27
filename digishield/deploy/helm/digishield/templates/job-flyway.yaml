@@ -1,0 +1,39 @@
+{{- if .Values.flyway.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-flyway
+  labels:
+    app.kubernetes.io/name: digishield
+    app.kubernetes.io/component: flyway
+  annotations:
+    # Run as a pre-upgrade/pre-install hook so migrations apply before rollout.
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: digishield
+        app.kubernetes.io/component: flyway
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: flyway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "--spring.profiles.active={{ .Values.flyway.profile }}"
+          env:
+            - name: DB_URL
+              value: {{ .Values.database.url | quote }}
+            - name: DB_USERNAME
+              value: {{ .Values.database.username | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.existingSecret }}
+                  key: {{ .Values.database.passwordKey }}
+{{- end }}
