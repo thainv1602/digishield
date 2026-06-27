@@ -178,11 +178,11 @@ Switch to Liquibase if these arise: a hard requirement for **changeset rollback*
 
 ### Context
 
-The backend is Java/Spring built with Gradle (ADR-002); the UI is a React/TypeScript SPA (UI/UX spec). We must decide where the frontend lives and how it integrates with the backend without coupling two incompatible build toolchains (Gradle/JVM vs Node/pnpm).
+The backend is Java/Spring built with Gradle (ADR-002); the UI is a React/TypeScript SPA (UI/UX spec). We must decide where the frontend lives and how it integrates with the backend without coupling two incompatible build toolchains (Gradle/JVM vs Node/npm).
 
 ### Decision
 
-1. **Monorepo-lite:** the frontend lives in a top-level `frontend/` directory next to `digishield-skeleton/` (backend) and `docs/`, with its **own toolchain** (Vite + React + TypeScript + pnpm). It is **NOT** a Gradle subproject — the two build systems stay independent, each with its own CI job.
+1. **Monorepo-lite:** the frontend lives in a top-level `frontend/` directory next to `digishield/` (backend) and `docs/`, with its **own toolchain** (Vite + React + TypeScript + npm). It is **NOT** a Gradle subproject — the two build systems stay independent, each with its own CI job (path-filtered, at the repo-root `.github/workflows/`).
 2. **OpenAPI is the integration contract.** A typed TypeScript client + TanStack Query hooks are **generated** from `DigiShield_openapi.yaml` (e.g. via `orval`), so the FE never hand-writes request/response types and cannot drift from the API.
 3. **Feature-based structure + role-based routing.** Code is organized by feature (auth, learning, simulation, reporting, analytics, notification, tenancy, interception) with route guards enforcing RBAC for the 6 roles.
 4. **Design system from the UI/UX spec** is implemented as CSS variables (tokens), matching the spec.

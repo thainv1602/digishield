@@ -35,7 +35,7 @@
 ```
 digishield/
 ├─ settings.gradle.kts          # declares the subprojects
-├─ build.gradle.kts             # common configuration (Java 21, Spring BOM)
+├─ build.gradle.kts             # common configuration (Java 25, Spring BOM)
 │
 ├─ boot/
 │  └─ app/                      # the ONLY Spring Boot app (entrypoint)
@@ -193,12 +193,12 @@ class TenantTransactionAspect {
 
 ```dockerfile
 # deploy/docker/Dockerfile
-FROM eclipse-temurin:21-jdk AS build
+FROM eclipse-temurin:25-jdk AS build
 WORKDIR /src
 COPY . .
 RUN ./gradlew :boot:app:bootJar --no-daemon
 
-FROM eclipse-temurin:21-jre AS runtime
+FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 COPY --from=build /src/boot/app/build/libs/app.jar app.jar
 ENV JAVA_TOOL_OPTIONS="-XX:+UseZGC -XX:MaxRAMPercentage=75"

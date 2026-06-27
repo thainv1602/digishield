@@ -4,8 +4,7 @@
 # runs on FE changes (or when the OpenAPI spec the client is generated from
 # changes). All steps run with working-directory: frontend.
 #
-# Package manager: the committed lockfile is package-lock.json -> use npm ci.
-# (The engines field mentions pnpm, but npm is the source of truth here.)
+# Package manager: npm (committed lockfile is package-lock.json) -> use npm ci.
 
 name: frontend-ci
 

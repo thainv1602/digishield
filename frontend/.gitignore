@@ -41,7 +41,7 @@ coverage
 *.tsbuildinfo
 
 # NOTE: src/api/generated/* is intentionally git-ignored except .gitkeep & README.md
-# Generated API client is produced by `pnpm gen:api` (orval) and should not be committed.
+# Generated API client is produced by `npm run gen:api` (orval) and should not be committed.
 src/api/generated/**
 !src/api/generated/.gitkeep
 !src/api/generated/README.md

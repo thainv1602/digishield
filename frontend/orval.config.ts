@@ -11,7 +11,7 @@ import { defineConfig } from 'orval';
  * (Authorization: Bearer, X-Tenant-Id), baseURL and 401 handling are applied
  * uniformly. The baseURL itself comes from import.meta.env.VITE_API_BASE_URL.
  *
- * Run with: `pnpm gen:api`
+ * Run with: `npm run gen:api`
  */
 export default defineConfig({
   digishield: {

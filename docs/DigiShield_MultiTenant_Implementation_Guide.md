@@ -2,7 +2,7 @@
 
 > Version 1.0 · 27/06/2026
 > Implementation/deployment document accompanying **Chapter 19** of `DigiShield_Technical_Design.md`.
-> Level: engineering (code) + infrastructure (DevOps) + operations runbook. Stack per **ADR-002: Java 21 + Spring Boot** (see the Java tenant-context code sample in `DigiShield_Architecture_Deploy_CICD.md` §5). The snippets below are pseudo-code illustrating the concepts, applied equivalently in Spring.
+> Level: engineering (code) + infrastructure (DevOps) + operations runbook. Stack per **ADR-002: Java + Spring Boot** (realized on Java 25 + Spring Boot 4.1.0; see the ADR-002 Java 25 revision and the Java tenant-context code sample in `DigiShield_Architecture_Deploy_CICD.md` §5). The snippets below are pseudo-code illustrating the concepts, applied equivalently in Spring.
 
 ---
 

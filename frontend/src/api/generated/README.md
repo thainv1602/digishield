@@ -7,7 +7,7 @@ from the OpenAPI specification and **should not be hand-edited or committed**
 ## How to generate
 
 ```bash
-pnpm gen:api
+npm run gen:api
 ```
 
 This runs `orval --config ./orval.config.ts`, which:
@@ -24,7 +24,7 @@ This runs `orval --config ./orval.config.ts`, which:
 ## Why it is not committed
 
 The generated client is a deterministic build artifact of the spec. Regenerate
-it after `pnpm install` (or wire `gen:api` into a `postinstall` / CI step) so the
+it after `npm install` (or wire `gen:api` into a `postinstall` / CI step) so the
 client always matches the contract in `docs/DigiShield_openapi.yaml`.
 
 ## Usage example (after generation)
