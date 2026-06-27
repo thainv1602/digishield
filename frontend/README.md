@@ -5,39 +5,41 @@ alerting against online scams. Built with **React 18 + TypeScript (strict) +
 Vite 5**, data fetching via **TanStack Query v5**, routing via
 **react-router-dom v6**, HTTP via **axios**.
 
-> **Monorepo-lite.** This frontend is a self-contained toolchain (pnpm + Vite),
-> **not** a Gradle subproject. It can be built and shipped independently, or its
+> **Monorepo.** This frontend is a self-contained npm + Vite toolchain (**not** a
+> Gradle subproject) living alongside the backend (`../digishield`) and docs
+> (`../docs`) in one git repo. It can be built and shipped independently, or its
 > `dist/` bundled into the backend (`boot/app`) static resources for an on-prem,
-> single-artifact deployment — see **ADR-004**.
+> single-artifact deployment — see **ADR-004**. CI lives at the repo-root
+> `.github/workflows/frontend-ci.yml` (path-filtered to `frontend/**`).
 
 ---
 
 ## Prerequisites
 
 - Node.js **>= 20**
-- **pnpm >= 9** (`corepack enable` then `corepack prepare pnpm@latest --activate`)
+- **npm** (the committed lockfile is `package-lock.json`)
 
 ## Getting started
 
 ```bash
-pnpm install            # install dependencies
+npm install             # install dependencies (use `npm ci` for a clean, lockfile-exact install)
 cp .env.example .env    # set VITE_API_BASE_URL
-pnpm gen:api            # generate the typed API client from the OpenAPI spec
-pnpm dev                # start the dev server (http://localhost:5173)
+npm run gen:api         # generate the typed API client from the OpenAPI spec
+npm run dev             # start the dev server (http://localhost:5173)
 ```
 
 ### Scripts
 
-| Script            | Purpose                                              |
-| ----------------- | ---------------------------------------------------- |
-| `pnpm dev`        | Vite dev server with HMR                             |
-| `pnpm build`      | Type-check + production build to `dist/`             |
-| `pnpm preview`    | Preview the production build locally                 |
-| `pnpm lint`       | ESLint (typescript-eslint + react-hooks + prettier)  |
-| `pnpm typecheck`  | `tsc` strict type-check, no emit                     |
-| `pnpm test`       | Run the Vitest suite once                            |
-| `pnpm format`     | Format source with Prettier                          |
-| `pnpm gen:api`    | Generate the API client from the OpenAPI spec        |
+| Script             | Purpose                                              |
+| ------------------ | ---------------------------------------------------- |
+| `npm run dev`      | Vite dev server with HMR                             |
+| `npm run build`    | Type-check + production build to `dist/`             |
+| `npm run preview`  | Preview the production build locally                 |
+| `npm run lint`     | ESLint (typescript-eslint + react-hooks + prettier)  |
+| `npm run typecheck`| `tsc` strict type-check, no emit                     |
+| `npm test`         | Run the Vitest suite once                            |
+| `npm run format`   | Format source with Prettier                          |
+| `npm run gen:api`  | Generate the API client from the OpenAPI spec        |
 
 ---
 
@@ -59,16 +61,20 @@ frontend/
 │  │  ├─ api/                 # axios client (mutator), queryClient, auth bridge
 │  │  ├─ styles/              # tokens.css (design tokens) + globals.css
 │  │  └─ ui/                  # Button, Card, KpiTile, StatusPill, DataTable, AppShell…
-│  ├─ features/               # feature pages (owned by the feature workstream)
-│  │  ├─ auth/LoginPage.tsx
-│  │  ├─ dashboard/AdminDashboardPage.tsx
-│  │  ├─ learning/LearnerPortalPage.tsx
-│  │  ├─ learning/QuizPage.tsx
-│  │  └─ reporting/SocInboxPage.tsx
-│  ├─ api/generated/          # orval output (git-ignored; see its README)
+│  ├─ features/               # feature pages, grouped by area:
+│  │  ├─ auth/                # Login, ForgotPassword, Mfa, Sso, Onboarding
+│  │  ├─ dashboard/           # AdminDashboardPage
+│  │  ├─ campaigns/           # CampaignWizard, CampaignResults
+│  │  ├─ content/             # ContentStudio
+│  │  ├─ learning/            # LearnerPortal, CourseCatalog, LessonPlayer, Quiz, QuizResults
+│  │  ├─ certificates/        # CertificatePage
+│  │  ├─ soc/                 # SocInbox, AlertCenter, Watchlist, ThreatIntel, InterventionLog
+│  │  ├─ users/  compliance/  gamification (admin/AidaPage, GamificationPage)
+│  │  └─ super/               # TenantConsole, ScimConfig, AuditLog
+│  ├─ api/generated/          # orval output (git-ignored except .gitkeep + README.md)
 │  └─ test/setup.ts           # Vitest + Testing Library setup
-└─ .github/workflows/frontend-ci.yml
 ```
+CI: see the repo-root `../.github/workflows/frontend-ci.yml`.
 
 The `@` path alias maps to `src/` (configured in both `tsconfig.json` and
 `vite.config.ts`).
@@ -80,7 +86,7 @@ The `@` path alias maps to `src/` (configured in both `tsconfig.json` and
 The HTTP client is **generated**, never hand-written:
 
 ```bash
-pnpm gen:api
+npm run gen:api
 ```
 
 This reads the contract at `../docs/DigiShield_openapi.yaml` and emits typed
@@ -94,8 +100,8 @@ which applies:
 - centralized **401** handling (clears auth + redirects to `/login`).
 
 The generated folder is git-ignored (a build artifact). Regenerate it after
-`pnpm install` or wire `gen:api` into CI / a `postinstall` hook. See
-`src/api/generated/README.md`.
+`npm install` or wire `gen:api` into CI / a `postinstall` hook (frontend CI runs
+`npm run gen:api` before lint/typecheck/build). See `src/api/generated/README.md`.
 
 ---
 
@@ -108,6 +114,7 @@ these):
 1. **Run the backend** (H2, `permitAll`, CORS for `:5173`, seeded demo tenant):
 
    ```bash
+   # from ../digishield
    ./gradlew bootRun --args='--spring.profiles.active=dev'   # serves http://localhost:8080
    ```
 
@@ -117,7 +124,7 @@ these):
    VITE_API_BASE_URL=http://localhost:8080/api/v1
    ```
 
-   then `pnpm dev`.
+   then `npm run dev`.
 
 3. **Tenant alignment.** The dev data is seeded under the demo tenant
    `11111111-1111-1111-1111-111111111111`. The demo login sets the current user's
@@ -177,14 +184,24 @@ Auth state (current user `{ id, tenantId, role }` + in-memory token) lives in
 - redirects unauthenticated users to `/login` (preserving the attempted path),
 - redirects authenticated users without the role to `/403`.
 
-| Route             | Allowed roles                          | Page                    |
-| ----------------- | -------------------------------------- | ----------------------- |
-| `/login`          | public                                 | `LoginPage`             |
-| `/admin`          | `org_admin`, `manager`, `super_admin`  | `AdminDashboardPage`    |
-| `/learn`          | `learner`                              | `LearnerPortalPage`     |
-| `/learn/quiz/:id` | `learner`                              | `QuizPage`              |
-| `/soc`            | `analyst`                              | `SocInboxPage`          |
-| `/`               | redirect to the role's landing page    | —                       |
+Role groups used by the guards (`src/app/router.tsx`):
+
+- **ADMIN** = `org_admin`, `manager`, `content_editor`, `super_admin`
+- **SUPER** = `super_admin` · **LEARNER** = `learner` · **ANALYST** = `analyst`
+
+Representative routes (see `router.tsx` for the full list):
+
+| Route                     | Allowed roles | Page                  |
+| ------------------------- | ------------- | --------------------- |
+| `/login`, `/auth/*`, `/onboarding` | public | `LoginPage`, `MfaPage`, `SsoPage`, … |
+| `/dashboard`              | ADMIN         | `AdminDashboardPage`  |
+| `/campaigns/new`, `/campaigns/:id` | ADMIN | `CampaignWizardPage`, `CampaignResultsPage` |
+| `/users`, `/compliance`, `/content/studio`, `/settings/org`, `/gamification`, `/aida` | ADMIN | Users / Compliance / Content / Org / Gamification / Aida |
+| `/super/tenants`, `/super/scim` | SUPER | `TenantConsolePage`, `ScimConfigPage` |
+| `/learn`, `/learn/courses`, `/learn/lessons/:id`, `/learn/quiz/:id` | LEARNER | Learner portal, catalog, lesson, quiz |
+| `/soc/inbox`, `/soc/alerts`, `/soc/watchlist` | ANALYST | `SocInboxPage`, `AlertCenterPage`, `WatchlistPage` |
+| `/`                       | redirect to the role's landing page | — |
+| `/403`, `*`               | public        | `Forbidden`, `NotFound` |
 
 The sidebar navigation is filtered from a single permission map
 (`NAV_ITEMS` in `roles.ts`).
@@ -194,4 +211,4 @@ The sidebar navigation is filtered from a single permission map
 ## Testing
 
 Vitest (jsdom) + Testing Library. Setup in `src/test/setup.ts`; see
-`src/shared/ui/Button.test.tsx` for a sample. Run with `pnpm test`.
+`src/shared/ui/Button.test.tsx` for a sample. Run with `npm test`.
