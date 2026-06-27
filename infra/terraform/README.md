@@ -43,7 +43,8 @@ After `apply`, `terraform output` gives everything the app side needs:
 |--------|---------------|
 | `eks_cluster_name` | GitHub Actions **variable** `EKS_CLUSTER_NAME` |
 | `region` | GitHub Actions **variable** `AWS_REGION` |
-| `github_deploy_role_arn` | GitHub Actions **secret** `AWS_DEPLOY_ROLE_ARN` (per Environment) |
+| `github_deploy_role_arn` | GitHub Actions **secret** `AWS_DEPLOY_ROLE_ARN` (repo-level + per Environment) |
+| `ecr_repository_url` | GitHub Actions **variable** `ECR_REPOSITORY` (CD pushes/pulls the image here) |
 | `rds_endpoint` | `deploy/helm/digishield/values-<env>.yaml` → `database.url` |
 | `redis_endpoint` | `values-<env>.yaml` → `redis.host` |
 | `external_secrets_irsa_role_arn` | annotate the ESO ServiceAccount: `eks.amazonaws.com/role-arn` |

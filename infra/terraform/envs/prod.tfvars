@@ -14,5 +14,6 @@ db_multi_az          = true
 redis_node_type               = "cache.t3.small"
 redis_replicas_per_node_group = 1 # primary + replica for HA
 
-# OIDC provider already created by the dev apply; reference it here.
+# OIDC provider + ECR repo already created by the dev apply; reference them here.
 create_github_oidc_provider = false
+create_ecr                  = false

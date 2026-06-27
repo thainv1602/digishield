@@ -50,12 +50,33 @@ resource "aws_iam_role" "github_deploy" {
   assume_role_policy = data.aws_iam_policy_document.github_assume.json
 }
 
-# Minimal: the role only needs to reach the cluster; helm/kubectl auth comes from
-# the EKS access entry (eks.tf). Image is pulled from GHCR, not ECR.
+# The role reaches the cluster (helm/kubectl auth via the EKS access entry in
+# eks.tf) and pushes the image to ECR.
 data "aws_iam_policy_document" "github_deploy" {
   statement {
+    sid       = "EksDescribe"
     actions   = ["eks:DescribeCluster"]
     resources = [module.eks.cluster_arn]
+  }
+
+  statement {
+    sid       = "EcrAuth"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "EcrPush"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:InitiateLayerUpload",
+      "ecr:UploadLayerPart",
+      "ecr:CompleteLayerUpload",
+      "ecr:PutImage",
+      "ecr:BatchGetImage",
+      "ecr:GetDownloadUrlForLayer",
+    ]
+    resources = [local.ecr_repository_arn]
   }
 }
 

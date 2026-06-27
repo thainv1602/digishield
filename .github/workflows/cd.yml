@@ -64,7 +64,12 @@ jobs:
             type=raw,value=0.1.0-SNAPSHOT
             type=sha,format=short
 
-      - name: Build & push image (built once, promoted to every env)
+      - name: Short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      # GHCR is always pushed (CI/verification, works without AWS).
+      - name: Build & push image to GHCR
         uses: docker/build-push-action@v6
         with:
           context: digishield
@@ -75,9 +80,37 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # ECR is the runtime registry EKS pulls from (only when AWS is wired up).
+      - name: Configure AWS credentials (OIDC)
+        if: vars.DEPLOY_ENABLED == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: vars.DEPLOY_ENABLED == 'true'
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push image to ECR
+        if: vars.DEPLOY_ENABLED == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: digishield
+          file: digishield/deploy/docker/Dockerfile
+          push: true
+          tags: ${{ vars.ECR_REPOSITORY }}:sha-${{ steps.sha.outputs.short }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
       - name: Export immutable image ref
         id: ref
-        run: echo "image=ghcr.io/${{ github.repository }}/app:sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+        run: |
+          if [ "${{ vars.DEPLOY_ENABLED }}" = "true" ]; then
+            echo "image=${{ vars.ECR_REPOSITORY }}:sha-${{ steps.sha.outputs.short }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "image=ghcr.io/${{ github.repository }}/app:sha-${{ steps.sha.outputs.short }}" >> "$GITHUB_OUTPUT"
+          fi
 
   deploy-dev:
     name: Deploy dev
@@ -113,9 +146,9 @@ jobs:
           helm upgrade --install digishield digishield/deploy/helm/digishield \
             -f digishield/deploy/helm/digishield/values-dev.yaml \
             --namespace digishield-dev --create-namespace \
-            --set image.repository=ghcr.io/${{ github.repository }}/app \
+            --set image.repository=${{ vars.ECR_REPOSITORY }} \
             --set image.tag=sha-${GITHUB_SHA::7} \
-            --wait --timeout 10m
+            --atomic --wait --timeout 10m
 
   deploy-prod:
     name: Deploy production
@@ -148,6 +181,6 @@ jobs:
           helm upgrade --install digishield digishield/deploy/helm/digishield \
             -f digishield/deploy/helm/digishield/values-prod.yaml \
             --namespace digishield-prod --create-namespace \
-            --set image.repository=ghcr.io/${{ github.repository }}/app \
+            --set image.repository=${{ vars.ECR_REPOSITORY }} \
             --set image.tag=sha-${GITHUB_SHA::7} \
-            --wait --timeout 10m
+            --atomic --wait --timeout 10m
