@@ -24,11 +24,35 @@ scheduler:
   profile: scheduler
 
 database:
+  # On AWS this is the RDS/Aurora PostgreSQL endpoint (set in values-<env>.yaml).
   url: jdbc:postgresql://postgres:5432/digishield
   username: digishield
-  # In real deployments this comes from a Secret, not values.
+  # Password is read from a Secret, not values. On AWS the Secret is populated
+  # from Secrets Manager via External Secrets (see externalSecrets below).
   existingSecret: digishield-db
   passwordKey: password
+
+redis:
+  # On AWS this is the ElastiCache for Redis/Valkey primary endpoint.
+  host: redis
+  port: 6379
+  tls: false
+  # Leave existingSecret empty when Redis has no auth (e.g. local/dev in-cluster);
+  # set it on AWS (ElastiCache auth token) so REDIS_PASSWORD is injected.
+  existingSecret: ""
+  passwordKey: auth-token
+
+# External Secrets Operator: pull DB/Redis credentials from AWS Secrets Manager
+# into the Secrets the workloads reference. Disabled by default (local/on-prem
+# create the Secrets manually); enabled in values-dev.yaml / values-prod.yaml.
+externalSecrets:
+  enabled: false
+  refreshInterval: 1h
+  secretStoreRef:
+    name: aws-secretsmanager # a ClusterSecretStore you create on the cluster
+    kind: ClusterSecretStore
+  # Prefix of the secrets in AWS Secrets Manager, e.g. digishield/dev/db.
+  remotePrefix: digishield/dev
 
 flyway:
   enabled: true

@@ -1,0 +1,50 @@
+# PRODUCTION environment overrides (EKS on AWS).
+#   helm upgrade --install digishield deploy/helm/digishield -f values-prod.yaml -n digishield-prod
+#
+# Backing services are AWS-managed, sized for production:
+#   PostgreSQL -> Amazon RDS/Aurora PostgreSQL, Multi-AZ
+#   Redis      -> Amazon ElastiCache for Redis/Valkey, Multi-AZ
+# Credentials come from AWS Secrets Manager via External Secrets.
+# Replace the <...> placeholders.
+
+image:
+  repository: ghcr.io/vuthainguyen1602/digishield/app
+  # tag is set by CI: --set image.tag=sha-<short>
+  pullPolicy: IfNotPresent
+
+api:
+  replicaCount: 3
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+
+worker:
+  replicaCount: 2
+scheduler:
+  replicaCount: 1
+
+database:
+  # RDS/Aurora writer endpoint for prod (Multi-AZ, private subnet).
+  url: jdbc:postgresql://<dhp-prod-db>.<id>.<region>.rds.amazonaws.com:5432/digishield
+  username: digishield
+  existingSecret: digishield-db
+  passwordKey: password
+
+redis:
+  # ElastiCache primary endpoint for prod (Multi-AZ, in-transit encryption).
+  host: <dhp-prod-redis>.<id>.cache.amazonaws.com
+  port: 6379
+  tls: true
+  existingSecret: digishield-redis
+  passwordKey: auth-token
+
+externalSecrets:
+  enabled: true
+  remotePrefix: digishield/prod
+
+flyway:
+  enabled: true

@@ -1,0 +1,50 @@
+# DEV environment overrides (EKS on AWS).
+#   helm upgrade --install digishield deploy/helm/digishield -f values-dev.yaml -n digishield-dev
+#
+# Backing services are AWS-managed (NOT in-cluster):
+#   PostgreSQL -> Amazon RDS for PostgreSQL
+#   Redis      -> Amazon ElastiCache for Redis/Valkey
+# Credentials come from AWS Secrets Manager via External Secrets (see below);
+# only endpoints (non-secret) live here. Replace the <...> placeholders.
+
+image:
+  repository: ghcr.io/vuthainguyen1602/digishield/app
+  # tag is set by CI: --set image.tag=sha-<short>
+  pullPolicy: IfNotPresent
+
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+worker:
+  replicaCount: 1
+scheduler:
+  replicaCount: 1
+
+database:
+  # RDS endpoint for dev (private subnet).
+  url: jdbc:postgresql://<dhp-dev-db>.<id>.<region>.rds.amazonaws.com:5432/digishield
+  username: digishield
+  existingSecret: digishield-db
+  passwordKey: password
+
+redis:
+  # ElastiCache primary endpoint for dev.
+  host: <dhp-dev-redis>.<id>.cache.amazonaws.com
+  port: 6379
+  tls: true
+  existingSecret: digishield-redis
+  passwordKey: auth-token
+
+externalSecrets:
+  enabled: true
+  remotePrefix: digishield/dev
+
+flyway:
+  enabled: true
