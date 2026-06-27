@@ -1,0 +1,74 @@
+# Frontend CI (React + Vite + TypeScript under frontend/)
+#
+# Monorepo: lives at repo-root .github/workflows with a path filter so it only
+# runs on FE changes (or when the OpenAPI spec the client is generated from
+# changes). All steps run with working-directory: frontend.
+#
+# Package manager: the committed lockfile is package-lock.json -> use npm ci.
+# (The engines field mentions pnpm, but npm is the source of truth here.)
+
+name: frontend-ci
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "docs/DigiShield_openapi.yaml"
+      - ".github/workflows/frontend-ci.yml"
+  pull_request:
+    paths:
+      - "frontend/**"
+      - "docs/DigiShield_openapi.yaml"
+      - ".github/workflows/frontend-ci.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: frontend
+
+jobs:
+  build:
+    name: Lint, Typecheck, Test & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The generated API client is a build artifact (not committed). Generate
+      # it (from ../docs/DigiShield_openapi.yaml) before lint/typecheck/build so
+      # imports from src/api/generated resolve.
+      - name: Generate API client
+        run: npm run gen:api
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build output
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/**
+          if-no-files-found: warn

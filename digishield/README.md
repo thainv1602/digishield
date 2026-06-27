@@ -252,12 +252,20 @@ before rolling out the Deployments.
 
 ## CI
 
-`.github/workflows/ci.yml`:
-1. `setup-java` 25 + Gradle, generate the wrapper if missing, then:
+> CI lives at the **monorepo root** (`../.github/workflows/`, i.e. the
+> `DigiShield_Project/` git root — GitHub only reads workflows from the repo root),
+> with **path filters** so each side runs only when its code changes.
+
+**`backend-ci.yml`** (runs on `digishield/**`), all Gradle steps in `working-directory: digishield`:
+1. `setup-java` 25 + Gradle, then:
    - `./gradlew test` — fast unit-test feedback (no Docker).
    - `./gradlew check jacocoTestReport testCodeCoverageReport` — integration tests
      (Testcontainers; ubuntu-latest runners ship Docker), **Checkstyle**, **JaCoCo**
      verification, per-module reports and the aggregated coverage report.
    - Checkstyle and test reports are uploaded on failure; JaCoCo per-module and
      aggregated coverage reports are uploaded always.
-2. Build the Docker image from `deploy/docker/Dockerfile`.
+2. Build the Docker image (`context: digishield`, `file: digishield/deploy/docker/Dockerfile`).
+
+**`frontend-ci.yml`** (runs on `frontend/**` or `docs/DigiShield_openapi.yaml`), in
+`working-directory: frontend`: `npm ci` → `npm run gen:api` (generate the typed client
+from the OpenAPI spec) → `lint` → `typecheck` → `test` → `build`, uploading `dist/`.
