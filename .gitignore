@@ -1,0 +1,7 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# IntelliJ IDEA (project-level)
+.idea/
+*.iml
