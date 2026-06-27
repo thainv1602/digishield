@@ -44,6 +44,16 @@ spring:
       enabled: true
       path: /h2-console
 
+  # No Redis in dev: use a local in-memory cache, not Redis.
+  cache:
+    type: none
+
+# Don't report Redis health in dev (there is no Redis running locally).
+management:
+  health:
+    redis:
+      enabled: false
+
 # CORS allow-list for the frontend dev server (consumed by CorsConfig).
 digishield:
   cors:

@@ -62,7 +62,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
                 "spring.jpa.hibernate.ddl-auto=none",
                 "spring.flyway.enabled=false",
                 "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect",
-                "spring.datasource.driver-class-name=org.postgresql.Driver"
+                "spring.datasource.driver-class-name=org.postgresql.Driver",
+                // No Redis in this IT: use a no-op cache and skip Redis health.
+                "spring.cache.type=none",
+                "management.health.redis.enabled=false"
         })
 class TenantIsolationIT {
 

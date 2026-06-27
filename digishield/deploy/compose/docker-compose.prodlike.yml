@@ -32,7 +32,9 @@ x-app-env: &app-env
   DB_USERNAME: digishield
   DB_PASSWORD: digishield
   SPRING_RABBITMQ_HOST: rabbitmq
-  SPRING_DATA_REDIS_HOST: redis
+  # App reads REDIS_HOST/PORT (application.yml), matching the Helm chart.
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
 
 services:
   api:

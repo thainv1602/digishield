@@ -6,6 +6,10 @@ dependencies {
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // Redis-backed caching. Connection from spring.data.redis.* (env
+    // REDIS_HOST/PORT/PASSWORD/SSL). The dev profile disables it (no Redis).
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
 
     // Spring Modulith
     implementation("org.springframework.modulith:spring-modulith-starter-core")

@@ -23,6 +23,18 @@ spring:
         format_sql: false
     open-in-view: false
 
+  # Redis (cache). Endpoint from env; the dev profile overrides cache.type=none.
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL:false}
+      timeout: 2s
+  cache:
+    type: ${CACHE_TYPE:redis}
+
   # Flyway is disabled here: migrations are applied by a dedicated job/profile,
   # not on every application boot. The migration SQL lives on the classpath at
   # classpath:db/migration (boot/app/src/main/resources/db/migration), kept in
