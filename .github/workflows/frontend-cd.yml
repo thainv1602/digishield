@@ -106,6 +106,10 @@ jobs:
   deploy-prod:
     name: Deploy production
     needs: deploy-dev # sequential after dev
+    # Hard guard: production is skipped entirely unless PROD_DEPLOY_ENABLED is
+    # explicitly "true" — belt-and-suspenders on top of the environment's
+    # required-reviewer gate, so a misconfigured gate can't deploy prod.
+    if: vars.PROD_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production # required-reviewer gate: run pauses here for approval

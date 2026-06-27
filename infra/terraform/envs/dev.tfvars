@@ -2,11 +2,11 @@ environment = "dev"
 aws_region  = "ap-southeast-1"
 vpc_cidr    = "10.10.0.0/16"
 
-# Smaller / cheaper for dev.
+# Smaller / cheaper for dev: 1 node steady-state, burst to 2 under load.
 node_instance_types = ["t3.large"]
-node_desired_size   = 2
+node_desired_size   = 1
 node_min_size       = 1
-node_max_size       = 3
+node_max_size       = 2
 
 db_instance_class = "db.t3.medium"
 db_multi_az       = false
