@@ -170,3 +170,34 @@ spec:
             name: external-secrets
             namespace: external-secrets
 ```
+
+## Teardown — destroy dev to stop cost
+
+Infra is codified, so the cheapest "pause" is to destroy dev and re-`apply`
+later. Use the helper (it shows the destroy plan, asks for confirmation, empties
+the S3/ECR stores that have no `force_destroy`, then destroys):
+
+```bash
+cd infra/terraform
+./destroy-dev.sh        # prompts: type "destroy dev" to confirm
+```
+
+Or manually:
+
+```bash
+terraform plan -destroy -var-file=envs/dev.tfvars   # review first
+terraform destroy -var-file=envs/dev.tfvars
+```
+
+Notes:
+
+- **Irreversible.** Dev RDS uses `skip_final_snapshot=true` → no snapshot, data
+  is lost. (Prod has `deletion_protection` + a final snapshot.)
+- The S3 frontend bucket and ECR repo have no `force_destroy`; the script empties
+  them first so `destroy` doesn't fail.
+- The **state bucket + DynamoDB lock table** (bootstrap, outside Terraform) are
+  kept. Delete them by hand only if you're abandoning the account.
+- Dev sets `create_ecr` / `create_github_oidc_provider` = true, so destroying dev
+  also removes the shared ECR repo + OIDC provider — fine while prod doesn't
+  exist; do **not** destroy dev once prod references them.
+- Recreate anytime: `terraform apply -var-file=envs/dev.tfvars`.
