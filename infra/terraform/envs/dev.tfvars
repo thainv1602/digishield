@@ -14,7 +14,6 @@ db_multi_az       = false
 redis_node_type               = "cache.t3.micro"
 redis_replicas_per_node_group = 0 # single node for dev
 
-# Create the account-global GitHub OIDC provider + shared ECR repo here (dev),
-# then reference them from prod (create_* = false).
+# Create the account-global GitHub OIDC provider here (dev), then reference it
+# from prod (create_github_oidc_provider = false).
 create_github_oidc_provider = true
-create_ecr                  = true

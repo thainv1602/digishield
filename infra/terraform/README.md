@@ -65,7 +65,7 @@ aws dynamodb create-table --table-name digishield-tflock \
 ```bash
 cd infra/terraform
 
-# --- dev (also creates the account-global GitHub OIDC provider + ECR repo) ---
+# --- dev (also creates the account-global GitHub OIDC provider) ---
 terraform init -backend-config=envs/backend-dev.hcl
 terraform plan  -var-file=envs/dev.tfvars   # review first
 terraform apply -var-file=envs/dev.tfvars
@@ -110,7 +110,6 @@ After `apply`, `terraform output` gives everything the app side needs:
 | `eks_cluster_name` | GitHub Actions **variable** `EKS_CLUSTER_NAME` |
 | `region` | GitHub Actions **variable** `AWS_REGION` |
 | `github_deploy_role_arn` | GitHub Actions **secret** `AWS_DEPLOY_ROLE_ARN` (repo-level + per Environment) |
-| `ecr_repository_url` | GitHub Actions **variable** `ECR_REPOSITORY` (CD pushes/pulls the image here) |
 | `rds_endpoint` | `deploy/helm/digishield/values-<env>.yaml` → `database.url` |
 | `redis_endpoint` | `values-<env>.yaml` → `redis.host` |
 | `external_secrets_irsa_role_arn` | annotate the ESO ServiceAccount: `eks.amazonaws.com/role-arn` |
@@ -122,6 +121,12 @@ After `apply`, `terraform output` gives everything the app side needs:
 `frontend_bucket` / `frontend_distribution_id` should be set as **per-Environment**
 variables (`dev` / `production`), since each env has its own bucket and
 distribution. Optionally set `VITE_API_BASE_URL` (defaults to `/api/v1`).
+
+The app image lives in **GHCR** (`ghcr.io/<owner>/digishield/app`), not ECR.
+Since the package is private, add a GitHub Actions **secret** `GHCR_PULL_TOKEN` =
+a PAT with `read:packages`. `cd.yml` uses it to create the in-cluster
+`ghcr-pull` `docker-registry` secret (referenced by the Helm chart's
+`imagePullSecrets`) so EKS can pull the image.
 
 ## 5. Enable and trigger deploys
 
@@ -175,7 +180,7 @@ spec:
 
 Infra is codified, so the cheapest "pause" is to destroy dev and re-`apply`
 later. Use the helper (it shows the destroy plan, asks for confirmation, empties
-the S3/ECR stores that have no `force_destroy`, then destroys):
+the S3 bucket that has no `force_destroy`, then destroys):
 
 ```bash
 cd infra/terraform
@@ -192,18 +197,18 @@ terraform destroy -var-file=envs/dev.tfvars
 To decommission **production** use `./destroy-prod.sh` (for teardown only, not
 cost-pausing). It additionally disables the RDS `deletion_protection` first,
 takes a **final DB snapshot** (`digishield-prod-db-final`, restorable), and
-**never** deletes the shared ECR repo / OIDC provider (owned by dev). Confirm by
+**never** deletes the shared GitHub OIDC provider (owned by dev). Confirm by
 typing `destroy production`.
 
 Notes:
 
 - **Irreversible.** Dev RDS uses `skip_final_snapshot=true` → no snapshot, data
   is lost. (Prod has `deletion_protection` + a final snapshot.)
-- The S3 frontend bucket and ECR repo have no `force_destroy`; the script empties
-  them first so `destroy` doesn't fail.
+- The S3 frontend bucket has no `force_destroy`; the script empties it first so
+  `destroy` doesn't fail.
 - The **state bucket + DynamoDB lock table** (bootstrap, outside Terraform) are
   kept. Delete them by hand only if you're abandoning the account.
-- Dev sets `create_ecr` / `create_github_oidc_provider` = true, so destroying dev
-  also removes the shared ECR repo + OIDC provider — fine while prod doesn't
-  exist; do **not** destroy dev once prod references them.
+- Dev sets `create_github_oidc_provider` = true, so destroying dev also removes
+  the shared OIDC provider — fine while prod doesn't exist; do **not** destroy
+  dev once prod references it.
 - Recreate anytime: `terraform apply -var-file=envs/dev.tfvars`.

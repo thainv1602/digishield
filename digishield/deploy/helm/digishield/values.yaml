@@ -3,6 +3,10 @@ image:
   tag: 0.1.0-SNAPSHOT
   pullPolicy: IfNotPresent
 
+# Pull secrets for a private registry. Empty for local/on-prem (image already
+# present or pulled anonymously); set per env (e.g. ghcr-pull) in values-dev/prod.
+imagePullSecrets: []
+
 api:
   replicaCount: 2
   profile: api

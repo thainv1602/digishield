@@ -51,32 +51,13 @@ resource "aws_iam_role" "github_deploy" {
 }
 
 # The role reaches the cluster (helm/kubectl auth via the EKS access entry in
-# eks.tf) and pushes the image to ECR.
+# eks.tf) to run the Helm deploy. The app image lives in GHCR (no ECR/AWS perms
+# needed for it); EKS pulls it via the in-cluster ghcr-pull secret.
 data "aws_iam_policy_document" "github_deploy" {
   statement {
     sid       = "EksDescribe"
     actions   = ["eks:DescribeCluster"]
     resources = [module.eks.cluster_arn]
-  }
-
-  statement {
-    sid       = "EcrAuth"
-    actions   = ["ecr:GetAuthorizationToken"]
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "EcrPush"
-    actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:InitiateLayerUpload",
-      "ecr:UploadLayerPart",
-      "ecr:CompleteLayerUpload",
-      "ecr:PutImage",
-      "ecr:BatchGetImage",
-      "ecr:GetDownloadUrlForLayer",
-    ]
-    resources = [local.ecr_repository_arn]
   }
 
   # Frontend CD: sync the built SPA to S3 and invalidate the CloudFront cache.

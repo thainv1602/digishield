@@ -6,9 +6,9 @@
 # Differs from destroy-dev.sh because prod is protected:
 #   - RDS has deletion_protection=true -> we disable it first, else destroy fails.
 #   - RDS keeps a FINAL SNAPSHOT (digishield-prod-db-final): data is recoverable.
-#   - prod uses create_ecr=false / create_github_oidc_provider=false, so the
-#     shared ECR repo + GitHub OIDC provider (owned by dev) are data sources and
-#     are NOT destroyed. This script must never delete them.
+#   - prod uses create_github_oidc_provider=false, so the shared GitHub OIDC
+#     provider (owned by dev) is a data source and is NOT destroyed. This script
+#     must never delete it.
 #
 # Usage:  ./destroy-prod.sh
 set -euo pipefail
@@ -45,7 +45,7 @@ aws rds modify-db-instance --db-instance-identifier "$DB_ID" \
 echo "==> Waiting for RDS to settle..."
 aws rds wait db-instance-available --db-instance-identifier "$DB_ID" --region "$REGION" 2>/dev/null || true
 
-# Empty the prod frontend bucket (no force_destroy). Do NOT touch ECR/OIDC.
+# Empty the prod frontend bucket (no force_destroy). Do NOT touch the OIDC provider.
 bucket="$(terraform output -raw frontend_bucket 2>/dev/null || true)"
 if [ -n "$bucket" ]; then
   echo "==> Emptying S3 bucket $bucket"
@@ -58,5 +58,5 @@ terraform destroy -var-file=envs/prod.tfvars -auto-approve
 echo
 echo "==> Done. Production infra removed."
 echo "    Final DB snapshot: ${DB_ID}-final (restore from it to recover data)."
-echo "    Kept: shared ECR repo + GitHub OIDC provider (owned by dev), state bucket + lock table."
+echo "    Kept: shared GitHub OIDC provider (owned by dev), state bucket + lock table."
 echo "    Recreate with: terraform apply -var-file=envs/prod.tfvars"

@@ -17,11 +17,6 @@ output "external_secrets_irsa_role_arn" {
   value       = aws_iam_role.external_secrets.arn
 }
 
-output "ecr_repository_url" {
-  description = "Set as the GitHub Actions variable ECR_REPOSITORY (CD pushes/pulls here)."
-  value       = local.ecr_repository_url
-}
-
 output "rds_endpoint" {
   description = "Put into values-<env>.yaml database.url (jdbc:postgresql://<host>:5432/digishield)."
   value       = aws_db_instance.this.address

@@ -12,6 +12,11 @@ image:
   # tag is set by CI: --set image.tag=sha-<short>
   pullPolicy: IfNotPresent
 
+# GHCR is private; CD creates this docker-registry secret before deploy
+# (from the GHCR_PULL_TOKEN PAT). See cd.yml / infra/terraform/README.md.
+imagePullSecrets:
+  - name: ghcr-pull
+
 api:
   replicaCount: 3
   resources:

@@ -17,6 +17,10 @@ spec:
         app.kubernetes.io/name: digishield
         app.kubernetes.io/component: worker
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: worker
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

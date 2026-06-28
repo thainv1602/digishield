@@ -3,7 +3,7 @@
 # Tear down the DigiShield DEV environment to stop AWS cost.
 #
 # Destroys everything in the dev Terraform state (EKS, RDS, ElastiCache, NAT,
-# ALB, S3 + CloudFront, ECR, IAM, Secrets Manager). Recreate later with
+# ALB, S3 + CloudFront, IAM, Secrets Manager). Recreate later with
 #   terraform apply -var-file=envs/dev.tfvars
 #
 # IRREVERSIBLE: the dev RDS is created with skip_final_snapshot=true, so its data
@@ -13,7 +13,6 @@
 # Usage:  ./destroy-dev.sh
 set -euo pipefail
 
-REGION="${AWS_REGION:-ap-southeast-1}"
 cd "$(dirname "$0")" # -> infra/terraform
 
 echo "==> AWS identity:"
@@ -40,9 +39,6 @@ if [ -n "$bucket" ]; then
   echo "==> Emptying S3 bucket $bucket"
   aws s3 rm "s3://$bucket" --recursive || true
 fi
-
-echo "==> Deleting ECR repo digishield/app (if present)"
-aws ecr delete-repository --repository-name digishield/app --force --region "$REGION" 2>/dev/null || true
 
 echo "==> Destroying dev infrastructure..."
 terraform destroy -var-file=envs/dev.tfvars -auto-approve
