@@ -10,12 +10,13 @@ import {
 } from '@/app/auth/roles';
 import { Logo } from '@/shared/ui';
 import { DEMO_TENANT_ID } from '@/shared/api/tenant';
+import { cognitoEnabled } from '@/app/auth/cognito';
 import { AuthScreen, AuthCard, authInputStyle, authLabelStyle } from './authShared';
 
 /** Login — 4-role pill segmented control + email/password + SSO. */
 export default function LoginPage() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, signinRedirect } = useAuth();
   const [persona, setPersona] = useState<Persona>('admin');
   const [email, setEmail] = useState('admin@coquan.gov.vn');
   const [password, setPassword] = useState('demo1234');
@@ -32,6 +33,47 @@ export default function LoginPage() {
       );
       navigate(defaultRouteForPersona(persona));
     }, 600);
+  }
+
+  // Deployed build: delegate auth to the Cognito hosted UI (OIDC code + PKCE).
+  if (cognitoEnabled) {
+    return (
+      <AuthScreen>
+        <div style={{ width: 400, animation: 'fadeUp .4s ease', textAlign: 'center' }}>
+          <div style={{ marginBottom: 12, display: 'inline-flex' }}>
+            <Logo size={36} wordmarkSize={26} />
+          </div>
+          <div style={{ fontSize: 13.5, color: 'var(--color-muted)', marginBottom: 28 }}>
+            Nền tảng nhận thức an ninh số · Digital Security Awareness Platform
+          </div>
+          <AuthCard style={{ padding: 32 }}>
+            <div style={{ fontSize: 14, color: 'var(--color-text-soft)', marginBottom: 20 }}>
+              Đăng nhập bằng tài khoản tổ chức (AWS Cognito).
+            </div>
+            <button
+              type="button"
+              onClick={() => signinRedirect()}
+              style={{
+                width: '100%',
+                background: 'var(--color-blue)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 9,
+                padding: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontSize: 15,
+              }}
+            >
+              Đăng nhập
+            </button>
+          </AuthCard>
+          <div style={{ marginTop: 20, fontSize: 12, color: 'var(--color-muted)' }}>
+            DigiShield v1.0 · Lá Chắn Số · 2026
+          </div>
+        </div>
+      </AuthScreen>
+    );
   }
 
   return (

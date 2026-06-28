@@ -67,6 +67,8 @@ jobs:
       - name: Build SPA
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || '/api/v1' }}
+          VITE_COGNITO_AUTHORITY: ${{ vars.VITE_COGNITO_AUTHORITY }}
+          VITE_COGNITO_CLIENT_ID: ${{ vars.VITE_COGNITO_CLIENT_ID }}
         run: npm run build
 
       # Until the CDN infra + DEPLOY_ENABLED exist, just keep the build artifact.
@@ -140,6 +142,8 @@ jobs:
       - name: Build SPA
         env:
           VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL || '/api/v1' }}
+          VITE_COGNITO_AUTHORITY: ${{ vars.VITE_COGNITO_AUTHORITY }}
+          VITE_COGNITO_CLIENT_ID: ${{ vars.VITE_COGNITO_CLIENT_ID }}
         run: npm run build
 
       - name: Upload build artifact (placeholder)

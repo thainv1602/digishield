@@ -57,6 +57,14 @@ resource "aws_cognito_user_pool_domain" "main" {
   user_pool_id = aws_cognito_user_pool.main.id
 }
 
+# Role groups -> surface in the JWT "cognito:groups" claim. One per UI persona
+# (the app's RequireRole guards key off these role strings).
+resource "aws_cognito_user_group" "roles" {
+  for_each     = toset(["super_admin", "org_admin", "analyst", "learner"])
+  name         = each.value
+  user_pool_id = aws_cognito_user_pool.main.id
+}
+
 output "cognito_issuer_uri" {
   description = "Set as the app's spring.security.oauth2.resourceserver.jwt.issuer-uri."
   value       = "https://cognito-idp.${var.aws_region}.amazonaws.com/${aws_cognito_user_pool.main.id}"
