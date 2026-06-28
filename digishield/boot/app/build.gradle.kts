@@ -25,6 +25,10 @@ dependencies {
     // no Flyway). Production keeps using PostgreSQL + Flyway, unchanged.
     runtimeOnly("com.h2database:h2")
     implementation("org.flywaydb:flyway-core")
+    // Flyway 10+ (Spring Boot 4.x) splits per-database support into modules; the
+    // PostgreSQL one is required or Flyway silently no-ops and JPA schema
+    // validation then fails against an unmigrated database.
+    runtimeOnly("org.flywaydb:flyway-database-postgresql")
 
     // Contracts
     implementation(project(":contracts"))
