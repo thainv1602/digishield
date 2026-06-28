@@ -24,10 +24,11 @@ on:
       - "deploy/**"
       - ".github/workflows/cd.yml"
 
+# Least privilege: permissions are scoped per job (build-push needs packages:write
+# for GHCR; the deploy jobs need id-token:write for AWS OIDC). The default token
+# is read-only otherwise.
 permissions:
   contents: read
-  packages: write # push image to GHCR
-  id-token: write # OIDC -> assume AWS IAM role for EKS deploys
 
 concurrency:
   # Serialize deploys; never cancel an in-flight (possibly half-approved) run.
@@ -38,6 +39,9 @@ jobs:
   build-push:
     name: Build & push image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push image to GHCR
     outputs:
       image: ${{ steps.ref.outputs.image }}
     steps:
@@ -88,6 +92,9 @@ jobs:
     name: Deploy dev
     needs: build-push
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC -> assume AWS IAM role for EKS deploys
     environment:
       name: dev
       # url: https://dev.<set-when-infra-exists>
@@ -155,6 +162,9 @@ jobs:
     # required-reviewer gate, so a misconfigured gate can't deploy prod.
     if: vars.PROD_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC -> assume AWS IAM role for EKS deploys
     environment:
       name: production # required-reviewer gate: run pauses here for approval
       # url: https://<set-when-infra-exists>
