@@ -34,14 +34,14 @@ scheduler:
 
 database:
   # RDS endpoint for dev (private subnet).
-  url: jdbc:postgresql://<dhp-dev-db>.<id>.<region>.rds.amazonaws.com:5432/digishield
+  url: jdbc:postgresql://digishield-dev-db.cpaukmoeotpy.ap-southeast-1.rds.amazonaws.com:5432/digishield
   username: digishield
   existingSecret: digishield-db
   passwordKey: password
 
 redis:
   # ElastiCache primary endpoint for dev.
-  host: <dhp-dev-redis>.<id>.cache.amazonaws.com
+  host: master.digishield-dev-redis.wqj1m8.apse1.cache.amazonaws.com
   port: 6379
   tls: true
   existingSecret: digishield-redis
@@ -51,19 +51,22 @@ externalSecrets:
   enabled: true
   remotePrefix: digishield/dev
 
-# Internet-facing ALB so CloudFront can reach the API as its /api/* origin.
-# Feed the resulting ALB DNS (kubectl get ingress) into Terraform
-# backend_api_origin_domain. Set <acm-cert-arn> for HTTPS on the ALB.
+# Public HTTPS entry point via ingress-nginx on an NLB with static Elastic IPs.
+# DuckDNS (digishield.duckdns.org -> NLB EIP) only supports A records, so an NLB
+# with fixed EIPs is used instead of an ALB. TLS terminates at nginx using a
+# Let's Encrypt cert (DuckDNS DNS-01), stored in the digishield-tls secret.
 ingress:
   enabled: true
-  className: alb
+  className: nginx
   path: /api
+  host: digishield.duckdns.org
+  tls:
+    - hosts:
+        - digishield.duckdns.org
+      secretName: digishield-tls
   annotations:
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
-    alb.ingress.kubernetes.io/certificate-arn: <acm-cert-arn>
-    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health/readiness
+    nginx.ingress.kubernetes.io/backend-protocol: HTTP
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
 
 flyway:
   enabled: true
