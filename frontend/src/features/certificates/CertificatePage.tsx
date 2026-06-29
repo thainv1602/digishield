@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Button } from '@/shared/ui';
+import { Button, useToast } from '@/shared/ui';
 import { useCertificate } from '../learning/api';
 
 /**
@@ -32,6 +32,7 @@ function displayUrl(url: string | null | undefined): string {
 export default function CertificatePage() {
   const { id } = useParams<{ id: string }>();
   const { data: cert, isLoading, isError, refetch } = useCertificate(id);
+  const toast = useToast();
 
   if (isLoading) {
     return <StatusBlock>Đang tải chứng chỉ…</StatusBlock>;
@@ -58,6 +59,22 @@ export default function CertificatePage() {
   const verifyUrl = displayUrl(cert.verifyUrl);
   const courseTitle = cert.courseTitle ?? 'Chứng chỉ';
   const recipient = cert.recipient ?? '—';
+
+  // No dedicated PDF/share endpoint: print to PDF via the browser, and share the
+  // verification link by copying it to the clipboard.
+  function onDownload() {
+    window.print();
+  }
+
+  async function onShare() {
+    const text = cert?.verifyUrl ?? `${courseTitle} — ${recipient} — Mã xác minh: ${serial}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      toast('Đã sao chép liên kết xác minh');
+    } catch {
+      toast('Không sao chép được, vui lòng thử lại');
+    }
+  }
 
   return (
     <div style={{ animation: 'fadeUp .3s ease', maxWidth: 680, margin: '0 auto' }}>
@@ -239,11 +256,10 @@ export default function CertificatePage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 12 }}>
-          {/* TODO: wire to generated download/share mutations from @/api/generated. */}
-          <Button type="button" variant="primary" fullWidth>
+          <Button type="button" variant="primary" fullWidth onClick={onDownload}>
             Tải PDF
           </Button>
-          <Button type="button" variant="secondary" fullWidth>
+          <Button type="button" variant="secondary" fullWidth onClick={onShare}>
             Chia sẻ nội bộ
           </Button>
         </div>

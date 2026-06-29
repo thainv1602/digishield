@@ -1,14 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Target, Zap, Award, AlertTriangle } from 'lucide-react';
-import { Button, ProgressBar } from '@/shared/ui';
+import { Button, ProgressBar, Drawer, Select, useToast } from '@/shared/ui';
 import { useAuth } from '@/app/auth/useAuth';
 import {
   useEnrollments,
   useLeaderboard,
   useUserBadges,
   useUserPoints,
+  useReportPhishing,
   type Enrollment,
+  type ReportChannel,
 } from './api';
 
 /**
@@ -171,7 +173,34 @@ export default function LearnerPortalPage() {
   const enrollmentsLoading = enrollmentsQuery.isLoading;
   const enrollmentsError = enrollmentsQuery.isError;
 
+  // Report-phishing CTA → a Drawer that submits to POST /reports/phishing.
+  const toast = useToast();
+  const reportMut = useReportPhishing();
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportChannel, setReportChannel] = useState<ReportChannel>('email');
+  const [reportPayload, setReportPayload] = useState('');
+
+  function submitReport() {
+    const payload = reportPayload.trim();
+    if (payload.length === 0) {
+      toast('Vui lòng dán nội dung nghi ngờ');
+      return;
+    }
+    reportMut.mutate(
+      { payload, channel: reportChannel },
+      {
+        onSuccess: () => {
+          toast('Đã gửi báo cáo. Cảm ơn bạn!');
+          setReportOpen(false);
+          setReportPayload('');
+        },
+        onError: () => toast('Gửi báo cáo thất bại, thử lại'),
+      },
+    );
+  }
+
   return (
+    <>
     <div style={{ animation: 'fadeUp .3s ease' }}>
       {/* Greeting + report CTA */}
         <header
@@ -200,12 +229,7 @@ export default function LearnerPortalPage() {
               Hôm nay là {dateLabel} · Bạn có {openTaskCount} việc cần làm
             </p>
           </div>
-          {/* TODO: wire to report-phishing flow / generated mutation. */}
-          <Button
-            type="button"
-            variant="danger"
-            onClick={() => navigate('/learn/report')}
-          >
+          <Button type="button" variant="danger" onClick={() => setReportOpen(true)}>
             Báo cáo lừa đảo
           </Button>
         </header>
@@ -447,6 +471,63 @@ export default function LearnerPortalPage() {
           </ul>
         </section>
     </div>
+
+    <Drawer
+      open={reportOpen}
+      onClose={() => setReportOpen(false)}
+      title="Báo cáo lừa đảo"
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
+          Dán nội dung email/SMS đáng ngờ (kèm link, người gửi nếu có). Đội SOC sẽ
+          phân tích và cảnh báo cả tổ chức nếu là mối đe dọa thật.
+        </p>
+        <Select
+          label="Kênh"
+          value={reportChannel}
+          onChange={(e) => setReportChannel(e.target.value as ReportChannel)}
+        >
+          <option value="email">Email</option>
+          <option value="sms">SMS</option>
+        </Select>
+        <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>
+          Nội dung nghi ngờ
+          <textarea
+            value={reportPayload}
+            onChange={(e) => setReportPayload(e.target.value)}
+            rows={8}
+            placeholder="Dán nội dung email/SMS, đường link hoặc số điện thoại đáng ngờ…"
+            style={{
+              width: '100%',
+              marginTop: 6,
+              padding: '10px 12px',
+              fontSize: 13,
+              fontFamily: 'inherit',
+              color: 'var(--text)',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 8,
+              resize: 'vertical',
+              boxSizing: 'border-box',
+            }}
+          />
+        </label>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <Button type="button" variant="secondary" onClick={() => setReportOpen(false)}>
+            Huỷ
+          </Button>
+          <Button
+            type="button"
+            variant="danger"
+            disabled={reportMut.isPending}
+            onClick={submitReport}
+          >
+            {reportMut.isPending ? 'Đang gửi…' : 'Gửi báo cáo'}
+          </Button>
+        </div>
+      </div>
+    </Drawer>
+    </>
   );
 }
 

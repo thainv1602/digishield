@@ -303,3 +303,31 @@ export function useCertificate(id: string | null | undefined) {
     enabled: Boolean(id),
   });
 }
+
+// ---- Report phishing (learner CTA) ----------------------------------------
+
+/** Channel a learner reports a scam from. */
+export type ReportChannel = 'email' | 'sms';
+
+/** Body for `POST /reports/phishing` — the suspicious content + its channel. */
+export interface ReportPhishingInput {
+  /** Email/SMS content, headers or link. */
+  payload: string;
+  channel?: ReportChannel;
+}
+
+/** POST /reports/phishing — a learner reports a suspected scam. */
+export function reportPhishing({ payload, channel = 'email' }: ReportPhishingInput): Promise<unknown> {
+  return apiRequest<unknown>({
+    url: '/reports/phishing',
+    method: 'POST',
+    data: { payload, channel },
+  });
+}
+
+/** Mutation hook powering the "Báo cáo lừa đảo" CTA in {@link LearnerPortalPage}. */
+export function useReportPhishing() {
+  return useMutation({
+    mutationFn: reportPhishing,
+  });
+}

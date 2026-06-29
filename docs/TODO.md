@@ -47,8 +47,10 @@ Repo already wires **Cognito** (`feat/cognito-login`); confirm which path each e
 - [x] `soc/InterventionLogPage.tsx` — live `useInterventions()`; CSV export (client-side from loaded rows)
 - [x] `soc/SocInboxPage.tsx` — bulk + drawer triage wired via `useTriageReport()` /
       `useConvertReportToTraining()`
-- [ ] `learning/LearnerPortalPage.tsx` (L203) — wire the report-phishing flow
-- [ ] `certificates/CertificatePage.tsx` (L242) — wire Download PDF / Share
+- [x] `learning/LearnerPortalPage.tsx` — report CTA opens a Drawer that submits to
+      `POST /reports/phishing` via `useReportPhishing()` (was a dead `/learn/report` link)
+- [x] `certificates/CertificatePage.tsx` — Download = browser print-to-PDF; Share = copy
+      the verification link (no backend PDF/share endpoint exists)
 - [ ] `_shared/mockData.ts` — remove once the pages above use generated hooks
 - [ ] Static reference data needing GET endpoints: `campaigns` (channels/templates/groups),
       `content` (template library), `admin` (thresholds, point rules, run history)
