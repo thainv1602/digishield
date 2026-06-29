@@ -34,6 +34,12 @@ dependencies {
     // (silent no-op), so JPA ddl-auto=validate fails on an unmigrated database.
     implementation("org.springframework.boot:spring-boot-flyway")
 
+    // AWS SES (email notifications). Active only when
+    // digishield.notifications.email.ses.enabled=true; credentials via the
+    // default provider chain (IRSA in-cluster).
+    implementation(platform("software.amazon.awssdk:bom:2.31.6"))
+    implementation("software.amazon.awssdk:sesv2")
+
     // Contracts
     implementation(project(":contracts"))
 

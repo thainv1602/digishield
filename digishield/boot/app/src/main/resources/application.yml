@@ -56,6 +56,16 @@ management:
 server:
   port: ${SERVER_PORT:8080}
 
+# Notification delivery. SES is off by default — notifications are persisted but
+# nothing is sent (LoggingNotificationGateway). Enable in prod once the SES
+# domain is verified and the pod has IRSA perms (ses:SendEmail).
+digishield:
+  notifications:
+    email:
+      from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}
+      ses:
+        enabled: ${NOTIFICATIONS_SES_ENABLED:false}
+
 ---
 # API run mode
 spring:

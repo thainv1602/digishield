@@ -1,12 +1,16 @@
 package com.digishield.notification.application;
 
+import com.digishield.notification.api.NotificationGateway;
 import com.digishield.notification.api.NotificationService;
+import com.digishield.notification.api.RecipientResolver;
 import com.digishield.notification.domain.Notification;
 import com.digishield.notification.domain.NotificationChannel;
 import com.digishield.notification.domain.NotificationStatus;
 import com.digishield.notification.domain.NotificationType;
 import com.digishield.notification.infrastructure.NotificationRepository;
 import com.digishield.shared.tenantcontext.TenantContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,20 +35,52 @@ public class NotificationServiceImpl implements NotificationService {
     /** Matches relative due rules such as {@code "before_due:3d"} or {@code "in:12h"}. */
     private static final Pattern RELATIVE_RULE = Pattern.compile("(?:.*:)?(\\d+)\\s*([dhm])", Pattern.CASE_INSENSITIVE);
 
-    private final NotificationRepository repository;
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationServiceImpl.class);
 
-    public NotificationServiceImpl(NotificationRepository repository) {
+    private final NotificationRepository repository;
+    private final NotificationGateway gateway;
+    private final RecipientResolver recipients;
+
+    public NotificationServiceImpl(NotificationRepository repository,
+                                   NotificationGateway gateway,
+                                   RecipientResolver recipients) {
         this.repository = repository;
+        this.gateway = gateway;
+        this.recipients = recipients;
     }
 
     @Override
     public Notification send(UUID userId, NotificationType type, NotificationChannel channel, String title, String body) {
         UUID tenantId = TenantContext.requireUuid();
+        NotificationStatus status = deliver(channel, userId, title, body);
         Notification notification = new Notification(
                 UUID.randomUUID(), tenantId, userId, type, channel,
-                NotificationStatus.SENT, title, body, Instant.now());
-        // TODO: integrate a real gateway (email/sms/push) before marking SENT.
+                status, title, body, Instant.now());
         return repository.save(notification);
+    }
+
+    /**
+     * Attempts external delivery via the configured gateway and returns the
+     * resulting status. In-app notifications are the persisted record itself, so
+     * they are always SENT. External channels are SENT on success and FAILED if
+     * the recipient can't be resolved or the gateway throws.
+     */
+    private NotificationStatus deliver(NotificationChannel channel, UUID userId, String title, String body) {
+        if (channel == NotificationChannel.IN_APP) {
+            return NotificationStatus.SENT;
+        }
+        String recipient = recipients.emailFor(userId).orElse(null);
+        if (recipient == null) {
+            LOG.warn("No recipient address for user {} on channel {}; marking FAILED", userId, channel);
+            return NotificationStatus.FAILED;
+        }
+        try {
+            gateway.deliver(channel.name(), recipient, title, body);
+            return NotificationStatus.SENT;
+        } catch (RuntimeException e) {
+            LOG.error("Notification delivery to {} on {} failed: {}", recipient, channel, e.getMessage());
+            return NotificationStatus.FAILED;
+        }
     }
 
     @Override

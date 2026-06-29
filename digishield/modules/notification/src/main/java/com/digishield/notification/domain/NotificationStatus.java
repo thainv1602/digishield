@@ -9,5 +9,7 @@ public enum NotificationStatus {
     /** Sent. */
     SENT,
     /** Read by the user. */
-    READ
+    READ,
+    /** External delivery failed (recipient unresolved or gateway error). */
+    FAILED
 }

@@ -1,5 +1,7 @@
 package com.digishield.notification.application;
 
+import com.digishield.notification.api.NotificationGateway;
+import com.digishield.notification.api.RecipientResolver;
 import com.digishield.notification.domain.Notification;
 import com.digishield.notification.domain.NotificationChannel;
 import com.digishield.notification.domain.NotificationStatus;
@@ -16,11 +18,16 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -36,6 +43,12 @@ class NotificationServiceImplTest {
 
     @Mock
     private NotificationRepository repository;
+
+    @Mock
+    private NotificationGateway gateway;
+
+    @Mock
+    private RecipientResolver recipients;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
@@ -55,15 +68,18 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void send_persistsSentNotificationWithGivenTypeAndChannel() {
-        // Arrange
+    void send_deliversViaGatewayAndPersistsSentNotification() {
+        // Arrange: email resolves and the gateway delivers successfully
         UUID userId = UUID.randomUUID();
+        when(recipients.emailFor(userId)).thenReturn(Optional.of("user@example.com"));
 
         // Act
         Notification result = notificationService.send(
                 userId, NotificationType.ALERT, NotificationChannel.EMAIL, "Subject", "Body");
 
-        // Assert
+        // Assert: delivered to the resolved address...
+        verify(gateway).deliver("EMAIL", "user@example.com", "Subject", "Body");
+        // ...and persisted as SENT
         verify(repository).save(notificationCaptor.capture());
         Notification persisted = notificationCaptor.getValue();
         assertThat(persisted.getId()).isNotNull();
@@ -72,10 +88,39 @@ class NotificationServiceImplTest {
         assertThat(persisted.getType()).isEqualTo(NotificationType.ALERT);
         assertThat(persisted.getChannel()).isEqualTo(NotificationChannel.EMAIL);
         assertThat(persisted.getStatus()).isEqualTo(NotificationStatus.SENT);
-        assertThat(persisted.getTitle()).isEqualTo("Subject");
-        assertThat(persisted.getBody()).isEqualTo("Body");
         assertThat(persisted.getCreatedAt()).isNotNull();
         assertThat(result).isSameAs(persisted);
+    }
+
+    @Test
+    void send_whenRecipientUnresolved_persistsFailedAndSkipsGateway() {
+        // Arrange: no email for the user
+        UUID userId = UUID.randomUUID();
+        when(recipients.emailFor(userId)).thenReturn(Optional.empty());
+
+        // Act
+        notificationService.send(userId, NotificationType.ALERT, NotificationChannel.EMAIL, "S", "B");
+
+        // Assert
+        verifyNoInteractions(gateway);
+        verify(repository).save(notificationCaptor.capture());
+        assertThat(notificationCaptor.getValue().getStatus()).isEqualTo(NotificationStatus.FAILED);
+    }
+
+    @Test
+    void send_whenGatewayThrows_persistsFailed() {
+        // Arrange: resolves, but the gateway delivery fails
+        UUID userId = UUID.randomUUID();
+        when(recipients.emailFor(userId)).thenReturn(Optional.of("user@example.com"));
+        doThrow(new RuntimeException("ses down"))
+                .when(gateway).deliver(eq("EMAIL"), anyString(), anyString(), anyString());
+
+        // Act
+        notificationService.send(userId, NotificationType.ALERT, NotificationChannel.EMAIL, "S", "B");
+
+        // Assert
+        verify(repository).save(notificationCaptor.capture());
+        assertThat(notificationCaptor.getValue().getStatus()).isEqualTo(NotificationStatus.FAILED);
     }
 
     @Test

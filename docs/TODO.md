@@ -29,8 +29,14 @@ Deterministic, dependency-free stubs; every real model call is a TODO.
 - [ ] Dashboard trend/benchmark points are partly hardcoded (`AnalyticsServiceImpl` L114-134)
 
 ### Notification — saves to DB but never delivers
-- [ ] `send()` (L46) — integrate a real gateway (email/SMS/push) before marking SENT
+- [x] `send()` — added a `NotificationGateway` SPI; `send()` now delivers via the gateway
+      and marks SENT/FAILED. Default `LoggingNotificationGateway` (dev: persist + log, no
+      send); an AWS SES email gateway (boot app) takes over when
+      `digishield.notifications.email.ses.enabled=true`. Recipient email resolved from the
+      auth module via a `RecipientResolver` SPI. Added `NotificationStatus.FAILED`.
 - [ ] `broadcastAlert()` (L65) — support segment/criteria-based fan-out to many users
+- [ ] SES go-live (ops): verify the SES domain, exit the SES sandbox, grant the pod
+      `ses:SendEmail` via IRSA, then set `NOTIFICATIONS_SES_ENABLED=true`. SMS/push not wired.
 - [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`
 
 ### Auth — dev-mode placeholders (`modules/auth/.../AuthServiceImpl.java`)
