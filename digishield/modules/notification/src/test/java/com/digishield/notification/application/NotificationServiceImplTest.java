@@ -2,6 +2,7 @@ package com.digishield.notification.application;
 
 import com.digishield.notification.api.NotificationGateway;
 import com.digishield.notification.api.RecipientResolver;
+import com.digishield.notification.api.UserDirectory;
 import com.digishield.notification.domain.Notification;
 import com.digishield.notification.domain.NotificationChannel;
 import com.digishield.notification.domain.NotificationStatus;
@@ -49,6 +50,9 @@ class NotificationServiceImplTest {
 
     @Mock
     private RecipientResolver recipients;
+
+    @Mock
+    private UserDirectory userDirectory;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
@@ -142,20 +146,26 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void broadcastAlert_persistsSentAlertOverInAppChannel() {
-        // Arrange
-        UUID userId = UUID.randomUUID();
+    void broadcastAlert_fansOutToEveryTenantUser() {
+        // Arrange: two users in the tenant
+        UUID u1 = UUID.randomUUID();
+        UUID u2 = UUID.randomUUID();
+        when(userDirectory.allUserIds()).thenReturn(java.util.List.of(u1, u2));
 
         // Act
-        notificationService.broadcastAlert(userId, "Heads up", "Risk detected");
+        var created = notificationService.broadcastAlert("[CRITICAL] Heads up", "Risk detected");
 
-        // Assert
-        verify(repository).save(notificationCaptor.capture());
-        Notification persisted = notificationCaptor.getValue();
-        assertThat(persisted.getType()).isEqualTo(NotificationType.ALERT);
-        assertThat(persisted.getChannel()).isEqualTo(NotificationChannel.IN_APP);
-        assertThat(persisted.getStatus()).isEqualTo(NotificationStatus.SENT);
-        assertThat(persisted.getTitle()).isEqualTo("Heads up");
-        assertThat(persisted.getBody()).isEqualTo("Risk detected");
+        // Assert: one in-app ALERT persisted per user
+        assertThat(created).hasSize(2);
+        verify(repository, org.mockito.Mockito.times(2)).save(notificationCaptor.capture());
+        assertThat(notificationCaptor.getAllValues())
+                .allSatisfy(n -> {
+                    assertThat(n.getType()).isEqualTo(NotificationType.ALERT);
+                    assertThat(n.getChannel()).isEqualTo(NotificationChannel.IN_APP);
+                    assertThat(n.getStatus()).isEqualTo(NotificationStatus.SENT);
+                    assertThat(n.getTitle()).isEqualTo("[CRITICAL] Heads up");
+                })
+                .extracting(Notification::getUserId)
+                .containsExactlyInAnyOrder(u1, u2);
     }
 }

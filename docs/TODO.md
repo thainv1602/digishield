@@ -38,7 +38,11 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       send); an AWS SES email gateway (boot app) takes over when
       `digishield.notifications.email.ses.enabled=true`. Recipient email resolved from the
       auth module via a `RecipientResolver` SPI. Added `NotificationStatus.FAILED`.
-- [ ] `broadcastAlert()` (L65) — support segment/criteria-based fan-out to many users
+- [x] `broadcastAlert()` — fans an in-app ALERT out to every user in the tenant (one
+      per recipient) via a new `UserDirectory` SPI (boot app → auth `listUsers`).
+      `POST /alerts/broadcast` now takes `{message, severity}` and returns the reach;
+      `AlertCenterPage` composer wired via `useBroadcastAlert()`. (Role/department
+      sub-segments not exposed in the UI yet.)
 - [ ] SES go-live (ops): verify the SES domain, exit the SES sandbox, grant the pod
       `ses:SendEmail` via IRSA, then set `NOTIFICATIONS_SES_ENABLED=true`. SMS/push not wired.
 - [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`

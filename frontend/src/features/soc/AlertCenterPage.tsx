@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/shared/ui';
-import { useNotifications, type Notification } from '@/features/notifications/api';
+import { useNotifications, useBroadcastAlert, type Notification } from '@/features/notifications/api';
 
 /**
  * AlertCenterPage — broadcast composer + history (`/soc/alerts`).
@@ -9,7 +9,8 @@ import { useNotifications, type Notification } from '@/features/notifications/ap
  * broadcast history list (severity badge + reach count).
  *
  * The history list is fed by the live backend via `useNotifications()`
- * (`GET /notifications`); the compose form remains a local stub.
+ * (`GET /notifications`); the compose form broadcasts via `useBroadcastAlert()`
+ * (`POST /alerts/broadcast`), which fans the alert out to every tenant user.
  */
 
 type Severity = 'CRITICAL' | 'WARNING' | 'INFO';
@@ -68,17 +69,25 @@ export default function AlertCenterPage() {
   const [severity, setSeverity] = useState<Severity>('CRITICAL');
   const [message, setMessage] = useState('');
   const { data, isLoading, isError, refetch } = useNotifications();
+  const broadcastMut = useBroadcastAlert();
 
   const history = (data ?? []).map(toRecord);
 
   function broadcast() {
-    // TODO: replace with generated useBroadcastAlert() mutation from @/api/generated.
     if (!message.trim()) {
       toast('Vui lòng nhập nội dung cảnh báo.');
       return;
     }
-    toast(`Đã phát cảnh báo ${severity} toàn tổ chức.`);
-    setMessage('');
+    broadcastMut.mutate(
+      { message: message.trim(), severity: severity.toLowerCase() as 'info' | 'warning' | 'critical' },
+      {
+        onSuccess: (res) => {
+          toast(`Đã phát cảnh báo ${severity} tới ${res.reach} người.`);
+          setMessage('');
+        },
+        onError: () => toast('Không phát được cảnh báo, thử lại.'),
+      },
+    );
   }
 
   return (
@@ -142,6 +151,7 @@ export default function AlertCenterPage() {
 
             <button
               type="submit"
+              disabled={broadcastMut.isPending}
               style={{
                 width: '100%',
                 background: 'var(--red)',
@@ -152,10 +162,11 @@ export default function AlertCenterPage() {
                 textAlign: 'center',
                 fontWeight: 700,
                 fontSize: 15,
-                cursor: 'pointer',
+                cursor: broadcastMut.isPending ? 'default' : 'pointer',
+                opacity: broadcastMut.isPending ? 0.7 : 1,
               }}
             >
-              Phát cảnh báo toàn tổ chức
+              {broadcastMut.isPending ? 'Đang phát…' : 'Phát cảnh báo toàn tổ chức'}
             </button>
           </form>
 

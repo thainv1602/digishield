@@ -3,6 +3,7 @@ package com.digishield.notification.application;
 import com.digishield.notification.api.NotificationGateway;
 import com.digishield.notification.api.NotificationService;
 import com.digishield.notification.api.RecipientResolver;
+import com.digishield.notification.api.UserDirectory;
 import com.digishield.notification.domain.Notification;
 import com.digishield.notification.domain.NotificationChannel;
 import com.digishield.notification.domain.NotificationStatus;
@@ -40,13 +41,16 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository repository;
     private final NotificationGateway gateway;
     private final RecipientResolver recipients;
+    private final UserDirectory userDirectory;
 
     public NotificationServiceImpl(NotificationRepository repository,
                                    NotificationGateway gateway,
-                                   RecipientResolver recipients) {
+                                   RecipientResolver recipients,
+                                   UserDirectory userDirectory) {
         this.repository = repository;
         this.gateway = gateway;
         this.recipients = recipients;
+        this.userDirectory = userDirectory;
     }
 
     @Override
@@ -93,13 +97,18 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Notification broadcastAlert(UUID userId, String title, String body) {
+    public List<Notification> broadcastAlert(String title, String body) {
         UUID tenantId = TenantContext.requireUuid();
-        Notification notification = new Notification(
-                UUID.randomUUID(), tenantId, userId, NotificationType.ALERT, NotificationChannel.IN_APP,
-                NotificationStatus.SENT, title, body, Instant.now());
-        // TODO: extend to send to multiple users based on criteria (segment).
-        return repository.save(notification);
+        List<UUID> userIds = userDirectory.allUserIds();
+        Instant now = Instant.now();
+        List<Notification> created = new ArrayList<>(userIds.size());
+        for (UUID userId : userIds) {
+            created.add(repository.save(new Notification(
+                    UUID.randomUUID(), tenantId, userId, NotificationType.ALERT, NotificationChannel.IN_APP,
+                    NotificationStatus.SENT, title, body, now)));
+        }
+        LOG.info("Broadcast alert to {} users in tenant {}", created.size(), tenantId);
+        return created;
     }
 
     @Override

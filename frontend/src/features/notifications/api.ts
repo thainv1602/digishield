@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/shared/api/client';
 import { queryKeys } from '@/shared/api/queryKeys';
 
@@ -43,5 +43,38 @@ export function useNotifications() {
   return useQuery({
     queryKey: queryKeys.notifications,
     queryFn: ({ signal }) => fetchNotifications(signal),
+  });
+}
+
+/** Severity accepted by `POST /alerts/broadcast` (lowercase on the wire). */
+export type BroadcastSeverity = 'info' | 'warning' | 'critical';
+
+export interface BroadcastInput {
+  message: string;
+  severity: BroadcastSeverity;
+}
+
+/** Result of a broadcast: how many recipients it reached. */
+export interface BroadcastResult {
+  reach: number;
+}
+
+/** POST /alerts/broadcast — fan an alert out to every user in the tenant. */
+export function broadcastAlert(body: BroadcastInput): Promise<BroadcastResult> {
+  return apiRequest<BroadcastResult>({
+    url: '/alerts/broadcast',
+    method: 'POST',
+    data: body,
+  });
+}
+
+/** Mutation hook for the Alert Center composer; refreshes the history on success. */
+export function useBroadcastAlert() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: broadcastAlert,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.notifications });
+    },
   });
 }

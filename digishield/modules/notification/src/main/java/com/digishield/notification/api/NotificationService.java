@@ -25,9 +25,10 @@ public interface NotificationService {
     Notification scheduleReminder(UUID userId, String title, String body);
 
     /**
-     * Broadcasts an alert (ALERT) to a user (minimal broadcast sample).
+     * Broadcasts an in-app ALERT to every user in the current tenant. Returns the
+     * notifications created (one per recipient); the size is the reach.
      */
-    Notification broadcastAlert(UUID userId, String title, String body);
+    java.util.List<Notification> broadcastAlert(String title, String body);
 
     /**
      * Persists a notification with explicit attributes (used by {@code POST /notifications}).

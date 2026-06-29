@@ -114,15 +114,24 @@ public class NotificationController {
     }
 
     /**
-     * Broadcasts an alert to a user (sample).
+     * Broadcasts an alert to every user in the current tenant. Returns the reach
+     * (number of recipients).
      */
     @PostMapping("/api/v1/alerts/broadcast")
-    public Notification broadcast(@RequestBody BroadcastAlertRequest request) {
-        return notificationService.broadcastAlert(request.userId(), request.title(), request.body());
+    public BroadcastResult broadcast(@RequestBody BroadcastAlertRequest request) {
+        String severity = (request.severity() == null || request.severity().isBlank())
+                ? "info" : request.severity().trim();
+        String title = "[" + severity.toUpperCase(java.util.Locale.ROOT) + "] " + request.message();
+        int reach = notificationService.broadcastAlert(title, request.message()).size();
+        return new BroadcastResult(reach);
     }
 
-    /** DTO for broadcast alert request. */
-    public record BroadcastAlertRequest(UUID userId, String title, String body) {
+    /** Broadcast request, mirroring the OpenAPI {@code PostAlertsBroadcastBody}. */
+    public record BroadcastAlertRequest(String message, String severity) {
+    }
+
+    /** Broadcast result: how many recipients the alert reached. */
+    public record BroadcastResult(int reach) {
     }
 
     /**
