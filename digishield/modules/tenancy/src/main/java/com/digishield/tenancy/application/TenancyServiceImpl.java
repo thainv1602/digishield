@@ -2,7 +2,6 @@ package com.digishield.tenancy.application;
 
 import com.digishield.tenancy.api.AuditLogView;
 import com.digishield.tenancy.api.BusinessThresholdsView;
-import com.digishield.tenancy.api.ChangePlanCommand;
 import com.digishield.tenancy.api.CreateTenantCommand;
 import com.digishield.tenancy.api.FeatureFlagView;
 import com.digishield.tenancy.api.GroupView;
