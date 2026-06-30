@@ -5,10 +5,12 @@ import { useAuth } from '@/app/auth/useAuth';
 import { ROLES, defaultRouteForRole } from '@/app/auth/roles';
 import { OtpInput } from '@/shared/ui';
 import { AuthScreen, AuthCard } from './authShared';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 /** MFA — 6-box OTP + trust-device checkbox + confirm. */
 export default function MfaPage() {
   const navigate = useNavigate();
+  const t = useT();
   const { login } = useAuth();
   const [code, setCode] = useState('384');
   const [trust, setTrust] = useState(true);
@@ -38,9 +40,9 @@ export default function MfaPage() {
           >
             <ShieldCheck size={24} strokeWidth={2} color="var(--color-amber)" />
           </div>
-          <h1 style={{ fontSize: 22, marginBottom: 6 }}>Xác thực 2 lớp · MFA</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 6 }}>{t('Xác thực 2 lớp · MFA')}</h1>
           <div style={{ fontSize: 13.5, color: 'var(--color-muted)' }}>
-            Nhập mã 6 chữ số từ ứng dụng authenticator
+            {t('Nhập mã 6 chữ số từ ứng dụng authenticator')}
           </div>
         </div>
 
@@ -78,7 +80,7 @@ export default function MfaPage() {
               {trust ? <Check size={11} strokeWidth={3} color="var(--color-blue)" /> : null}
             </span>
             <span style={{ fontSize: 13.5, color: 'var(--color-muted)' }}>
-              Tin thiết bị này trong 30 ngày
+              {t('Tin thiết bị này trong 30 ngày')}
             </span>
           </button>
 
@@ -98,7 +100,7 @@ export default function MfaPage() {
               marginBottom: 12,
             }}
           >
-            Xác nhận
+            {t('Xác nhận')}
           </button>
 
           <div
@@ -109,7 +111,7 @@ export default function MfaPage() {
               cursor: 'pointer',
             }}
           >
-            Dùng phương thức khác (SMS / email)
+            {t('Dùng phương thức khác (SMS / email)')}
           </div>
         </AuthCard>
       </div>

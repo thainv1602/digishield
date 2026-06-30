@@ -4,6 +4,7 @@ import { useAuth } from '@/app/auth/useAuth';
 import { ROLES, defaultRouteForRole } from '@/app/auth/roles';
 import { Logo } from '@/shared/ui';
 import { AuthScreen, AuthCard, authInputStyle, authLabelStyle } from './authShared';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 type Strength = { score: number; label: string; color: string };
 
@@ -27,6 +28,7 @@ function scorePassword(pw: string): Strength {
 
 /** Onboarding step 1 — set password (strength bar) + language. */
 export default function OnboardingPage() {
+  const t = useT();
   const navigate = useNavigate();
   const { login } = useAuth();
   const [pw, setPw] = useState('Demo@2026strong');
@@ -48,9 +50,9 @@ export default function OnboardingPage() {
           <div style={{ marginBottom: 16, display: 'inline-flex' }}>
             <Logo size={28} wordmarkSize={20} />
           </div>
-          <h1 style={{ fontSize: 22, marginBottom: 6 }}>Chào mừng bạn đến DigiShield!</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 6 }}>{t('Chào mừng bạn đến DigiShield!')}</h1>
           <div style={{ fontSize: 13.5, color: 'var(--color-muted)' }}>
-            Bạn được Cơ quan ABC mời tham gia · 3 bước nhanh để bắt đầu
+            {t('Bạn được Cơ quan ABC mời tham gia · 3 bước nhanh để bắt đầu')}
           </div>
         </div>
 
@@ -79,12 +81,12 @@ export default function OnboardingPage() {
               marginBottom: 16,
             }}
           >
-            Bước 1 · Đặt mật khẩu
+            {t('Bước 1 · Đặt mật khẩu')}
           </div>
 
           <div style={{ marginBottom: 14 }}>
             <label htmlFor="ob-pw" style={authLabelStyle}>
-              Mật khẩu mới
+              {t('Mật khẩu mới')}
             </label>
             <input
               id="ob-pw"
@@ -97,7 +99,7 @@ export default function OnboardingPage() {
 
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="ob-confirm" style={authLabelStyle}>
-              Xác nhận mật khẩu
+              {t('Xác nhận mật khẩu')}
             </label>
             <input
               id="ob-confirm"
@@ -126,14 +128,14 @@ export default function OnboardingPage() {
                 />
               ))}
               <span style={{ fontSize: 11.5, color: strength.color, fontWeight: 500 }}>
-                {strength.label}
+                {t(strength.label)}
               </span>
             </div>
           </div>
 
           <div style={{ marginBottom: 20 }}>
             <label style={{ ...authLabelStyle, color: 'var(--color-muted)', marginBottom: 8 }}>
-              Ngôn ngữ
+              {t('Ngôn ngữ')}
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               {(['vi', 'en'] as const).map((code) => {
@@ -158,7 +160,7 @@ export default function OnboardingPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    {code === 'vi' ? 'Tiếng Việt' : 'English'}
+                    {code === 'vi' ? t('Tiếng Việt') : 'English'}
                   </button>
                 );
               })}
@@ -180,7 +182,7 @@ export default function OnboardingPage() {
               fontSize: 15,
             }}
           >
-            Tiếp tục — Bài xếp lớp →
+            {t('Tiếp tục — Bài xếp lớp →')}
           </button>
         </AuthCard>
       </div>

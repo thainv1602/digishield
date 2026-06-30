@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Button, Select, StatusPill } from '@/shared/ui';
+import { useT } from '@/shared/i18n/I18nProvider';
 import {
   useEvaluateIntervention,
   useRunOrchestration,
@@ -34,20 +35,27 @@ interface RunRow {
 }
 
 /** Format an ISO timestamp as `Chạy dd/MM/yyyy HH:mm`. */
-function formatRunTime(iso: string | undefined): string {
-  if (!iso) return 'Chạy —';
+function formatRunTime(
+  iso: string | undefined,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): string {
+  if (!iso) return t('Chạy —');
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return 'Chạy —';
+  if (Number.isNaN(d.getTime())) return t('Chạy —');
   const pad = (n: number) => String(n).padStart(2, '0');
-  return `Chạy ${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const time = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return t('Chạy {time}', { time });
 }
 
 /** Map a backend `AidaRun` onto the recent-runs row. */
-function toRunRow(dto: AidaRun): RunRow {
+function toRunRow(
+  dto: AidaRun,
+  t: (key: string, vars?: Record<string, string | number>) => string,
+): RunRow {
   return {
     id: dto.id,
-    when: formatRunTime(dto.created_at),
-    scope: `Phạm vi: ${dto.scope}`,
+    when: formatRunTime(dto.created_at, t),
+    scope: t('Phạm vi: {scope}', { scope: dto.scope }),
     result: dto.summary ?? '—',
     ok: dto.status === 'success',
   };
@@ -60,6 +68,7 @@ const SCOPE_LABELS: Record<string, string> = {
 };
 
 export default function AidaPage() {
+  const t = useT();
   const [scope, setScope] = useState('org');
   const [goal, setGoal] = useState('reduce');
 
@@ -67,7 +76,10 @@ export default function AidaPage() {
   const evaluate = useEvaluateIntervention();
   const runsQuery = useAidaRuns();
 
-  const runs = useMemo<RunRow[]>(() => (runsQuery.data ?? []).map(toRunRow), [runsQuery.data]);
+  const runs = useMemo<RunRow[]>(
+    () => (runsQuery.data ?? []).map((dto) => toRunRow(dto, t)),
+    [runsQuery.data, t],
+  );
 
   function runAida() {
     runOrch.mutate({ scope: SCOPE_LABELS[scope] ?? scope });
@@ -100,7 +112,7 @@ export default function AidaPage() {
             AI Orchestration · AIDA
           </div>
           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
-            Adaptive Intelligence Deployment Agent — tự động hóa lộ trình học
+            {t('Adaptive Intelligence Deployment Agent — tự động hóa lộ trình học')}
           </div>
         </div>
 
@@ -108,51 +120,51 @@ export default function AidaPage() {
           {/* Trigger AIDA */}
           <div style={cardStyle}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 20 }}>
-              Kích hoạt AIDA
+              {t('Kích hoạt AIDA')}
             </div>
             <div style={{ marginBottom: 16 }}>
-              <label style={fieldLabel}>Phạm vi</label>
-              <Select aria-label="Phạm vi" value={scope} onChange={(e) => setScope(e.target.value)}>
-                <option value="org">Toàn tổ chức (1.240 người)</option>
-                <option value="acc">Phòng Kế toán (212 người)</option>
-                <option value="risk">Nhóm Risk Score cao (87 người)</option>
+              <label style={fieldLabel}>{t('Phạm vi')}</label>
+              <Select aria-label={t('Phạm vi')} value={scope} onChange={(e) => setScope(e.target.value)}>
+                <option value="org">{t('Toàn tổ chức (1.240 người)')}</option>
+                <option value="acc">{t('Phòng Kế toán (212 người)')}</option>
+                <option value="risk">{t('Nhóm Risk Score cao (87 người)')}</option>
               </Select>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={fieldLabel}>Mục tiêu</label>
-              <Select aria-label="Mục tiêu" value={goal} onChange={(e) => setGoal(e.target.value)}>
-                <option value="reduce">Giảm Risk Score xuống dưới 50</option>
-                <option value="mandatory">Hoàn thành lộ trình bắt buộc</option>
-                <option value="prepare">Chuẩn bị cho chiến dịch mô phỏng</option>
+              <label style={fieldLabel}>{t('Mục tiêu')}</label>
+              <Select aria-label={t('Mục tiêu')} value={goal} onChange={(e) => setGoal(e.target.value)}>
+                <option value="reduce">{t('Giảm Risk Score xuống dưới 50')}</option>
+                <option value="mandatory">{t('Hoàn thành lộ trình bắt buộc')}</option>
+                <option value="prepare">{t('Chuẩn bị cho chiến dịch mô phỏng')}</option>
               </Select>
             </div>
             <Button variant="primary" fullWidth onClick={runAida} disabled={runOrch.isPending}>
-              {runOrch.isPending ? 'Đang chạy AIDA…' : 'Chạy AIDA ngay'}
+              {runOrch.isPending ? t('Đang chạy AIDA…') : t('Chạy AIDA ngay')}
             </Button>
 
             {/* Orchestration result (live: POST /ai/orchestration/run) */}
             {runOrch.isError && (
-              <ResultBox tone="error">Không chạy được AIDA. Vui lòng thử lại.</ResultBox>
+              <ResultBox tone="error">{t('Không chạy được AIDA. Vui lòng thử lại.')}</ResultBox>
             )}
             {runOrch.isSuccess && (
               <ResultBox tone="info">
-                Đã chạy AIDA cho phạm vi <strong>{SCOPE_LABELS[scope] ?? scope}</strong>. Xem kết quả bên phải.
+                {t('Đã chạy AIDA cho phạm vi ')}<strong>{t(SCOPE_LABELS[scope] ?? scope)}</strong>{t('. Xem kết quả bên phải.')}
               </ResultBox>
             )}
 
             {/* Intervention evaluation (live: POST /interventions/evaluate) */}
             <div style={{ marginTop: 14 }}>
               <Button variant="outline" fullWidth onClick={runEvaluate} disabled={evaluate.isPending}>
-                {evaluate.isPending ? 'Đang đánh giá…' : 'Đánh giá can thiệp (mẫu)'}
+                {evaluate.isPending ? t('Đang đánh giá…') : t('Đánh giá can thiệp (mẫu)')}
               </Button>
             </div>
             {evaluate.isError && (
-              <ResultBox tone="error">Không đánh giá được can thiệp. Vui lòng thử lại.</ResultBox>
+              <ResultBox tone="error">{t('Không đánh giá được can thiệp. Vui lòng thử lại.')}</ResultBox>
             )}
             {evaluate.data && (
               <ResultBox tone="info">
-                Quyết định: <strong>{evaluate.data.decision}</strong>
-                {evaluate.data.signals?.length > 0 && ` · Tín hiệu: ${evaluate.data.signals.join(', ')}`}
+                {t('Quyết định: ')}<strong>{evaluate.data.decision}</strong>
+                {evaluate.data.signals?.length > 0 && t(' · Tín hiệu: {signals}', { signals: evaluate.data.signals.join(', ') })}
                 {evaluate.data.message && (
                   <div style={{ marginTop: 6, color: 'var(--color-muted)' }}>{evaluate.data.message}</div>
                 )}
@@ -163,16 +175,16 @@ export default function AidaPage() {
           {/* Recent runs (static — no BE run-history endpoint) */}
           <div style={cardStyle}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-              Kết quả lần chạy gần nhất
+              {t('Kết quả lần chạy gần nhất')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {(runsQuery.isLoading || runsQuery.isError || runs.length === 0) && (
                 <div style={{ fontSize: 12.5, color: 'var(--color-muted)', padding: '4px 2px' }}>
                   {runsQuery.isLoading
-                    ? 'Đang tải lịch sử…'
+                    ? t('Đang tải lịch sử…')
                     : runsQuery.isError
-                      ? 'Không tải được lịch sử chạy.'
-                      : 'Chưa có lần chạy nào. Bấm “Chạy AIDA ngay”.'}
+                      ? t('Không tải được lịch sử chạy.')
+                      : t('Chưa có lần chạy nào. Bấm “Chạy AIDA ngay”.')}
                 </div>
               )}
               {runs.map((r) => (
@@ -187,7 +199,7 @@ export default function AidaPage() {
                   >
                     <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text)' }}>{r.when}</span>
                     <StatusPill variant={r.ok ? 'safe' : 'threat'} dot={false}>
-                      {r.ok ? 'Thành công' : 'Thất bại'}
+                      {r.ok ? t('Thành công') : t('Thất bại')}
                     </StatusPill>
                   </div>
                   <div style={{ fontSize: 12.5, color: 'var(--color-muted)', marginBottom: 6 }}>{r.scope}</div>

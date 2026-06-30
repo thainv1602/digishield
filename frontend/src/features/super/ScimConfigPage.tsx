@@ -1,6 +1,7 @@
 import { Button, StatusPill, useToast } from '@/shared/ui';
 import { Copy } from 'lucide-react';
 import { useScimConfig, type ScimConfig } from './api';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 /**
  * ScimConfigPage — Super Admin SCIM & SSO identity-provider configuration.
@@ -38,18 +39,19 @@ const readonlyField: React.CSSProperties = {
 };
 
 /** Renders the BE last-sync summary line ("Đồng bộ lần cuối: …"). */
-function syncSummary(cfg: ScimConfig): string {
-  if (!cfg.lastSyncAt) return 'Chưa đồng bộ lần nào';
+function syncSummary(cfg: ScimConfig, t: (s: string, vars?: Record<string, string | number>) => string): string {
+  if (!cfg.lastSyncAt) return t('Chưa đồng bộ lần nào');
   const when = new Date(cfg.lastSyncAt);
   const formatted = Number.isNaN(when.getTime())
     ? cfg.lastSyncAt
     : `${when.toLocaleDateString('vi-VN')} ${when.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
   const users = (cfg.syncedUserCount ?? 0).toLocaleString('vi-VN');
   const errors = cfg.syncErrorCount ?? 0;
-  return `Đồng bộ lần cuối: ${formatted} · ${users} user · ${errors} lỗi`;
+  return t('Đồng bộ lần cuối: {formatted} · {users} user · {errors} lỗi', { formatted, users, errors });
 }
 
 export default function ScimConfigPage() {
+  const t = useT();
   const toast = useToast();
   const { data, isLoading, isError, refetch } = useScimConfig();
 
@@ -57,7 +59,7 @@ export default function ScimConfigPage() {
 
   const copyEndpoint = () => {
     void navigator.clipboard?.writeText(endpoint);
-    toast.push({ msg: 'Đã sao chép SCIM endpoint', variant: 'success' });
+    toast.push({ msg: t('Đã sao chép SCIM endpoint'), variant: 'success' });
   };
 
   return (
@@ -77,16 +79,16 @@ export default function ScimConfigPage() {
             SCIM &amp; SSO Config
           </div>
           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
-            Kết nối Identity Provider và đồng bộ người dùng tự động
+            {t('Kết nối Identity Provider và đồng bộ người dùng tự động')}
           </div>
         </div>
 
-        {isLoading && <Message>Đang tải cấu hình SCIM…</Message>}
+        {isLoading && <Message>{t('Đang tải cấu hình SCIM…')}</Message>}
         {!isLoading && isError && (
           <Message>
-            <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được cấu hình SCIM. </span>
+            <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được cấu hình SCIM. ')}</span>
             <button type="button" onClick={() => refetch()} style={inlineRetry}>
-              Thử lại
+              {t('Thử lại')}
             </button>
           </Message>
         )}
@@ -107,7 +109,7 @@ export default function ScimConfigPage() {
                   {data.idpName ?? 'Identity Provider'}
                 </div>
                 <StatusPill variant={data.connected ? 'safe' : 'neutral'} dot>
-                  {data.connected ? 'Đã kết nối' : 'Chưa kết nối'}
+                  {data.connected ? t('Đã kết nối') : t('Chưa kết nối')}
                 </StatusPill>
               </div>
 
@@ -127,7 +129,7 @@ export default function ScimConfigPage() {
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ ...readonlyField, flex: 1, fontSize: 12 }}>{endpoint}</div>
                   <Button variant="outline" leftIcon={<Copy size={13} />} onClick={copyEndpoint}>
-                    Sao chép
+                    {t('Sao chép')}
                   </Button>
                 </div>
               </div>
@@ -156,14 +158,14 @@ export default function ScimConfigPage() {
                   }}
                   aria-hidden="true"
                 />
-                {syncSummary(data)}
+                {syncSummary(data, t)}
               </div>
             </div>
 
             {/* Attribute mapping grid (static — no BE endpoint) */}
             <div style={cardStyle}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-                Ánh xạ thuộc tính · Attribute Mapping
+                {t('Ánh xạ thuộc tính · Attribute Mapping')}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {attributeMapping.map((m) => (

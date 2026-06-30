@@ -1,4 +1,5 @@
 import { useParams } from 'react-router-dom';
+import { useT } from '@/shared/i18n/I18nProvider';
 import { DataTable, StatusPill } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { useCampaign, type CampaignDetail, type CampaignResultRow } from './api';
@@ -101,6 +102,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function CampaignResultsPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const { data: detail, isLoading, isError, refetch } = useCampaign(id);
 
@@ -113,20 +115,20 @@ export default function CampaignResultsPage() {
   const columns: ColumnDef<ResultRow>[] = [
     {
       id: 'name',
-      header: 'Người dùng',
+      header: t('Người dùng'),
       cell: (r) => <span style={{ fontWeight: 500, color: 'var(--color-text)' }}>{r.name}</span>,
     },
-    { id: 'dept', header: 'Phòng ban', cell: (r) => <span style={{ color: 'var(--color-muted)' }}>{r.dept}</span>, width: '120px' },
+    { id: 'dept', header: t('Phòng ban'), cell: (r) => <span style={{ color: 'var(--color-muted)' }}>{r.dept}</span>, width: '120px' },
     {
       id: 'action',
-      header: 'Hành động',
-      cell: (r) => <span style={{ color: r.actionColor, fontWeight: 500 }}>{r.action}</span>,
+      header: t('Hành động'),
+      cell: (r) => <span style={{ color: r.actionColor, fontWeight: 500 }}>{t(r.action)}</span>,
       width: '130px',
     },
     {
       id: 'learning',
-      header: 'Đã học?',
-      cell: (r) => <span style={{ color: r.learningColor }}>{r.learning}</span>,
+      header: t('Đã học?'),
+      cell: (r) => <span style={{ color: r.learningColor }}>{t(r.learning)}</span>,
       width: '140px',
     },
   ];
@@ -146,7 +148,7 @@ export default function CampaignResultsPage() {
           }}
         >
           <div>
-            <div style={{ ...labelStyle, marginBottom: 6 }}>Chiến dịch</div>
+            <div style={{ ...labelStyle, marginBottom: 6 }}>{t('Chiến dịch')}</div>
             <div
               style={{
                 fontFamily: "'Space Grotesk', system-ui",
@@ -156,14 +158,14 @@ export default function CampaignResultsPage() {
                 letterSpacing: '-.01em',
               }}
             >
-              {detail?.name ? `"${detail.name}"` : isLoading ? 'Đang tải…' : 'Chiến dịch'}
+              {detail?.name ? `"${detail.name}"` : isLoading ? t('Đang tải…') : t('Chiến dịch')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
               {[channelLabel, detail?.status].filter(Boolean).join(' · ')}
             </div>
           </div>
           <StatusPill variant={isCompleted ? 'safe' : 'warning'} dot>
-            {isCompleted ? 'Đã hoàn thành' : detail?.status ?? '—'}
+            {isCompleted ? t('Đã hoàn thành') : detail?.status ?? '—'}
           </StatusPill>
         </div>
 
@@ -179,7 +181,7 @@ export default function CampaignResultsPage() {
             }}
           >
             <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>
-              Không tải được chiến dịch.{' '}
+              {t('Không tải được chiến dịch.')}{' '}
             </span>
             <button
               type="button"
@@ -194,7 +196,7 @@ export default function CampaignResultsPage() {
                 padding: 0,
               }}
             >
-              Thử lại
+              {t('Thử lại')}
             </button>
           </div>
         )}
@@ -202,7 +204,7 @@ export default function CampaignResultsPage() {
         {/* Funnel */}
         <div style={{ ...cardStyle, padding: 24, marginBottom: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 20 }}>
-            Phễu chiến dịch · Campaign Funnel
+            {t('Phễu chiến dịch · Campaign Funnel')}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {funnel.map((f) => (
@@ -216,7 +218,7 @@ export default function CampaignResultsPage() {
                     flexShrink: 0,
                   }}
                 >
-                  {f.label}
+                  {t(f.label)}
                 </div>
                 <div
                   style={{
@@ -275,7 +277,7 @@ export default function CampaignResultsPage() {
               color: 'var(--color-blue)',
             }}
           >
-            {autoEnrolled} người bấm link đã được tự động đăng ký vào "Khóa học nhận diện Phishing"
+            {t('{n} người bấm link đã được tự động đăng ký vào "Khóa học nhận diện Phishing"', { n: autoEnrolled })}
           </div>
         </div>
 
@@ -290,19 +292,19 @@ export default function CampaignResultsPage() {
               justifyContent: 'space-between',
             }}
           >
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>Danh sách hành động</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Danh sách hành động')}</div>
             <button
               type="button"
               style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
             >
-              Xuất CSV
+              {t('Xuất CSV')}
             </button>
           </div>
           {isLoading && (
-            <div style={resultMsg}>Đang tải kết quả…</div>
+            <div style={resultMsg}>{t('Đang tải kết quả…')}</div>
           )}
           {!isLoading && !isError && rows.length === 0 && (
-            <div style={resultMsg}>Chưa có dữ liệu hành động.</div>
+            <div style={resultMsg}>{t('Chưa có dữ liệu hành động.')}</div>
           )}
           {!isLoading && rows.length > 0 && (
             <DataTable<ResultRow> columns={columns} data={rows} rowKey={(r) => r.id} />

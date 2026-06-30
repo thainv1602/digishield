@@ -2,8 +2,12 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, MessageSquare, QrCode, Smartphone, Sparkles } from 'lucide-react';
 import { Button, Stepper, useToast } from '@/shared/ui';
+import { useT } from '@/shared/i18n/I18nProvider';
 import { useCreateCampaign, useGroups, type SmartGroup } from './api';
 import { useTemplates, type SimTemplate } from '../content/api';
+
+/** Translator function threaded into Vietnamese-string-building helpers. */
+type TFn = (key: string, vars?: Record<string, string | number>) => string;
 
 /**
  * CampaignWizardPage — 5-step simulation campaign wizard.
@@ -48,20 +52,20 @@ interface TemplateCard {
 }
 
 /** Localized difficulty label / dots / colour for a backend difficulty. */
-function difficultyOf(difficulty: string): { diff: string; diffDots: string; diffColor: string } {
+function difficultyOf(difficulty: string, t: TFn): { diff: string; diffDots: string; diffColor: string } {
   switch (difficulty) {
     case 'hard':
-      return { diff: 'Khó', diffDots: '●●●', diffColor: 'var(--color-red)' };
+      return { diff: t('Khó'), diffDots: '●●●', diffColor: 'var(--color-red)' };
     case 'medium':
-      return { diff: 'Trung bình', diffDots: '●●○', diffColor: 'var(--color-amber)' };
+      return { diff: t('Trung bình'), diffDots: '●●○', diffColor: 'var(--color-amber)' };
     default:
-      return { diff: 'Dễ', diffDots: '●○○', diffColor: 'var(--color-teal)' };
+      return { diff: t('Dễ'), diffDots: '●○○', diffColor: 'var(--color-teal)' };
   }
 }
 
 /** Map a backend `SimTemplate` onto the template-step card. */
-function toTemplateCard(dto: SimTemplate): TemplateCard {
-  return { id: dto.id, title: dto.subject, ...difficultyOf(dto.difficulty) };
+function toTemplateCard(dto: SimTemplate, t: TFn): TemplateCard {
+  return { id: dto.id, title: dto.subject, ...difficultyOf(dto.difficulty, t) };
 }
 
 interface GroupCard {
@@ -72,12 +76,12 @@ interface GroupCard {
 }
 
 /** Map a backend `Group` onto the audience-step card. */
-function toGroupCard(dto: SmartGroup): GroupCard {
+function toGroupCard(dto: SmartGroup, t: TFn): GroupCard {
   const smart = dto.rule_json != null;
   return {
     id: dto.id,
     title: dto.name ?? '—',
-    sub: smart ? 'Nhóm thông minh · tự cập nhật theo điều kiện' : 'Nhóm tĩnh',
+    sub: smart ? t('Nhóm thông minh · tự cập nhật theo điều kiện') : t('Nhóm tĩnh'),
     smart,
   };
 }
@@ -104,17 +108,18 @@ const labelStyle: React.CSSProperties = {
 export default function CampaignWizardPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const t = useT();
   const createCampaign = useCreateCampaign();
   const templatesQuery = useTemplates();
   const groupsQuery = useGroups();
 
   const templates = useMemo<TemplateCard[]>(
-    () => (templatesQuery.data ?? []).map(toTemplateCard),
-    [templatesQuery.data],
+    () => (templatesQuery.data ?? []).map((dto) => toTemplateCard(dto, t)),
+    [templatesQuery.data, t],
   );
   const groups = useMemo<GroupCard[]>(
-    () => (groupsQuery.data ?? []).map(toGroupCard),
-    [groupsQuery.data],
+    () => (groupsQuery.data ?? []).map((dto) => toGroupCard(dto, t)),
+    [groupsQuery.data, t],
   );
 
   const [step, setStep] = useState(1);
@@ -140,11 +145,11 @@ export default function CampaignWizardPage() {
       { channel: enumChannel, templateId: template },
       {
         onSuccess: (created) => {
-          toast.push({ msg: 'Đã phát động chiến dịch mô phỏng', variant: 'success' });
+          toast.push({ msg: t('Đã phát động chiến dịch mô phỏng'), variant: 'success' });
           navigate(`/campaigns/${created.id}`);
         },
         onError: () => {
-          toast.push({ msg: 'Không phát động được chiến dịch', variant: 'error' });
+          toast.push({ msg: t('Không phát động được chiến dịch'), variant: 'error' });
         },
       },
     );
@@ -168,23 +173,23 @@ export default function CampaignWizardPage() {
               marginBottom: 4,
             }}
           >
-            Tạo chiến dịch mô phỏng
+            {t('Tạo chiến dịch mô phỏng')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>Simulation Campaign Wizard</div>
         </div>
 
         <div style={{ ...cardStyle, padding: 20, marginBottom: 20 }}>
-          <Stepper steps={STEPS} current={step} />
+          <Stepper steps={STEPS.map((s) => ({ ...s, label: t(s.label) }))} current={step} />
         </div>
 
         {/* Step 1 — Channel */}
         {step === 1 && (
           <div style={{ ...cardStyle, padding: 28, marginBottom: 16 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
-              Chọn kênh tấn công · Select attack channel
+              {t('Chọn kênh tấn công · Select attack channel')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 24 }}>
-              Kênh xác định loại mô phỏng và payload sẽ dùng
+              {t('Kênh xác định loại mô phỏng và payload sẽ dùng')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {channels.map((c) => {
@@ -209,7 +214,7 @@ export default function CampaignWizardPage() {
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
                       {c.title}
                     </div>
-                    <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{c.desc}</div>
+                    <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{t(c.desc)}</div>
                   </button>
                 );
               })}
@@ -229,7 +234,7 @@ export default function CampaignWizardPage() {
           >
             <div style={{ ...cardStyle, padding: 20 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
-                Chọn mẫu mô phỏng
+                {t('Chọn mẫu mô phỏng')}
               </div>
               <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 16 }}>
                 Select simulation template
@@ -237,7 +242,7 @@ export default function CampaignWizardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(templatesQuery.isLoading || (!templatesQuery.isLoading && templates.length === 0)) && (
                   <div style={{ fontSize: 12.5, color: 'var(--color-muted)', padding: '4px 2px' }}>
-                    {templatesQuery.isLoading ? 'Đang tải mẫu…' : 'Chưa có mẫu nào — tạo bằng AI bên dưới.'}
+                    {templatesQuery.isLoading ? t('Đang tải mẫu…') : t('Chưa có mẫu nào — tạo bằng AI bên dưới.')}
                   </div>
                 )}
                 {templates.map((t) => {
@@ -292,8 +297,8 @@ export default function CampaignWizardPage() {
                 >
                   <Sparkles size={16} color="var(--color-blue)" />
                   <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-blue)' }}>Tạo bằng AI</div>
-                    <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>AIDA engine · tùy ngành, mùa vụ</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-blue)' }}>{t('Tạo bằng AI')}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{t('AIDA engine · tùy ngành, mùa vụ')}</div>
                   </div>
                 </div>
               </div>
@@ -302,7 +307,7 @@ export default function CampaignWizardPage() {
             {/* Email preview */}
             <div style={{ ...cardStyle, padding: 20 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-                Xem trước email
+                {t('Xem trước email')}
               </div>
               <div
                 style={{
@@ -328,25 +333,25 @@ export default function CampaignWizardPage() {
                     </code>
                   </div>
                   <div style={{ color: 'var(--color-muted)' }}>
-                    Subject: <strong style={{ color: 'var(--color-text)' }}>Thông báo hoàn học phí học kỳ II</strong>
+                    Subject: <strong style={{ color: 'var(--color-text)' }}>{t('Thông báo hoàn học phí học kỳ II')}</strong>
                   </div>
                 </div>
-                <p style={{ color: 'var(--color-text)', marginBottom: 8 }}>Kính gửi sinh viên/học viên,</p>
+                <p style={{ color: 'var(--color-text)', marginBottom: 8 }}>{t('Kính gửi sinh viên/học viên,')}</p>
                 <p style={{ color: 'var(--color-text)', marginBottom: 8 }}>
-                  Theo quy định Bộ GD&amp;ĐT, nhà trường sẽ hoàn học phí HK2 cho các trường hợp đủ điều kiện.
+                  {t('Theo quy định Bộ GD&ĐT, nhà trường sẽ hoàn học phí HK2 cho các trường hợp đủ điều kiện.')}
                 </p>
                 <p style={{ color: 'var(--color-text)', marginBottom: 12 }}>
-                  Vui lòng{' '}
+                  {t('Vui lòng')}{' '}
                   <span style={{ color: 'var(--color-blue)', fontWeight: 500, cursor: 'pointer' }}>
-                    xác nhận thông tin ngân hàng tại đây
+                    {t('xác nhận thông tin ngân hàng tại đây')}
                   </span>{' '}
-                  trước 30/06/2026.
+                  {t('trước 30/06/2026.')}
                 </p>
-                <p style={{ color: 'var(--color-muted)', fontSize: 12 }}>Phòng Tài vụ · Đại học Quốc gia</p>
+                <p style={{ color: 'var(--color-muted)', fontSize: 12 }}>{t('Phòng Tài vụ · Đại học Quốc gia')}</p>
               </div>
               <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>Độ khó:</span>
-                <span style={{ fontSize: 13, color: 'var(--color-amber)', fontWeight: 500 }}>●●○ Trung bình</span>
+                <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>{t('Độ khó:')}</span>
+                <span style={{ fontSize: 13, color: 'var(--color-amber)', fontWeight: 500 }}>{t('●●○ Trung bình')}</span>
               </div>
             </div>
           </div>
@@ -356,15 +361,15 @@ export default function CampaignWizardPage() {
         {step === 3 && (
           <div style={{ ...cardStyle, padding: 28, marginBottom: 16 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
-              Chọn đối tượng · Target audience
+              {t('Chọn đối tượng · Target audience')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 24 }}>
-              Chọn nhóm người dùng sẽ nhận email mô phỏng
+              {t('Chọn nhóm người dùng sẽ nhận email mô phỏng')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {(groupsQuery.isLoading || (!groupsQuery.isLoading && groups.length === 0)) && (
                 <div style={{ fontSize: 12.5, color: 'var(--color-muted)', padding: '4px 2px' }}>
-                  {groupsQuery.isLoading ? 'Đang tải nhóm…' : 'Chưa có nhóm đối tượng nào.'}
+                  {groupsQuery.isLoading ? t('Đang tải nhóm…') : t('Chưa có nhóm đối tượng nào.')}
                 </div>
               )}
               {groups.map((g) => {
@@ -420,10 +425,10 @@ export default function CampaignWizardPage() {
         {step === 4 && (
           <div style={{ ...cardStyle, padding: 28, marginBottom: 16 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
-              Đặt lịch gửi · Schedule
+              {t('Đặt lịch gửi · Schedule')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 24 }}>
-              Cấu hình thời điểm và tốc độ gửi email mô phỏng
+              {t('Cấu hình thời điểm và tốc độ gửi email mô phỏng')}
             </div>
             <div
               style={{
@@ -434,16 +439,16 @@ export default function CampaignWizardPage() {
               }}
             >
               <div>
-                <label style={fieldLabel}>Ngày gửi</label>
+                <label style={fieldLabel}>{t('Ngày gửi')}</label>
                 <input type="date" value={date} onChange={(e) => setDate(e.target.value)} style={inputStyle} />
               </div>
               <div>
-                <label style={fieldLabel}>Giờ gửi</label>
+                <label style={fieldLabel}>{t('Giờ gửi')}</label>
                 <input type="time" value={time} onChange={(e) => setTime(e.target.value)} style={inputStyle} />
               </div>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={{ ...fieldLabel, marginBottom: 10 }}>Tốc độ gửi</label>
+              <label style={{ ...fieldLabel, marginBottom: 10 }}>{t('Tốc độ gửi')}</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {sendSpeeds.map((label, i) => {
                   const sel = speed === i;
@@ -465,7 +470,7 @@ export default function CampaignWizardPage() {
                       aria-pressed={sel}
                     >
                       <Radio checked={sel} />
-                      <span style={{ fontSize: 14, color: sel ? 'var(--color-text)' : 'var(--color-muted)' }}>{label}</span>
+                      <span style={{ fontSize: 14, color: sel ? 'var(--color-text)' : 'var(--color-muted)' }}>{t(label)}</span>
                     </button>
                   );
                 })}
@@ -481,8 +486,7 @@ export default function CampaignWizardPage() {
                 color: 'var(--color-blue)',
               }}
             >
-              Sau khi ai đó bấm link mô phỏng → hệ thống tự đăng ký họ vào khóa học phù hợp và hiển thị trang
-              Just-in-time coaching.
+              {t('Sau khi ai đó bấm link mô phỏng → hệ thống tự đăng ký họ vào khóa học phù hợp và hiển thị trang Just-in-time coaching.')}
             </div>
           </div>
         )}
@@ -491,10 +495,10 @@ export default function CampaignWizardPage() {
         {step === 5 && (
           <div style={{ ...cardStyle, padding: 28, marginBottom: 16 }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
-              Xem trước &amp; Phát động · Preview &amp; Launch
+              {t('Xem trước & Phát động · Preview & Launch')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginBottom: 24 }}>
-              Kiểm tra thông tin lần cuối trước khi phát động
+              {t('Kiểm tra thông tin lần cuối trước khi phát động')}
             </div>
             <div
               style={{
@@ -504,24 +508,24 @@ export default function CampaignWizardPage() {
                 marginBottom: 28,
               }}
             >
-              <SummaryTile label="Kênh" value={selectedChannel?.title ?? 'Email Phishing'} />
-              <SummaryTile label="Mẫu" value={selectedTemplate?.title ?? 'Hoàn tiền học phí'} />
+              <SummaryTile label={t('Kênh')} value={selectedChannel?.title ?? 'Email Phishing'} />
+              <SummaryTile label={t('Mẫu')} value={selectedTemplate?.title ?? t('Hoàn tiền học phí')} />
               <SummaryTile
-                label="Đối tượng"
-                value={selectedGroup ? (selectedGroup.sub.split(' · ')[0] ?? '212 người') : '212 người'}
-                sub={selectedGroup?.title ?? 'Kế toán + Kinh doanh'}
+                label={t('Đối tượng')}
+                value={selectedGroup ? (selectedGroup.sub.split(' · ')[0] ?? t('212 người')) : t('212 người')}
+                sub={selectedGroup?.title ?? t('Kế toán + Kinh doanh')}
               />
               <SummaryTile
-                label="Lịch"
+                label={t('Lịch')}
                 value={`${date.split('-').reverse().join('/')} ${time}`}
-                sub={(sendSpeeds[speed] ?? '').split(' (')[0] ?? ''}
+                sub={t((sendSpeeds[speed] ?? '').split(' (')[0] ?? '')}
               />
             </div>
             <Button variant="danger" fullWidth onClick={launch}>
-              Phát động chiến dịch · Launch Campaign
+              {t('Phát động chiến dịch · Launch Campaign')}
             </Button>
             <div style={{ textAlign: 'center', marginTop: 10, fontSize: 12.5, color: 'var(--color-muted)' }}>
-              Hành động này không thể hoàn tác.
+              {t('Hành động này không thể hoàn tác.')}
             </div>
           </div>
         )}
@@ -529,12 +533,12 @@ export default function CampaignWizardPage() {
         {/* Wizard nav */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Button variant="secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>
-            ← Trở lại
+            {t('← Trở lại')}
           </Button>
-          <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>Bước {step} / 5</div>
+          <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{t('Bước {n} / 5', { n: step })}</div>
           {step < 5 ? (
             <Button variant="primary" disabled={!canNext} onClick={() => setStep((s) => Math.min(5, s + 1))}>
-              Tiếp theo →
+              {t('Tiếp theo →')}
             </Button>
           ) : (
             <div style={{ width: 100 }} />

@@ -18,8 +18,14 @@ fallback). `LanguageSwitcher` (VI/EN) in the top bar, persisted to localStorage.
 - [x] Login + Admin Dashboard fully localized
 - [x] SOC pages (Inbox, Alert Center, Threat Intel, Intervention Log, Watchlist)
 - [x] Learning pages (Portal, Course Catalog, Lesson Player, Quiz, Quiz Results)
-- [ ] Remaining feature pages (campaigns, users, admin/super, settings, etc.) —
-      wrap strings in `t('…')` and add EN entries to `messages.ts`, file by file.
+- [x] Auth flows (Login, Forgot Password, MFA, SSO, Onboarding)
+- [x] Admin (Dashboard, AIDA, Gamification, Org Settings, Content Studio)
+- [x] Campaigns (Wizard, Results), Users, Compliance, Certificates
+- [x] Super admin (Tenant Console, SCIM Config, Audit Log)
+
+All user-facing feature pages are localized. Future new strings just need a
+`t('…')` wrap + an EN entry in `messages.ts` (untranslated strings fall back to
+Vietnamese automatically).
 
 ---
 

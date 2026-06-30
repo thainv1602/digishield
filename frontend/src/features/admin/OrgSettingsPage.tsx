@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Input, Select, StatusPill, useToast } from '@/shared/ui';
+import { useT } from '@/shared/i18n/I18nProvider';
 import {
   useFeatureFlags,
   useTenantSettings,
@@ -67,6 +68,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export default function OrgSettingsPage() {
+  const t = useT();
   const toast = useToast();
   const settings = useTenantSettings();
   const flags = useFeatureFlags();
@@ -86,8 +88,8 @@ export default function OrgSettingsPage() {
   function saveThresholds() {
     if (!form) return;
     updateThresholds.mutate(form, {
-      onSuccess: () => toast.push({ msg: 'Đã lưu ngưỡng nghiệp vụ', variant: 'success' }),
-      onError: () => toast.push({ msg: 'Không lưu được, thử lại', variant: 'error' }),
+      onSuccess: () => toast.push({ msg: t('Đã lưu ngưỡng nghiệp vụ'), variant: 'success' }),
+      onError: () => toast.push({ msg: t('Không lưu được, thử lại'), variant: 'error' }),
     });
   }
 
@@ -105,10 +107,10 @@ export default function OrgSettingsPage() {
               marginBottom: 4,
             }}
           >
-            Cài đặt tổ chức · Org Settings
+            {t('Cài đặt tổ chức · Org Settings')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
-            Cấu hình tenant, vùng dữ liệu và ngưỡng nghiệp vụ
+            {t('Cấu hình tenant, vùng dữ liệu và ngưỡng nghiệp vụ')}
           </div>
         </div>
 
@@ -116,25 +118,25 @@ export default function OrgSettingsPage() {
           {/* Org info */}
           <div style={cardStyle}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-              Thông tin tổ chức
+              {t('Thông tin tổ chức')}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-              <Field label="Tên tổ chức">
-                <Input defaultValue="Cơ quan ABC" aria-label="Tên tổ chức" />
+              <Field label={t('Tên tổ chức')}>
+                <Input defaultValue={t('Cơ quan ABC')} aria-label={t('Tên tổ chức')} />
               </Field>
-              <Field label="Tên miền">
-                <Input defaultValue="abc.gov.vn" disabled aria-label="Tên miền" />
+              <Field label={t('Tên miền')}>
+                <Input defaultValue="abc.gov.vn" disabled aria-label={t('Tên miền')} />
               </Field>
-              <Field label="Loại tổ chức">
-                <Select aria-label="Loại tổ chức" defaultValue="gov">
-                  <option value="gov">Cơ quan nhà nước (gov)</option>
-                  <option value="edu">Giáo dục (edu)</option>
-                  <option value="enterprise">Doanh nghiệp (enterprise)</option>
+              <Field label={t('Loại tổ chức')}>
+                <Select aria-label={t('Loại tổ chức')} defaultValue="gov">
+                  <option value="gov">{t('Cơ quan nhà nước (gov)')}</option>
+                  <option value="edu">{t('Giáo dục (edu)')}</option>
+                  <option value="enterprise">{t('Doanh nghiệp (enterprise)')}</option>
                 </Select>
               </Field>
-              <Field label="Vùng lưu trữ dữ liệu">
-                <Select aria-label="Vùng lưu trữ dữ liệu" defaultValue="in-country">
-                  <option value="in-country">In-country (Việt Nam)</option>
+              <Field label={t('Vùng lưu trữ dữ liệu')}>
+                <Select aria-label={t('Vùng lưu trữ dữ liệu')} defaultValue="in-country">
+                  <option value="in-country">{t('In-country (Việt Nam)')}</option>
                   <option value="on-prem">On-premises</option>
                   <option value="cloud">Cloud (Singapore)</option>
                 </Select>
@@ -150,7 +152,7 @@ export default function OrgSettingsPage() {
                 color: 'var(--pill-info-fg)',
               }}
             >
-              Dữ liệu được lưu trữ tại datacenter trong lãnh thổ Việt Nam, tuân thủ Nghị định 13/2023/NĐ-CP.
+              {t('Dữ liệu được lưu trữ tại datacenter trong lãnh thổ Việt Nam, tuân thủ Nghị định 13/2023/NĐ-CP.')}
             </div>
           </div>
 
@@ -165,20 +167,20 @@ export default function OrgSettingsPage() {
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
-                Định danh &amp; Đồng bộ · Identity Provider
+                {t('Định danh & Đồng bộ · Identity Provider')}
               </div>
               {settings.data && (
                 <StatusPill variant={settings.data.connected ? 'safe' : 'neutral'} dot>
-                  {settings.data.connected ? 'Đã kết nối' : 'Chưa kết nối'}
+                  {settings.data.connected ? t('Đã kết nối') : t('Chưa kết nối')}
                 </StatusPill>
               )}
             </div>
-            {settings.isLoading && <InlineMessage>Đang tải cấu hình tenant…</InlineMessage>}
+            {settings.isLoading && <InlineMessage>{t('Đang tải cấu hình tenant…')}</InlineMessage>}
             {!settings.isLoading && settings.isError && (
               <InlineMessage>
-                <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được cấu hình tenant. </span>
+                <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được cấu hình tenant. ')}</span>
                 <button type="button" onClick={() => settings.refetch()} style={inlineRetry}>
-                  Thử lại
+                  {t('Thử lại')}
                 </button>
               </InlineMessage>
             )}
@@ -187,10 +189,10 @@ export default function OrgSettingsPage() {
                 <ReadField label="Identity Provider" value={settings.data.idpName} />
                 <ReadField label="SCIM Endpoint" value={settings.data.scimEndpoint} mono />
                 <ReadField
-                  label="Người dùng đã đồng bộ"
+                  label={t('Người dùng đã đồng bộ')}
                   value={settings.data.syncedUserCount != null ? settings.data.syncedUserCount.toLocaleString('vi-VN') : null}
                 />
-                <ReadField label="Trạng thái đồng bộ" value={settings.data.syncStatus} />
+                <ReadField label={t('Trạng thái đồng bộ')} value={settings.data.syncStatus} />
               </div>
             )}
           </div>
@@ -198,19 +200,19 @@ export default function OrgSettingsPage() {
           {/* Feature flags (live: GET /tenants/{id}/feature-flags) */}
           <div style={cardStyle}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-              Tính năng · Feature Flags
+              {t('Tính năng · Feature Flags')}
             </div>
-            {flags.isLoading && <InlineMessage>Đang tải feature flags…</InlineMessage>}
+            {flags.isLoading && <InlineMessage>{t('Đang tải feature flags…')}</InlineMessage>}
             {!flags.isLoading && flags.isError && (
               <InlineMessage>
-                <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được feature flags. </span>
+                <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được feature flags. ')}</span>
                 <button type="button" onClick={() => flags.refetch()} style={inlineRetry}>
-                  Thử lại
+                  {t('Thử lại')}
                 </button>
               </InlineMessage>
             )}
             {!flags.isLoading && !flags.isError && (flags.data?.length ?? 0) === 0 && (
-              <InlineMessage>Chưa có feature flag nào.</InlineMessage>
+              <InlineMessage>{t('Chưa có feature flag nào.')}</InlineMessage>
             )}
             {!flags.isLoading && !flags.isError && (flags.data?.length ?? 0) > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -236,7 +238,7 @@ export default function OrgSettingsPage() {
                       {f.key}
                     </span>
                     <StatusPill variant={f.enabled ? 'safe' : 'neutral'} dot>
-                      {f.enabled ? 'Bật' : 'Tắt'}
+                      {f.enabled ? t('Bật') : t('Tắt')}
                     </StatusPill>
                   </div>
                 ))}
@@ -247,12 +249,12 @@ export default function OrgSettingsPage() {
           {/* Business parameters (live: GET/PATCH /tenants/{id}/thresholds) */}
           <div style={cardStyle}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-              Ngưỡng nghiệp vụ · Business Parameters
+              {t('Ngưỡng nghiệp vụ · Business Parameters')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {!form && (
                 <div style={{ fontSize: 12.5, color: 'var(--color-muted)' }}>
-                  {thresholdsQuery.isError ? 'Không tải được ngưỡng.' : 'Đang tải ngưỡng…'}
+                  {thresholdsQuery.isError ? t('Không tải được ngưỡng.') : t('Đang tải ngưỡng…')}
                 </div>
               )}
               {form &&
@@ -264,8 +266,8 @@ export default function OrgSettingsPage() {
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
                 >
                   <div>
-                    <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--color-text)' }}>{m.title}</div>
-                    <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{m.desc}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--color-text)' }}>{t(m.title)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{t(m.desc)}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
@@ -275,7 +277,7 @@ export default function OrgSettingsPage() {
                       value={value}
                       onChange={(e) => setThreshold(m.key, Number(e.target.value))}
                       style={{ width: 100 }}
-                      aria-label={m.title}
+                      aria-label={t(m.title)}
                     />
                     <span
                       style={{
@@ -301,14 +303,14 @@ export default function OrgSettingsPage() {
               variant="outline"
               onClick={() => thresholdsQuery.data && setForm(thresholdsQuery.data)}
             >
-              Hủy
+              {t('Hủy')}
             </Button>
             <Button
               variant="primary"
               disabled={!form || updateThresholds.isPending}
               onClick={saveThresholds}
             >
-              {updateThresholds.isPending ? 'Đang lưu…' : 'Lưu cài đặt'}
+              {updateThresholds.isPending ? t('Đang lưu…') : t('Lưu cài đặt')}
             </Button>
           </div>
         </div>

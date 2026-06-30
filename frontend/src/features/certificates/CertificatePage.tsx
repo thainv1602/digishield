@@ -1,5 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { Button, useToast } from '@/shared/ui';
+import { useT } from '@/shared/i18n/I18nProvider';
 import { useCertificate } from '../learning/api';
 
 /**
@@ -33,20 +34,21 @@ export default function CertificatePage() {
   const { id } = useParams<{ id: string }>();
   const { data: cert, isLoading, isError, refetch } = useCertificate(id);
   const toast = useToast();
+  const t = useT();
 
   if (isLoading) {
-    return <StatusBlock>Đang tải chứng chỉ…</StatusBlock>;
+    return <StatusBlock>{t('Đang tải chứng chỉ…')}</StatusBlock>;
   }
   if (isError || !cert) {
     return (
       <StatusBlock>
-        <span style={{ color: 'var(--red)', fontWeight: 600 }}>Không tải được chứng chỉ. </span>
+        <span style={{ color: 'var(--red)', fontWeight: 600 }}>{t('Không tải được chứng chỉ. ')}</span>
         <button
           type="button"
           onClick={() => refetch()}
           style={{ all: 'unset', color: 'var(--blue)', cursor: 'pointer', fontWeight: 600 }}
         >
-          Thử lại
+          {t('Thử lại')}
         </button>
       </StatusBlock>
     );
@@ -57,7 +59,7 @@ export default function CertificatePage() {
   const scoreLabel = cert.score != null ? `${cert.score}/100` : '—';
   const serial = cert.serial ?? '—';
   const verifyUrl = displayUrl(cert.verifyUrl);
-  const courseTitle = cert.courseTitle ?? 'Chứng chỉ';
+  const courseTitle = cert.courseTitle ?? t('Chứng chỉ');
   const recipient = cert.recipient ?? '—';
 
   // No dedicated PDF/share endpoint: print to PDF via the browser, and share the
@@ -67,12 +69,12 @@ export default function CertificatePage() {
   }
 
   async function onShare() {
-    const text = cert?.verifyUrl ?? `${courseTitle} — ${recipient} — Mã xác minh: ${serial}`;
+    const text = cert?.verifyUrl ?? `${courseTitle} — ${recipient} — ${t('Mã xác minh: {serial}', { serial })}`;
     try {
       await navigator.clipboard.writeText(text);
-      toast('Đã sao chép liên kết xác minh');
+      toast(t('Đã sao chép liên kết xác minh'));
     } catch {
-      toast('Không sao chép được, vui lòng thử lại');
+      toast(t('Không sao chép được, vui lòng thử lại'));
     }
   }
 
@@ -89,16 +91,16 @@ export default function CertificatePage() {
               margin: '0 0 4px',
             }}
           >
-            Chứng chỉ của tôi · My Certificates
+            {t('Chứng chỉ của tôi · My Certificates')}
           </h1>
           <p style={{ fontSize: 13, color: 'var(--muted)', margin: 0 }}>
-            Tải PDF hoặc chia sẻ nội bộ để xác minh
+            {t('Tải PDF hoặc chia sẻ nội bộ để xác minh')}
           </p>
         </header>
 
         {/* Certificate card */}
         <article
-          aria-label={`Chứng chỉ ${id ?? ''}`}
+          aria-label={t('Chứng chỉ {id}', { id: id ?? '' })}
           style={{
             background: 'var(--surface)',
             border: '2px solid var(--blue)',
@@ -164,7 +166,7 @@ export default function CertificatePage() {
               marginBottom: 8,
             }}
           >
-            Chứng chỉ hoàn thành · Certificate of Completion
+            {t('Chứng chỉ hoàn thành · Certificate of Completion')}
           </div>
           <div
             style={{
@@ -179,7 +181,7 @@ export default function CertificatePage() {
             {courseTitle}
           </div>
           <div style={{ fontSize: 14, color: 'var(--muted)', marginBottom: 20 }}>
-            Cấp cho: <strong style={{ color: 'var(--text)' }}>{recipient}</strong>
+            {t('Cấp cho:')} <strong style={{ color: 'var(--text)' }}>{recipient}</strong>
           </div>
 
           {/* 3 metadata tiles */}
@@ -192,11 +194,11 @@ export default function CertificatePage() {
               marginBottom: 24,
             }}
           >
-            <MetaTile label="Ngày cấp" value={issuedAt} />
+            <MetaTile label={t('Ngày cấp')} value={issuedAt} />
             <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
-            <MetaTile label="Điểm đạt" value={scoreLabel} valueColor="var(--teal)" />
+            <MetaTile label={t('Điểm đạt')} value={scoreLabel} valueColor="var(--teal)" />
             <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
-            <MetaTile label="Hiệu lực" value={validUntil} />
+            <MetaTile label={t('Hiệu lực')} value={validUntil} />
           </div>
 
           {/* QR + serial */}
@@ -220,7 +222,7 @@ export default function CertificatePage() {
                 justifyContent: 'center',
               }}
             >
-              <svg width="52" height="52" viewBox="0 0 52 52" role="img" aria-label="Mã QR xác minh">
+              <svg width="52" height="52" viewBox="0 0 52 52" role="img" aria-label={t('Mã QR xác minh')}>
                 <rect x="4" y="4" width="16" height="16" fill="none" stroke="var(--text)" strokeWidth="3" />
                 <rect x="8" y="8" width="8" height="8" fill="var(--text)" />
                 <rect x="32" y="4" width="16" height="16" fill="none" stroke="var(--text)" strokeWidth="3" />
@@ -234,7 +236,7 @@ export default function CertificatePage() {
               </svg>
             </div>
             <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>Mã xác minh</div>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{t('Mã xác minh')}</div>
               <div
                 style={{
                   fontFamily: "'JetBrains Mono', monospace",
@@ -247,7 +249,7 @@ export default function CertificatePage() {
               </div>
               {verifyUrl && (
                 <div style={{ fontSize: 11.5, color: 'var(--blue)', marginTop: 4 }}>
-                  Xác minh tại {verifyUrl} →
+                  {t('Xác minh tại {verifyUrl} →', { verifyUrl })}
                 </div>
               )}
             </div>
@@ -257,10 +259,10 @@ export default function CertificatePage() {
         {/* Actions */}
         <div style={{ display: 'flex', gap: 12 }}>
           <Button type="button" variant="primary" fullWidth onClick={onDownload}>
-            Tải PDF
+            {t('Tải PDF')}
           </Button>
           <Button type="button" variant="secondary" fullWidth onClick={onShare}>
-            Chia sẻ nội bộ
+            {t('Chia sẻ nội bộ')}
           </Button>
         </div>
     </div>

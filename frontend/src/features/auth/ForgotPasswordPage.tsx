@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Check } from 'lucide-react';
 import { AuthScreen, AuthCard, authInputStyle, authLabelStyle } from './authShared';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 /** Forgot Password — email input + reset link, with inline success banner. */
 export default function ForgotPasswordPage() {
+  const t = useT();
   const navigate = useNavigate();
   const [email, setEmail] = useState('admin@coquan.gov.vn');
   const [sent, setSent] = useState(false);
@@ -28,16 +30,16 @@ export default function ForgotPasswordPage() {
           >
             <Lock size={24} strokeWidth={2} color="var(--color-blue)" />
           </div>
-          <h1 style={{ fontSize: 22, marginBottom: 6 }}>Đặt lại mật khẩu</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 6 }}>{t('Đặt lại mật khẩu')}</h1>
           <div style={{ fontSize: 13.5, color: 'var(--color-muted)' }}>
-            Nhập email để nhận link đặt lại mật khẩu
+            {t('Nhập email để nhận link đặt lại mật khẩu')}
           </div>
         </div>
 
         <AuthCard>
           <div style={{ marginBottom: 20 }}>
             <label htmlFor="fp-email" style={authLabelStyle}>
-              Email công việc
+              {t('Email công việc')}
             </label>
             <input
               id="fp-email"
@@ -64,7 +66,7 @@ export default function ForgotPasswordPage() {
               marginBottom: 16,
             }}
           >
-            Gửi link đặt lại mật khẩu
+            {t('Gửi link đặt lại mật khẩu')}
           </button>
 
           {sent ? (
@@ -82,7 +84,7 @@ export default function ForgotPasswordPage() {
               }}
             >
               <Check size={16} strokeWidth={2.5} />
-              Link đã gửi tới {email} — kiểm tra hộp thư
+              {t('Link đã gửi tới {email} — kiểm tra hộp thư', { email })}
             </div>
           ) : null}
         </AuthCard>
@@ -92,7 +94,7 @@ export default function ForgotPasswordPage() {
             onClick={() => navigate('/login')}
             style={{ fontSize: 13, color: 'var(--color-muted)', cursor: 'pointer' }}
           >
-            ← Quay lại đăng nhập
+            {t('← Quay lại đăng nhập')}
           </span>
         </div>
       </div>

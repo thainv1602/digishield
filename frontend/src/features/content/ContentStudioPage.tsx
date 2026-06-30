@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, useToast } from '@/shared/ui';
 import { Check, Sparkles } from 'lucide-react';
 import { useGenerateTemplate, useTemplates, type SimTemplate } from './api';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 /**
  * ContentStudioPage — AI-assisted template authoring.
@@ -61,14 +62,15 @@ const cardStyle: React.CSSProperties = {
 };
 
 export default function ContentStudioPage() {
+  const t = useT();
   const toast = useToast();
   const generate = useGenerateTemplate();
   const { data, isLoading, isError } = useTemplates();
   const [filter, setFilter] = useState<Filter>('all');
   const [selected, setSelected] = useState('');
-  const [title, setTitle] = useState('Thông báo hoàn học phí học kỳ II');
+  const [title, setTitle] = useState(t('Thông báo hoàn học phí học kỳ II'));
   const [body, setBody] = useState(
-    'Kính gửi sinh viên/học viên,\n\nTheo quy định Bộ GD&ĐT, nhà trường sẽ hoàn học phí HK2 cho các trường hợp đủ điều kiện. Vui lòng xác nhận thông tin ngân hàng tại đây trước 30/06/2026.',
+    t('Kính gửi sinh viên/học viên,\n\nTheo quy định Bộ GD&ĐT, nhà trường sẽ hoàn học phí HK2 cho các trường hợp đủ điều kiện. Vui lòng xác nhận thông tin ngân hàng tại đây trước 30/06/2026.'),
   );
 
   const templates = useMemo<Template[]>(() => (data ?? []).map(toTemplate), [data]);
@@ -82,10 +84,10 @@ export default function ContentStudioPage() {
         onSuccess: (draft) => {
           if (draft.subject) setTitle(draft.subject);
           if (draft.body) setBody(draft.body);
-          toast.push({ msg: 'Đã sinh mẫu bằng AI', variant: 'success' });
+          toast.push({ msg: t('Đã sinh mẫu bằng AI'), variant: 'success' });
         },
         onError: () => {
-          toast.push({ msg: 'Không sinh được mẫu', variant: 'error' });
+          toast.push({ msg: t('Không sinh được mẫu'), variant: 'error' });
         },
       },
     );
@@ -105,10 +107,10 @@ export default function ContentStudioPage() {
               marginBottom: 4,
             }}
           >
-            Content Studio · Soạn mẫu
+            {t('Content Studio · Soạn mẫu')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
-            Tạo, duyệt và quản lý mẫu mô phỏng bằng AI
+            {t('Tạo, duyệt và quản lý mẫu mô phỏng bằng AI')}
           </div>
         </div>
 
@@ -124,9 +126,9 @@ export default function ContentStudioPage() {
                 justifyContent: 'space-between',
               }}
             >
-              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text)' }}>Thư viện mẫu</span>
+              <span style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text)' }}>{t('Thư viện mẫu')}</span>
               <Button size="sm" variant="primary">
-                + Mới
+                {t('+ Mới')}
               </Button>
             </div>
 
@@ -157,7 +159,7 @@ export default function ContentStudioPage() {
                       border: 'none',
                     }}
                   >
-                    {f === 'all' ? 'Tất cả' : f === 'email' ? 'Email' : 'SMS'}
+                    {f === 'all' ? t('Tất cả') : f === 'email' ? 'Email' : 'SMS'}
                   </button>
                 );
               })}
@@ -167,10 +169,10 @@ export default function ContentStudioPage() {
               {(isLoading || isError || visible.length === 0) && (
                 <div style={{ padding: '16px 8px', fontSize: 12.5, color: 'var(--color-muted)' }}>
                   {isLoading
-                    ? 'Đang tải thư viện…'
+                    ? t('Đang tải thư viện…')
                     : isError
-                      ? 'Không tải được thư viện.'
-                      : 'Chưa có mẫu nào trong thư viện.'}
+                      ? t('Không tải được thư viện.')
+                      : t('Chưa có mẫu nào trong thư viện.')}
                 </div>
               )}
               {visible.map((t) => {
@@ -234,7 +236,7 @@ export default function ContentStudioPage() {
               >
                 <Sparkles size={14} color="var(--color-blue)" />
                 <span style={{ fontSize: 13, color: 'var(--color-blue)', fontWeight: 500 }}>
-                  {generate.isPending ? 'Đang sinh…' : 'Sinh bằng AI'}
+                  {generate.isPending ? t('Đang sinh…') : t('Sinh bằng AI')}
                 </span>
               </button>
             </div>
@@ -251,31 +253,31 @@ export default function ContentStudioPage() {
                   marginBottom: 16,
                 }}
               >
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>Soạn mẫu</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Soạn mẫu')}</div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => toast.push({ msg: 'Đã lưu nháp' })}
+                    onClick={() => toast.push({ msg: t('Đã lưu nháp') })}
                   >
-                    Lưu nháp
+                    {t('Lưu nháp')}
                   </Button>
                   <Button
                     size="sm"
                     variant="primary"
-                    onClick={() => toast.push({ msg: 'Đã gửi duyệt', variant: 'success' })}
+                    onClick={() => toast.push({ msg: t('Đã gửi duyệt'), variant: 'success' })}
                   >
-                    Gửi duyệt
+                    {t('Gửi duyệt')}
                   </Button>
                 </div>
               </div>
 
               <div style={{ marginBottom: 12 }}>
-                <label style={fieldLabel}>Tiêu đề</label>
+                <label style={fieldLabel}>{t('Tiêu đề')}</label>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} style={inputStyle} />
               </div>
               <div>
-                <label style={fieldLabel}>Nội dung email</label>
+                <label style={fieldLabel}>{t('Nội dung email')}</label>
                 <textarea
                   rows={5}
                   value={body}
@@ -288,7 +290,7 @@ export default function ContentStudioPage() {
             {/* AI moderation pass banner */}
             <div style={{ ...cardStyle, padding: 20 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 12 }}>
-                Kiểm duyệt AI · Moderation
+                {t('Kiểm duyệt AI · Moderation')}
               </div>
               <div
                 style={{
@@ -303,11 +305,11 @@ export default function ContentStudioPage() {
               >
                 <Check size={16} color="var(--color-teal)" strokeWidth={2.5} />
                 <span style={{ fontSize: 13, color: 'var(--pill-safe-fg)', fontWeight: 500 }}>
-                  PASS — Không phát hiện nội dung vi phạm
+                  {t('PASS — Không phát hiện nội dung vi phạm')}
                 </span>
               </div>
               <div style={{ marginTop: 10, fontSize: 12.5, color: 'var(--color-muted)' }}>
-                Kiểm tra lần cuối: 27/06/2026 09:31 · Độ tin cậy: 0.97
+                {t('Kiểm tra lần cuối: 27/06/2026 09:31 · Độ tin cậy: 0.97')}
               </div>
             </div>
           </div>

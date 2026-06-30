@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useT } from '@/shared/i18n/I18nProvider';
 import { Button, DataTable, StatusPill } from '@/shared/ui';
 import type { ColumnDef, StatusVariant } from '@/shared/ui';
 import { useTenants, type Tenant as TenantDto } from './api';
@@ -54,6 +55,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export default function TenantConsolePage() {
+  const t = useT();
   const { data, isLoading, isError, refetch } = useTenants();
 
   const tenants = useMemo<TenantRow[]>(() => (data ?? []).map(toRow), [data]);
@@ -77,35 +79,35 @@ export default function TenantConsolePage() {
   const columns: ColumnDef<TenantRow>[] = [
     {
       id: 'org',
-      header: 'Tổ chức',
-      cell: (t) => (
+      header: t('Tổ chức'),
+      cell: (row) => (
         <div>
-          <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--color-text)' }}>{t.org}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--color-muted)' }}>{t.domain}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--color-text)' }}>{row.org}</div>
+          <div style={{ fontSize: 11.5, color: 'var(--color-muted)' }}>{row.domain}</div>
         </div>
       ),
     },
-    { id: 'type', header: 'Loại', cell: (t) => <span style={{ color: 'var(--color-muted)' }}>{t.type}</span>, width: '90px' },
+    { id: 'type', header: t('Loại'), cell: (row) => <span style={{ color: 'var(--color-muted)' }}>{row.type}</span>, width: '90px' },
     {
       id: 'users',
-      header: 'Người dùng',
-      cell: (t) => <span style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--color-text)' }}>{t.users}</span>,
+      header: t('Người dùng'),
+      cell: (row) => <span style={{ fontFamily: "'JetBrains Mono', monospace", color: 'var(--color-text)' }}>{row.users}</span>,
       width: '110px',
     },
     {
       id: 'status',
-      header: 'Trạng thái',
-      cell: (t) => (
-        <StatusPill variant={t.status.variant} dot>
-          {t.status.text}
+      header: t('Trạng thái'),
+      cell: (row) => (
+        <StatusPill variant={row.status.variant} dot>
+          {t(row.status.text)}
         </StatusPill>
       ),
       width: '130px',
     },
     {
       id: 'region',
-      header: 'Vùng dữ liệu',
-      cell: (t) => <span style={{ color: 'var(--color-muted)' }}>{t.region}</span>,
+      header: t('Vùng dữ liệu'),
+      cell: (row) => <span style={{ color: 'var(--color-muted)' }}>{row.region}</span>,
       width: '110px',
     },
     {
@@ -116,7 +118,7 @@ export default function TenantConsolePage() {
           type="button"
           style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
         >
-          Quản lý
+          {t('Quản lý')}
         </button>
       ),
       width: '80px',
@@ -145,13 +147,13 @@ export default function TenantConsolePage() {
                 letterSpacing: '-.02em',
               }}
             >
-              Quản trị Tenant · Super Admin
+              {t('Quản trị Tenant · Super Admin')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
-              {tenants.length} tổ chức · {totalUsers.toLocaleString('vi-VN')} người dùng tổng
+              {t('{n} tổ chức · {m} người dùng tổng', { n: tenants.length, m: totalUsers.toLocaleString('vi-VN') })}
             </div>
           </div>
-          <Button variant="primary">+ Tạo tổ chức</Button>
+          <Button variant="primary">{t('+ Tạo tổ chức')}</Button>
         </div>
 
         {/* KPI cards */}
@@ -175,24 +177,24 @@ export default function TenantConsolePage() {
               >
                 {k.value}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 4 }}>{k.label}</div>
+              <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 4 }}>{t(k.label)}</div>
             </div>
           ))}
         </div>
 
         {/* Tenants table */}
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
-          {isLoading && <TableMessage>Đang tải danh sách tenant…</TableMessage>}
+          {isLoading && <TableMessage>{t('Đang tải danh sách tenant…')}</TableMessage>}
           {!isLoading && isError && (
             <TableMessage>
-              <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được danh sách tenant. </span>
+              <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được danh sách tenant. ')}</span>
               <button type="button" onClick={() => refetch()} style={inlineRetry}>
-                Thử lại
+                {t('Thử lại')}
               </button>
             </TableMessage>
           )}
           {!isLoading && !isError && tenants.length === 0 && (
-            <TableMessage>Chưa có tenant nào.</TableMessage>
+            <TableMessage>{t('Chưa có tenant nào.')}</TableMessage>
           )}
           {!isLoading && !isError && tenants.length > 0 && (
             <DataTable<TenantRow> columns={columns} data={tenants} rowKey={(t) => t.id} />

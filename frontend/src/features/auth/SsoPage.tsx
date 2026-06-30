@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/app/auth/useAuth';
 import { ROLES, defaultRouteForRole } from '@/app/auth/roles';
 import { AuthScreen, AuthCard, authInputStyle, authLabelStyle } from './authShared';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 const IDPS = ['Microsoft Entra', 'Google Workspace', 'SAML 2.0'];
 
@@ -10,6 +11,7 @@ const IDPS = ['Microsoft Entra', 'Google Workspace', 'SAML 2.0'];
 export default function SsoPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const t = useT();
   const [domain, setDomain] = useState('coquan.gov.vn');
 
   function continueSso() {
@@ -22,16 +24,16 @@ export default function SsoPage() {
     <AuthScreen>
       <div style={{ width: 400, animation: 'fadeUp .4s ease' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <h1 style={{ fontSize: 22, marginBottom: 6 }}>Đăng nhập bằng SSO</h1>
+          <h1 style={{ fontSize: 22, marginBottom: 6 }}>{t('Đăng nhập bằng SSO')}</h1>
           <div style={{ fontSize: 13.5, color: 'var(--color-muted)' }}>
-            Nhập tên miền tổ chức của bạn
+            {t('Nhập tên miền tổ chức của bạn')}
           </div>
         </div>
 
         <AuthCard>
           <div style={{ marginBottom: 16 }}>
             <label htmlFor="sso-domain" style={authLabelStyle}>
-              Tên miền tổ chức
+              {t('Tên miền tổ chức')}
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               <input
@@ -56,7 +58,7 @@ export default function SsoPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                Tiếp tục
+                {t('Tiếp tục')}
               </button>
             </div>
           </div>
@@ -92,10 +94,10 @@ export default function SsoPage() {
                   display: 'inline-block',
                 }}
               />
-              Đang chuyển hướng tới Microsoft Entra ID...
+              {t('Đang chuyển hướng tới Microsoft Entra ID...')}
             </div>
             <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>
-              Tổ chức: <strong style={{ color: 'var(--color-text)' }}>Cơ quan ABC ({domain})</strong>
+              {t('Tổ chức:')} <strong style={{ color: 'var(--color-text)' }}>{t('Cơ quan ABC ({domain})', { domain })}</strong>
               <br />
               IdP: <strong style={{ color: 'var(--color-text)' }}>Microsoft Entra ID</strong>
             </div>
@@ -110,7 +112,7 @@ export default function SsoPage() {
               marginBottom: 12,
             }}
           >
-            Hỗ trợ IdP
+            {t('Hỗ trợ IdP')}
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             {IDPS.map((idp) => (
@@ -136,7 +138,7 @@ export default function SsoPage() {
             onClick={() => navigate('/login')}
             style={{ fontSize: 13, color: 'var(--color-muted)', cursor: 'pointer' }}
           >
-            ← Quay lại đăng nhập
+            ← {t('Quay lại đăng nhập')}
           </span>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { Button, DataTable, Select } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { useAuditLogs, type AuditLogEntry } from './api';
+import { useT } from '@/shared/i18n/I18nProvider';
 
 /**
  * AuditLogPage — Super Admin sensitive-action audit trail.
@@ -60,20 +61,21 @@ const monoMuted: React.CSSProperties = {
 };
 
 export default function AuditLogPage() {
+  const t = useT();
   const { data, isLoading, isError, refetch } = useAuditLogs();
 
   const rows = useMemo<AuditRow[]>(() => (data ?? []).map(toRow), [data]);
 
   const columns: ColumnDef<AuditRow>[] = [
-    { id: 'time', header: 'Thời gian', cell: (r) => <span style={monoMuted}>{r.time}</span>, width: '140px' },
+    { id: 'time', header: t('Thời gian'), cell: (r) => <span style={monoMuted}>{r.time}</span>, width: '140px' },
     {
       id: 'actor',
-      header: 'Người thực hiện',
+      header: t('Người thực hiện'),
       cell: (r) => <span style={{ fontSize: 13, color: 'var(--color-text)' }}>{r.actor}</span>,
     },
     {
       id: 'action',
-      header: 'Hành động',
+      header: t('Hành động'),
       cell: (r) => {
         const s = severityStyle[r.severity];
         return (
@@ -95,7 +97,7 @@ export default function AuditLogPage() {
     },
     {
       id: 'object',
-      header: 'Đối tượng',
+      header: t('Đối tượng'),
       cell: (r) => <span style={{ fontSize: 12.5, color: 'var(--color-muted)' }}>{r.object}</span>,
       width: '140px',
     },
@@ -123,30 +125,30 @@ export default function AuditLogPage() {
                 letterSpacing: '-.02em',
               }}
             >
-              Nhật ký kiểm toán · Audit Log
+              {t('Audit Log')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
-              Toàn bộ hành động nhạy cảm · Phục vụ điều tra &amp; tuân thủ
+              {t('Toàn bộ hành động nhạy cảm · Phục vụ điều tra & tuân thủ')}
             </div>
           </div>
-          <Button variant="outline">Xuất CSV</Button>
+          <Button variant="outline">{t('Xuất CSV')}</Button>
         </div>
 
         {/* Filter bar */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          <Select aria-label="Lọc theo người thực hiện" defaultValue="">
-            <option value="">Người thực hiện</option>
+          <Select aria-label={t('Lọc theo người thực hiện')} defaultValue="">
+            <option value="">{t('Người thực hiện')}</option>
             <option>admin@abc.gov.vn</option>
             <option>analyst1@abc.vn</option>
             <option>superadmin@ds.vn</option>
           </Select>
-          <Select aria-label="Lọc theo hành động" defaultValue="">
-            <option value="">Hành động</option>
+          <Select aria-label={t('Lọc theo hành động')} defaultValue="">
+            <option value="">{t('Hành động')}</option>
             <option>broadcast_alert</option>
             <option>triage:confirm</option>
             <option>tenant.suspend</option>
           </Select>
-          <Select aria-label="Lọc theo ngày" defaultValue="">
+          <Select aria-label={t('Lọc theo ngày')} defaultValue="">
             <option value="">27/06/2026</option>
             <option>26/06/2026</option>
             <option>25/06/2026</option>
@@ -162,17 +164,17 @@ export default function AuditLogPage() {
             overflow: 'hidden',
           }}
         >
-          {isLoading && <TableMessage>Đang tải nhật ký…</TableMessage>}
+          {isLoading && <TableMessage>{t('Đang tải nhật ký…')}</TableMessage>}
           {!isLoading && isError && (
             <TableMessage>
-              <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được nhật ký kiểm toán. </span>
+              <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được nhật ký kiểm toán. ')}</span>
               <button type="button" onClick={() => refetch()} style={inlineRetry}>
-                Thử lại
+                {t('Thử lại')}
               </button>
             </TableMessage>
           )}
           {!isLoading && !isError && rows.length === 0 && (
-            <TableMessage>Chưa có bản ghi nào.</TableMessage>
+            <TableMessage>{t('Chưa có bản ghi nào.')}</TableMessage>
           )}
           {!isLoading && !isError && rows.length > 0 && (
             <DataTable<AuditRow> columns={columns} data={rows} rowKey={(r) => r.id} />

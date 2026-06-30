@@ -1,4 +1,5 @@
 import { Button } from '@/shared/ui';
+import { useT } from '@/shared/i18n/I18nProvider';
 import { Award, ShieldCheck, Target, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useLeaderboard, useUserBadges, usePointRules, type PointRule } from './api';
@@ -49,6 +50,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export default function GamificationPage() {
+  const t = useT();
   const badges = useUserBadges(DEMO_USER_ID);
   const leaderboard = useLeaderboard();
   const pointRulesQuery = usePointRules();
@@ -68,10 +70,10 @@ export default function GamificationPage() {
               marginBottom: 4,
             }}
           >
-            Gamification · Huy hiệu &amp; Điểm
+            {t('Gamification · Huy hiệu & Điểm')}
           </div>
           <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
-            Định nghĩa huy hiệu, quy tắc tích điểm và bảng xếp hạng
+            {t('Định nghĩa huy hiệu, quy tắc tích điểm và bảng xếp hạng')}
           </div>
         </div>
 
@@ -86,23 +88,23 @@ export default function GamificationPage() {
                 marginBottom: 16,
               }}
             >
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>Huy hiệu · Badges</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Huy hiệu · Badges')}</div>
               <Button size="sm" variant="primary">
-                + Thêm
+                {t('+ Thêm')}
               </Button>
             </div>
 
-            {badges.isLoading && <InlineMessage>Đang tải huy hiệu…</InlineMessage>}
+            {badges.isLoading && <InlineMessage>{t('Đang tải huy hiệu…')}</InlineMessage>}
             {!badges.isLoading && badges.isError && (
               <InlineMessage>
-                <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được huy hiệu. </span>
+                <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được huy hiệu. ')}</span>
                 <button type="button" onClick={() => badges.refetch()} style={inlineRetry}>
-                  Thử lại
+                  {t('Thử lại')}
                 </button>
               </InlineMessage>
             )}
             {!badges.isLoading && !badges.isError && (badges.data?.length ?? 0) === 0 && (
-              <InlineMessage>Chưa có huy hiệu nào.</InlineMessage>
+              <InlineMessage>{t('Chưa có huy hiệu nào.')}</InlineMessage>
             )}
             {!badges.isLoading && !badges.isError && (badges.data?.length ?? 0) > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -134,7 +136,7 @@ export default function GamificationPage() {
                           fontWeight: 500,
                         }}
                       >
-                        {b.earned ? 'Đã đạt' : 'Chưa đạt'}
+                        {b.earned ? t('Đã đạt') : t('Chưa đạt')}
                       </div>
                     </div>
                   );
@@ -146,16 +148,16 @@ export default function GamificationPage() {
           {/* Point rules + leaderboard */}
           <div style={cardStyle}>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
-              Quy tắc điểm · Point Rules
+              {t('Quy tắc điểm · Point Rules')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {(pointRulesQuery.isLoading || pointRulesQuery.isError || pointRules.length === 0) && (
                 <InlineMessage>
                   {pointRulesQuery.isLoading
-                    ? 'Đang tải quy tắc điểm…'
+                    ? t('Đang tải quy tắc điểm…')
                     : pointRulesQuery.isError
-                      ? 'Không tải được quy tắc điểm.'
-                      : 'Chưa có quy tắc điểm nào.'}
+                      ? t('Không tải được quy tắc điểm.')
+                      : t('Chưa có quy tắc điểm nào.')}
                 </InlineMessage>
               )}
               {pointRules.map((r) => (
@@ -170,7 +172,7 @@ export default function GamificationPage() {
                     borderRadius: 8,
                   }}
                 >
-                  <span style={{ fontSize: 13, color: 'var(--color-text)' }}>{r.label}</span>
+                  <span style={{ fontSize: 13, color: 'var(--color-text)' }}>{t(r.label)}</span>
                   <span
                     style={{
                       fontFamily: "'JetBrains Mono', monospace",
@@ -187,20 +189,20 @@ export default function GamificationPage() {
 
             <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
               <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text)', marginBottom: 10 }}>
-                Bảng xếp hạng
+                {t('Bảng xếp hạng')}
               </div>
 
-              {leaderboard.isLoading && <InlineMessage>Đang tải bảng xếp hạng…</InlineMessage>}
+              {leaderboard.isLoading && <InlineMessage>{t('Đang tải bảng xếp hạng…')}</InlineMessage>}
               {!leaderboard.isLoading && leaderboard.isError && (
                 <InlineMessage>
-                  <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>Không tải được bảng xếp hạng. </span>
+                  <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>{t('Không tải được bảng xếp hạng. ')}</span>
                   <button type="button" onClick={() => leaderboard.refetch()} style={inlineRetry}>
-                    Thử lại
+                    {t('Thử lại')}
                   </button>
                 </InlineMessage>
               )}
               {!leaderboard.isLoading && !leaderboard.isError && (leaderboard.data?.length ?? 0) === 0 && (
-                <InlineMessage>Chưa có dữ liệu xếp hạng.</InlineMessage>
+                <InlineMessage>{t('Chưa có dữ liệu xếp hạng.')}</InlineMessage>
               )}
               {!leaderboard.isLoading && !leaderboard.isError && (leaderboard.data?.length ?? 0) > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

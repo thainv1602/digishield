@@ -1,4 +1,5 @@
 import { Button, ProgressBar } from '@/shared/ui';
+import { useT } from '@/shared/i18n/I18nProvider';
 import {
   useComplianceStatus,
   useCompliancePolicies,
@@ -54,6 +55,7 @@ const labelStyle: React.CSSProperties = {
 };
 
 export default function CompliancePage() {
+  const t = useT();
   const statusQuery = useComplianceStatus();
   const policiesQuery = useCompliancePolicies();
 
@@ -62,21 +64,23 @@ export default function CompliancePage() {
 
   const kpis = [
     {
-      label: 'Tỉ lệ tuân thủ',
+      label: t('Tỉ lệ tuân thủ'),
       value: status ? `${Math.round(status.compliantPct)}%` : '—',
-      sub: status ? `${status.compliantCount}/${status.totalCount} người` : '',
+      sub: status
+        ? t('{a}/{b} người', { a: status.compliantCount, b: status.totalCount })
+        : '',
       color: 'var(--color-teal)',
     },
     {
-      label: 'Đã hoàn thành',
+      label: t('Đã hoàn thành'),
       value: status ? String(status.completedCount) : '—',
-      sub: status ? `/ ${status.policyCount} chính sách` : '',
+      sub: status ? t('/ {n} chính sách', { n: status.policyCount }) : '',
       color: 'var(--color-text)',
     },
     {
-      label: 'Sắp đến hạn',
+      label: t('Sắp đến hạn'),
       value: status ? String(status.dueSoonCount) : '—',
-      sub: 'chính sách',
+      sub: t('chính sách'),
       color: 'var(--color-amber)',
     },
   ];
@@ -105,13 +109,13 @@ export default function CompliancePage() {
                 letterSpacing: '-.02em',
               }}
             >
-              Tuân thủ · Compliance
+              Compliance
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
-              Theo dõi việc hoàn thành các chính sách bắt buộc
+              {t('Theo dõi việc hoàn thành các chính sách bắt buộc')}
             </div>
           </div>
-          <Button variant="outline">Xuất báo cáo PDF</Button>
+          <Button variant="outline">{t('Xuất báo cáo PDF')}</Button>
         </div>
 
         {/* KPI tiles */}
@@ -145,21 +149,21 @@ export default function CompliancePage() {
         {/* Policy list */}
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--color-border)' }}>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>Danh sách chính sách</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Danh sách chính sách')}</div>
           </div>
-          {policiesLoading && <ListMessage>Đang tải chính sách…</ListMessage>}
+          {policiesLoading && <ListMessage>{t('Đang tải chính sách…')}</ListMessage>}
           {!policiesLoading && policiesError && (
             <ListMessage>
               <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>
-                Không tải được chính sách.{' '}
+                {t('Không tải được chính sách.')}{' '}
               </span>
               <button type="button" onClick={() => policiesQuery.refetch()} style={inlineRetry}>
-                Thử lại
+                {t('Thử lại')}
               </button>
             </ListMessage>
           )}
           {!policiesLoading && !policiesError && policies.length === 0 && (
-            <ListMessage>Không có chính sách nào.</ListMessage>
+            <ListMessage>{t('Không có chính sách nào.')}</ListMessage>
           )}
           {!policiesLoading && !policiesError && policies.map((p, i) => (
             <div

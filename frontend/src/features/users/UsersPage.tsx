@@ -1,6 +1,7 @@
 import { Button, DataTable, Input, Select, StatusPill, riskToVariant } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { Search } from 'lucide-react';
+import { useT } from '@/shared/i18n/I18nProvider';
 import { useUsers, type UserRow } from './api';
 
 /**
@@ -13,12 +14,13 @@ import { useUsers, type UserRow } from './api';
  */
 
 export default function UsersPage() {
+  const t = useT();
   const { data: users, isLoading, isError, refetch } = useUsers();
   const rows = users ?? [];
   const columns: ColumnDef<UserRow>[] = [
     {
       id: 'user',
-      header: 'Người dùng',
+      header: t('Người dùng'),
       cell: (u) => (
         <div>
           <div style={{ fontSize: 13.5, fontWeight: 500, color: 'var(--color-text)' }}>{u.name}</div>
@@ -28,13 +30,13 @@ export default function UsersPage() {
     },
     {
       id: 'role',
-      header: 'Vai trò',
+      header: t('Vai trò'),
       cell: (u) => <span style={{ color: 'var(--color-muted)' }}>{u.role}</span>,
       width: '120px',
     },
     {
       id: 'dept',
-      header: 'Phòng ban',
+      header: t('Phòng ban'),
       cell: (u) => <span style={{ color: 'var(--color-muted)' }}>{u.dept}</span>,
       width: '120px',
     },
@@ -56,7 +58,7 @@ export default function UsersPage() {
           type="button"
           style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
         >
-          Sửa
+          {t('Sửa')}
         </button>
       ),
       width: '60px',
@@ -85,15 +87,15 @@ export default function UsersPage() {
                 letterSpacing: '-.02em',
               }}
             >
-              Người dùng &amp; Nhóm
+              {t('Người dùng & Nhóm')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
-              {rows.length} người dùng · 8 nhóm thông minh
+              {t('{n} người dùng · 8 nhóm thông minh', { n: rows.length })}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="outline">Nhập CSV / SCIM</Button>
-            <Button variant="primary">+ Thêm người dùng</Button>
+            <Button variant="outline">{t('Nhập CSV / SCIM')}</Button>
+            <Button variant="primary">{t('+ Thêm người dùng')}</Button>
           </div>
         </div>
 
@@ -123,38 +125,38 @@ export default function UsersPage() {
                 aria-hidden="true"
               />
               <Input
-                placeholder="Tìm kiếm..."
-                aria-label="Tìm kiếm người dùng"
+                placeholder={t('Tìm kiếm...')}
+                aria-label={t('Tìm kiếm người dùng')}
                 style={{ paddingLeft: 32, width: '100%' }}
               />
             </div>
-            <Select aria-label="Lọc theo vai trò" defaultValue="">
-              <option value="">Vai trò</option>
-              <option>Nhân viên</option>
-              <option>Trưởng phòng</option>
+            <Select aria-label={t('Lọc theo vai trò')} defaultValue="">
+              <option value="">{t('Vai trò')}</option>
+              <option>{t('Nhân viên')}</option>
+              <option>{t('Trưởng phòng')}</option>
               <option>Admin IT</option>
             </Select>
-            <Select aria-label="Lọc theo phòng ban" defaultValue="">
-              <option value="">Phòng ban</option>
-              <option>Kế toán</option>
-              <option>Kinh doanh</option>
+            <Select aria-label={t('Lọc theo phòng ban')} defaultValue="">
+              <option value="">{t('Phòng ban')}</option>
+              <option>{t('Kế toán')}</option>
+              <option>{t('Kinh doanh')}</option>
               <option>IT</option>
             </Select>
           </div>
 
-          {isLoading && <TableMessage>Đang tải người dùng…</TableMessage>}
+          {isLoading && <TableMessage>{t('Đang tải người dùng…')}</TableMessage>}
           {!isLoading && isError && (
             <TableMessage>
               <span style={{ color: 'var(--color-red)', fontWeight: 600 }}>
-                Không tải được người dùng.{' '}
+                {t('Không tải được người dùng.')}{' '}
               </span>
               <button type="button" onClick={() => refetch()} style={inlineRetry}>
-                Thử lại
+                {t('Thử lại')}
               </button>
             </TableMessage>
           )}
           {!isLoading && !isError && rows.length === 0 && (
-            <TableMessage>Không có người dùng nào.</TableMessage>
+            <TableMessage>{t('Không có người dùng nào.')}</TableMessage>
           )}
           {!isLoading && !isError && rows.length > 0 && (
             <DataTable<UserRow> columns={columns} data={rows} rowKey={(u) => u.id} />
