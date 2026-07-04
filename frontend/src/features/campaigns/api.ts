@@ -61,6 +61,8 @@ export interface SimCampaign {
 export interface CreateCampaignRequest {
   channel: string;
   templateId?: string | null;
+  /** Target audience group id selected in the wizard's audience step. */
+  groupId?: string | null;
 }
 
 /** GET /sim/campaigns/{id} — campaign detail (summary + funnel + results). */

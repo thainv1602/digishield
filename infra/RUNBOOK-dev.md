@@ -4,14 +4,17 @@ End-to-end order to stand up dev from nothing. Steps 1–2 and 6 are codified
 (Terraform / scripts); the rest are one-off operator actions (TLS cert on a free
 DuckDNS domain, DNS, Cognito users) that don't belong in Terraform.
 
-Prereqs: `aws` (logged in), `terraform`, `kubectl`, `helm`, `npm`, and the
+Prereqs: `aws` (logged in), `terraform`, `make`, `kubectl`, `helm`, `npm`, and the
 acme.sh checkout (or `git clone https://github.com/acmesh-official/acme.sh`).
 
 ## 1. Provision infrastructure
+Run Terraform through the `make` wrapper (`infra/terraform/Makefile`): it binds the
+backend + tfvars to `ENV` and refuses to apply if the initialized backend doesn't
+match `ENV` — the guard-rail against applying to the wrong environment.
 ```bash
 cd infra/terraform
-terraform init -backend-config=envs/backend-dev.hcl
-terraform apply -var-file=envs/dev.tfvars
+make init  ENV=dev     # terraform init -reconfigure with the dev backend
+make apply ENV=dev     # terraform apply -var-file=envs/dev.tfvars
 ```
 Creates EKS, RDS, ElastiCache, Secrets Manager, the GitHub OIDC + IRSA roles
 (External Secrets **and** the Load Balancer Controller), the SPA S3+CloudFront,
@@ -91,7 +94,7 @@ ENIs/EIPs before the VPC is destroyed):
 helm -n ingress-nginx uninstall ingress-nginx   # LBC deletes the NLB
 helm -n digishield-dev uninstall digishield
 aws s3 rm s3://$(terraform -chdir=infra/terraform output -raw frontend_bucket) --recursive
-cd infra/terraform && terraform destroy -var-file=envs/dev.tfvars
+cd infra/terraform && make destroy ENV=dev
 ```
 The EIPs are Terraform-managed now, so `destroy` releases them. The state bucket
 + lock table are kept.
