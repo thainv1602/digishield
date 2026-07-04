@@ -139,10 +139,8 @@ export default function CampaignWizardPage() {
 
   const launch = () => {
     const enumChannel = channel ? CHANNEL_ENUM[channel] ?? 'EMAIL' : 'EMAIL';
-    // POST /sim/campaigns only accepts channel + templateId today; the selected
-    // audience group is captured in the UI but not yet part of the create payload.
     createCampaign.mutate(
-      { channel: enumChannel, templateId: template },
+      { channel: enumChannel, templateId: template, groupId: group },
       {
         onSuccess: (created) => {
           toast.push({ msg: t('Đã phát động chiến dịch mô phỏng'), variant: 'success' });
