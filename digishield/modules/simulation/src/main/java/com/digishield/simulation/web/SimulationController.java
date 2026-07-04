@@ -43,7 +43,8 @@ public class SimulationController {
 
     @PostMapping("/campaigns")
     public ResponseEntity<SimCampaign> createCampaign(@RequestBody CreateCampaignRequest request) {
-        SimCampaign campaign = simulationService.createCampaign(request.channel(), request.templateId());
+        SimCampaign campaign = simulationService.createCampaign(
+                request.channel(), request.templateId(), request.groupId());
         return ResponseEntity.ok(campaign);
     }
 
@@ -57,7 +58,7 @@ public class SimulationController {
     /**
      * Campaign creation payload.
      */
-    public record CreateCampaignRequest(Channel channel, UUID templateId) {
+    public record CreateCampaignRequest(Channel channel, UUID templateId, UUID groupId) {
     }
 
     /**
