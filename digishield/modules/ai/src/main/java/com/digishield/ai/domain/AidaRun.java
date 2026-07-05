@@ -58,6 +58,15 @@ public class AidaRun {
         this.createdAt = createdAt;
     }
 
+    /**
+     * Finalises the run once the orchestration completes, recording its outcome
+     * status and human-readable summary.
+     */
+    public void complete(String status, String summary) {
+        this.status = status;
+        this.summary = summary;
+    }
+
     public UUID getId() {
         return id;
     }
