@@ -1,0 +1,17 @@
+# Core data + download
+requests>=2.31
+anthropic>=0.40  # LLM augmentation (augment/augment_vn_sms.py)
+pandas>=2.0
+scikit-learn>=1.3
+numpy>=1.24
+
+# Training (transformers stack). torch is expected preinstalled (see README).
+transformers>=4.44
+datasets>=2.20
+accelerate>=0.33
+evaluate>=0.4
+
+# QR decode (phase1 QR path)
+pillow>=10.0
+# opencv-python-headless + pyzbar are optional for decoding real QR images:
+#   pip install opencv-python-headless pyzbar
