@@ -36,7 +36,7 @@ def load_chongluadao() -> pd.DataFrame:
         lines = lines[:CHONGLUADAO_CAP]
     # Feed entries are bare domains/URLs → normalize to a URL string (scheme is
     # cosmetic here — these are text samples for the classifier, not fetched).
-    urls = [l if l.startswith(("http://", "https://")) else f"https://{l}" for l in lines]
+    urls = [l if "://" in l else f"https://{l}" for l in lines]
     return pd.DataFrame({"text": urls, "label": "threat"})
 
 

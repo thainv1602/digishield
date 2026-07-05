@@ -23,7 +23,8 @@ from .schemas import ClassificationView, ClassifyRequest, QrRequest, UrlRequest
 
 app = FastAPI(title="DigiShield Phishing-AI", version="0.1.0")
 
-_URL_RE = re.compile(r"(?:^\s*https?://)|(?:^\s*[\w.-]+\.[a-z]{2,}(?:/|\s*$))", re.I)
+# Anchored via re.match; one group scopes the leading whitespace over both alternatives.
+_URL_RE = re.compile(r"\s*(?:https?://|[\w.-]+\.[a-z]{2,}(?:/|\s*$))", re.I)
 
 
 def _route(payload: str) -> str:
