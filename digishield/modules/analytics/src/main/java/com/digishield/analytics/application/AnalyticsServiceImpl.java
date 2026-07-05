@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -156,17 +157,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 new DashboardDto.Benchmark("TB cơ quan nhà nước", INDUSTRY_AVG_PHISH_PRONE_PCT, false),
                 new DashboardDto.Benchmark("TB ngành tài chính", 14.8, false));
 
-        List<DashboardDto.TrendPoint> trend = List.of(
-                new DashboardDto.TrendPoint("2026-04-01", 59),
-                new DashboardDto.TrendPoint("2026-04-15", 58),
-                new DashboardDto.TrendPoint("2026-05-01", 60),
-                new DashboardDto.TrendPoint("2026-05-15", 61),
-                new DashboardDto.TrendPoint("2026-06-01", 59),
-                new DashboardDto.TrendPoint("2026-06-10", 62),
-                new DashboardDto.TrendPoint("2026-06-18", 63),
-                new DashboardDto.TrendPoint("2026-06-24", 64),
-                new DashboardDto.TrendPoint("2026-06-26", 63),
-                new DashboardDto.TrendPoint("2026-06-27", orgRisk));
+        List<DashboardDto.TrendPoint> trend = orgRiskTrend(tenantId);
 
         List<DashboardDto.RecentReport> recent = List.of(
                 new DashboardDto.RecentReport("r1", "\"Khóa tài khoản — xác minh ngay\"", "Nguyen A", "2p", "threat"),
@@ -192,6 +183,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .max(Comparator.comparing(RiskScore::getComputedAt))
                 .map(RiskScore::getValue)
                 .orElse(0);
+    }
+
+    /**
+     * Org-risk trend as a time series derived from the persisted org-scope risk
+     * scores (oldest → newest), each point dated by its {@code computedAt} day.
+     * Empty when the tenant has no org-scope history yet.
+     */
+    private List<DashboardDto.TrendPoint> orgRiskTrend(UUID tenantId) {
+        return riskScoreRepository.findByTenantIdAndScope(tenantId, RiskScope.ORG).stream()
+                .sorted(Comparator.comparing(RiskScore::getComputedAt))
+                .map(s -> new DashboardDto.TrendPoint(
+                        s.getComputedAt().atZone(ZoneOffset.UTC).toLocalDate().toString(),
+                        s.getValue()))
+                .toList();
     }
 
     /**

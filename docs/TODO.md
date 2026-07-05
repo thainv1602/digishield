@@ -56,7 +56,11 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 - [x] `PhishingReportConfirmedListener` — added `userId` to `PhishingReportConfirmedEvent`
       (reporting side) and wired the listener: a confirmed report is now recorded as a
       vigilant (risk-lowering) signal for the reporter and recomputes their score.
-- [ ] Dashboard trend/benchmark points are partly hardcoded (`AnalyticsServiceImpl` L114-134)
+- [x] Dashboard risk-trend is now data-driven — `dashboard()` builds the trend from
+      persisted org-scope `RiskScore` history (chronological), and the dev seeder writes
+      ~3 months of org-risk points. (Benchmark reference values are intentional constants;
+      recent-reports list is still demo data — needs a cross-module reporting query. In
+      prod nothing writes org-scope risk yet — a scheduled org-risk rollup is a follow-up.)
 
 ### Notification — saves to DB but never delivers
 - [x] `send()` — added a `NotificationGateway` SPI; `send()` now delivers via the gateway
@@ -102,7 +106,8 @@ Repo already wires **Cognito** (`feat/cognito-login`); confirm which path each e
       `POST /reports/phishing` via `useReportPhishing()` (was a dead `/learn/report` link)
 - [x] `certificates/CertificatePage.tsx` — Download = browser print-to-PDF; Share = copy
       the verification link (no backend PDF/share endpoint exists)
-- [ ] `_shared/mockData.ts` — remove once the pages above use generated hooks
+- [x] `_shared/mockData.ts` removed (0 importers) + purged 24 committed `.fuse_hidden*`
+      editor-orphan files and added a `.gitignore` rule for them
 - [x] `content` template library — added `GET /ai/templates` (backend) and wired the
       library via `useTemplates()` (was a static array)
 - [x] `campaigns` wizard — templates load from `GET /ai/templates`, audience from

@@ -40,6 +40,9 @@ coverage
 # TS build info
 *.tsbuildinfo
 
+# FUSE editor orphans (left by some mounts on delete/rename)
+.fuse_hidden*
+
 # NOTE: src/api/generated/* is intentionally git-ignored except .gitkeep & README.md
 # Generated API client is produced by `npm run gen:api` (orval) and should not be committed.
 src/api/generated/**

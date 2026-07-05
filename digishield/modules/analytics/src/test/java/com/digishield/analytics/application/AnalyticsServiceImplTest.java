@@ -1,5 +1,6 @@
 package com.digishield.analytics.application;
 
+import com.digishield.analytics.api.dto.DashboardDto;
 import com.digishield.analytics.domain.RiskScope;
 import com.digishield.analytics.domain.RiskScore;
 import com.digishield.analytics.domain.RiskSignal;
@@ -226,5 +227,29 @@ class AnalyticsServiceImplTest {
     private RiskScore score(int value) {
         return new RiskScore(
                 UUID.randomUUID(), TENANT_ID, RiskScope.ORG, UUID.randomUUID(), value, Instant.now());
+    }
+
+    @Test
+    void dashboard_buildsTrendFromOrgRiskHistoryInChronologicalOrder() {
+        // Arrange: org-scope history in deliberately unordered input
+        List<RiskScore> orgScores = List.of(
+                orgScore(61, Instant.parse("2026-06-01T00:00:00Z")),
+                orgScore(59, Instant.parse("2026-04-01T00:00:00Z")),
+                orgScore(60, Instant.parse("2026-05-01T00:00:00Z")));
+        when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(orgScores);
+        when(departmentRiskRepository.findByTenantIdOrderByRiskScoreDesc(TENANT_ID)).thenReturn(List.of());
+
+        // Act
+        DashboardDto dto = analyticsService.dashboard();
+
+        // Assert: trend derived from data, oldest → newest (not hardcoded)
+        assertThat(dto.riskTrend()).extracting(DashboardDto.TrendPoint::date)
+                .containsExactly("2026-04-01", "2026-05-01", "2026-06-01");
+        assertThat(dto.riskTrend()).extracting(DashboardDto.TrendPoint::value)
+                .containsExactly(59, 60, 61);
+    }
+
+    private RiskScore orgScore(int value, Instant at) {
+        return new RiskScore(UUID.randomUUID(), TENANT_ID, RiskScope.ORG, TENANT_ID, value, at);
     }
 }
