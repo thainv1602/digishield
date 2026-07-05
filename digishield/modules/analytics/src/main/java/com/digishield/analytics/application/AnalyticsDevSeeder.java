@@ -46,7 +46,17 @@ public class AnalyticsDevSeeder implements CommandLineRunner {
 
         Instant now = Instant.now();
 
-        // Org-level risk score (~62) used by the dashboard + GET /analytics/risk.
+        // Org-level risk history (~3 months) — powers the dashboard trend chart.
+        // {daysAgo, score}, oldest first; the latest point (below) is the current score.
+        int[][] history = {
+                {95, 59}, {80, 58}, {65, 60}, {50, 61}, {35, 59},
+                {25, 62}, {17, 63}, {11, 64}, {5, 63}};
+        for (int[] point : history) {
+            riskScoreRepository.save(new RiskScore(
+                    UUID.randomUUID(), DEMO_TENANT, RiskScope.ORG, DEMO_TENANT, point[1],
+                    now.minus(point[0], ChronoUnit.DAYS)));
+        }
+        // Current org-level risk score (~62), used by the dashboard + GET /analytics/risk.
         riskScoreRepository.save(new RiskScore(
                 UUID.randomUUID(), DEMO_TENANT, RiskScope.ORG, DEMO_TENANT, 62,
                 now.minus(1, ChronoUnit.HOURS)));
