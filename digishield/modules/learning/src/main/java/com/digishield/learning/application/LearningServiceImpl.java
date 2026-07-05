@@ -463,7 +463,7 @@ public class LearningServiceImpl implements LearningService {
         int completed = (int) policies.stream().filter(p -> p.getCompletionPct() >= 90).count();
         int dueSoon = (int) policies.stream()
                 .filter(p -> p.getCompletionPct() >= 50 && p.getCompletionPct() < 90).count();
-        int total = 1240; // demo headcount used by the Compliance KPI tiles
+        int total = (int) enrollmentRepository.countDistinctUsers(tenantId); // real headcount for the KPI tiles
         int compliantCount = (int) Math.round(avg / 100d * total);
         int overdue = total - compliantCount;
         return new ComplianceStatusView(
