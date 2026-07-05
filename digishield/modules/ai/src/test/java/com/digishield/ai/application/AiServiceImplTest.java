@@ -9,6 +9,8 @@ import com.digishield.ai.domain.TemplateChannel;
 import com.digishield.ai.domain.TemplateStatus;
 import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.ai.infrastructure.AiTemplateRepository;
+import com.digishield.contracts.events.AidaOrchestrationRequestedEvent;
+import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +49,9 @@ class AiServiceImplTest {
 
     @Mock
     private AiClient aiClient;
+
+    @Mock
+    private EventPublisher eventPublisher;
 
     @InjectMocks
     private AiServiceImpl aiService;
@@ -111,23 +116,34 @@ class AiServiceImplTest {
     }
 
     @Test
-    void runOrchestration_recordsARunAndLeavesTemplatesUntouched() {
+    void runOrchestration_recordsRunningRunAndPublishesRequest() {
         // Arrange
         UUID scopeId = UUID.randomUUID();
         ArgumentCaptor<AidaRun> runCaptor = ArgumentCaptor.forClass(AidaRun.class);
+        ArgumentCaptor<AidaOrchestrationRequestedEvent> eventCaptor =
+                ArgumentCaptor.forClass(AidaOrchestrationRequestedEvent.class);
 
         // Act
         aiService.runOrchestration("org", scopeId);
 
-        // Assert: a successful run is recorded for the tenant/scope...
+        // Assert: a "running" run is recorded for the tenant/scope...
         verify(aidaRunRepository).save(runCaptor.capture());
         AidaRun saved = runCaptor.getValue();
         assertThat(saved.getTenantId()).isEqualTo(TENANT_ID);
         assertThat(saved.getScope()).isEqualTo("org");
         assertThat(saved.getScopeId()).isEqualTo(scopeId);
-        assertThat(saved.getStatus()).isEqualTo("success");
+        assertThat(saved.getStatus()).isEqualTo("running");
         assertThat(saved.getSummary()).isNotBlank();
         assertThat(saved.getCreatedAt()).isNotNull();
+
+        // ...and the pipeline is kicked off via an event carrying the same run id.
+        verify(eventPublisher).publish(eventCaptor.capture());
+        AidaOrchestrationRequestedEvent event = eventCaptor.getValue();
+        assertThat(event.tenantId()).isEqualTo(TENANT_ID);
+        assertThat(event.runId()).isEqualTo(saved.getId());
+        assertThat(event.scope()).isEqualTo("org");
+        assertThat(event.scopeId()).isEqualTo(scopeId);
+
         // ...and the template library is not touched.
         verifyNoInteractions(templateRepository);
     }

@@ -40,8 +40,12 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 - [x] `classify()` — Claude Haiku 4.5 with strict-JSON output (`{label,confidence,reason}`)
 - [x] `moderate()` — Claude Haiku 4.5 (`{verdict,reasons[]}`)
 - [x] `generateTemplate()` — Claude Sonnet 4.6 generates the subject + difficulty
-- [~] `runOrchestration()` — persists an `AidaRun` (history) but the real risk
-      recompute → auto-enroll pipeline is still a deterministic stub
+- [x] `runOrchestration()` — real event-driven pipeline: AI publishes
+      `AidaOrchestrationRequestedEvent` → analytics recomputes each in-scope user's
+      risk and emits `RemediationEnrollmentRequestedEvent` for those ≥ at-risk
+      threshold → learning auto-enrolls → analytics emits
+      `AidaOrchestrationCompletedEvent`, which finalises the `AidaRun`
+      (status running→success, summary with evaluated/enrolled counts)
 - [ ] Go-live (ops): set `AI_CLAUDE_ENABLED=true` + provide `ANTHROPIC_API_KEY`
       (e.g. via Secrets Manager / GH secret). `generateTemplate` only stores the
       subject (schema has no body column).

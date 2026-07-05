@@ -3,14 +3,16 @@
  * and orchestrates AI tasks.
  * <p>
  * This is a Spring Modulith application module. Inter-module dependencies are declared
- * explicitly: only dependencies on the shared library (shared) and the contracts package
- * (contracts) are allowed. The current implementation returns hardcoded samples; the LLM call is marked TODO.
+ * explicitly: the shared libraries (tenant-context, messaging) and the contracts events.
+ * AIDA orchestration publishes {@code AidaOrchestrationRequestedEvent} and finalises a run
+ * on {@code AidaOrchestrationCompletedEvent}; classification/generation delegate to an AiClient.
  */
 @org.springframework.modulith.ApplicationModule(
         displayName = "AI",
         allowedDependencies = {
                 "shared :: tenant-context",
-                "contracts"
+                "shared :: messaging",
+                "contracts :: events"
         }
 )
 package com.digishield.ai;
