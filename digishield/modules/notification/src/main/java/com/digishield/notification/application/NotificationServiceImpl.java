@@ -73,7 +73,7 @@ public class NotificationServiceImpl implements NotificationService {
         if (channel == NotificationChannel.IN_APP) {
             return NotificationStatus.SENT;
         }
-        String recipient = recipients.emailFor(userId).orElse(null);
+        String recipient = recipientAddress(channel, userId);
         if (recipient == null) {
             LOG.warn("No recipient address for user {} on channel {}; marking FAILED", userId, channel);
             return NotificationStatus.FAILED;
@@ -85,6 +85,19 @@ public class NotificationServiceImpl implements NotificationService {
             LOG.error("Notification delivery to {} on {} failed: {}", recipient, channel, e.getMessage());
             return NotificationStatus.FAILED;
         }
+    }
+
+    /**
+     * Resolves the channel-appropriate address for a user: email for EMAIL, phone
+     * for SMS. Returns {@code null} when it cannot be resolved (or the channel has
+     * no external address), so the caller marks the notification FAILED.
+     */
+    private String recipientAddress(NotificationChannel channel, UUID userId) {
+        return switch (channel) {
+            case EMAIL -> recipients.emailFor(userId).orElse(null);
+            case SMS -> recipients.phoneFor(userId).orElse(null);
+            default -> null;
+        };
     }
 
     @Override

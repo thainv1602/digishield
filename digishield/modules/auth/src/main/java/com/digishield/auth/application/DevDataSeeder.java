@@ -73,6 +73,8 @@ public class DevDataSeeder implements CommandLineRunner {
                 UUID.fromString(id), tenant, email, role, UserStatus.ACTIVE,
                 name, department, riskScore);
         u.setLocale("vi");
+        // Demo phone (E.164) so SMS delivery is exercisable in dev/prod-like.
+        u.setPhone("+8490123456" + id.charAt(id.length() - 1));
         return u;
     }
 }

@@ -56,15 +56,21 @@ management:
 server:
   port: ${SERVER_PORT:8080}
 
-# Notification delivery. SES is off by default — notifications are persisted but
-# nothing is sent (LoggingNotificationGateway). Enable in prod once the SES
-# domain is verified and the pod has IRSA perms (ses:SendEmail).
+# Notification delivery. Both transports are off by default — notifications are
+# persisted but nothing is sent (LoggingNotificationGateway). A RoutingNotificationGateway
+# sends EMAIL via SES and SMS via SNS; enable each once the AWS side is ready
+# (SES domain verified + ses:SendEmail; SNS sms + sns:Publish, both via IRSA).
 digishield:
   notifications:
     email:
       from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}
       ses:
         enabled: ${NOTIFICATIONS_SES_ENABLED:false}
+    sms:
+      # Optional alphanumeric sender id (region/route dependent; blank = none).
+      sender-id: ${NOTIFICATIONS_SMS_SENDER_ID:}
+      sns:
+        enabled: ${NOTIFICATIONS_SNS_ENABLED:false}
   # AI: off by default → deterministic StubAiClient (no token cost). Set true and
   # provide ANTHROPIC_API_KEY to route classify/moderate/generate through Claude.
   ai:

@@ -65,8 +65,16 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `POST /alerts/broadcast` now takes `{message, severity}` and returns the reach;
       `AlertCenterPage` composer wired via `useBroadcastAlert()`. (Role/department
       sub-segments not exposed in the UI yet.)
-- [ ] SES go-live (ops): verify the SES domain, exit the SES sandbox, grant the pod
-      `ses:SendEmail` via IRSA, then set `NOTIFICATIONS_SES_ENABLED=true`. SMS/push not wired.
+- [x] SMS transport — `SnsSmsNotificationGateway` (AWS SNS) delivers SMS; a
+      `RoutingNotificationGateway` (@Primary) routes EMAIL→SES / SMS→SNS and logs
+      (no-send) when a channel's gateway is disabled. `send()` now resolves the
+      address per channel (email vs phone) via `RecipientResolver.phoneFor`; added
+      an `app_user.phone` column + `UserView.phone` and seeded demo phones.
+- [ ] Delivery go-live (ops): EMAIL — verify SES domain, exit sandbox, grant
+      `ses:SendEmail` (IRSA), set `NOTIFICATIONS_SES_ENABLED=true`. SMS — grant
+      `sns:Publish`, set `NOTIFICATIONS_SNS_ENABLED=true` (+ optional
+      `NOTIFICATIONS_SMS_SENDER_ID`). Push not wired. Phone write API (UserUpsert/
+      SCIM) still a follow-up — phones currently only via seed/DB.
 - [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`
 
 ### Auth — dev-mode placeholders (`modules/auth/.../AuthServiceImpl.java`)
