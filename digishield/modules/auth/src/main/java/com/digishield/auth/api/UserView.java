@@ -20,6 +20,7 @@ import java.util.UUID;
  * @param status       account status (lower-case)
  * @param department   department / org-unit label
  * @param locale       preferred UI locale (e.g. {@code vi})
+ * @param phone        phone number (E.164) for SMS delivery, may be {@code null}
  * @param riskScore    cached risk score 0..100 (camelCase, for the FE)
  * @param riskScoreSnake same value as {@code risk_score} for OpenAPI consumers
  */
@@ -33,13 +34,14 @@ public record UserView(
         String status,
         String department,
         String locale,
+        String phone,
         @JsonProperty("riskScore") Integer riskScore,
         @JsonProperty("risk_score") Integer riskScoreSnake) {
 
     public static UserView of(UUID id, UUID orgId, UUID departmentId, String email, String name,
                               String role, String status, String department, String locale,
-                              Integer riskScore) {
+                              String phone, Integer riskScore) {
         return new UserView(id, orgId, departmentId, email, name, role, status, department,
-                locale, riskScore, riskScore);
+                locale, phone, riskScore, riskScore);
     }
 }

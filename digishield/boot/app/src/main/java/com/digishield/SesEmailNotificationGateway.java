@@ -5,7 +5,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sesv2.SesV2Client;
 import software.amazon.awssdk.services.sesv2.model.Body;
@@ -17,15 +16,13 @@ import software.amazon.awssdk.services.sesv2.model.SendEmailRequest;
 
 /**
  * Real {@link NotificationGateway} that delivers email via AWS SES (SDK v2).
- * Enabled only when {@code digishield.notifications.email.ses.enabled=true};
- * otherwise the module's {@code LoggingNotificationGateway} default is used.
- * Marked {@code @Primary} so it wins injection over the default when both exist.
+ * Enabled only when {@code digishield.notifications.email.ses.enabled=true}; the
+ * {@link RoutingNotificationGateway} routes EMAIL traffic here when present.
  * <p>
  * Credentials come from the default AWS provider chain (IRSA in the cluster).
- * Non-email channels are logged and skipped — SMS/push are not wired yet.
+ * Non-email channels are logged and skipped.
  */
 @Component
-@Primary
 @ConditionalOnProperty(name = "digishield.notifications.email.ses.enabled", havingValue = "true")
 class SesEmailNotificationGateway implements NotificationGateway {
 
