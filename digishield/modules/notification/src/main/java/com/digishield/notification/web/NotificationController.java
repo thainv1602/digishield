@@ -19,11 +19,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the Notification module (bell dropdown + Alert Center).
  */
 @RestController
+@PreAuthorize("hasRole('LEARNER')")
 public class NotificationController {
 
     private final NotificationService notificationService;
@@ -49,6 +51,7 @@ public class NotificationController {
      * Creates (persists) a notification for the current tenant. Matches
      * {@code POST /notifications} (Notification schema body, snake_case wire names).
      */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
     @PostMapping("/api/v1/notifications")
     public ResponseEntity<NotificationView> create(@RequestBody CreateNotificationRequest request) {
         Map<String, Object> payload = request.payload();
@@ -68,6 +71,7 @@ public class NotificationController {
      * {@code POST /notifications/reminders} ({target_filter, due_rule, channel}) and
      * returns {@code 202 Accepted} with the number of reminders scheduled.
      */
+    @PreAuthorize("hasRole('MANAGER')")
     @PostMapping("/api/v1/notifications/reminders")
     public ResponseEntity<ScheduleRemindersResponse> scheduleReminders(
             @RequestBody ScheduleRemindersRequest request) {
@@ -117,6 +121,7 @@ public class NotificationController {
      * Broadcasts an alert to every user in the current tenant. Returns the reach
      * (number of recipients).
      */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
     @PostMapping("/api/v1/alerts/broadcast")
     public BroadcastResult broadcast(@RequestBody BroadcastAlertRequest request) {
         String severity = (request.severity() == null || request.severity().isBlank())

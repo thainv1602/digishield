@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the AI module.
@@ -34,6 +35,7 @@ public class AiController {
     /**
      * Generates a simulated phishing template draft (pending approval).
      */
+    @PreAuthorize("hasRole('CONTENT_EDITOR')")
     @PostMapping("/templates/generate")
     public ResponseEntity<SimTemplateView> generate(@RequestBody GenerateTemplateRequest request) {
         SimTemplateView view = aiService.generateTemplate(
@@ -46,6 +48,7 @@ public class AiController {
     /**
      * Lists the saved simulation-template library for the current tenant.
      */
+    @PreAuthorize("hasRole('CONTENT_EDITOR')")
     @GetMapping("/templates")
     public ResponseEntity<List<SimTemplateView>> listTemplates() {
         return ResponseEntity.ok(aiService.listTemplates());
@@ -54,6 +57,7 @@ public class AiController {
     /**
      * Classifies a reported email payload.
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/classify")
     public ResponseEntity<ClassificationView> classify(@RequestBody ClassifyRequest request) {
         return ResponseEntity.ok(aiService.classify(request.payload()));
@@ -62,6 +66,7 @@ public class AiController {
     /**
      * Safety-moderates AI-generated content.
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/moderate")
     public ResponseEntity<ModerationView> moderate(@RequestBody ModerateRequest request) {
         return ResponseEntity.ok(aiService.moderate(request.content()));
@@ -70,6 +75,7 @@ public class AiController {
     /**
      * Runs the AIDA orchestration flow (recompute risk and auto-enroll).
      */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
     @PostMapping("/orchestration/run")
     public ResponseEntity<Void> runOrchestration(@RequestBody(required = false) OrchestrationRunRequest request) {
         String scope = request == null ? null : request.scope();
@@ -81,6 +87,7 @@ public class AiController {
     /**
      * Lists past AIDA orchestration runs for the recent-runs panel.
      */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
     @GetMapping("/orchestration/runs")
     public ResponseEntity<List<AidaRunView>> listRuns() {
         return ResponseEntity.ok(aiService.listRuns());

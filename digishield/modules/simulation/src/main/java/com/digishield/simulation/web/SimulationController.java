@@ -17,12 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * Sample REST controller for the simulation module.
  */
 @RestController
 @RequestMapping("/api/v1/sim")
+@PreAuthorize("hasRole('MANAGER')")
 public class SimulationController {
 
     private final SimulationService simulationService;
@@ -47,6 +49,7 @@ public class SimulationController {
         return ResponseEntity.ok(campaign);
     }
 
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/events")
     public ResponseEntity<SimEvent> recordEvent(@RequestBody RecordEventRequest request) {
         SimEvent event = simulationService.recordEvent(

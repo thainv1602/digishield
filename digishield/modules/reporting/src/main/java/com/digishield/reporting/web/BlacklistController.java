@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the blacklist / watchlist screen. Matches
@@ -19,6 +20,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/blacklist")
+@PreAuthorize("hasRole('ANALYST')")
 public class BlacklistController {
 
     private final ReportingService reportingService;

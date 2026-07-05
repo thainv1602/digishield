@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * Minimal SCIM 2.0 endpoint for IdP user provisioning ({@code /api/v1/scim/v2/Users}).
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequestMapping("/api/v1/scim/v2/Users")
+@PreAuthorize("hasRole('ORG_ADMIN')")
 class ScimController {
 
     private static final String LIST_RESPONSE_SCHEMA =
