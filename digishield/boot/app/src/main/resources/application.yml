@@ -70,6 +70,14 @@ digishield:
   ai:
     claude:
       enabled: ${AI_CLAUDE_ENABLED:false}
+    # ML: self-hosted phishing classifier (research/service/phishing-ai). When on,
+    # classify() hits the fine-tuned models first and escalates to Claude/Stub on
+    # low confidence, escalate=true, or any error. moderate()/generate() delegate.
+    ml:
+      enabled: ${AI_ML_ENABLED:false}
+      base-url: ${AI_ML_BASE_URL:http://localhost:8085}
+      min-confidence: ${AI_ML_MIN_CONFIDENCE:0.6}
+      timeout-ms: ${AI_ML_TIMEOUT_MS:2000}
 
 ---
 # API run mode
