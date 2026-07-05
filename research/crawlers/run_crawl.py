@@ -26,7 +26,16 @@ def main() -> None:
     ap.add_argument("--no-robots", action="store_true", help="skip robots.txt (only for sources you own/are authorized for)")
     args = ap.parse_args()
 
-    config = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    # Validate the config path is a real file inside the research project before
+    # reading it, so a stray --config argument cannot escape the project tree.
+    research_root = Path(__file__).resolve().parent.parent
+    config_path = Path(args.config).resolve()
+    if config_path != DEFAULT_CONFIG.resolve() and research_root not in config_path.parents:
+        ap.error(f"--config must be inside the research project ({research_root})")
+    if not config_path.is_file():
+        ap.error(f"--config not found: {config_path}")
+
+    config = json.loads(config_path.read_text(encoding="utf-8"))
     pipeline.run(config, only=args.only, respect_robots=not args.no_robots, dry_run=args.dry_run)
 
 

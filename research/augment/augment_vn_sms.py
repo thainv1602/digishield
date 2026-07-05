@@ -68,7 +68,7 @@ CATEGORIES = [
 ]
 
 
-def build_request(cat_key: str, label: str, desc: str, seeds: list[str], count: int, batch: int) -> dict:
+def build_request(label: str, desc: str, seeds: list[str], count: int, batch: int) -> dict:
     schema = {
         "type": "object",
         "properties": {
@@ -129,8 +129,8 @@ def main() -> None:
     cats = [c for c in CATEGORIES if not args.only or c[0] == args.only]
 
     if args.dry_run:
-        k, lab, desc, seeds = cats[0][0], cats[0][1], cats[0][2], cats[0][3]
-        req = build_request(k, lab, desc, seeds, args.per_category, 1)
+        lab, desc, seeds = cats[0][1], cats[0][2], cats[0][3]
+        req = build_request(lab, desc, seeds, args.per_category, 1)
         print(json.dumps(req, ensure_ascii=False, indent=2))
         print("\n[augment] DRY RUN — no API call made.")
         return
@@ -150,7 +150,7 @@ def main() -> None:
         kept = 0
         for r in range(args.rounds):
             try:
-                texts = generate(client, build_request(key, label, desc, seeds, args.per_category, r + 1))
+                texts = generate(client, build_request(label, desc, seeds, args.per_category, r + 1))
             except Exception as exc:  # noqa: BLE001
                 msg = str(exc).lower()
                 if isinstance(exc, anthropic.AuthenticationError) or "authentication" in msg or "api_key" in msg:

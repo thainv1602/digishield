@@ -23,7 +23,7 @@ from .schemas import ClassificationView, ClassifyRequest, QrRequest, UrlRequest
 
 app = FastAPI(title="DigiShield Phishing-AI", version="0.1.0")
 
-_URL_RE = re.compile(r"^\s*https?://|^\s*[\w.-]+\.[a-z]{2,}(/|\s*$)", re.I)
+_URL_RE = re.compile(r"(?:^\s*https?://)|(?:^\s*[\w.-]+\.[a-z]{2,}(?:/|\s*$))", re.I)
 
 
 def _route(payload: str) -> str:
@@ -60,7 +60,14 @@ def classify_email(req: ClassifyRequest) -> dict:
     return inference.classify(req.payload, "email")
 
 
-@app.post("/classify/qr", response_model=ClassificationView)
+@app.post(
+    "/classify/qr",
+    response_model=ClassificationView,
+    responses={
+        501: {"description": "QR decoding not available (pyzbar/zbar missing)"},
+        422: {"description": "No QR code / URL found in image"},
+    },
+)
 def classify_qr(req: QrRequest) -> dict:
     try:
         url = inference.decode_qr(req.image_base64)

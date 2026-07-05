@@ -23,7 +23,7 @@ CHONGLUADAO_CAP = 30000
 def load_phiusiil() -> pd.DataFrame:
     df = pd.read_csv(PHIUSIIL, usecols=["URL", "label"])
     df["text"] = df["URL"]
-    df["label"] = df["label"].map({1: "clean", 0: "threat"})  # 1=legit, 0=phishing
+    df["label"] = df["label"].map({1: "clean", 0: "threat"})  # source labels: 1 is legit, 0 is phishing
     return df[["text", "label"]]
 
 
@@ -34,8 +34,9 @@ def load_chongluadao() -> pd.DataFrame:
     lines = [l for l in lines if l and not l.startswith(("#", "!"))]
     if len(lines) > CHONGLUADAO_CAP:
         lines = lines[:CHONGLUADAO_CAP]
-    # Feed entries are bare domains/URLs → normalize to a URL string.
-    urls = [l if l.startswith("http") else f"http://{l}" for l in lines]
+    # Feed entries are bare domains/URLs → normalize to a URL string (scheme is
+    # cosmetic here — these are text samples for the classifier, not fetched).
+    urls = [l if l.startswith(("http://", "https://")) else f"https://{l}" for l in lines]
     return pd.DataFrame({"text": urls, "label": "threat"})
 
 

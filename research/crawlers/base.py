@@ -69,7 +69,7 @@ def normalize_sms(text: str) -> str:
 def dedup_key(text: str) -> str:
     base = re.sub(r"\s+", "", text.lower())
     base = re.sub(r"\d+", "#", base)  # collapse phone numbers / amounts
-    return hashlib.sha1(base.encode("utf-8")).hexdigest()
+    return hashlib.sha256(base.encode("utf-8")).hexdigest()
 
 
 # ---- Polite HTTP fetcher (robots.txt aware + rate limited) ----

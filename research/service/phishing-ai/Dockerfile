@@ -13,4 +13,8 @@ COPY app ./app
 ENV PHISHING_MODELS_DIR=/models
 EXPOSE 8085
 
+# Drop root: run the service as an unprivileged user.
+RUN useradd --create-home --uid 10001 appuser
+USER appuser
+
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8085"]
