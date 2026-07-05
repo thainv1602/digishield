@@ -60,6 +60,7 @@ public class ReportingServiceImpl implements ReportingService {
     public PhishingReport triage(UUID reportId, boolean confirmThreat) {
         UUID tenantId = TenantContext.requireUuid();
         PhishingReport report = reportRepository.findById(reportId)
+                .filter(r -> tenantId.equals(r.getTenantId()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Không tìm thấy báo cáo phishing: " + reportId));
 
