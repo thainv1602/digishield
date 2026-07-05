@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -23,14 +22,14 @@ import java.util.Locale;
 /**
  * Real {@link AiClient} backed by Anthropic Claude. Enabled only when
  * {@code digishield.ai.claude.enabled=true} (and {@code ANTHROPIC_API_KEY} is
- * set); otherwise the deterministic {@code StubAiClient} default is used.
- * Registered {@code @Primary} so it wins injection over the default when active.
+ * set); otherwise the deterministic {@code StubAiClient} default is used. The
+ * front {@code @Primary} bean is selected in {@link AiClientConfig} (ML → Claude
+ * → Stub); this class is also the escalation target for {@link MlAiClient}.
  * <p>
  * Each method asks the model for a strict JSON object and parses it — cheap
  * Haiku for classify/moderate, Sonnet for the creative template generation.
  */
 @Component
-@Primary
 @ConditionalOnProperty(name = "digishield.ai.claude.enabled", havingValue = "true")
 public class ClaudeAiClient implements AiClient {
 
