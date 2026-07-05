@@ -83,6 +83,9 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 
 ### Auth — dev-mode placeholders (`modules/auth/.../AuthServiceImpl.java`)
 Repo already wires **Cognito** (`feat/cognito-login`); confirm which path each env uses.
+- [x] Resource-server issuer wired (`shared/.../SecurityConfig.java`): `AUTH_JWT_ISSUER_URI`
+      drives a real JWKS-validating JWT decoder (signature + issuer + expiry, optional
+      audience) and maps `cognito:groups` → `ROLE_*`. Non-`dev` fails closed with no issuer.
 - [ ] Confirm Cognito is the real auth path for dev/prod; treat `AuthServiceImpl` as dev fallback only
 - [ ] If kept: real credential validation (L172), SAML/OAuth verify (L183), password reset
       (L189/L196), MFA verify (L212/L222), real QR for MFA setup (L301)
