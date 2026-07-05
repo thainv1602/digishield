@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the analytics module.
  */
 @RestController
 @RequestMapping("/api/v1/analytics")
+@PreAuthorize("hasAnyRole('ANALYST','MANAGER')")
 public class AnalyticsController {
 
     private final AnalyticsService analyticsService;
