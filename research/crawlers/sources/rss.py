@@ -19,29 +19,38 @@ from .base_source import Record, Source
 
 
 class RssSource(Source):
+    def _articles(self, feed_url):
+        """Yield (link, article-soup) for each item in a feed."""
+        r = self.fetcher.get(feed_url)
+        if r is None:
+            return
+        feed = BeautifulSoup(r.text, "xml")
+        links = [i.find("link").get_text(strip=True) for i in feed.find_all("item") if i.find("link")]
+        for link in links[: self.max_items]:
+            art = self.fetcher.get(link)
+            if art is not None:
+                yield link, BeautifulSoup(art.text, "lxml")
+
+    @staticmethod
+    def _quotes(soup, selector, keywords):
+        """Yield quoted scam-SMS texts from an article whose text matches the keywords."""
+        page_text = soup.get_text(" ", strip=True).lower()
+        if keywords and not any(k in page_text for k in keywords):
+            return
+        for node in soup.select(selector):
+            text = node.get_text(" ", strip=True)
+            if len(text) >= 20:
+                yield text
+
     def collect(self) -> Iterable[Record]:
         label = self.cfg.get("label", "smishing")
         selector = self.cfg.get("article_selector", "blockquote")
         keywords = [k.lower() for k in self.cfg.get("keywords", [])]
         count = 0
         for feed_url in self.cfg.get("feeds", []):
-            r = self.fetcher.get(feed_url)
-            if r is None:
-                continue
-            feed = BeautifulSoup(r.text, "xml")
-            links = [i.find("link").get_text(strip=True) for i in feed.find_all("item") if i.find("link")]
-            for link in links[: self.max_items]:
-                art = self.fetcher.get(link)
-                if art is None:
-                    continue
-                soup = BeautifulSoup(art.text, "lxml")
-                page_text = soup.get_text(" ", strip=True).lower()
-                if keywords and not any(k in page_text for k in keywords):
-                    continue
-                for node in soup.select(selector):
-                    text = node.get_text(" ", strip=True)
-                    if len(text) >= 20:
-                        yield Record(text=text, raw_label=label, source=self.name, url=link)
-                        count += 1
-                        if count >= self.max_items:
-                            return
+            for link, soup in self._articles(feed_url):
+                for text in self._quotes(soup, selector, keywords):
+                    yield Record(text=text, raw_label=label, source=self.name, url=link)
+                    count += 1
+                    if count >= self.max_items:
+                        return

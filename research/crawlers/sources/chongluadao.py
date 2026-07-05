@@ -32,26 +32,34 @@ def _walk(obj):
 
 
 class ChongLuaDaoSource(Source):
+    def _records_from_node(self, node, fields, label, ep) -> Iterable[Record]:
+        """Yield a Record for each configured text field present on a JSON node."""
+        for f in fields:
+            val = node.get(f)
+            if isinstance(val, str) and len(val.strip()) >= 15:
+                yield Record(text=val, raw_label=label, source=self.name, url=ep, meta={"field": f})
+
+    def _records_from_endpoint(self, ep, fields, label) -> Iterable[Record]:
+        """Fetch one endpoint and mine every JSON node for text fields."""
+        r = self.fetcher.get(ep)
+        if r is None:
+            return
+        try:
+            data = r.json()
+        except ValueError:
+            print(f"[crawl] {self.name}: {ep} returned non-JSON, skipping")
+            return
+        for node in _walk(data):
+            yield from self._records_from_node(node, fields, label, ep)
+
     def collect(self) -> Iterable[Record]:
         endpoints = self.cfg.get("endpoints", [])
         fields = self.cfg.get("text_fields", DEFAULT_TEXT_FIELDS)
         label = self.cfg.get("label", "smishing")
         seen = 0
         for ep in endpoints:
-            r = self.fetcher.get(ep)
-            if r is None:
-                continue
-            try:
-                data = r.json()
-            except ValueError:
-                print(f"[crawl] {self.name}: {ep} returned non-JSON, skipping")
-                continue
-            for node in _walk(data):
-                for f in fields:
-                    val = node.get(f)
-                    if isinstance(val, str) and len(val.strip()) >= 15:
-                        yield Record(text=val, raw_label=label, source=self.name, url=ep,
-                                     meta={"field": f})
-                        seen += 1
-                        if seen >= self.max_items:
-                            return
+            for rec in self._records_from_endpoint(ep, fields, label):
+                yield rec
+                seen += 1
+                if seen >= self.max_items:
+                    return

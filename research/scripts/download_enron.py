@@ -49,6 +49,30 @@ def parse_email(raw: bytes) -> str:
         return raw.decode("latin-1", errors="ignore")[:MAX_CHARS]
 
 
+def _sample_member(tar, member, per_user):
+    """Return the parsed email text for a tar member to keep, or None to skip it.
+
+    Enforces the per-mailbox cap (incrementing it on acceptance) and the minimum
+    length; skips non-files and directory entries.
+    """
+    if not member.isfile():
+        return None
+    parts = member.name.split("/")
+    if len(parts) < 2:
+        return None
+    user = parts[1]                       # maildir/<user>/...
+    if per_user[user] >= PER_USER:
+        return None                       # already enough from this mailbox
+    f = tar.extractfile(member)
+    if f is None:
+        return None
+    text = parse_email(f.read())
+    if len(text) < 20:
+        return None
+    per_user[user] += 1
+    return text
+
+
 def main() -> None:
     ENRON_DIR.mkdir(parents=True, exist_ok=True)
     if OUT_CSV.exists():
@@ -66,22 +90,10 @@ def main() -> None:
             r.raw.decode_content = True
             with tarfile.open(fileobj=r.raw, mode="r|gz") as tar:
                 for member in tar:
-                    if not member.isfile():
-                        continue
-                    parts = member.name.split("/")
-                    if len(parts) < 2:
-                        continue
-                    user = parts[1]                   # maildir/<user>/...
-                    if per_user[user] >= PER_USER:
-                        continue                      # already enough from this mailbox
-                    f = tar.extractfile(member)
-                    if f is None:
-                        continue
-                    text = parse_email(f.read())
-                    if len(text) < 20:
+                    text = _sample_member(tar, member, per_user)
+                    if text is None:
                         continue
                     writer.writerow([text])
-                    per_user[user] += 1
                     seen += 1
                     if seen % 250 == 0:
                         out.flush()

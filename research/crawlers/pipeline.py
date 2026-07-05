@@ -19,6 +19,47 @@ RESEARCH_ROOT = Path(__file__).resolve().parents[1]
 EXTRA_DIR = RESEARCH_ROOT / "data" / "raw" / "sms" / "extra"
 
 
+def _clean_record(rec, require_vn, seen, dropped, today):
+    """Normalize a record and apply the length / VN / dedup filters, tallying drops.
+
+    Returns the record (mutated in place) to keep, or None to drop it.
+    """
+    text = normalize_sms(rec.text)
+    if len(text) < 15:
+        dropped["short"] += 1
+        return None
+    if require_vn and not is_vietnamese(text):
+        dropped["non_vn"] += 1
+        return None
+    key = dedup_key(text)
+    if key in seen:
+        dropped["dup"] += 1
+        return None
+    seen.add(key)
+    rec.text, rec.collected_at = text, today
+    return rec
+
+
+def _is_selected(scfg, only):
+    """Whether a source config is enabled and matches an optional --only filter."""
+    if not scfg.get("enabled", False):
+        return False
+    return not (only and scfg.get("name") != only and scfg.get("type") != only)
+
+
+def _collect_source(scfg, fetcher, require_vn, seen, dropped, today, records):
+    """Build one source, collect + filter its records into `records`, return (name, kept)."""
+    src = build(scfg["type"], scfg, fetcher)
+    got = 0
+    for rec in src.collect():
+        cleaned = _clean_record(rec, require_vn, seen, dropped, today)
+        if cleaned is not None:
+            records.append(cleaned)
+            got += 1
+    print(f"[crawl] {src.name}: kept {got}")
+    return src.name, got
+
+
 def run(config: dict, *, only: str | None = None, respect_robots: bool = True, dry_run: bool = False) -> dict:
     g = config.get("global", {})
     fetcher = HttpFetcher(
@@ -33,30 +74,10 @@ def run(config: dict, *, only: str | None = None, respect_robots: bool = True, d
     seen: set[str] = set()
 
     for scfg in config.get("sources", []):
-        if not scfg.get("enabled", False):
+        if not _is_selected(scfg, only):
             continue
-        if only and scfg.get("name") != only and scfg.get("type") != only:
-            continue
-        src = build(scfg["type"], scfg, fetcher)
-        got = 0
-        for rec in src.collect():
-            text = normalize_sms(rec.text)
-            if len(text) < 15:
-                dropped["short"] += 1
-                continue
-            if require_vn and not is_vietnamese(text):
-                dropped["non_vn"] += 1
-                continue
-            key = dedup_key(text)
-            if key in seen:
-                dropped["dup"] += 1
-                continue
-            seen.add(key)
-            rec.text, rec.collected_at = text, today
-            records.append(rec)
-            got += 1
-        per_source[src.name] = got
-        print(f"[crawl] {src.name}: kept {got}")
+        name, got = _collect_source(scfg, fetcher, require_vn, seen, dropped, today, records)
+        per_source[name] = got
 
     df = pd.DataFrame(
         [{"text": r.text, "label": r.label, "raw_label": r.raw_label,

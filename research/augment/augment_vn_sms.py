@@ -117,6 +117,70 @@ def generate(client, req: dict) -> list[str]:
         return []
 
 
+def _build_client():
+    """Import the SDK and construct an Anthropic client, exiting with a hint on failure."""
+    try:
+        import anthropic
+    except ImportError:
+        sys.exit("[augment] pip install anthropic")
+    try:
+        return anthropic.Anthropic()
+    except Exception as exc:  # noqa: BLE001
+        sys.exit(f"[augment] client init failed: {exc}. Set ANTHROPIC_API_KEY or run `ant auth login`.")
+
+
+def _handle_generate_error(exc, key, r):
+    """Exit on missing credentials; otherwise log a transient per-round failure."""
+    msg = str(exc).lower()
+    if type(exc).__name__ == "AuthenticationError" or "authentication" in msg or "api_key" in msg:
+        sys.exit("[augment] no Anthropic credentials. Set ANTHROPIC_API_KEY or run "
+                 "`ant auth login`, then re-run this script.")
+    print(f"[augment] {key} round {r + 1} failed: {type(exc).__name__}: {exc}")  # transient
+
+
+def _keep_texts(texts, label, key, today, seen, rows):
+    """Normalize, filter and dedup generated texts into `rows`; return how many were kept."""
+    kept = 0
+    for t in texts:
+        t = normalize_sms(t)
+        if len(t) < 15 or not is_vietnamese(t):
+            continue
+        dk = dedup_key(t)
+        if dk in seen:
+            continue
+        seen.add(dk)
+        rows.append({"text": t, "label": label, "category": key,
+                     "source": "claude-augment", "collected_at": today})
+        kept += 1
+    return kept
+
+
+def _run_category(client, cat, rounds, per_category, today, seen, rows):
+    """Generate `rounds` batches for one category and collect the kept variants."""
+    key, label, desc, seeds = cat
+    kept = 0
+    for r in range(rounds):
+        try:
+            texts = generate(client, build_request(label, desc, seeds, per_category, r + 1))
+        except Exception as exc:  # noqa: BLE001
+            _handle_generate_error(exc, key, r)
+            continue
+        kept += _keep_texts(texts, label, key, today, seen, rows)
+    return kept
+
+
+def _write_output(rows, out, per_cat, today):
+    """Write the augmented CSVs + manifest and print a summary line."""
+    df = pd.DataFrame(rows)
+    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
+    df[["text", "label"]].to_csv(EXTRA_DIR / f"{out}.csv", index=False)
+    df.to_csv(EXTRA_DIR / f"{out}.full.csv", index=False)
+    summary = {"total": len(df), "model": MODEL, "per_category": per_cat,
+               "label_dist": df["label"].value_counts().to_dict(), "date": today}
+    (EXTRA_DIR / f"{out}.manifest.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
+    print(f"[augment] wrote {EXTRA_DIR / (out + '.csv')} — {len(df)} rows, dist={summary['label_dist']}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="LLM-augment Vietnamese smishing training data via Claude")
     ap.add_argument("--per-category", type=int, default=20, help="messages per category per round")
@@ -129,60 +193,23 @@ def main() -> None:
     cats = [c for c in CATEGORIES if not args.only or c[0] == args.only]
 
     if args.dry_run:
-        lab, desc, seeds = cats[0][1], cats[0][2], cats[0][3]
-        req = build_request(lab, desc, seeds, args.per_category, 1)
-        print(json.dumps(req, ensure_ascii=False, indent=2))
+        _, lab, desc, seeds = cats[0]
+        print(json.dumps(build_request(lab, desc, seeds, args.per_category, 1), ensure_ascii=False, indent=2))
         print("\n[augment] DRY RUN — no API call made.")
         return
 
-    try:
-        import anthropic
-    except ImportError:
-        sys.exit("[augment] pip install anthropic")
-    try:
-        client = anthropic.Anthropic()
-    except Exception as exc:  # noqa: BLE001
-        sys.exit(f"[augment] client init failed: {exc}. Set ANTHROPIC_API_KEY or run `ant auth login`.")
-
+    client = _build_client()
     today = date.today().isoformat()
     rows, per_cat, seen = [], {}, set()
-    for key, label, desc, seeds in cats:
-        kept = 0
-        for r in range(args.rounds):
-            try:
-                texts = generate(client, build_request(label, desc, seeds, args.per_category, r + 1))
-            except Exception as exc:  # noqa: BLE001
-                msg = str(exc).lower()
-                if isinstance(exc, anthropic.AuthenticationError) or "authentication" in msg or "api_key" in msg:
-                    sys.exit("[augment] no Anthropic credentials. Set ANTHROPIC_API_KEY or run "
-                             "`ant auth login`, then re-run this script.")
-                print(f"[augment] {key} round {r+1} failed: {type(exc).__name__}: {exc}")  # transient
-                continue
-            for t in texts:
-                t = normalize_sms(t)
-                if len(t) < 15 or not is_vietnamese(t):
-                    continue
-                dk = dedup_key(t)
-                if dk in seen:
-                    continue
-                seen.add(dk)
-                rows.append({"text": t, "label": label, "category": key,
-                             "source": "claude-augment", "collected_at": today})
-                kept += 1
-        per_cat[key] = kept
-        print(f"[augment] {key} ({label}): kept {kept}")
+    for cat in cats:
+        key, label = cat[0], cat[1]
+        per_cat[key] = _run_category(client, cat, args.rounds, args.per_category, today, seen, rows)
+        print(f"[augment] {key} ({label}): kept {per_cat[key]}")
 
     if not rows:
         sys.exit("[augment] nothing generated (auth/refusal?) — see messages above.")
 
-    df = pd.DataFrame(rows)
-    EXTRA_DIR.mkdir(parents=True, exist_ok=True)
-    df[["text", "label"]].to_csv(EXTRA_DIR / f"{args.out}.csv", index=False)
-    df.to_csv(EXTRA_DIR / f"{args.out}.full.csv", index=False)
-    summary = {"total": len(df), "model": MODEL, "per_category": per_cat,
-               "label_dist": df["label"].value_counts().to_dict(), "date": today}
-    (EXTRA_DIR / f"{args.out}.manifest.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2))
-    print(f"[augment] wrote {EXTRA_DIR / (args.out + '.csv')} — {len(df)} rows, dist={summary['label_dist']}")
+    _write_output(rows, args.out, per_cat, today)
 
 
 if __name__ == "__main__":
