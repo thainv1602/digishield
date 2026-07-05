@@ -23,8 +23,9 @@ from .schemas import ClassificationView, ClassifyRequest, QrRequest, UrlRequest
 
 app = FastAPI(title="DigiShield Phishing-AI", version="0.1.0")
 
-# Anchored via re.match; one group scopes the leading whitespace over both alternatives.
-_URL_RE = re.compile(r"\s*(?:https?://|[\w.-]+\.[a-z]{2,}(?:/|\s*$))", re.I)
+# Matches a leading URL scheme or a bare domain.tld; used with re.match (start-
+# anchored) and gated by the word-count check in _route, so no end anchor is needed.
+_URL_RE = re.compile(r"\s*(?:https?://|[\w.-]+\.[a-z]{2,})", re.I)
 
 
 def _route(payload: str) -> str:
