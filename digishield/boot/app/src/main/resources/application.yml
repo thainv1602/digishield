@@ -60,6 +60,18 @@ server:
 # nothing is sent (LoggingNotificationGateway). Enable in prod once the SES
 # domain is verified and the pod has IRSA perms (ses:SendEmail).
 digishield:
+  # Auth: JWT resource server (non-dev profiles). Set the issuer to the OpenID
+  # issuer of your IdP — for Amazon Cognito:
+  #   https://cognito-idp.<region>.amazonaws.com/<userPoolId>
+  # The server fetches that issuer's JWKS and validates signature + issuer + expiry.
+  # audience is optional (matched against aud or client_id); roles-claim holds the
+  # groups mapped to ROLE_* authorities. When issuer-uri is blank the API is locked
+  # down (actuator only) — the permissive local experience is the dev profile.
+  auth:
+    jwt:
+      issuer-uri: ${AUTH_JWT_ISSUER_URI:}
+      audience: ${AUTH_JWT_AUDIENCE:}
+      roles-claim: ${AUTH_JWT_ROLES_CLAIM:cognito:groups}
   notifications:
     email:
       from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}
