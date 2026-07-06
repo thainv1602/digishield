@@ -97,7 +97,7 @@ export default function AlertCenterPage() {
       <header style={{ marginBottom: 20 }}>
           <h1 style={pageTitle}>{t('Trung tâm cảnh báo · Alert Center')}</h1>
           <p style={{ fontSize: 13, color: 'var(--muted)', marginTop: 4 }}>
-            {t('Soạn và phát cảnh báo toàn tổ chức qua WebSocket')}
+            {t('Soạn và phát cảnh báo tới mọi người dùng trong tổ chức')}
           </p>
         </header>
 

@@ -143,7 +143,7 @@ export const EN: Record<string, string> = {
   'Đã phát cảnh báo {severity} tới {reach} người.': 'Broadcast {severity} alert to {reach} people.',
   'Không phát được cảnh báo, thử lại.': 'Failed to broadcast the alert, please try again.',
   'Trung tâm cảnh báo · Alert Center': 'Alert Center',
-  'Soạn và phát cảnh báo toàn tổ chức qua WebSocket': 'Compose and broadcast organization-wide alerts via WebSocket',
+  'Soạn và phát cảnh báo tới mọi người dùng trong tổ chức': 'Compose and broadcast alerts to every user in the organization',
   'CRITICAL — Đe dọa đang hoạt động': 'CRITICAL — Active threat',
   'WARNING — Cần chú ý': 'WARNING — Needs attention',
   'INFO — Thông báo chung': 'INFO — General notice',

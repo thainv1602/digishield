@@ -83,7 +83,11 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `sns:Publish`, set `NOTIFICATIONS_SNS_ENABLED=true` (+ optional
       `NOTIFICATIONS_SMS_SENDER_ID`). Push not wired. Phone write API (UserUpsert/
       SCIM) still a follow-up — phones currently only via seed/DB.
-- [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`
+- [x] FE `soc/AlertCenterPage.tsx` — compose form wired via `useBroadcastAlert()`
+      (`POST /alerts/broadcast` → `NotificationServiceImpl.broadcastAlert`, fans an in-app
+      ALERT out to every tenant user and returns `{reach}`); history refreshes on success.
+      Note: delivery is in-app/persisted only — no real-time WebSocket push yet (see
+      Notification delivery go-live).
 
 ### Auth — backend login
 - [x] Extracted an `AuthProvider` SPI; auth methods (login/refresh/forgot/reset/mfa) delegate to it.
