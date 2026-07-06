@@ -109,6 +109,8 @@ export interface SmartGroup {
   name: string | null;
   /** present → the group membership is computed from dynamic conditions */
   rule_json?: unknown;
+  /** materialised membership count (null when not yet evaluated) */
+  member_count?: number | null;
 }
 
 /** GET /groups — the tenant's target groups (static + smart). */
