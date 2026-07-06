@@ -20,9 +20,10 @@ public interface SimulationService {
      *
      * @param channel    delivery channel
      * @param templateId content template (may be null)
+     * @param groupId    target audience group (may be null)
      * @return the newly created campaign
      */
-    SimCampaign createCampaign(Channel channel, UUID templateId);
+    SimCampaign createCampaign(Channel channel, UUID templateId, UUID groupId);
 
     /**
      * Records a user interaction event.

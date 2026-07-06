@@ -31,12 +31,14 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the Learning module: catalog, enrollments, lessons,
  * quizzes/assessments, certificates, gamification and compliance.
  */
 @RestController
+@PreAuthorize("hasRole('LEARNER')")
 class LearningController {
 
     private final LearningService learningService;
@@ -104,6 +106,7 @@ class LearningController {
 
     // ---- Assessments -------------------------------------------------------
 
+    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/api/v1/assessments")
     ResponseEntity<java.util.List<AssessmentView>> assessments(
             @RequestParam(value = "type", required = false) String type) {
@@ -111,6 +114,7 @@ class LearningController {
         return ResponseEntity.ok(learningService.listAssessments(tenantId, type));
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','CONTENT_EDITOR')")
     @PostMapping("/api/v1/assessments")
     ResponseEntity<AssessmentView> createAssessment(@RequestBody AssessmentView request) {
         UUID tenantId = TenantContext.requireUuid();
@@ -120,6 +124,7 @@ class LearningController {
                 .body(created);
     }
 
+    @PreAuthorize("hasAnyRole('MANAGER','ANALYST')")
     @GetMapping("/api/v1/assessments/{id}/results")
     ResponseEntity<AssessmentResultsView> assessmentResults(@PathVariable UUID id) {
         UUID tenantId = TenantContext.requireUuid();
@@ -155,6 +160,7 @@ class LearningController {
         return ResponseEntity.ok(learningService.listCoachingPages(tenantId));
     }
 
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
     @PostMapping("/api/v1/coaching-pages")
     ResponseEntity<CoachingPageView> createCoachingPage(@RequestBody CoachingPageView request) {
         UUID tenantId = TenantContext.requireUuid();
@@ -193,12 +199,14 @@ class LearningController {
 
     // ---- Compliance --------------------------------------------------------
 
+    @PreAuthorize("hasRole('MANAGER')")
     @GetMapping("/api/v1/compliance/policies")
     ResponseEntity<java.util.List<CompliancePolicyView>> compliancePolicies() {
         UUID tenantId = TenantContext.requireUuid();
         return ResponseEntity.ok(learningService.listCompliancePolicies(tenantId));
     }
 
+    @PreAuthorize("hasRole('ORG_ADMIN')")
     @PostMapping("/api/v1/compliance/policies")
     ResponseEntity<CompliancePolicyView> createCompliancePolicy(
             @RequestBody CreateCompliancePolicyRequest request) {

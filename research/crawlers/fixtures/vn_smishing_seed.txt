@@ -1,0 +1,101 @@
+# Vietnamese smishing seed — curated from publicly published bank/telco/NCSC scam warnings.
+# Format: label<TAB>text   (label: smishing | spam | ham). Expand via real crawler sources
+# or the LLM augmenter (augment/augment_vn_sms.py). Real VN scam SMS mix diacritic and
+# non-diacritic text and spoof many brands — keep this set diverse, not near-duplicates.
+#
+# --- Bank account / OTP / suspicious transaction ---
+smishing	Tai khoan cua ban da bi khoa. Vui long truy cap http://vietcom-bank.vip de xac minh trong 24h neu khong se bi khoa vinh vien.
+smishing	VCB Digibank: Tai khoan cua quy khach phat sinh giao dich bat thuong. Dang nhap http://vcbdigi-verify.com de mo khoa ngay.
+smishing	Techcombank: Diem thuong cua ban sap het han. Nhan ngay 3.000.000d tai http://tcb-uudai.top truoc 20h hom nay.
+smishing	Ngan hang thong bao: Ban da dang ky dich vu tra gop 3.500.000d/thang. Neu khong dang ky bam vao day de huy: http://huy-dichvu.info
+smishing	Ngan hang MB: Phat hien dang nhap la tu thiet bi khac. Xac nhan khong phai ban tai http://mb-baomat.vip trong 15 phut.
+smishing	BIDV: Ung dung SmartBanking cua quy khach het han bao mat. Cap nhat tai http://bidv-smart.icu de tiep tuc su dung.
+smishing	Agribank thong bao: Tai khoan phat sinh giao dich 8.900.000d luc 02:15. Neu khong phai ban bam http://agri-tracuu.cc de huy.
+smishing	ACB: Ma OTP cua ban la 738201, tuyet doi khong cung cap. Neu khong yeu cau, khoa the tai http://acb-baove.online ngay.
+smishing	Sacombank: Diem tich luy 520.000d cua ban sap het han hom nay. Doi qua tai http://scb-diemthuong.site truoc 23h59.
+smishing	VPBank: Han muc the tin dung cua ban da duoc nang len 80 trieu. Kich hoat tai http://vpb-napthe.club de su dung.
+smishing	Vietinbank iPay: Tai khoan bi tam ngung do dang nhap sai nhieu lan. Mo khoa tai http://vtb-ipay-mokhoa.xyz.
+smishing	TPBank: Quy khach vua dang ky vay tieu dung 30.000.000d. Neu khong phai ban huy tai http://tpb-huyvay.top trong 2h.
+smishing	Ngân hàng của quý khách phát hiện đăng nhập bất thường tại Hà Nội. Xác minh ngay tại http://verify-nganhang.vip nếu không phải bạn.
+smishing	HDBank: Ban co 1 giao dich cho xac nhan 12.000.000d. Huy giao dich tai http://hdb-xacnhan.live neu ban khong thuc hien.
+#
+# --- Prize / lottery / brand giveaway ---
+smishing	Chuc mung! So thue bao cua ban da trung giai Nhat xe SH va 50 trieu dong tu Viettel. Truy cap http://viettel-tri-an.net de nhan.
+smishing	Vinaphone tri an: Thue bao cua ban nam trong 10 so trung thuong 1 xe Honda Vision. Nhan giai tai http://vina-triangoc.top.
+smishing	Chuc mung ban la khach hang may man cua Shopee, nhan voucher 5.000.000d tai http://shopee-quatang.icu truoc 21h.
+smishing	Coca-Cola ky niem 50 nam tang ban 1 dien thoai iPhone 15. Dien thong tin nhan qua tai http://cocacola-50nam.site.
+smishing	Chuong trinh tri an khach hang cua Grab: ban trung 20.000.000d. Xac nhan tai http://grab-triangoc.cc trong hom nay.
+smishing	Bạn đã trúng thưởng chương trình quay số cuối năm của Điện Máy Xanh. Nhận ngay 30 triệu tại http://dmx-quaythuong.online.
+#
+# --- Electricity / utility (EVN) ---
+smishing	EVN: Hoa don tien dien thang nay cua ban qua han. Vui long thanh toan tai http://evn-thanhtoan.xyz de tranh bi cat dien.
+smishing	Dien luc thong bao: Cong to nha ban ghi nhan bat thuong, se cat dien trong 2h. Kiem tra tai http://evnhanoi-tracuu.info.
+smishing	EVN SPC: Ban dang no 1.850.000d tien dien, thanh toan ngay tai http://evnspc-hoadon.club de khong bi ngung cung cap.
+smishing	Công ty điện lực thông báo hóa đơn tháng 6 chưa thanh toán. Vui lòng nộp tại http://dienluc-online.top trước 18h hôm nay.
+#
+# --- Social insurance / tax ---
+smishing	BHXH Viet Nam: Ban co 1 khoan tro cap chua nhan. Cap nhat thong tin tai http://bhxh-govvn.com trong hom nay.
+smishing	Tong cuc Thue: Ma so thue cua ban co sai sot, vui long xac thuc tai http://thue-online.info neu khong se bi phong toa.
+smishing	BHXH: He thong ghi nhan ban duoc hoan 4.200.000d tien BHYT. Nhan tai http://bhxh-hoantien.site truoc khi het han.
+smishing	Cơ quan thuế thông báo: Bạn cần cập nhật thông tin định danh thuế trước 05/07 tại http://thue-dinhdanh.icu nếu không sẽ bị khóa MST.
+#
+# --- Delivery / e-commerce ---
+smishing	Buu dien: Ban co 1 kien hang dang cho giao nhung sai dia chi. Cap nhat tai http://ghn-tracking.top de nhan hang.
+smishing	Shopee: Don hang cua ban duoc hoan 888.000d. Nhan tai http://shopee-hoantien.top truoc khi het han hom nay.
+smishing	GHTK: Kien hang #VN83920 giao that bai do thieu phi. Bo sung 25.000d tai http://ghtk-thanhtoan.cc de giao lai.
+smishing	J&T Express: Buu pham cua ban dang bi giu tai kho do sai ma vung. Cap nhat tai http://jt-capnhat.online ngay.
+smishing	Lazada: Don hang gia tri 1.200.000d cua ban bi huy nham. Xac nhan lai tai http://lazada-donhang.club de hoan tien.
+smishing	Viettel Post: Ban co 1 don hang COD 350.000d chua thanh toan, giao lai tai http://vtpost-cod.xyz trong 24h.
+smishing	Tiki thông báo: Đơn hàng của bạn đang tạm giữ do lỗi địa chỉ. Cập nhật tại http://tiki-giaohang.site để nhận hàng.
+#
+# --- Telco / SIM standardization ---
+smishing	SIM cua ban se bi khoa 2 chieu do chua chuan hoa thong tin. Truy cap http://chuanhoa-tt.info hoac soan tin ngay.
+smishing	Mobifone: Thue bao cua ban se bi thu hoi sau 24h do thong tin chua chinh xac. Cap nhat tai http://mobi-chuanhoa.top.
+smishing	Vinaphone thong bao: So thue bao cua ban chua dinh danh chinh chu, khoa 1 chieu tu hom nay. Xu ly tai http://vina-dinhdanh.cc.
+smishing	Viettel: Tài khoản của bạn sẽ bị hủy do vi phạm quy định thuê bao. Xác thực ngay tại http://viettel-xacthuc.online.
+#
+# --- Loans / online jobs / CTV ---
+smishing	Ban da duoc duyet khoan vay 50.000.000d lai suat 0%. Bam http://vay-nhanh24h.net va dien thong tin de giai ngan.
+smishing	Tuyen CTV online lam tai nha, luong 500k-2tr/ngay, khong can kinh nghiem. Ket ban Zalo 09xxxxxxx de nhan viec.
+smishing	Cong ty tuyen nguoi lam nhiem vu don hang Shopee, hoa hong 10-30%/don. Dang ky tai http://vieclam-online.club nhan luong ngay.
+smishing	Ho tro vay 10-100 trieu chi can CMND, giai ngan trong 15 phut, khong tham dinh. Dang ky http://vaytien-online.icu.
+smishing	Bạn được mời làm cộng tác viên chốt đơn tại nhà, thu nhập 8-15 triệu/tháng. Nhắn Zalo http://ctv-tuyendung.site để bắt đầu.
+#
+# --- Authority impersonation (police / court / procuracy) ---
+smishing	Cong an thong bao: Ban lien quan 1 vu an rua tien. Truy cap http://bocongan-tra-cuu.com va khai bao ngay de tranh bi bat.
+smishing	Vien kiem sat nhan dan thong bao ban co lenh trieu tap lien quan duong day ma tuy. Xem chi tiet tai http://vksnd-hoso.online.
+smishing	CSGT: Phuong tien BKS 30A-xxxxx cua ban vi pham toc do, phat nguoi 1.200.000d. Nop phat tai http://csgt-phatnguoi.top.
+smishing	Tòa án nhân dân thông báo bạn có giấy triệu tập vụ án dân sự. Tra cứu hồ sơ tại http://toaan-trieutap.cc trong 48h.
+smishing	Cuc An ninh mang thong bao tai khoan cua ban bi dung vao hanh vi lua dao. Giai trinh tai http://a05-baomat.site ngay.
+#
+# --- E-wallet / VNeID / digital identity ---
+smishing	Momo: Tai khoan bi tam khoa do dang nhap bat thuong, xac thuc lai tai http://momo-mokhoa.vip de mo khoa.
+smishing	ZaloPay: Ban nhan duoc 500.000d li xi tu he thong, rut ve tai khoan tai http://zalopay-lixi.top truoc 20h.
+smishing	VNeID: Tai khoan dinh danh dien tu muc 2 cua ban chua kich hoat, se bi vo hieu. Kich hoat tai http://vneid-kichhoat.online.
+smishing	Ứng dụng VNeID thông báo: Hồ sơ định danh của bạn cần bổ sung ảnh CCCD tại http://dinhdanh-vn.site trước 06/07.
+smishing	ViettelMoney: Vi cua ban co giao dich cho duyet 6.000.000d. Neu khong phai ban huy tai http://viettelmoney-huy.club.
+#
+# --- Social / account takeover ---
+smishing	Facebook: Tai khoan cua ban vi pham tieu chuan cong dong va se bi xoa. Khang nghi tai http://fb-support-vn.com ngay.
+smishing	Trang cua ban vi pham ban quyen va se bi vo hieu hoa trong 24h. Khang cao tai http://meta-business-vn.online de giu trang.
+smishing	Zalo thong bao: Tai khoan cua ban dang nhap tu thiet bi la, xac minh tai http://zalo-baomat.top de tranh bi khoa.
+#
+# --- Emergency / relative-in-trouble ---
+smishing	Con cua quy phu huynh bi tai nan dang cap cuu, can chuyen gap 20 trieu vien phi vao STK 1234567890 - BV Cho Ray.
+smishing	Thay giao chu nhiem thong bao con anh chi bi thuong o truong, chuyen gap 15 trieu tam ung mo tai STK 9988776655.
+#
+# --- Legitimate advertising / promotions (spam, not fraud) ---
+spam	Sale off 70% toan bo cua hang, mua 1 tang 1 duy nhat hom nay. Ghe ngay 123 Nguyen Trai de san uu dai.
+spam	Nap the dien thoai nhan ngay 100% gia tri the trong 3 ngay vang. Soan NAP gui 999.
+spam	The Coffee House: Uu dai mua 1 tang 1 tat ca do uong tu 14h-17h hom nay. Hen gap ban tai cua hang gan nhat.
+spam	Dien May Cho Lon giam den 50% mua he, tra gop 0%. Xem uu dai tai showroom toan quoc.
+spam	Grab: Nhap ma HELLO20 giam 20k cho 3 chuyen xe trong tuan nay. Ap dung den chu nhat.
+#
+# --- Legitimate personal / transactional messages (ham/clean) ---
+ham	Me oi con ve tre khoang 30 phut nhe, met qua. Me an com truoc di dung cho con.
+ham	Anh oi cuoc hop chieu nay doi sang 3h30 phong A2 nhe. Nho mang theo tai lieu du an.
+ham	Vietcombank: TK 0123 +5.000.000d luc 14:32 05/07. So du 12.450.000d. (giao dich hop le, khong kem link)
+ham	Ban da dat lich kham luc 9h ngay mai tai phong kham. Vui long den truoc 15 phut. Cam on ban.
+ham	Grab: Tai xe Nguyen Van A dang den don ban, bien so 59H1-234.56, xe Wave mau den.
+ham	Con oi mai me ban khong nau com nhe, con tu lo com trua giup me. Cam on con trai.
+ham	Shopee: Don hang cua ban da giao thanh cong luc 16:20. Cam on ban da mua sam, danh gia de nhan xu nhe.

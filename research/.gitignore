@@ -1,0 +1,12 @@
+# Downloaded datasets and trained models are large / regenerable — do not commit.
+data/
+models/
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.pt
+*.bin
+*.safetensors
+.DS_Store

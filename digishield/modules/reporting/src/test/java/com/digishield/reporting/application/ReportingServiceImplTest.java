@@ -152,4 +152,23 @@ class ReportingServiceImplTest {
         verify(reportRepository, never()).save(any());
         verifyNoInteractions(eventPublisher);
     }
+
+    @Test
+    void triage_whenReportBelongsToAnotherTenant_isRejectedAndNothingIsWritten() {
+        // Arrange: a report owned by a DIFFERENT tenant than the caller's context
+        UUID reportId = UUID.randomUUID();
+        UUID otherTenant = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        PhishingReport foreignReport = new PhishingReport(
+                reportId, otherTenant, UUID.randomUUID(), "payload",
+                null, 0.0, ReportStatus.SUBMITTED);
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(foreignReport));
+
+        // Act + Assert: treated as not-found; no cross-tenant mutation or event
+        assertThatThrownBy(() -> reportingService.triage(reportId, true))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(reportId.toString());
+
+        verify(reportRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
 }

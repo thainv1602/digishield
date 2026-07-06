@@ -11,6 +11,8 @@ import com.digishield.ai.domain.TemplateChannel;
 import com.digishield.ai.domain.TemplateStatus;
 import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.ai.infrastructure.AiTemplateRepository;
+import com.digishield.contracts.events.AidaOrchestrationRequestedEvent;
+import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,13 +40,16 @@ public class AiServiceImpl implements AiService {
     private final AiTemplateRepository templateRepository;
     private final AidaRunRepository aidaRunRepository;
     private final AiClient aiClient;
+    private final EventPublisher eventPublisher;
 
     public AiServiceImpl(AiTemplateRepository templateRepository,
                          AidaRunRepository aidaRunRepository,
-                         AiClient aiClient) {
+                         AiClient aiClient,
+                         EventPublisher eventPublisher) {
         this.templateRepository = templateRepository;
         this.aidaRunRepository = aidaRunRepository;
         this.aiClient = aiClient;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -81,17 +86,19 @@ public class AiServiceImpl implements AiService {
 
     @Override
     public void runOrchestration(String scope, UUID scopeId) {
-        // TODO: trigger the real AIDA pipeline (recompute risk scores -> auto-enroll
-        //       at-risk users into remediation). For now we record the run so the
-        //       admin console shows history; the summary is a deterministic stub.
+        // Kick off the real AIDA pipeline: persist a "running" record, then hand off
+        // to analytics (recompute risk -> flag at-risk users) which drives learning
+        // (auto-enroll) and reports back a completion event that finalises this run.
         UUID tenantId = TenantContext.requireUuid();
         String safeScope = (scope == null || scope.isBlank()) ? "org" : scope.trim();
-        String summary = "Đã xếp lịch tính lại rủi ro và tự động đăng ký cho phạm vi \""
-                + safeScope + "\" (bản demo).";
+        UUID runId = UUID.randomUUID();
         aidaRunRepository.save(new AidaRun(
-                UUID.randomUUID(), tenantId, safeScope, scopeId, "success", summary, Instant.now()));
-        LOG.info("AIDA orchestration recorded for tenant={} scope={} scopeId={}",
-                tenantId, safeScope, scopeId);
+                runId, tenantId, safeScope, scopeId, "running",
+                "Đang tính lại rủi ro và tự động đăng ký cho phạm vi \"" + safeScope + "\"…",
+                Instant.now()));
+        eventPublisher.publish(new AidaOrchestrationRequestedEvent(tenantId, runId, safeScope, scopeId));
+        LOG.info("AIDA orchestration started run={} tenant={} scope={} scopeId={}",
+                runId, tenantId, safeScope, scopeId);
     }
 
     @Override

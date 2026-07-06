@@ -137,7 +137,7 @@ class SimulationModuleIT {
         TenantContext.set(TENANT);
 
         UUID userId = UUID.randomUUID();
-        SimCampaign campaign = simulationService.createCampaign(Channel.EMAIL, null);
+        SimCampaign campaign = simulationService.createCampaign(Channel.EMAIL, null, null);
 
         simulationService.recordEvent(campaign.getId(), userId, SimAction.CLICK);
 
@@ -157,7 +157,7 @@ class SimulationModuleIT {
     void recordingNonClickPublishesNoEvent() {
         TenantContext.set(TENANT);
 
-        SimCampaign campaign = simulationService.createCampaign(Channel.SMS, null);
+        SimCampaign campaign = simulationService.createCampaign(Channel.SMS, null, null);
         simulationService.recordEvent(campaign.getId(), UUID.randomUUID(), SimAction.DELIVERED);
 
         assertThat(testEventListener.ofType(UserClickedSimulationEvent.class)).isEmpty();

@@ -17,4 +17,10 @@ public interface RecipientResolver {
      * cannot be resolved.
      */
     Optional<String> emailFor(UUID userId);
+
+    /**
+     * Returns the phone number (E.164) for a user in the current tenant, or empty
+     * if it cannot be resolved — used for SMS delivery.
+     */
+    Optional<String> phoneFor(UUID userId);
 }

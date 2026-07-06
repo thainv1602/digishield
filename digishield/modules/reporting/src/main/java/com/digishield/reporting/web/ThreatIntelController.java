@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the ThreatFlip threat-intel screen. Matches
@@ -22,6 +23,7 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/v1/threat-intel")
+@PreAuthorize("hasRole('ANALYST')")
 public class ThreatIntelController {
 
     private final ReportingService reportingService;

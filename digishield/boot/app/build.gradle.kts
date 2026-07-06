@@ -40,6 +40,7 @@ dependencies {
     implementation(platform("software.amazon.awssdk:bom:2.31.6"))
     implementation("software.amazon.awssdk:sesv2")
     implementation("software.amazon.awssdk:cognitoidentityprovider")
+    implementation("software.amazon.awssdk:sns")
 
     // Contracts
     implementation(project(":contracts"))

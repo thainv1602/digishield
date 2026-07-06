@@ -78,10 +78,11 @@ class SimulationServiceImplTest {
     void createCampaign_persistsDraftCampaignForCurrentTenant() {
         // Arrange
         UUID templateId = UUID.randomUUID();
+        UUID groupId = UUID.randomUUID();
         when(campaignRepository.save(any(SimCampaign.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        SimCampaign result = simulationService.createCampaign(Channel.EMAIL, templateId);
+        SimCampaign result = simulationService.createCampaign(Channel.EMAIL, templateId, groupId);
 
         // Assert: a DRAFT campaign was persisted for the current tenant
         verify(campaignRepository).save(campaignCaptor.capture());
@@ -90,6 +91,7 @@ class SimulationServiceImplTest {
         assertThat(persisted.getChannel()).isEqualTo(Channel.EMAIL);
         assertThat(persisted.getStatus()).isEqualTo(CampaignStatus.DRAFT);
         assertThat(persisted.getTemplateId()).isEqualTo(templateId);
+        assertThat(persisted.getGroupId()).isEqualTo(groupId);
         assertThat(result).isSameAs(persisted);
     }
 

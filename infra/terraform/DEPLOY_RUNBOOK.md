@@ -56,9 +56,12 @@ Follow [`../RUNBOOK-dev.md`](../RUNBOOK-dev.md) in order. In brief:
 1. **Bootstrap remote state** (once per account) — create the state bucket + lock
    table above, then set the bucket in `envs/backend-dev.hcl` (replace
    `<ACCOUNT_ID>` with `743337585084`).
-2. **Provision dev infra:** `terraform apply -var-file=envs/dev.tfvars`
-   (~15–20 min; **starts billing**). Creates EKS, RDS, ElastiCache, VPC/NAT,
-   S3+CloudFront, Cognito, the GitHub OIDC + IRSA roles, and the static NLB EIPs.
+2. **Provision dev infra:** `make init ENV=dev && make apply ENV=dev`
+   (~15–20 min; **starts billing**). The `make` wrapper (`Makefile`) pins the
+   backend + tfvars to `ENV` and blocks an apply if the initialized backend
+   doesn't match — the guard against applying to the wrong environment. Creates
+   EKS, RDS, ElastiCache, VPC/NAT, S3+CloudFront, Cognito, the GitHub OIDC + IRSA
+   roles, and the static NLB EIPs.
 3. **Install add-ons:** `./infra/bootstrap-addons.sh` — ESO (+ClusterSecretStore),
    AWS Load Balancer Controller, and ingress-nginx on the NLB/EIPs.
 4. **TLS cert + DNS:** issue the Let's Encrypt cert (acme.sh / DuckDNS DNS-01)

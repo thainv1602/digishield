@@ -56,6 +56,10 @@ public class AppUser {
     @Column(name = "risk_score")
     private Integer riskScore;
 
+    /** Phone number (E.164) for SMS notification delivery; optional. */
+    @Column(name = "phone")
+    private String phone;
+
     /** Default constructor required by JPA. */
     protected AppUser() {
     }
@@ -114,6 +118,14 @@ public class AppUser {
 
     public String getLocale() {
         return locale;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public void setEmail(String email) {

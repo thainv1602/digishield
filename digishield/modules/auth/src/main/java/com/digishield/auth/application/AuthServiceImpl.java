@@ -223,6 +223,7 @@ public class AuthServiceImpl implements AuthService {
                 u.getStatus() != null ? u.getStatus().name().toLowerCase() : null,
                 u.getDepartment(),
                 u.getLocale(),
+                u.getPhone(),
                 u.getRiskScore());
     }
 

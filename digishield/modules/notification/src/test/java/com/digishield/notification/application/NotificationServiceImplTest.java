@@ -97,6 +97,24 @@ class NotificationServiceImplTest {
     }
 
     @Test
+    void send_smsChannel_resolvesPhoneAndDelivers() {
+        // Arrange: SMS uses the phone address, not the email
+        UUID userId = UUID.randomUUID();
+        when(recipients.phoneFor(userId)).thenReturn(Optional.of("+84901234561"));
+
+        // Act
+        notificationService.send(userId, NotificationType.ALERT, NotificationChannel.SMS, "Subject", "Body");
+
+        // Assert: delivered to the phone via the SMS channel, persisted SENT
+        verify(gateway).deliver("SMS", "+84901234561", "Subject", "Body");
+        verify(recipients, org.mockito.Mockito.never()).emailFor(userId);
+        verify(repository).save(notificationCaptor.capture());
+        Notification persisted = notificationCaptor.getValue();
+        assertThat(persisted.getChannel()).isEqualTo(NotificationChannel.SMS);
+        assertThat(persisted.getStatus()).isEqualTo(NotificationStatus.SENT);
+    }
+
+    @Test
     void send_whenRecipientUnresolved_persistsFailedAndSkipsGateway() {
         // Arrange: no email for the user
         UUID userId = UUID.randomUUID();

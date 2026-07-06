@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the Auth module.
@@ -119,6 +120,7 @@ class AuthController {
     /**
      * Returns information about the current user.
      */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
     ResponseEntity<MeResponse> me(
             @RequestHeader(name = DEMO_ROLE_HEADER, required = false) String demoRole) {

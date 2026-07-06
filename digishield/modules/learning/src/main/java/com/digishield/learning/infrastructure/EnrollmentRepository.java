@@ -2,6 +2,8 @@ package com.digishield.learning.infrastructure;
 
 import com.digishield.learning.domain.Enrollment;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,6 +13,13 @@ import java.util.UUID;
  * Spring Data JPA repository for {@link Enrollment}.
  */
 public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
+
+    /**
+     * Number of distinct users enrolled in any training within the tenant — the
+     * population denominator for the compliance KPIs.
+     */
+    @Query("select count(distinct e.userId) from Enrollment e where e.tenantId = :tenantId")
+    long countDistinctUsers(@Param("tenantId") UUID tenantId);
 
     /**
      * Gets a user's enrollments within the scope of a tenant.

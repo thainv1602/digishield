@@ -5,3 +5,6 @@ Thumbs.db
 # IntelliJ IDEA (project-level)
 .idea/
 *.iml
+
+# Build/tool logs (e.g. XeTeX/LaTeX compile logs)
+*.log

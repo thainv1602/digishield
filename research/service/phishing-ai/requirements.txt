@@ -1,0 +1,8 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+transformers>=4.44
+torch>=2.2
+# QR decode (optional; also needs the system 'zbar' lib, e.g. brew install zbar)
+pillow>=10.0
+pyzbar>=0.1.9

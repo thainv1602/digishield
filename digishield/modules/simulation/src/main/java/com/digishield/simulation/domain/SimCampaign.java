@@ -34,6 +34,10 @@ public class SimCampaign {
     @Column(name = "template_id")
     private UUID templateId;
 
+    /** Target audience group chosen in the wizard (nullable for legacy/seed rows). */
+    @Column(name = "group_id")
+    private UUID groupId;
+
     @Column(name = "name")
     private String name;
 
@@ -42,16 +46,22 @@ public class SimCampaign {
     }
 
     public SimCampaign(UUID id, UUID tenantId, Channel channel, CampaignStatus status, UUID templateId) {
-        this(id, tenantId, channel, status, templateId, null);
+        this(id, tenantId, channel, status, templateId, null, null);
     }
 
     public SimCampaign(UUID id, UUID tenantId, Channel channel, CampaignStatus status,
                        UUID templateId, String name) {
+        this(id, tenantId, channel, status, templateId, null, name);
+    }
+
+    public SimCampaign(UUID id, UUID tenantId, Channel channel, CampaignStatus status,
+                       UUID templateId, UUID groupId, String name) {
         this.id = id;
         this.tenantId = tenantId;
         this.channel = channel;
         this.status = status;
         this.templateId = templateId;
+        this.groupId = groupId;
         this.name = name;
     }
 
@@ -77,6 +87,10 @@ public class SimCampaign {
 
     public UUID getTemplateId() {
         return templateId;
+    }
+
+    public UUID getGroupId() {
+        return groupId;
     }
 
     public String getName() {

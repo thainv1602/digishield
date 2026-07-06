@@ -40,8 +40,12 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 - [x] `classify()` — Claude Haiku 4.5 with strict-JSON output (`{label,confidence,reason}`)
 - [x] `moderate()` — Claude Haiku 4.5 (`{verdict,reasons[]}`)
 - [x] `generateTemplate()` — Claude Sonnet 4.6 generates the subject + difficulty
-- [~] `runOrchestration()` — persists an `AidaRun` (history) but the real risk
-      recompute → auto-enroll pipeline is still a deterministic stub
+- [x] `runOrchestration()` — real event-driven pipeline: AI publishes
+      `AidaOrchestrationRequestedEvent` → analytics recomputes each in-scope user's
+      risk and emits `RemediationEnrollmentRequestedEvent` for those ≥ at-risk
+      threshold → learning auto-enrolls → analytics emits
+      `AidaOrchestrationCompletedEvent`, which finalises the `AidaRun`
+      (status running→success, summary with evaluated/enrolled counts)
 - [ ] Go-live (ops): set `AI_CLAUDE_ENABLED=true` + provide `ANTHROPIC_API_KEY`
       (e.g. via Secrets Manager / GH secret). `generateTemplate` only stores the
       subject (schema has no body column).
@@ -52,7 +56,11 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 - [x] `PhishingReportConfirmedListener` — added `userId` to `PhishingReportConfirmedEvent`
       (reporting side) and wired the listener: a confirmed report is now recorded as a
       vigilant (risk-lowering) signal for the reporter and recomputes their score.
-- [ ] Dashboard trend/benchmark points are partly hardcoded (`AnalyticsServiceImpl` L114-134)
+- [x] Dashboard risk-trend is now data-driven — `dashboard()` builds the trend from
+      persisted org-scope `RiskScore` history (chronological), and the dev seeder writes
+      ~3 months of org-risk points. (Benchmark reference values are intentional constants;
+      recent-reports list is still demo data — needs a cross-module reporting query. In
+      prod nothing writes org-scope risk yet — a scheduled org-risk rollup is a follow-up.)
 
 ### Notification — saves to DB but never delivers
 - [x] `send()` — added a `NotificationGateway` SPI; `send()` now delivers via the gateway
@@ -65,8 +73,16 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `POST /alerts/broadcast` now takes `{message, severity}` and returns the reach;
       `AlertCenterPage` composer wired via `useBroadcastAlert()`. (Role/department
       sub-segments not exposed in the UI yet.)
-- [ ] SES go-live (ops): verify the SES domain, exit the SES sandbox, grant the pod
-      `ses:SendEmail` via IRSA, then set `NOTIFICATIONS_SES_ENABLED=true`. SMS/push not wired.
+- [x] SMS transport — `SnsSmsNotificationGateway` (AWS SNS) delivers SMS; a
+      `RoutingNotificationGateway` (@Primary) routes EMAIL→SES / SMS→SNS and logs
+      (no-send) when a channel's gateway is disabled. `send()` now resolves the
+      address per channel (email vs phone) via `RecipientResolver.phoneFor`; added
+      an `app_user.phone` column + `UserView.phone` and seeded demo phones.
+- [ ] Delivery go-live (ops): EMAIL — verify SES domain, exit sandbox, grant
+      `ses:SendEmail` (IRSA), set `NOTIFICATIONS_SES_ENABLED=true`. SMS — grant
+      `sns:Publish`, set `NOTIFICATIONS_SNS_ENABLED=true` (+ optional
+      `NOTIFICATIONS_SMS_SENDER_ID`). Push not wired. Phone write API (UserUpsert/
+      SCIM) still a follow-up — phones currently only via seed/DB.
 - [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`
 
 ### Auth — backend login
@@ -75,6 +91,9 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       does real credential login (`USER_PASSWORD_AUTH`), refresh, MFA challenge, and forgot/reset
       password when `AUTH_COGNITO_ENABLED=true`. Login MFA is signalled via a 401 `{challenge_name,
       mfa_token}` the client replays to `/mfa/challenge`.
+- [x] Resource-server issuer wired (`shared/.../SecurityConfig.java`): `AUTH_JWT_ISSUER_URI`
+      drives a real JWKS-validating JWT decoder (signature + issuer + expiry, optional
+      audience) and maps `cognito:groups` → `ROLE_*`. Non-`dev` fails closed with no issuer.
 - [ ] Go-live (ops): set `AUTH_COGNITO_ENABLED=true` + `AUTH_COGNITO_CLIENT_ID` (+ region / client
       secret); the Cognito app client must allow `USER_PASSWORD_AUTH`. Pairs with the resource-server
       issuer (`AUTH_JWT_ISSUER_URI`, PR #51) that validates the tokens this returns.
@@ -93,7 +112,8 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `POST /reports/phishing` via `useReportPhishing()` (was a dead `/learn/report` link)
 - [x] `certificates/CertificatePage.tsx` — Download = browser print-to-PDF; Share = copy
       the verification link (no backend PDF/share endpoint exists)
-- [ ] `_shared/mockData.ts` — remove once the pages above use generated hooks
+- [x] `_shared/mockData.ts` removed (0 importers) + purged 24 committed `.fuse_hidden*`
+      editor-orphan files and added a `.gitignore` rule for them
 - [x] `content` template library — added `GET /ai/templates` (backend) and wired the
       library via `useTemplates()` (was a static array)
 - [x] `campaigns` wizard — templates load from `GET /ai/templates`, audience from

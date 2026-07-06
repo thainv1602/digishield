@@ -40,6 +40,10 @@ dependencies {
     "implementation"("org.springframework.boot:spring-boot-starter")
     "implementation"("org.springframework.boot:spring-boot-starter-data-jpa")
     "implementation"("org.springframework:spring-web")
+
+    // Method-security annotations (@PreAuthorize) on controllers. Just the core
+    // library — the resource server / filter chain live in the boot app + shared:security.
+    "implementation"("org.springframework.security:spring-security-core")
     "implementation"("org.springframework.modulith:spring-modulith-starter-core")
     "implementation"("org.springframework.modulith:spring-modulith-events-api")
 

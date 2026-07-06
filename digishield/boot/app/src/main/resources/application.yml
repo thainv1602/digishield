@@ -56,30 +56,56 @@ management:
 server:
   port: ${SERVER_PORT:8080}
 
-# Notification delivery. SES is off by default — notifications are persisted but
-# nothing is sent (LoggingNotificationGateway). Enable in prod once the SES
-# domain is verified and the pod has IRSA perms (ses:SendEmail).
+# Notification delivery. Both transports are off by default — notifications are
+# persisted but nothing is sent (LoggingNotificationGateway). A RoutingNotificationGateway
+# sends EMAIL via SES and SMS via SNS; enable each once the AWS side is ready
+# (SES domain verified + ses:SendEmail; SNS sms + sns:Publish, both via IRSA).
 digishield:
   # Auth backend login. Off by default → dev StubAuthProvider (static demo tokens,
   # no credential check). When on, /auth/login|refresh|forgot|reset|mfa go through
   # AWS Cognito (CognitoAuthProvider). The app client must allow USER_PASSWORD_AUTH;
   # set the client secret only if the app client has one.
+  #
+  # Auth: JWT resource server (non-dev profiles). Set the issuer to the OpenID
+  # issuer of your IdP — for Amazon Cognito:
+  #   https://cognito-idp.<region>.amazonaws.com/<userPoolId>
+  # The server fetches that issuer's JWKS and validates signature + issuer + expiry.
+  # audience is optional (matched against aud or client_id); roles-claim holds the
+  # groups mapped to ROLE_* authorities. When issuer-uri is blank the API is locked
+  # down (actuator only) — the permissive local experience is the dev profile.
   auth:
     cognito:
       enabled: ${AUTH_COGNITO_ENABLED:false}
       region: ${AUTH_COGNITO_REGION:}
       client-id: ${AUTH_COGNITO_CLIENT_ID:}
       client-secret: ${AUTH_COGNITO_CLIENT_SECRET:}
+    jwt:
+      issuer-uri: ${AUTH_JWT_ISSUER_URI:}
+      audience: ${AUTH_JWT_AUDIENCE:}
+      roles-claim: ${AUTH_JWT_ROLES_CLAIM:cognito:groups}
   notifications:
     email:
       from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}
       ses:
         enabled: ${NOTIFICATIONS_SES_ENABLED:false}
+    sms:
+      # Optional alphanumeric sender id (region/route dependent; blank = none).
+      sender-id: ${NOTIFICATIONS_SMS_SENDER_ID:}
+      sns:
+        enabled: ${NOTIFICATIONS_SNS_ENABLED:false}
   # AI: off by default → deterministic StubAiClient (no token cost). Set true and
   # provide ANTHROPIC_API_KEY to route classify/moderate/generate through Claude.
   ai:
     claude:
       enabled: ${AI_CLAUDE_ENABLED:false}
+    # ML: self-hosted phishing classifier (research/service/phishing-ai). When on,
+    # classify() hits the fine-tuned models first and escalates to Claude/Stub on
+    # low confidence, escalate=true, or any error. moderate()/generate() delegate.
+    ml:
+      enabled: ${AI_ML_ENABLED:false}
+      base-url: ${AI_ML_BASE_URL:http://localhost:8085}
+      min-confidence: ${AI_ML_MIN_CONFIDENCE:0.6}
+      timeout-ms: ${AI_ML_TIMEOUT_MS:2000}
 
 ---
 # API run mode

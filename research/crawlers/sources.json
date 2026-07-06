@@ -1,0 +1,61 @@
+{
+  "global": {
+    "rate_delay": 2.0,
+    "timeout": 20,
+    "require_vietnamese": true,
+    "out": "vn_smishing_crawled"
+  },
+  "sources": [
+    {
+      "type": "fixtures",
+      "name": "public-warnings-seed",
+      "enabled": true,
+      "path": "crawlers/fixtures/vn_smishing_seed.txt",
+      "max_items": 1000
+    },
+    {
+      "type": "internal_reports",
+      "name": "digishield-user-reports",
+      "enabled": true,
+      "path": "data/raw/sms/reports_export.csv",
+      "text_col": "content",
+      "channel_col": "channel",
+      "channel_value": "SMS",
+      "label_col": "verdict",
+      "default_label": "smishing",
+      "max_items": 5000
+    },
+    {
+      "type": "chongluadao",
+      "name": "chongluadao-api",
+      "enabled": false,
+      "endpoints": ["https://api.chongluadao.vn/v3/notes"],
+      "text_fields": ["message", "content", "description", "note"],
+      "label": "smishing",
+      "max_items": 500,
+      "_note": "Best-effort: API is mostly a URL blocklist; enable if it exposes VN message text. Verify ToS for training use."
+    },
+    {
+      "type": "html_listing",
+      "name": "telco-ncsc-warnings",
+      "enabled": false,
+      "label": "smishing",
+      "min_len": 20,
+      "max_items": 500,
+      "pages": [
+        {"url": "https://REPLACE-with-authorized-warning-page.vn/canh-bao-sms", "selector": "blockquote.sms, .scam-example"}
+      ],
+      "_note": "Fill in real URLs + CSS selectors for pages you are authorized to scrape. robots.txt is honored automatically."
+    },
+    {
+      "type": "rss",
+      "name": "security-news-feed",
+      "enabled": false,
+      "label": "smishing",
+      "article_selector": "blockquote, .sms-quote",
+      "keywords": ["tin nhắn", "mạo danh", "lừa đảo", "smishing", "giả mạo"],
+      "feeds": ["https://REPLACE-with-news-feed.vn/rss/an-ninh-mang.xml"],
+      "max_items": 300
+    }
+  ]
+}

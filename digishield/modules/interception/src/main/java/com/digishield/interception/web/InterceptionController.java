@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * Sample REST controller for the Interception module.
@@ -31,6 +32,7 @@ public class InterceptionController {
     /**
      * Evaluates a transaction and returns an intervention decision (sample).
      */
+    @PreAuthorize("isAuthenticated()")
     @PostMapping("/api/v1/interventions/evaluate")
     public InterventionDecision evaluate(@RequestBody EvaluateRequest request) {
         return interceptionService.evaluate(request);
@@ -42,6 +44,7 @@ public class InterceptionController {
      * @param page 1-based page number (default 1)
      * @param size page size (default 20, max 100)
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @GetMapping("/api/v1/interventions")
     public List<InterventionEventView> listInterventions(
             @RequestParam(value = "page", defaultValue = "1") int page,
@@ -53,6 +56,7 @@ public class InterceptionController {
      * Lists the tenant's watchlist of suspicious recipient accounts.
      * Matches {@code GET /account-watchlist}.
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @GetMapping("/api/v1/account-watchlist")
     public List<AccountWatchEntryView> listWatchlist() {
         return interceptionService.listWatchlist();
@@ -62,6 +66,7 @@ public class InterceptionController {
      * Adds/syncs a suspicious account into the watchlist (SIMO/NAPAS/A05).
      * Matches {@code POST /account-watchlist}.
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/api/v1/account-watchlist")
     public ResponseEntity<AccountWatchEntryView> addWatchEntry(@RequestBody AccountWatchEntryView request) {
         AccountWatchEntryView created = interceptionService.addWatchEntry(request);
@@ -73,6 +78,7 @@ public class InterceptionController {
     /**
      * Checks whether an identifier is in the watchlist (sample).
      */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/api/v1/account-watchlist/check")
     public CheckResponse check(@RequestParam("value") String value) {
         Optional<AccountWatchEntry> entry = interceptionService.checkAccount(value);

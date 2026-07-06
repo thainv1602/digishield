@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
  * REST controller for the reporting module.
@@ -35,6 +36,7 @@ public class ReportingController {
      *
      * @param status optional status filter (e.g. "confirmed")
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @GetMapping("/phishing")
     public ResponseEntity<List<PhishingReportDto>> list(
             @RequestParam(value = "status", required = false) String status) {
@@ -44,12 +46,14 @@ public class ReportingController {
         return ResponseEntity.ok(reportingService.listReports(parsed));
     }
 
+    @PreAuthorize("hasRole('LEARNER')")
     @PostMapping("/phishing")
     public ResponseEntity<PhishingReport> submit(@RequestBody SubmitReportRequest request) {
         PhishingReport report = reportingService.submit(request.userId(), request.payload());
         return ResponseEntity.ok(report);
     }
 
+    @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/phishing/{id}/triage")
     public ResponseEntity<PhishingReport> triage(@PathVariable("id") UUID id,
                                                  @RequestBody TriageRequest request) {
@@ -63,6 +67,7 @@ public class ReportingController {
      *
      * @param id the report to convert
      */
+    @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/phishing/{id}/convert-to-training")
     public ResponseEntity<Void> convertToTraining(@PathVariable("id") UUID id) {
         reportingService.convertReportToTraining(id);
