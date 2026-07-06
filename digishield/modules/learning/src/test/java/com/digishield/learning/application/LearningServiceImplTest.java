@@ -50,6 +50,9 @@ class LearningServiceImplTest {
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
+    @Mock
+    private com.digishield.learning.infrastructure.CompliancePolicyRepository compliancePolicyRepository;
+
     @InjectMocks
     private LearningServiceImpl learningService;
 
@@ -170,5 +173,28 @@ class LearningServiceImplTest {
         assertThat(views.get(0).action()).isEqualTo("report_confirmed");
         assertThat(views.get(0).points()).isEqualTo(50);
         assertThat(views.get(1).points()).isEqualTo(-5);
+    }
+
+    @Test
+    void getComplianceStatus_usesRealEnrolledHeadcountNotAFixedNumber() {
+        // Arrange: two policies averaging 80% completion, 10 real enrolled users
+        when(compliancePolicyRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
+                policy(90), policy(70)));
+        when(enrollmentRepository.countDistinctUsers(TENANT_ID)).thenReturn(10L);
+
+        // Act
+        com.digishield.learning.api.ComplianceStatusView status =
+                learningService.getComplianceStatus(TENANT_ID);
+
+        // Assert: headcount is the real distinct-enrolled count, KPIs derive from it
+        assertThat(status.totalCount()).isEqualTo(10);
+        assertThat(status.compliantCount()).isEqualTo(8);   // round(80% * 10)
+        assertThat(status.overdueCount()).isEqualTo(2);     // 10 - 8
+        assertThat(status.compliantPct()).isEqualTo(80.0);
+    }
+
+    private com.digishield.learning.domain.CompliancePolicy policy(int completionPct) {
+        return new com.digishield.learning.domain.CompliancePolicy(
+                UUID.randomUUID(), TENANT_ID, "Policy", "GDPR", "before_due:7d", true, completionPct);
     }
 }
