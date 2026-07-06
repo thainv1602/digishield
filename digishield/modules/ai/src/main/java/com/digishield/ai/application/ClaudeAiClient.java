@@ -86,17 +86,20 @@ public class ClaudeAiClient implements AiClient {
         String safeIndustry = (industry == null || industry.isBlank()) ? "doanh nghiệp" : industry.trim();
         String safeSeason = (season == null || season.isBlank()) ? null : season.trim();
         String prompt = """
-                Generate a realistic phishing-simulation subject line in Vietnamese for a
+                Generate a realistic phishing-simulation message in Vietnamese for a
                 security-awareness training campaign (this is for defensive training only).
                 Channel: %s. Industry: %s. Season: %s.
+                Include both a subject/hook line and the full message body appropriate to the
+                channel (short one-liner with a link for sms/zalo; a short formal message for email).
                 Respond with ONLY a JSON object, no prose:
-                {"subject":"<subject line>","difficulty":"easy|medium|hard"}
+                {"subject":"<subject line>","body":"<message body>","difficulty":"easy|medium|hard"}
                 """.formatted(channel.name().toLowerCase(Locale.ROOT), safeIndustry,
                 safeSeason == null ? "n/a" : safeSeason);
-        JsonNode json = callJson(TEMPLATE_MODEL, prompt, 512);
+        JsonNode json = callJson(TEMPLATE_MODEL, prompt, 1024);
         String subject = json.path("subject").asText("[" + safeIndustry + "] Cảnh báo bảo mật");
+        String body = json.path("body").asText("");
         Difficulty difficulty = parseDifficulty(json.path("difficulty").asText("medium"));
-        return new GeneratedTemplate(subject, buildBodyRef(channel, safeIndustry, safeSeason), difficulty);
+        return new GeneratedTemplate(subject, buildBodyRef(channel, safeIndustry, safeSeason), body, difficulty);
     }
 
     private JsonNode callJson(String model, String prompt, long maxTokens) {

@@ -39,7 +39,8 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 `digishield.ai.claude.enabled=true` + `ANTHROPIC_API_KEY`).
 - [x] `classify()` — Claude Haiku 4.5 with strict-JSON output (`{label,confidence,reason}`)
 - [x] `moderate()` — Claude Haiku 4.5 (`{verdict,reasons[]}`)
-- [x] `generateTemplate()` — Claude Sonnet 4.6 generates the subject + difficulty
+- [x] `generateTemplate()` — Claude Sonnet 4.6 generates the subject + body + difficulty
+      (now stores the real message body, not just a slug)
 - [x] `runOrchestration()` — real event-driven pipeline: AI publishes
       `AidaOrchestrationRequestedEvent` → analytics recomputes each in-scope user's
       risk and emits `RemediationEnrollmentRequestedEvent` for those ≥ at-risk
@@ -47,8 +48,14 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `AidaOrchestrationCompletedEvent`, which finalises the `AidaRun`
       (status running→success, summary with evaluated/enrolled counts)
 - [ ] Go-live (ops): set `AI_CLAUDE_ENABLED=true` + provide `ANTHROPIC_API_KEY`
-      (e.g. via Secrets Manager / GH secret). `generateTemplate` only stores the
-      subject (schema has no body column).
+      (e.g. via Secrets Manager / GH secret).
+- [x] Content Studio authoring — `ai_template` now stores the real `body` + a free-text
+      `category` (theme). Added full template CRUD (`POST /ai/templates`,
+      `PATCH /ai/templates/{id}`, `POST /ai/templates/{id}/submit`, `DELETE`); the
+      Content Studio page authors/edits/submits/deletes and the AI-generate action now
+      returns a real body. Dev seed ships realistic VN lures impersonating tax / social
+      insurance / gov e-service / bank / utility / insurance. Flyway migration
+      `V2026.07.06.001` adds the columns. Verified end-to-end (full CRUD + generate).
 
 ### Analytics — risk score & adaptive loop
 - [x] `computeScore()` — was a placeholder returning `0`; now signal-based (sim-click history)

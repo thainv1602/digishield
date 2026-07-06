@@ -7,6 +7,7 @@ import com.digishield.ai.api.dto.ModerationView;
 import com.digishield.ai.api.dto.SimTemplateView;
 import com.digishield.ai.domain.AidaRun;
 import com.digishield.ai.domain.AiTemplate;
+import com.digishield.ai.domain.Difficulty;
 import com.digishield.ai.domain.TemplateChannel;
 import com.digishield.ai.domain.TemplateStatus;
 import com.digishield.ai.infrastructure.AidaRunRepository;
@@ -58,8 +59,8 @@ public class AiServiceImpl implements AiService {
         GeneratedTemplate generated = aiClient.generate(channel, industry, season);
         AiTemplate template = new AiTemplate(
                 UUID.randomUUID(), tenantId, channel,
-                generated.subject(), generated.bodyRef(), generated.difficulty(),
-                TemplateStatus.DRAFT);
+                generated.subject(), generated.bodyRef(), generated.body(),
+                industry, generated.difficulty(), TemplateStatus.DRAFT);
         return toView(templateRepository.save(template));
     }
 
@@ -116,12 +117,89 @@ public class AiServiceImpl implements AiService {
                 r.getStatus(), r.getSummary(), r.getCreatedAt());
     }
 
+    @Override
+    public SimTemplateView createTemplate(TemplateChannel channel, String subject, String body,
+                                          String category, Difficulty difficulty, boolean approved) {
+        UUID tenantId = TenantContext.requireUuid();
+        if (channel == null) {
+            throw new IllegalArgumentException("channel is required");
+        }
+        if (subject == null || subject.isBlank()) {
+            throw new IllegalArgumentException("subject is required");
+        }
+        Difficulty diff = difficulty != null ? difficulty : Difficulty.MEDIUM;
+        AiTemplate template = new AiTemplate(
+                UUID.randomUUID(), tenantId, channel,
+                subject.trim(), slugFor(channel, subject), body,
+                normalize(category), diff,
+                approved ? TemplateStatus.APPROVED : TemplateStatus.DRAFT);
+        return toView(templateRepository.save(template));
+    }
+
+    @Override
+    public SimTemplateView updateTemplate(UUID id, TemplateChannel channel, String subject, String body,
+                                          String category, Difficulty difficulty) {
+        AiTemplate template = requireOwned(id);
+        if (channel != null) {
+            template.setChannel(channel);
+        }
+        if (subject != null && !subject.isBlank()) {
+            template.setSubject(subject.trim());
+        }
+        if (body != null) {
+            template.setBody(body);
+        }
+        if (category != null) {
+            template.setCategory(normalize(category));
+        }
+        if (difficulty != null) {
+            template.setDifficulty(difficulty);
+        }
+        return toView(templateRepository.save(template));
+    }
+
+    @Override
+    public SimTemplateView submitTemplate(UUID id) {
+        AiTemplate template = requireOwned(id);
+        template.setStatus(TemplateStatus.APPROVED);
+        return toView(templateRepository.save(template));
+    }
+
+    @Override
+    public void deleteTemplate(UUID id) {
+        templateRepository.delete(requireOwned(id));
+    }
+
+    /**
+     * Loads a template by id and asserts it belongs to the current tenant.
+     * (Belt-and-braces alongside RLS so a cross-tenant id 404s rather than NPEs.)
+     */
+    private AiTemplate requireOwned(UUID id) {
+        UUID tenantId = TenantContext.requireUuid();
+        return templateRepository.findById(id)
+                .filter(t -> t.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new IllegalArgumentException("Template not found: " + id));
+    }
+
+    private static String normalize(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    /** Stable slug reference for the body, derived from channel + subject. */
+    private static String slugFor(TemplateChannel channel, String subject) {
+        String slug = subject.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-");
+        slug = slug.length() > 40 ? slug.substring(0, 40) : slug;
+        return "tmpl/" + channel.name().toLowerCase(Locale.ROOT) + "/" + (slug.isBlank() ? "custom" : slug);
+    }
+
     private SimTemplateView toView(AiTemplate t) {
         return new SimTemplateView(
                 t.getId(),
                 t.getChannel().name().toLowerCase(Locale.ROOT),
                 t.getSubject(),
                 t.getBodyRef(),
+                t.getBody(),
+                t.getCategory(),
                 t.getDifficulty().name().toLowerCase(Locale.ROOT),
                 t.getStatus().name().toLowerCase(Locale.ROOT));
     }

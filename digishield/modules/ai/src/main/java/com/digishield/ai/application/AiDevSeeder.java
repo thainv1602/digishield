@@ -48,20 +48,71 @@ public class AiDevSeeder implements CommandLineRunner {
             return;
         }
 
+        // Realistic Vietnamese lures impersonating public bodies (tax, social
+        // insurance, gov e-service), plus banking/utility — training content only.
         templateRepository.save(new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.EMAIL,
-                "[Ngân hàng] Cảnh báo bảo mật tài khoản",
-                "tmpl/email/ngan-hang", Difficulty.MEDIUM, TemplateStatus.DRAFT));
+                "[Tổng cục Thuế] Thông báo hoàn thuế thu nhập cá nhân 2025",
+                "tmpl/email/thue-hoan", """
+                        Kính gửi Người nộp thuế,
+
+                        Cơ quan Thuế xác định bạn đủ điều kiện được hoàn thuế TNCN năm 2025 với số tiền
+                        2.480.000đ. Vui lòng đăng nhập Cổng dịch vụ và xác nhận thông tin tài khoản ngân
+                        hàng trước ngày 30/07/2026 để nhận hoàn thuế, nếu không hồ sơ sẽ bị hủy.
+
+                        Xác nhận hoàn thuế: https://hoanthue-tct.example.vn
+
+                        Trân trọng,
+                        Tổng cục Thuế""",
+                "Cơ quan thuế", Difficulty.HARD, TemplateStatus.APPROVED));
 
         templateRepository.save(new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.SMS,
-                "Thông báo từ bộ phận nhân sự",
-                "tmpl/sms/nhan-su", Difficulty.EASY, TemplateStatus.APPROVED));
+                "[BHXH] Cập nhật thông tin sổ bảo hiểm",
+                "tmpl/sms/bhxh", "BHXH: So bao hiem cua ban chua duoc dong bo VssID. "
+                        + "Cap nhat trong 24h de tranh gian doan quyen loi: https://vssid-capnhat.example.vn",
+                "Bảo hiểm xã hội", Difficulty.MEDIUM, TemplateStatus.APPROVED));
+
+        templateRepository.save(new AiTemplate(
+                UUID.randomUUID(), DEMO_TENANT, TemplateChannel.EMAIL,
+                "[Dịch vụ công] Hồ sơ định danh mức 2 cần bổ sung",
+                "tmpl/email/dvc-dinhdanh", """
+                        Kính gửi Công dân,
+
+                        Hồ sơ định danh điện tử mức 2 của bạn thiếu thông tin và sẽ bị khóa sau 48 giờ.
+                        Vui lòng truy cập Cổng Dịch vụ công và đăng nhập để bổ sung, xác thực ngay.
+
+                        Bổ sung hồ sơ: https://dichvucong-xacthuc.example.vn
+
+                        Trân trọng,
+                        Cổng Dịch vụ công Quốc gia""",
+                "Cơ quan nhà nước", Difficulty.HARD, TemplateStatus.DRAFT));
+
+        templateRepository.save(new AiTemplate(
+                UUID.randomUUID(), DEMO_TENANT, TemplateChannel.EMAIL,
+                "[Ngân hàng] Cảnh báo đăng nhập bất thường",
+                "tmpl/email/ngan-hang", """
+                        Kính gửi Quý khách,
+
+                        Chúng tôi ghi nhận một lần đăng nhập bất thường vào tài khoản của Quý khách. Nếu
+                        không phải bạn, vui lòng xác minh danh tính ngay để tránh tài khoản bị tạm khóa.
+
+                        Xác minh ngay: https://xacminh-nganhang.example.vn""",
+                "Ngân hàng", Difficulty.MEDIUM, TemplateStatus.DRAFT));
+
+        templateRepository.save(new AiTemplate(
+                UUID.randomUUID(), DEMO_TENANT, TemplateChannel.SMS,
+                "[EVN] Cảnh báo nợ tiền điện",
+                "tmpl/sms/evn", "EVN: Hoa don tien dien thang nay chua thanh toan, dien se bi cat trong "
+                        + "hom nay. Thanh toan ngay: https://evn-thanhtoan.example.vn",
+                "Điện lực", Difficulty.EASY, TemplateStatus.APPROVED));
 
         templateRepository.save(new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.ZALO,
-                "Quét mã nhận ưu đãi mùa hè ngành bán lẻ",
-                "tmpl/zalo/ban-le-he", Difficulty.HARD, TemplateStatus.DRAFT));
+                "[Bảo hiểm] Nhận quyền lợi hợp đồng đến hạn",
+                "tmpl/zalo/baohiem", "Hop dong bao hiem cua ban co quyen loi den han. Quet ma / nhan lien "
+                        + "ket de xac nhan nhan tien: https://baohiem-quyenloi.example.vn",
+                "Bảo hiểm", Difficulty.HARD, TemplateStatus.DRAFT));
     }
 
     private void seedAidaRuns() {
