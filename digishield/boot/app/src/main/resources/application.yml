@@ -60,6 +60,16 @@ server:
 # nothing is sent (LoggingNotificationGateway). Enable in prod once the SES
 # domain is verified and the pod has IRSA perms (ses:SendEmail).
 digishield:
+  # Auth backend login. Off by default → dev StubAuthProvider (static demo tokens,
+  # no credential check). When on, /auth/login|refresh|forgot|reset|mfa go through
+  # AWS Cognito (CognitoAuthProvider). The app client must allow USER_PASSWORD_AUTH;
+  # set the client secret only if the app client has one.
+  auth:
+    cognito:
+      enabled: ${AUTH_COGNITO_ENABLED:false}
+      region: ${AUTH_COGNITO_REGION:}
+      client-id: ${AUTH_COGNITO_CLIENT_ID:}
+      client-secret: ${AUTH_COGNITO_CLIENT_SECRET:}
   notifications:
     email:
       from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}

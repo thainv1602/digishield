@@ -2,11 +2,13 @@ package com.digishield.auth.web;
 
 import com.digishield.auth.api.AuthService;
 import com.digishield.auth.api.CurrentUser;
+import com.digishield.auth.api.MfaChallengeRequiredException;
 import com.digishield.auth.api.MfaSetupView;
 import com.digishield.auth.api.TokenPair;
 import com.digishield.auth.domain.Role;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -124,6 +126,18 @@ class AuthController {
                 .map(MeResponse::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(401).build());
+    }
+
+    /**
+     * When {@code login} needs an MFA code, the provider throws
+     * {@link MfaChallengeRequiredException}; return {@code 401} with the challenge
+     * name and opaque {@code mfa_token} the client replays to {@code /mfa/challenge}.
+     */
+    @ExceptionHandler(MfaChallengeRequiredException.class)
+    ResponseEntity<Map<String, String>> handleMfaChallenge(MfaChallengeRequiredException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "challenge_name", ex.getChallengeName(),
+                "mfa_token", ex.getMfaToken()));
     }
 
     /** Login request body. {@code role} is an optional dev demo-persona hint. */

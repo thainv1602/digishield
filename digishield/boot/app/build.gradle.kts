@@ -39,6 +39,7 @@ dependencies {
     // default provider chain (IRSA in-cluster).
     implementation(platform("software.amazon.awssdk:bom:2.31.6"))
     implementation("software.amazon.awssdk:sesv2")
+    implementation("software.amazon.awssdk:cognitoidentityprovider")
 
     // Contracts
     implementation(project(":contracts"))
