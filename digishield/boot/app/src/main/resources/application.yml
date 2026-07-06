@@ -61,6 +61,11 @@ server:
 # sends EMAIL via SES and SMS via SNS; enable each once the AWS side is ready
 # (SES domain verified + ses:SendEmail; SNS sms + sns:Publish, both via IRSA).
 digishield:
+  # Auth backend login. Off by default → dev StubAuthProvider (static demo tokens,
+  # no credential check). When on, /auth/login|refresh|forgot|reset|mfa go through
+  # AWS Cognito (CognitoAuthProvider). The app client must allow USER_PASSWORD_AUTH;
+  # set the client secret only if the app client has one.
+  #
   # Auth: JWT resource server (non-dev profiles). Set the issuer to the OpenID
   # issuer of your IdP — for Amazon Cognito:
   #   https://cognito-idp.<region>.amazonaws.com/<userPoolId>
@@ -69,6 +74,11 @@ digishield:
   # groups mapped to ROLE_* authorities. When issuer-uri is blank the API is locked
   # down (actuator only) — the permissive local experience is the dev profile.
   auth:
+    cognito:
+      enabled: ${AUTH_COGNITO_ENABLED:false}
+      region: ${AUTH_COGNITO_REGION:}
+      client-id: ${AUTH_COGNITO_CLIENT_ID:}
+      client-secret: ${AUTH_COGNITO_CLIENT_SECRET:}
     jwt:
       issuer-uri: ${AUTH_JWT_ISSUER_URI:}
       audience: ${AUTH_JWT_AUDIENCE:}

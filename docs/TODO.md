@@ -85,14 +85,20 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       SCIM) still a follow-up — phones currently only via seed/DB.
 - [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`
 
-### Auth — dev-mode placeholders (`modules/auth/.../AuthServiceImpl.java`)
-Repo already wires **Cognito** (`feat/cognito-login`); confirm which path each env uses.
+### Auth — backend login
+- [x] Extracted an `AuthProvider` SPI; auth methods (login/refresh/forgot/reset/mfa) delegate to it.
+      `StubAuthProvider` keeps the dev demo tokens; `CognitoAuthProvider` (boot app, AWS Cognito SDK)
+      does real credential login (`USER_PASSWORD_AUTH`), refresh, MFA challenge, and forgot/reset
+      password when `AUTH_COGNITO_ENABLED=true`. Login MFA is signalled via a 401 `{challenge_name,
+      mfa_token}` the client replays to `/mfa/challenge`.
 - [x] Resource-server issuer wired (`shared/.../SecurityConfig.java`): `AUTH_JWT_ISSUER_URI`
       drives a real JWKS-validating JWT decoder (signature + issuer + expiry, optional
       audience) and maps `cognito:groups` → `ROLE_*`. Non-`dev` fails closed with no issuer.
-- [ ] Confirm Cognito is the real auth path for dev/prod; treat `AuthServiceImpl` as dev fallback only
-- [ ] If kept: real credential validation (L172), SAML/OAuth verify (L183), password reset
-      (L189/L196), MFA verify (L212/L222), real QR for MFA setup (L301)
+- [ ] Go-live (ops): set `AUTH_COGNITO_ENABLED=true` + `AUTH_COGNITO_CLIENT_ID` (+ region / client
+      secret); the Cognito app client must allow `USER_PASSWORD_AUTH`. Pairs with the resource-server
+      issuer (`AUTH_JWT_ISSUER_URI`, PR #51) that validates the tokens this returns.
+- [ ] Not handled by the password provider (hosted-UI territory): SSO/SAML federation and TOTP
+      enrollment (`/mfa/setup`, `/mfa/verify`) — reported 501 by the Cognito provider.
 
 ---
 

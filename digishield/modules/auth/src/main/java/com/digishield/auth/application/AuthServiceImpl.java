@@ -1,5 +1,6 @@
 package com.digishield.auth.application;
 
+import com.digishield.auth.api.AuthProvider;
 import com.digishield.auth.api.AuthService;
 import com.digishield.auth.api.CurrentUser;
 import com.digishield.auth.api.ImportResult;
@@ -17,10 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -40,22 +37,12 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    /** Static dev tokens (no real credentials are validated in the dev profile). */
-    private static final String DEV_ACCESS_TOKEN = "dev-access-token";
-    private static final String DEV_REFRESH_TOKEN = "dev-refresh-token";
-    private static final long DEV_EXPIRES_IN_SECONDS = 3600L;
-
-    /** RFC 4648 base32 alphabet used for the (dev) TOTP secret. */
-    private static final char[] BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".toCharArray();
-    private static final int TOTP_SECRET_LENGTH = 32;
-    private static final int RECOVERY_CODE_COUNT = 8;
-
-    private final SecureRandom random = new SecureRandom();
-
     private final AppUserRepository userRepository;
+    private final AuthProvider authProvider;
 
-    public AuthServiceImpl(AppUserRepository userRepository) {
+    public AuthServiceImpl(AppUserRepository userRepository, AuthProvider authProvider) {
         this.userRepository = userRepository;
+        this.authProvider = authProvider;
     }
 
     @Override
@@ -169,58 +156,43 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenPair login(String email, String password, String roleHint) {
-        // Dev: no credential validation; return static demo tokens.
-        return new TokenPair(DEV_ACCESS_TOKEN, DEV_REFRESH_TOKEN, DEV_EXPIRES_IN_SECONDS);
+        return authProvider.login(email, password);
     }
 
     @Override
     public TokenPair refresh(String refreshToken) {
-        return new TokenPair(DEV_ACCESS_TOKEN, DEV_REFRESH_TOKEN, DEV_EXPIRES_IN_SECONDS);
+        return authProvider.refresh(refreshToken);
     }
 
     @Override
     public TokenPair ssoCallback(String org, String assertion) {
-        // Dev: accept any org/assertion and return demo tokens (no SAML/OAuth verification).
-        return new TokenPair(DEV_ACCESS_TOKEN, DEV_REFRESH_TOKEN, DEV_EXPIRES_IN_SECONDS);
+        return authProvider.ssoCallback(org, assertion);
     }
 
     @Override
     public void forgotPassword(String email) {
-        // Dev: no-op (no email sent); never reveal whether the account exists.
-        log.info("[auth] Password reset requested (dev no-op)");
+        authProvider.forgotPassword(email);
     }
 
     @Override
     public void resetPassword(String token, String newPassword) {
-        // Dev: accept the token and new password without verification.
-        log.info("[auth] Password reset completed (dev no-op)");
+        authProvider.resetPassword(token, newPassword);
     }
 
     @Override
     public MfaSetupView mfaSetup() {
-        String secret = generateBase32Secret();
-        String account = currentUser().map(CurrentUser::email).orElse("user@digishield.vn");
-        String label = URLEncoder.encode("DigiShield:" + account, StandardCharsets.UTF_8);
-        String otpauthUrl = "otpauth://totp/" + label
-                + "?secret=" + secret
-                + "&issuer=DigiShield&algorithm=SHA1&digits=6&period=30";
-        return new MfaSetupView(secret, otpauthUrl, sampleQrSvg(otpauthUrl));
+        String account = currentUser().map(CurrentUser::email).orElse(null);
+        return authProvider.mfaSetup(account);
     }
 
     @Override
     public List<String> mfaVerify(String code) {
-        // Dev: accept any code and return a fresh set of one-time recovery codes.
-        List<String> codes = new ArrayList<>(RECOVERY_CODE_COUNT);
-        for (int i = 0; i < RECOVERY_CODE_COUNT; i++) {
-            codes.add(randomRecoveryCode());
-        }
-        return codes;
+        return authProvider.mfaVerify(code);
     }
 
     @Override
     public TokenPair mfaChallenge(String mfaToken, String code, boolean trustDevice) {
-        // Dev: accept any code for the supplied temporary token and return demo tokens.
-        return new TokenPair(DEV_ACCESS_TOKEN, DEV_REFRESH_TOKEN, DEV_EXPIRES_IN_SECONDS);
+        return authProvider.mfaChallenge(mfaToken, code, trustDevice);
     }
 
     @Override
@@ -278,36 +250,4 @@ public class AuthServiceImpl implements AuthService {
         return at > 0 ? email.substring(0, at) : email;
     }
 
-    private String generateBase32Secret() {
-        StringBuilder sb = new StringBuilder(TOTP_SECRET_LENGTH);
-        for (int i = 0; i < TOTP_SECRET_LENGTH; i++) {
-            sb.append(BASE32[random.nextInt(BASE32.length)]);
-        }
-        return sb.toString();
-    }
-
-    private String randomRecoveryCode() {
-        // Format: XXXX-XXXX using the base32 alphabet.
-        StringBuilder sb = new StringBuilder(9);
-        for (int i = 0; i < 8; i++) {
-            if (i == 4) {
-                sb.append('-');
-            }
-            sb.append(BASE32[random.nextInt(BASE32.length)]);
-        }
-        return sb.toString();
-    }
-
-    private static String sampleQrSvg(String otpauthUrl) {
-        // Dev placeholder: a tiny SVG that embeds the otpauth URL as a title; the
-        // frontend can render its own QR code from the otpauth_url field.
-        String safe = otpauthUrl.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
-        return "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"160\" height=\"160\" "
-                + "viewBox=\"0 0 160 160\"><title>" + safe + "</title>"
-                + "<rect width=\"160\" height=\"160\" fill=\"#ffffff\"/>"
-                + "<rect x=\"16\" y=\"16\" width=\"128\" height=\"128\" fill=\"none\" "
-                + "stroke=\"#000000\" stroke-width=\"8\"/>"
-                + "<text x=\"80\" y=\"86\" text-anchor=\"middle\" font-family=\"monospace\" "
-                + "font-size=\"12\" fill=\"#000000\">QR</text></svg>";
-    }
 }
