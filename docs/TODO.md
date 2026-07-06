@@ -132,8 +132,13 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       library via `useTemplates()` (was a static array)
 - [x] `campaigns` wizard — templates load from `GET /ai/templates`, audience from
       `GET /groups`; the selected template id is now sent on create. Channels stay a
-      fixed enum (UI choice, not data). Note: the create endpoint doesn't yet accept the
-      audience group, and `Group` carries no member count.
+      fixed enum (UI choice, not data).
+- [x] `campaigns` audience group + member count — `POST /sim/campaigns` accepts the
+      selected `groupId` (persisted on `SimCampaign.group_id`; the wizard already sends it),
+      and `GroupView` now exposes `member_count` (materialised count from the `Group`
+      entity). The wizard's audience cards + launch summary show the real headcount
+      (was a hardcoded "212 người"). Verified end-to-end: `/groups` returns counts and a
+      created campaign persists the chosen group.
 - [x] `admin` AIDA run history — `runOrchestration` now persists an `AidaRun`;
       added `GET /ai/orchestration/runs` + `AidaPage` loads it and triggers real runs
 - [x] `admin` org-settings thresholds — added GET/PATCH `/tenants/{id}/thresholds`

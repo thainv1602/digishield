@@ -454,6 +454,8 @@ const EXTRA: [string, string][] = [
   ['Dễ', 'Easy'],
   ['Nhóm thông minh · tự cập nhật theo điều kiện', 'Smart group · auto-updates by condition'],
   ['Nhóm tĩnh', 'Static group'],
+  ['{n} người', '{n} people'],
+  ['Chưa chọn nhóm', 'No group selected'],
   ['Đã phát động chiến dịch mô phỏng', 'Simulation campaign launched'],
   ['Không phát động được chiến dịch', 'Failed to launch campaign'],
   ['Tạo chiến dịch mô phỏng', 'Create simulation campaign'],

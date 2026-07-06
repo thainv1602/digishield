@@ -354,7 +354,7 @@ public class TenancyServiceImpl implements TenancyService {
     }
 
     private GroupView toGroupView(Group g) {
-        return new GroupView(g.getId(), g.getName(), readJson(g.getRuleJson()));
+        return new GroupView(g.getId(), g.getName(), readJson(g.getRuleJson()), g.getMemberCount());
     }
 
     private PlanView toPlanView(Plan p) {
