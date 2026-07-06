@@ -45,6 +45,19 @@ public class AiTemplate {
     @Column(name = "category")
     private String category;
 
+    /** How {@link #body} is rendered: plain text or HTML (branded email). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "body_format", nullable = false)
+    private BodyFormat bodyFormat = BodyFormat.TEXT;
+
+    /** URL (or data URI) of the impersonated brand logo shown in the preview header. */
+    @Column(name = "logo_url", length = 2048)
+    private String logoUrl;
+
+    /** JSON array of simulated attachments ({@code [{"name":..,"mime":..}]}); metadata only. */
+    @Column(name = "attachments_json", columnDefinition = "text")
+    private String attachmentsJson;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty", nullable = false)
     private Difficulty difficulty;
@@ -99,12 +112,36 @@ public class AiTemplate {
         return category;
     }
 
+    public BodyFormat getBodyFormat() {
+        return bodyFormat;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public String getAttachmentsJson() {
+        return attachmentsJson;
+    }
+
     public Difficulty getDifficulty() {
         return difficulty;
     }
 
     public TemplateStatus getStatus() {
         return status;
+    }
+
+    public void setBodyFormat(BodyFormat bodyFormat) {
+        this.bodyFormat = bodyFormat;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public void setAttachmentsJson(String attachmentsJson) {
+        this.attachmentsJson = attachmentsJson;
     }
 
     public void setChannel(TemplateChannel channel) {

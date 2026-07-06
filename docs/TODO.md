@@ -56,6 +56,12 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       returns a real body. Dev seed ships realistic VN lures impersonating tax / social
       insurance / gov e-service / bank / utility / insurance. Flyway migration
       `V2026.07.06.001` adds the columns. Verified end-to-end (full CRUD + generate).
+- [x] Content Studio rich content — templates now carry an HTML-or-text `body_format`,
+      an impersonated brand `logo_url`, and simulated `attachments` (metadata only). The
+      editor adds a Text/HTML toggle, a logo field and an attachments editor, plus a live
+      recipient **preview** (HTML sanitized with DOMPurify; embedded `<img>` and brand
+      logo render). Flyway `V2026.07.06.002` adds the columns; the tax seed showcases an
+      HTML body + logo + a fake PDF. Verified end-to-end (HTML+logo+attachments round-trip).
 
 ### Analytics — risk score & adaptive loop
 - [x] `computeScore()` — was a placeholder returning `0`; now signal-based (sim-click history)

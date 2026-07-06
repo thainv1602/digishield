@@ -2,6 +2,7 @@ package com.digishield.ai.application;
 
 import com.digishield.ai.domain.AidaRun;
 import com.digishield.ai.domain.AiTemplate;
+import com.digishield.ai.domain.BodyFormat;
 import com.digishield.ai.domain.Difficulty;
 import com.digishield.ai.domain.TemplateChannel;
 import com.digishield.ai.domain.TemplateStatus;
@@ -50,21 +51,29 @@ public class AiDevSeeder implements CommandLineRunner {
 
         // Realistic Vietnamese lures impersonating public bodies (tax, social
         // insurance, gov e-service), plus banking/utility — training content only.
-        templateRepository.save(new AiTemplate(
+        // The tax lure showcases the rich-content features: HTML body, an embedded
+        // impersonated logo and a (fake) PDF attachment.
+        AiTemplate tax = new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.EMAIL,
                 "[Tổng cục Thuế] Thông báo hoàn thuế thu nhập cá nhân 2025",
                 "tmpl/email/thue-hoan", """
-                        Kính gửi Người nộp thuế,
-
-                        Cơ quan Thuế xác định bạn đủ điều kiện được hoàn thuế TNCN năm 2025 với số tiền
-                        2.480.000đ. Vui lòng đăng nhập Cổng dịch vụ và xác nhận thông tin tài khoản ngân
-                        hàng trước ngày 30/07/2026 để nhận hoàn thuế, nếu không hồ sơ sẽ bị hủy.
-
-                        Xác nhận hoàn thuế: https://hoanthue-tct.example.vn
-
-                        Trân trọng,
-                        Tổng cục Thuế""",
-                "Cơ quan thuế", Difficulty.HARD, TemplateStatus.APPROVED));
+                        <div style="font-family:Arial,sans-serif;color:#222">
+                          <p>Kính gửi Người nộp thuế,</p>
+                          <p>Cơ quan Thuế xác định bạn đủ điều kiện được hoàn thuế TNCN năm 2025 với số tiền
+                          <b>2.480.000đ</b>. Vui lòng đăng nhập Cổng dịch vụ và xác nhận thông tin tài khoản
+                          ngân hàng trước ngày <b>30/07/2026</b>, nếu không hồ sơ sẽ bị hủy.</p>
+                          <p><a href="https://hoanthue-tct.example.vn">Xác nhận hoàn thuế ngay</a></p>
+                          <p>Trân trọng,<br/>Tổng cục Thuế</p>
+                        </div>""",
+                "Cơ quan thuế", Difficulty.HARD, TemplateStatus.APPROVED);
+        tax.setBodyFormat(BodyFormat.HTML);
+        tax.setLogoUrl("data:image/svg+xml,"
+                + "<svg xmlns='http://www.w3.org/2000/svg' width='140' height='40'>"
+                + "<rect width='140' height='40' fill='%23c0392b'/>"
+                + "<text x='12' y='26' fill='white' font-family='Arial' font-size='15' font-weight='bold'>"
+                + "TONG CUC THUE</text></svg>");
+        tax.setAttachmentsJson("[{\"name\":\"Thong_bao_hoan_thue_2025.pdf\",\"mime\":\"application/pdf\"}]");
+        templateRepository.save(tax);
 
         templateRepository.save(new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.SMS,

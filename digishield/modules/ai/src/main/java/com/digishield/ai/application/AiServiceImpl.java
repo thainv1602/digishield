@@ -1,12 +1,15 @@
 package com.digishield.ai.application;
 
 import com.digishield.ai.api.AiService;
+import com.digishield.ai.api.TemplateInput;
 import com.digishield.ai.api.dto.AidaRunView;
+import com.digishield.ai.api.dto.AttachmentView;
 import com.digishield.ai.api.dto.ClassificationView;
 import com.digishield.ai.api.dto.ModerationView;
 import com.digishield.ai.api.dto.SimTemplateView;
 import com.digishield.ai.domain.AidaRun;
 import com.digishield.ai.domain.AiTemplate;
+import com.digishield.ai.domain.BodyFormat;
 import com.digishield.ai.domain.Difficulty;
 import com.digishield.ai.domain.TemplateChannel;
 import com.digishield.ai.domain.TemplateStatus;
@@ -15,6 +18,8 @@ import com.digishield.ai.infrastructure.AiTemplateRepository;
 import com.digishield.contracts.events.AidaOrchestrationRequestedEvent;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -42,15 +47,18 @@ public class AiServiceImpl implements AiService {
     private final AidaRunRepository aidaRunRepository;
     private final AiClient aiClient;
     private final EventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
 
     public AiServiceImpl(AiTemplateRepository templateRepository,
                          AidaRunRepository aidaRunRepository,
                          AiClient aiClient,
-                         EventPublisher eventPublisher) {
+                         EventPublisher eventPublisher,
+                         ObjectMapper objectMapper) {
         this.templateRepository = templateRepository;
         this.aidaRunRepository = aidaRunRepository;
         this.aiClient = aiClient;
         this.eventPublisher = eventPublisher;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -118,42 +126,54 @@ public class AiServiceImpl implements AiService {
     }
 
     @Override
-    public SimTemplateView createTemplate(TemplateChannel channel, String subject, String body,
-                                          String category, Difficulty difficulty, boolean approved) {
+    public SimTemplateView createTemplate(TemplateInput input, boolean approved) {
         UUID tenantId = TenantContext.requireUuid();
+        TemplateChannel channel = input.channel();
+        String subject = input.subject();
         if (channel == null) {
             throw new IllegalArgumentException("channel is required");
         }
         if (subject == null || subject.isBlank()) {
             throw new IllegalArgumentException("subject is required");
         }
-        Difficulty diff = difficulty != null ? difficulty : Difficulty.MEDIUM;
         AiTemplate template = new AiTemplate(
                 UUID.randomUUID(), tenantId, channel,
-                subject.trim(), slugFor(channel, subject), body,
-                normalize(category), diff,
+                subject.trim(), slugFor(channel, subject), input.body(),
+                normalize(input.category()),
+                input.difficulty() != null ? input.difficulty() : Difficulty.MEDIUM,
                 approved ? TemplateStatus.APPROVED : TemplateStatus.DRAFT);
+        template.setBodyFormat(input.bodyFormat() != null ? input.bodyFormat() : BodyFormat.TEXT);
+        template.setLogoUrl(normalize(input.logoUrl()));
+        template.setAttachmentsJson(writeAttachments(input.attachments()));
         return toView(templateRepository.save(template));
     }
 
     @Override
-    public SimTemplateView updateTemplate(UUID id, TemplateChannel channel, String subject, String body,
-                                          String category, Difficulty difficulty) {
+    public SimTemplateView updateTemplate(UUID id, TemplateInput input) {
         AiTemplate template = requireOwned(id);
-        if (channel != null) {
-            template.setChannel(channel);
+        if (input.channel() != null) {
+            template.setChannel(input.channel());
         }
-        if (subject != null && !subject.isBlank()) {
-            template.setSubject(subject.trim());
+        if (input.subject() != null && !input.subject().isBlank()) {
+            template.setSubject(input.subject().trim());
         }
-        if (body != null) {
-            template.setBody(body);
+        if (input.body() != null) {
+            template.setBody(input.body());
         }
-        if (category != null) {
-            template.setCategory(normalize(category));
+        if (input.bodyFormat() != null) {
+            template.setBodyFormat(input.bodyFormat());
         }
-        if (difficulty != null) {
-            template.setDifficulty(difficulty);
+        if (input.category() != null) {
+            template.setCategory(normalize(input.category()));
+        }
+        if (input.logoUrl() != null) {
+            template.setLogoUrl(normalize(input.logoUrl()));
+        }
+        if (input.attachments() != null) {
+            template.setAttachmentsJson(writeAttachments(input.attachments()));
+        }
+        if (input.difficulty() != null) {
+            template.setDifficulty(input.difficulty());
         }
         return toView(templateRepository.save(template));
     }
@@ -185,6 +205,32 @@ public class AiServiceImpl implements AiService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
+    /** Serialises attachment metadata to JSON, or {@code null} when there are none. */
+    private String writeAttachments(List<AttachmentView> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(attachments);
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            LOG.warn("Failed to serialise template attachments: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /** Reads attachment metadata from JSON; never {@code null} (empty on absence/parse error). */
+    private List<AttachmentView> readAttachments(String json) {
+        if (json == null || json.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<List<AttachmentView>>() {});
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            LOG.warn("Failed to read template attachments: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     /** Stable slug reference for the body, derived from channel + subject. */
     private static String slugFor(TemplateChannel channel, String subject) {
         String slug = subject.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-");
@@ -193,13 +239,17 @@ public class AiServiceImpl implements AiService {
     }
 
     private SimTemplateView toView(AiTemplate t) {
+        BodyFormat format = t.getBodyFormat() != null ? t.getBodyFormat() : BodyFormat.TEXT;
         return new SimTemplateView(
                 t.getId(),
                 t.getChannel().name().toLowerCase(Locale.ROOT),
                 t.getSubject(),
                 t.getBodyRef(),
                 t.getBody(),
+                format.name().toLowerCase(Locale.ROOT),
                 t.getCategory(),
+                t.getLogoUrl(),
+                readAttachments(t.getAttachmentsJson()),
                 t.getDifficulty().name().toLowerCase(Locale.ROOT),
                 t.getStatus().name().toLowerCase(Locale.ROOT));
     }

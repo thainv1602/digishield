@@ -17,6 +17,12 @@ import { queryKeys } from '@/shared/api/queryKeys';
  * - `POST /ai/templates/generate`    → AI-assist: generate + persist a draft
  */
 
+/** A simulated attachment (metadata only — no real file). */
+export interface Attachment {
+  name: string;
+  mime: string | null;
+}
+
 /** Wire shape of `SimTemplate` (AI module `SimTemplateView`). */
 export interface SimTemplate {
   id: string;
@@ -25,8 +31,14 @@ export interface SimTemplate {
   body_ref: string;
   /** the actual message body (phishing email/SMS content) */
   body: string | null;
+  /** how the body is rendered: 'text' | 'html' */
+  body_format: string;
   /** free-text theme, e.g. "Cơ quan thuế" */
   category: string | null;
+  /** impersonated brand logo URL / data-URI */
+  logo_url: string | null;
+  /** simulated attachments (never null; empty if none) */
+  attachments: Attachment[];
   difficulty: string;
   status: string;
 }
@@ -53,7 +65,10 @@ export interface UpsertTemplateRequest {
   channel?: string;
   subject?: string;
   body?: string | null;
+  body_format?: string;
   category?: string | null;
+  logo_url?: string | null;
+  attachments?: Attachment[];
   difficulty?: string;
   /** create only: save straight as APPROVED instead of DRAFT */
   approved?: boolean;

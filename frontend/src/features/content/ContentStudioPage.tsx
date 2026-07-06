@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { Button, useToast } from '@/shared/ui';
-import { Sparkles, Trash2 } from 'lucide-react';
+import { Sparkles, Trash2, Paperclip, Plus, X } from 'lucide-react';
 import {
   useTemplates,
   useGenerateTemplate,
@@ -9,6 +10,7 @@ import {
   useSubmitTemplate,
   useDeleteTemplate,
   type SimTemplate,
+  type Attachment,
 } from './api';
 import { useT } from '@/shared/i18n/I18nProvider';
 
@@ -16,9 +18,9 @@ import { useT } from '@/shared/i18n/I18nProvider';
  * ContentStudioPage — author, AI-generate, edit, submit and delete simulation
  * templates (phishing mail/SMS impersonating tax, government, insurance, banks…).
  *
- * The library loads from `GET /ai/templates`; selecting a card loads it into the
- * editor. Save persists via create/update, "Gửi duyệt" submits (draft→approved),
- * "Sinh bằng AI" generates + persists a draft, and delete removes it.
+ * Rich content: HTML or plain-text body, an impersonated brand logo, and
+ * simulated attachments, with a live recipient preview (HTML sanitized with
+ * DOMPurify before rendering).
  */
 
 type Filter = 'all' | 'email' | 'sms';
@@ -44,6 +46,9 @@ interface Draft {
   difficulty: string;
   subject: string;
   body: string;
+  bodyFormat: 'text' | 'html';
+  logoUrl: string;
+  attachments: Attachment[];
   status: string;
 }
 
@@ -54,6 +59,9 @@ const EMPTY_DRAFT: Draft = {
   difficulty: 'medium',
   subject: '',
   body: '',
+  bodyFormat: 'text',
+  logoUrl: '',
+  attachments: [],
   status: 'draft',
 };
 
@@ -66,8 +74,19 @@ function toDraft(dto: SimTemplate): Draft {
     difficulty: dto.difficulty,
     subject: dto.subject,
     body: dto.body ?? '',
+    bodyFormat: dto.body_format === 'html' ? 'html' : 'text',
+    logoUrl: dto.logo_url ?? '',
+    attachments: dto.attachments ?? [],
     status: dto.status,
   };
+}
+
+/** Sanitize author-supplied HTML for the preview (allow http(s)/data-image/mailto/tel links). */
+function sanitize(html: string): string {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_URI_REGEXP: /^(?:https?:|data:image\/|mailto:|tel:|\/)/i,
+    ADD_ATTR: ['target'],
+  });
 }
 
 const cardStyle: React.CSSProperties = {
@@ -92,8 +111,15 @@ export default function ContentStudioPage() {
   const templates = useMemo<SimTemplate[]>(() => data ?? [], [data]);
   const visible = templates.filter((tpl) => filter === 'all' || tpl.channel === filter);
   const busy = generate.isPending || create.isPending || update.isPending || submit.isPending || remove.isPending;
+  const isMessaging = draft.channel === 'sms' || draft.channel === 'zalo';
 
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
+
+  const setAttachment = (i: number, patch: Partial<Attachment>) =>
+    setDraft((d) => ({ ...d, attachments: d.attachments.map((a, j) => (j === i ? { ...a, ...patch } : a)) }));
+  const addAttachment = () => setDraft((d) => ({ ...d, attachments: [...d.attachments, { name: '', mime: 'application/pdf' }] }));
+  const removeAttachment = (i: number) =>
+    setDraft((d) => ({ ...d, attachments: d.attachments.filter((_, j) => j !== i) }));
 
   /** Persist the current draft (create when new, update when editing). Returns the id. */
   const persistDraft = async (approved: boolean): Promise<string | null> => {
@@ -105,7 +131,10 @@ export default function ContentStudioPage() {
       channel: draft.channel,
       subject: draft.subject.trim(),
       body: draft.body,
+      body_format: draft.bodyFormat,
       category: draft.category.trim() || null,
+      logo_url: draft.logoUrl.trim() || null,
+      attachments: draft.attachments.filter((a) => a.name.trim()),
       difficulty: draft.difficulty,
     };
     if (draft.id) {
@@ -158,8 +187,6 @@ export default function ContentStudioPage() {
     });
   };
 
-  const bodyLabel = draft.channel === 'sms' || draft.channel === 'zalo' ? t('Nội dung tin nhắn') : t('Nội dung email');
-
   return (
     <div style={{ animation: 'fadeUp .3s ease' }}>
       <div style={{ marginBottom: 20 }}>
@@ -180,7 +207,7 @@ export default function ContentStudioPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 14, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 14, alignItems: 'start' }}>
         {/* Template library */}
         <div style={{ ...cardStyle, overflow: 'hidden' }}>
           <div
@@ -198,7 +225,6 @@ export default function ContentStudioPage() {
             </Button>
           </div>
 
-          {/* Filter pills */}
           <div style={{ display: 'flex', gap: 6, padding: '10px 12px', borderBottom: '1px solid var(--color-border)' }}>
             {(['all', 'email', 'sms'] as Filter[]).map((f) => {
               const active = filter === f;
@@ -276,6 +302,7 @@ export default function ContentStudioPage() {
                     {tpl.category && (
                       <span style={{ fontSize: 10.5, color: 'var(--color-blue)', fontWeight: 500 }}>{tpl.category}</span>
                     )}
+                    {tpl.attachments?.length > 0 && <Paperclip size={11} color="var(--color-muted)" />}
                     <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>{`${channelLabel} · ${dots}`}</span>
                   </div>
                 </button>
@@ -307,8 +334,9 @@ export default function ContentStudioPage() {
           </div>
         </div>
 
-        {/* Editor */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Editor + preview */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          {/* Editor */}
           <div style={{ ...cardStyle, padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
@@ -330,7 +358,6 @@ export default function ContentStudioPage() {
               </div>
             </div>
 
-            {/* Channel · Category · Difficulty */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={fieldLabel}>{t('Kênh')}</label>
@@ -363,26 +390,171 @@ export default function ContentStudioPage() {
               </div>
             </div>
 
+            {/* Logo + body format */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12, marginBottom: 12, alignItems: 'end' }}>
+              <div>
+                <label style={fieldLabel}>{t('Logo thương hiệu (URL/data-URI)')}</label>
+                <input
+                  value={draft.logoUrl}
+                  onChange={(e) => set({ logoUrl: e.target.value })}
+                  placeholder="https://… / data:image/…"
+                  style={inputStyle}
+                />
+              </div>
+              {!isMessaging && (
+                <div style={{ display: 'flex', gap: 4 }}>
+                  {(['text', 'html'] as const).map((fmt) => {
+                    const active = draft.bodyFormat === fmt;
+                    return (
+                      <button
+                        key={fmt}
+                        type="button"
+                        onClick={() => set({ bodyFormat: fmt })}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: 8,
+                          border: active ? '1.5px solid var(--color-blue)' : '1px solid var(--color-border)',
+                          background: active ? 'rgba(37,102,235,.08)' : 'var(--color-bg)',
+                          color: active ? 'var(--color-blue)' : 'var(--color-muted)',
+                          fontSize: 12.5,
+                          fontWeight: active ? 600 : 400,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {fmt === 'text' ? t('Văn bản') : 'HTML'}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             <div style={{ marginBottom: 12 }}>
               <label style={fieldLabel}>{t('Tiêu đề')}</label>
               <input value={draft.subject} onChange={(e) => set({ subject: e.target.value })} style={inputStyle} />
             </div>
-            <div>
-              <label style={fieldLabel}>{bodyLabel}</label>
+            <div style={{ marginBottom: 12 }}>
+              <label style={fieldLabel}>
+                {isMessaging ? t('Nội dung tin nhắn') : draft.bodyFormat === 'html' ? t('Nội dung HTML') : t('Nội dung email')}
+              </label>
               <textarea
                 rows={8}
                 value={draft.body}
                 onChange={(e) => set({ body: e.target.value })}
-                placeholder={t('Nội dung email/SMS lừa đảo mô phỏng…')}
-                style={{ ...inputStyle, fontSize: 13.5, resize: 'vertical', lineHeight: 1.5 }}
+                placeholder={
+                  draft.bodyFormat === 'html'
+                    ? t('HTML — chèn ảnh bằng <img src="…">')
+                    : t('Nội dung email/SMS lừa đảo mô phỏng…')
+                }
+                style={{ ...inputStyle, fontSize: 13.5, resize: 'vertical', lineHeight: 1.5, fontFamily: draft.bodyFormat === 'html' ? 'monospace' : 'inherit' }}
               />
+            </div>
+
+            {/* Attachments */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <label style={{ ...fieldLabel, marginBottom: 0 }}>{t('Tệp đính kèm (mô phỏng)')}</label>
+                <button
+                  type="button"
+                  onClick={addAttachment}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', color: 'var(--color-blue)', fontSize: 12, cursor: 'pointer' }}
+                >
+                  <Plus size={13} /> {t('Thêm')}
+                </button>
+              </div>
+              {draft.attachments.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{t('Chưa có tệp đính kèm.')}</div>
+              )}
+              {draft.attachments.map((a, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.6fr 1fr auto', gap: 6, marginBottom: 6 }}>
+                  <input
+                    value={a.name}
+                    onChange={(e) => setAttachment(i, { name: e.target.value })}
+                    placeholder={t('Tên tệp (vd hoa_don.pdf)')}
+                    style={{ ...inputStyle, fontSize: 12.5, padding: '6px 10px' }}
+                  />
+                  <input
+                    value={a.mime ?? ''}
+                    onChange={(e) => setAttachment(i, { mime: e.target.value })}
+                    placeholder="application/pdf"
+                    style={{ ...inputStyle, fontSize: 12.5, padding: '6px 10px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeAttachment(i)}
+                    aria-label={t('Xóa tệp')}
+                    style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 8, cursor: 'pointer', color: 'var(--color-muted)' }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div style={{ ...cardStyle, padding: 16, fontSize: 12.5, color: 'var(--color-muted)' }}>
-            {t('Đây là nội dung mô phỏng phục vụ huấn luyện nhận thức an toàn thông tin — không dùng cho mục đích khác.')}
+          {/* Preview */}
+          <div style={{ ...cardStyle, padding: 0, overflow: 'hidden', position: 'sticky', top: 0 }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', fontSize: 13, fontWeight: 600, color: 'var(--color-text)' }}>
+              {t('Xem trước · người nhận thấy')}
+            </div>
+            <div style={{ padding: 16 }}>
+              <Preview draft={draft} t={t} />
+            </div>
           </div>
         </div>
+      </div>
+
+      <div style={{ ...cardStyle, padding: '12px 16px', marginTop: 14, fontSize: 12.5, color: 'var(--color-muted)' }}>
+        {t('Đây là nội dung mô phỏng phục vụ huấn luyện nhận thức an toàn thông tin — không dùng cho mục đích khác.')}
+      </div>
+    </div>
+  );
+}
+
+/** Recipient-eye preview: brand logo header, subject, rendered body, attachment chips. */
+function Preview({ draft, t }: { draft: Draft; t: (s: string) => string }) {
+  const isMessaging = draft.channel === 'sms' || draft.channel === 'zalo';
+
+  if (isMessaging) {
+    return (
+      <div style={{ maxWidth: 300 }}>
+        <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 16, padding: '10px 14px', fontSize: 13.5, lineHeight: 1.5, color: 'var(--color-text)', whiteSpace: 'pre-wrap' }}>
+          {draft.body || t('(nội dung tin nhắn)')}
+        </div>
+        <div style={{ fontSize: 10.5, color: 'var(--color-muted)', marginTop: 6 }}>
+          {CHANNEL_LABELS[draft.channel]} · {draft.category || t('người gửi')}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ background: '#fff', color: '#111', border: '1px solid var(--color-border)', borderRadius: 10, overflow: 'hidden' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: 10 }}>
+        {draft.logoUrl ? (
+          <img src={draft.logoUrl} alt="logo" style={{ height: 28, maxWidth: 160, objectFit: 'contain' }} />
+        ) : (
+          <div style={{ fontSize: 12, color: '#999' }}>{draft.category || t('Người gửi')}</div>
+        )}
+      </div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>{draft.subject || t('(tiêu đề)')}</div>
+        {draft.bodyFormat === 'html' ? (
+          <div style={{ fontSize: 13.5, lineHeight: 1.55 }} dangerouslySetInnerHTML={{ __html: sanitize(draft.body) }} />
+        ) : (
+          <div style={{ fontSize: 13.5, lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{draft.body || t('(nội dung)')}</div>
+        )}
+        {draft.attachments.filter((a) => a.name.trim()).length > 0 && (
+          <div style={{ marginTop: 14, borderTop: '1px solid #eee', paddingTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {draft.attachments
+              .filter((a) => a.name.trim())
+              .map((a, i) => (
+                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#f3f4f6', borderRadius: 8, padding: '4px 9px', fontSize: 12, color: '#374151' }}>
+                  <Paperclip size={12} /> {a.name}
+                </span>
+              ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,13 @@
 package com.digishield.ai.web;
 
 import com.digishield.ai.api.AiService;
+import com.digishield.ai.api.TemplateInput;
 import com.digishield.ai.api.dto.AidaRunView;
+import com.digishield.ai.api.dto.AttachmentView;
 import com.digishield.ai.api.dto.ClassificationView;
 import com.digishield.ai.api.dto.ModerationView;
 import com.digishield.ai.api.dto.SimTemplateView;
+import com.digishield.ai.domain.BodyFormat;
 import com.digishield.ai.domain.Difficulty;
 import com.digishield.ai.domain.TemplateChannel;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -66,13 +69,12 @@ public class AiController {
     @PreAuthorize("hasRole('CONTENT_EDITOR')")
     @PostMapping("/templates")
     public ResponseEntity<SimTemplateView> createTemplate(@RequestBody UpsertTemplateRequest request) {
-        SimTemplateView view = aiService.createTemplate(
+        TemplateInput input = new TemplateInput(
                 TemplateChannel.fromWire(request.channel()),
-                request.subject(),
-                request.body(),
-                request.category(),
-                parseDifficulty(request.difficulty()),
-                Boolean.TRUE.equals(request.approved()));
+                request.subject(), request.body(), parseFormat(request.bodyFormat()),
+                request.category(), request.logoUrl(), request.attachments(),
+                parseDifficulty(request.difficulty()));
+        SimTemplateView view = aiService.createTemplate(input, Boolean.TRUE.equals(request.approved()));
         return ResponseEntity.status(HttpStatus.CREATED).body(view);
     }
 
@@ -83,14 +85,12 @@ public class AiController {
     @PatchMapping("/templates/{id}")
     public ResponseEntity<SimTemplateView> updateTemplate(@PathVariable("id") UUID id,
                                                           @RequestBody UpsertTemplateRequest request) {
-        SimTemplateView view = aiService.updateTemplate(
-                id,
+        TemplateInput input = new TemplateInput(
                 request.channel() != null ? TemplateChannel.fromWire(request.channel()) : null,
-                request.subject(),
-                request.body(),
-                request.category(),
+                request.subject(), request.body(), parseFormat(request.bodyFormat()),
+                request.category(), request.logoUrl(), request.attachments(),
                 parseDifficulty(request.difficulty()));
-        return ResponseEntity.ok(view);
+        return ResponseEntity.ok(aiService.updateTemplate(id, input));
     }
 
     /**
@@ -119,6 +119,18 @@ public class AiController {
         }
         try {
             return Difficulty.valueOf(value.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
+    }
+
+    /** Parses a body format ({@code text|html}); {@code null}/blank/unknown → null (unchanged). */
+    private static BodyFormat parseFormat(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return BodyFormat.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ex) {
             return null;
         }
@@ -178,7 +190,10 @@ public class AiController {
             @JsonProperty("channel") String channel,
             @JsonProperty("subject") String subject,
             @JsonProperty("body") String body,
+            @JsonProperty("body_format") String bodyFormat,
             @JsonProperty("category") String category,
+            @JsonProperty("logo_url") String logoUrl,
+            @JsonProperty("attachments") List<AttachmentView> attachments,
             @JsonProperty("difficulty") String difficulty,
             @JsonProperty("approved") Boolean approved) {
     }

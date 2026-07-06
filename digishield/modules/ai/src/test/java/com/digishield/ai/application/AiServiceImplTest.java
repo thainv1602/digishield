@@ -53,6 +53,10 @@ class AiServiceImplTest {
     @Mock
     private EventPublisher eventPublisher;
 
+    @org.mockito.Spy
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+
     @InjectMocks
     private AiServiceImpl aiService;
 
@@ -116,21 +120,29 @@ class AiServiceImplTest {
         // Arrange
         when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act: author a tax-themed email template as a draft
-        SimTemplateView view = aiService.createTemplate(
-                TemplateChannel.EMAIL, "[Thuế] Hoàn thuế TNCN", "Kính gửi người nộp thuế…",
-                "Cơ quan thuế", Difficulty.HARD, false);
+        // Act: author a tax-themed HTML email with a logo + a fake attachment
+        var input = new com.digishield.ai.api.TemplateInput(
+                TemplateChannel.EMAIL, "[Thuế] Hoàn thuế TNCN", "<p>Kính gửi…</p>",
+                com.digishield.ai.domain.BodyFormat.HTML, "Cơ quan thuế", "data:image/svg+xml,<svg/>",
+                List.of(new com.digishield.ai.api.dto.AttachmentView("hoanthue.pdf", "application/pdf")),
+                Difficulty.HARD);
+        SimTemplateView view = aiService.createTemplate(input, false);
 
-        // Assert
+        // Assert: persisted with rich content, round-tripped on the view
         ArgumentCaptor<AiTemplate> captor = ArgumentCaptor.forClass(AiTemplate.class);
         verify(templateRepository).save(captor.capture());
         AiTemplate saved = captor.getValue();
         assertThat(saved.getTenantId()).isEqualTo(TENANT_ID);
-        assertThat(saved.getBody()).isEqualTo("Kính gửi người nộp thuế…");
+        assertThat(saved.getBody()).isEqualTo("<p>Kính gửi…</p>");
         assertThat(saved.getCategory()).isEqualTo("Cơ quan thuế");
+        assertThat(saved.getBodyFormat()).isEqualTo(com.digishield.ai.domain.BodyFormat.HTML);
         assertThat(saved.getStatus()).isEqualTo(TemplateStatus.DRAFT);
-        assertThat(view.channel()).isEqualTo("email");
-        assertThat(view.status()).isEqualTo("draft");
+        assertThat(view.bodyFormat()).isEqualTo("html");
+        assertThat(view.logoUrl()).isEqualTo("data:image/svg+xml,<svg/>");
+        assertThat(view.attachments()).singleElement().satisfies(a -> {
+            assertThat(a.name()).isEqualTo("hoanthue.pdf");
+            assertThat(a.mime()).isEqualTo("application/pdf");
+        });
     }
 
     @Test
@@ -161,8 +173,9 @@ class AiServiceImplTest {
         when(templateRepository.findById(id)).thenReturn(java.util.Optional.of(t));
         when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act: change only the body (leave channel/subject/category/difficulty null)
-        SimTemplateView view = aiService.updateTemplate(id, null, null, "new body", null, null);
+        // Act: change only the body (leave everything else null → unchanged)
+        SimTemplateView view = aiService.updateTemplate(id, new com.digishield.ai.api.TemplateInput(
+                null, null, "new body", null, null, null, null, null));
 
         // Assert
         assertThat(view.body()).isEqualTo("new body");
