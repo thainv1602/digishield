@@ -58,9 +58,14 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       vigilant (risk-lowering) signal for the reporter and recomputes their score.
 - [x] Dashboard risk-trend is now data-driven — `dashboard()` builds the trend from
       persisted org-scope `RiskScore` history (chronological), and the dev seeder writes
-      ~3 months of org-risk points. (Benchmark reference values are intentional constants;
-      recent-reports list is still demo data — needs a cross-module reporting query. In
-      prod nothing writes org-scope risk yet — a scheduled org-risk rollup is a follow-up.)
+      ~3 months of org-risk points. (Benchmark reference values are intentional constants.
+      In prod nothing writes org-scope risk yet — a scheduled org-risk rollup is a follow-up.)
+- [x] Dashboard recent-reports is now data-driven — added a `RecentReportsProvider` SPI
+      (analytics.api); `dashboard()` returns the tenant's newest phishing reports instead
+      of hardcoded rows. Bridged to the reporting module by `ReportingRecentReports` in the
+      boot app (`ReportingService.listReports` → newest-first), mirroring how `UserDirectory`
+      is wired to auth. Exposed `reporting.api`/`.dto` + `analytics.api` as Modulith named
+      interfaces. Verified end-to-end: dashboard `recent_reports` matches the SOC inbox.
 
 ### Notification — saves to DB but never delivers
 - [x] `send()` — added a `NotificationGateway` SPI; `send()` now delivers via the gateway
