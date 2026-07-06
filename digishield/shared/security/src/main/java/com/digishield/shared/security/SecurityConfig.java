@@ -99,6 +99,10 @@ public class SecurityConfig {
             http
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/actuator/**").permitAll()
+                            // The WebSocket upgrade carries its token as a query param
+                            // (browsers can't set Authorization on a WS handshake); the
+                            // JwtWsHandshakeInterceptor validates it and fails closed.
+                            .requestMatchers("/ws/**").permitAll()
                             .anyRequest().authenticated())
                     .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                             .decoder(jwtDecoder())

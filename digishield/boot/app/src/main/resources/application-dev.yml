@@ -19,7 +19,10 @@ spring:
       enabled: true
 
   datasource:
-    url: jdbc:h2:mem:digishield;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    # NON_KEYWORDS=VALUE: H2 2.x reserves VALUE, but several entities have a
+    # `value` column (blacklist_entry, risk_score, usage_metering, …). Postgres
+    # (prod) allows it, so keep the column name and de-reserve it for H2 dev.
+    url: jdbc:h2:mem:digishield;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
     driver-class-name: org.h2.Driver
     username: sa
     password: ""

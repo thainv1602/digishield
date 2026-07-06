@@ -83,7 +83,21 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `sns:Publish`, set `NOTIFICATIONS_SNS_ENABLED=true` (+ optional
       `NOTIFICATIONS_SMS_SENDER_ID`). Push not wired. Phone write API (UserUpsert/
       SCIM) still a follow-up — phones currently only via seed/DB.
-- [ ] FE `soc/AlertCenterPage.tsx` (L75) — compose form is UI-only; wire `useBroadcastAlert()`
+- [x] FE `soc/AlertCenterPage.tsx` — compose form wired via `useBroadcastAlert()`
+      (`POST /alerts/broadcast` → `NotificationServiceImpl.broadcastAlert`, fans an in-app
+      ALERT out to every tenant user and returns `{reach}`); history refreshes on success.
+- [x] Real-time WebSocket push — `broadcastAlert` now also pushes the alert to the tenant's
+      connected clients via a `RealtimeNotifier` SPI (default no-op; `@Primary`
+      `WebSocketRealtimeNotifier` in boot app). Endpoint `/ws/notifications`
+      (`WebSocketConfig` + `NotificationWebSocketHandler`, per-tenant session registry);
+      handshake auth is profile-split — `DevWsHandshakeInterceptor` (tenant query param /
+      demo fallback) in dev, `JwtWsHandshakeInterceptor` (validated `access_token` query
+      param → `tid` claim, fails closed) in prod (`/ws/**` permitted in `SecurityConfig`).
+      FE `useAlertStream()` (mounted in `AppShell`) opens the socket, refreshes the
+      notifications query + toasts on each push, and auto-reconnects with backoff.
+      Verified end-to-end in dev (broadcast → live frame received). Push over other
+      channels (email/SMS/native push) is still out of scope — see Notification delivery
+      go-live.
 
 ### Auth — backend login
 - [x] Extracted an `AuthProvider` SPI; auth methods (login/refresh/forgot/reset/mfa) delegate to it.
