@@ -1,6 +1,7 @@
 package com.digishield.analytics.application;
 
 import com.digishield.analytics.api.AnalyticsService;
+import com.digishield.analytics.api.RecentReportsProvider;
 import com.digishield.analytics.api.dto.BenchmarkDto;
 import com.digishield.analytics.api.dto.DashboardDto;
 import com.digishield.analytics.api.dto.RiskScoreDto;
@@ -42,20 +43,25 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private static final int MAX_RISK = 100;
     /** Only signals from the last {@code SCORING_WINDOW} count toward the score. */
     private static final Duration SCORING_WINDOW = Duration.ofDays(90);
+    /** How many recent phishing reports the dashboard panel shows. */
+    private static final int RECENT_REPORTS_LIMIT = 6;
 
     private final RiskScoreRepository riskScoreRepository;
     private final DepartmentRiskRepository departmentRiskRepository;
     private final RiskSignalRepository riskSignalRepository;
     private final EventPublisher eventPublisher;
+    private final RecentReportsProvider recentReportsProvider;
 
     public AnalyticsServiceImpl(RiskScoreRepository riskScoreRepository,
                                 DepartmentRiskRepository departmentRiskRepository,
                                 RiskSignalRepository riskSignalRepository,
-                                EventPublisher eventPublisher) {
+                                EventPublisher eventPublisher,
+                                RecentReportsProvider recentReportsProvider) {
         this.riskScoreRepository = riskScoreRepository;
         this.departmentRiskRepository = departmentRiskRepository;
         this.riskSignalRepository = riskSignalRepository;
         this.eventPublisher = eventPublisher;
+        this.recentReportsProvider = recentReportsProvider;
     }
 
     @Override
@@ -159,10 +165,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         List<DashboardDto.TrendPoint> trend = orgRiskTrend(tenantId);
 
-        List<DashboardDto.RecentReport> recent = List.of(
-                new DashboardDto.RecentReport("r1", "\"Khóa tài khoản — xác minh ngay\"", "Nguyen A", "2p", "threat"),
-                new DashboardDto.RecentReport("r2", "\"Trúng thưởng iPhone 15\"", "Tran B", "8p", "spam"),
-                new DashboardDto.RecentReport("r3", "\"Lịch họp tuần 27 – phòng A3\"", "Le C", "15p", "clean"));
+        List<DashboardDto.RecentReport> recent = recentReportsProvider.recentReports(RECENT_REPORTS_LIMIT).stream()
+                .map(r -> new DashboardDto.RecentReport(r.id(), r.title(), r.who(), r.age(), r.aiLabel()))
+                .toList();
 
         return new DashboardDto(
                 orgRisk,
