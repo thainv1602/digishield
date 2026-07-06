@@ -24,10 +24,19 @@ Language also syncs from the signed-in user's profile `locale` claim via
 - [x] Admin (Dashboard, AIDA, Gamification, Org Settings, Content Studio)
 - [x] Campaigns (Wizard, Results), Users, Compliance, Certificates
 - [x] Super admin (Tenant Console, SCIM Config, Audit Log)
+- [x] Backend-produced text externalized — notification titles/bodies, AIDA run
+      summaries, intervention messages and dashboard benchmark labels no longer
+      hardcoded: they resolve from `classpath:messages[_locale].properties`
+      (shipped by `shared:tenant-context`) via a `Messages` helper + Spring
+      `MessageSource`. Locale comes from the request `Accept-Language` (the FE now
+      sends its current language), defaulting to Vietnamese; EN bundle provided.
+      (Seed/demo data and the deterministic Stub AI content stay hardcoded — they
+      are fixtures, not config; "not found" exception messages left as-is.)
 
 All user-facing feature pages are localized. Future new strings just need a
 `t('…')` wrap + an EN entry in `messages.ts` (untranslated strings fall back to
-Vietnamese automatically).
+Vietnamese automatically). Backend user-facing strings go in
+`messages[_en].properties` and are read via the `Messages` helper.
 
 ---
 

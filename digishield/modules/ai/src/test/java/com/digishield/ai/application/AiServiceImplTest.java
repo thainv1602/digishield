@@ -53,6 +53,9 @@ class AiServiceImplTest {
     @Mock
     private EventPublisher eventPublisher;
 
+    @Mock
+    private com.digishield.shared.tenantcontext.Messages messages;
+
     @InjectMocks
     private AiServiceImpl aiService;
 
@@ -122,6 +125,7 @@ class AiServiceImplTest {
         ArgumentCaptor<AidaRun> runCaptor = ArgumentCaptor.forClass(AidaRun.class);
         ArgumentCaptor<AidaOrchestrationRequestedEvent> eventCaptor =
                 ArgumentCaptor.forClass(AidaOrchestrationRequestedEvent.class);
+        when(messages.get(any(), any())).thenReturn("Đang tính lại rủi ro cho phạm vi \"org\"…");
 
         // Act
         aiService.runOrchestration("org", scopeId);

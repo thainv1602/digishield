@@ -30,6 +30,11 @@ axiosInstance.interceptors.request.use((config) => {
   if (effectiveTenantId) {
     config.headers.set('X-Tenant-Id', effectiveTenantId);
   }
+  // Tell the backend which language to render its own text in (notifications,
+  // AIDA summaries, intervention messages…). Mirrors the app's language switch,
+  // which persists the choice under `digishield.lang`; defaults to Vietnamese.
+  const lang = (typeof localStorage !== 'undefined' && localStorage.getItem('digishield.lang')) || 'vi';
+  config.headers.set('Accept-Language', lang);
   return config;
 });
 

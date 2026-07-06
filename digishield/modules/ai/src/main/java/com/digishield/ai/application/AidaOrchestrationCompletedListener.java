@@ -3,6 +3,7 @@ package com.digishield.ai.application;
 import com.digishield.ai.domain.AidaRun;
 import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.contracts.events.AidaOrchestrationCompletedEvent;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,9 +25,11 @@ class AidaOrchestrationCompletedListener {
     private static final Logger LOG = LoggerFactory.getLogger(AidaOrchestrationCompletedListener.class);
 
     private final AidaRunRepository aidaRunRepository;
+    private final Messages messages;
 
-    AidaOrchestrationCompletedListener(AidaRunRepository aidaRunRepository) {
+    AidaOrchestrationCompletedListener(AidaRunRepository aidaRunRepository, Messages messages) {
         this.aidaRunRepository = aidaRunRepository;
+        this.messages = messages;
     }
 
     @ApplicationModuleListener
@@ -39,10 +42,8 @@ class AidaOrchestrationCompletedListener {
                 return;
             }
             String summary = event.usersEvaluated() == 0
-                    ? "Không có người dùng nào trong phạm vi để đánh giá."
-                    : "Đã tính lại rủi ro cho " + event.usersEvaluated()
-                            + " người dùng, tự động đăng ký " + event.usersEnrolled()
-                            + " người có nguy cơ cao.";
+                    ? messages.get("aida.summary.none")
+                    : messages.get("aida.summary.done", event.usersEvaluated(), event.usersEnrolled());
             run.complete("success", summary);
             aidaRunRepository.save(run);
             LOG.info("AIDA run={} completed: evaluated={} enrolled={}",

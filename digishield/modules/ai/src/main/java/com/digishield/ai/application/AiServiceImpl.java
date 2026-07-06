@@ -13,6 +13,7 @@ import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.ai.infrastructure.AiTemplateRepository;
 import com.digishield.contracts.events.AidaOrchestrationRequestedEvent;
 import com.digishield.shared.messaging.EventPublisher;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,15 +42,18 @@ public class AiServiceImpl implements AiService {
     private final AidaRunRepository aidaRunRepository;
     private final AiClient aiClient;
     private final EventPublisher eventPublisher;
+    private final Messages messages;
 
     public AiServiceImpl(AiTemplateRepository templateRepository,
                          AidaRunRepository aidaRunRepository,
                          AiClient aiClient,
-                         EventPublisher eventPublisher) {
+                         EventPublisher eventPublisher,
+                         Messages messages) {
         this.templateRepository = templateRepository;
         this.aidaRunRepository = aidaRunRepository;
         this.aiClient = aiClient;
         this.eventPublisher = eventPublisher;
+        this.messages = messages;
     }
 
     @Override
@@ -94,7 +98,7 @@ public class AiServiceImpl implements AiService {
         UUID runId = UUID.randomUUID();
         aidaRunRepository.save(new AidaRun(
                 runId, tenantId, safeScope, scopeId, "running",
-                "Đang tính lại rủi ro và tự động đăng ký cho phạm vi \"" + safeScope + "\"…",
+                messages.get("aida.summary.running", safeScope),
                 Instant.now()));
         eventPublisher.publish(new AidaOrchestrationRequestedEvent(tenantId, runId, safeScope, scopeId));
         LOG.info("AIDA orchestration started run={} tenant={} scope={} scopeId={}",

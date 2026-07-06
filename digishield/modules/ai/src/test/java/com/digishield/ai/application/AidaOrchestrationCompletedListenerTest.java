@@ -3,12 +3,17 @@ package com.digishield.ai.application;
 import com.digishield.ai.domain.AidaRun;
 import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.contracts.events.AidaOrchestrationCompletedEvent;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,17 +24,33 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link AidaOrchestrationCompletedListener}.
+ * Unit tests for {@link AidaOrchestrationCompletedListener}. Uses a real
+ * {@link Messages} over the {@code messages.properties} bundle (Vietnamese) so the
+ * assertions exercise the actual localized summaries.
  */
 class AidaOrchestrationCompletedListenerTest {
 
     private final AidaRunRepository aidaRunRepository = mock(AidaRunRepository.class);
     private final AidaOrchestrationCompletedListener listener =
-            new AidaOrchestrationCompletedListener(aidaRunRepository);
+            new AidaOrchestrationCompletedListener(aidaRunRepository, viMessages());
+
+    private static Messages viMessages() {
+        ResourceBundleMessageSource source = new ResourceBundleMessageSource();
+        source.setBasename("messages");
+        source.setDefaultEncoding("UTF-8");
+        source.setFallbackToSystemLocale(false);
+        return new Messages(source);
+    }
+
+    @BeforeEach
+    void setLocale() {
+        LocaleContextHolder.setLocale(Locale.forLanguageTag("vi"));
+    }
 
     @AfterEach
     void tearDown() {
         TenantContext.clear();
+        LocaleContextHolder.resetLocaleContext();
     }
 
     @Test
