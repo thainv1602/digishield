@@ -30,6 +30,29 @@ public interface AiService {
     List<SimTemplateView> listTemplates();
 
     /**
+     * Authors a new simulation template for the current tenant (Content Studio).
+     * Saved as APPROVED when {@code approved} is true, else DRAFT.
+     */
+    SimTemplateView createTemplate(TemplateInput input, boolean approved);
+
+    /**
+     * Updates an existing template's editable fields (only non-{@code null} values
+     * on {@code input} are applied). Scoped to the current tenant.
+     */
+    SimTemplateView updateTemplate(UUID id, TemplateInput input);
+
+    /**
+     * Submits a template for use — moves it from DRAFT to APPROVED. Scoped to the
+     * current tenant.
+     */
+    SimTemplateView submitTemplate(UUID id);
+
+    /**
+     * Deletes a template from the current tenant's library.
+     */
+    void deleteTemplate(UUID id);
+
+    /**
      * Classifies a reported email payload and returns a label, confidence and
      * reasoning.
      */

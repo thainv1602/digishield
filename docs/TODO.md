@@ -48,7 +48,8 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
 `digishield.ai.claude.enabled=true` + `ANTHROPIC_API_KEY`).
 - [x] `classify()` — Claude Haiku 4.5 with strict-JSON output (`{label,confidence,reason}`)
 - [x] `moderate()` — Claude Haiku 4.5 (`{verdict,reasons[]}`)
-- [x] `generateTemplate()` — Claude Sonnet 4.6 generates the subject + difficulty
+- [x] `generateTemplate()` — Claude Sonnet 4.6 generates the subject + body + difficulty
+      (now stores the real message body, not just a slug)
 - [x] `runOrchestration()` — real event-driven pipeline: AI publishes
       `AidaOrchestrationRequestedEvent` → analytics recomputes each in-scope user's
       risk and emits `RemediationEnrollmentRequestedEvent` for those ≥ at-risk
@@ -56,8 +57,20 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       `AidaOrchestrationCompletedEvent`, which finalises the `AidaRun`
       (status running→success, summary with evaluated/enrolled counts)
 - [ ] Go-live (ops): set `AI_CLAUDE_ENABLED=true` + provide `ANTHROPIC_API_KEY`
-      (e.g. via Secrets Manager / GH secret). `generateTemplate` only stores the
-      subject (schema has no body column).
+      (e.g. via Secrets Manager / GH secret).
+- [x] Content Studio authoring — `ai_template` now stores the real `body` + a free-text
+      `category` (theme). Added full template CRUD (`POST /ai/templates`,
+      `PATCH /ai/templates/{id}`, `POST /ai/templates/{id}/submit`, `DELETE`); the
+      Content Studio page authors/edits/submits/deletes and the AI-generate action now
+      returns a real body. Dev seed ships realistic VN lures impersonating tax / social
+      insurance / gov e-service / bank / utility / insurance. Flyway migration
+      `V2026.07.06.001` adds the columns. Verified end-to-end (full CRUD + generate).
+- [x] Content Studio rich content — templates now carry an HTML-or-text `body_format`,
+      an impersonated brand `logo_url`, and simulated `attachments` (metadata only). The
+      editor adds a Text/HTML toggle, a logo field and an attachments editor, plus a live
+      recipient **preview** (HTML sanitized with DOMPurify; embedded `<img>` and brand
+      logo render). Flyway `V2026.07.06.002` adds the columns; the tax seed showcases an
+      HTML body + logo + a fake PDF. Verified end-to-end (HTML+logo+attachments round-trip).
 
 ### Analytics — risk score & adaptive loop
 - [x] `computeScore()` — was a placeholder returning `0`; now signal-based (sim-click history)
@@ -67,9 +80,14 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       vigilant (risk-lowering) signal for the reporter and recomputes their score.
 - [x] Dashboard risk-trend is now data-driven — `dashboard()` builds the trend from
       persisted org-scope `RiskScore` history (chronological), and the dev seeder writes
-      ~3 months of org-risk points. (Benchmark reference values are intentional constants;
-      recent-reports list is still demo data — needs a cross-module reporting query. In
-      prod nothing writes org-scope risk yet — a scheduled org-risk rollup is a follow-up.)
+      ~3 months of org-risk points. (Benchmark reference values are intentional constants.
+      In prod nothing writes org-scope risk yet — a scheduled org-risk rollup is a follow-up.)
+- [x] Dashboard recent-reports is now data-driven — added a `RecentReportsProvider` SPI
+      (analytics.api); `dashboard()` returns the tenant's newest phishing reports instead
+      of hardcoded rows. Bridged to the reporting module by `ReportingRecentReports` in the
+      boot app (`ReportingService.listReports` → newest-first), mirroring how `UserDirectory`
+      is wired to auth. Exposed `reporting.api`/`.dto` + `analytics.api` as Modulith named
+      interfaces. Verified end-to-end: dashboard `recent_reports` matches the SOC inbox.
 
 ### Notification — saves to DB but never delivers
 - [x] `send()` — added a `NotificationGateway` SPI; `send()` now delivers via the gateway
@@ -141,8 +159,13 @@ no token cost) and `ClaudeAiClient` (`@Primary`, active when
       library via `useTemplates()` (was a static array)
 - [x] `campaigns` wizard — templates load from `GET /ai/templates`, audience from
       `GET /groups`; the selected template id is now sent on create. Channels stay a
-      fixed enum (UI choice, not data). Note: the create endpoint doesn't yet accept the
-      audience group, and `Group` carries no member count.
+      fixed enum (UI choice, not data).
+- [x] `campaigns` audience group + member count — `POST /sim/campaigns` accepts the
+      selected `groupId` (persisted on `SimCampaign.group_id`; the wizard already sends it),
+      and `GroupView` now exposes `member_count` (materialised count from the `Group`
+      entity). The wizard's audience cards + launch summary show the real headcount
+      (was a hardcoded "212 người"). Verified end-to-end: `/groups` returns counts and a
+      created campaign persists the chosen group.
 - [x] `admin` AIDA run history — `runOrchestration` now persists an `AidaRun`;
       added `GET /ai/orchestration/runs` + `AidaPage` loads it and triggers real runs
 - [x] `admin` org-settings thresholds — added GET/PATCH `/tenants/{id}/thresholds`

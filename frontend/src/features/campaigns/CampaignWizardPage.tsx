@@ -73,16 +73,26 @@ interface GroupCard {
   title: string;
   sub: string;
   smart: boolean;
+  /** materialised member count, or null when the backend hasn't evaluated it */
+  members: number | null;
+}
+
+/** Human label for a member count, e.g. "212 người" (or "—" when unknown). */
+function membersLabel(members: number | null, t: TFn): string {
+  return members != null ? t('{n} người', { n: members }) : '—';
 }
 
 /** Map a backend `Group` onto the audience-step card. */
 function toGroupCard(dto: SmartGroup, t: TFn): GroupCard {
   const smart = dto.rule_json != null;
+  const members = dto.member_count ?? null;
+  const kind = smart ? t('Nhóm thông minh · tự cập nhật theo điều kiện') : t('Nhóm tĩnh');
   return {
     id: dto.id,
     title: dto.name ?? '—',
-    sub: smart ? t('Nhóm thông minh · tự cập nhật theo điều kiện') : t('Nhóm tĩnh'),
+    sub: members != null ? `${membersLabel(members, t)} · ${kind}` : kind,
     smart,
+    members,
   };
 }
 
@@ -510,8 +520,8 @@ export default function CampaignWizardPage() {
               <SummaryTile label={t('Mẫu')} value={selectedTemplate?.title ?? t('Hoàn tiền học phí')} />
               <SummaryTile
                 label={t('Đối tượng')}
-                value={selectedGroup ? (selectedGroup.sub.split(' · ')[0] ?? t('212 người')) : t('212 người')}
-                sub={selectedGroup?.title ?? t('Kế toán + Kinh doanh')}
+                value={selectedGroup ? membersLabel(selectedGroup.members, t) : '—'}
+                sub={selectedGroup?.title ?? t('Chưa chọn nhóm')}
               />
               <SummaryTile
                 label={t('Lịch')}

@@ -56,6 +56,10 @@ class AiServiceImplTest {
     @Mock
     private com.digishield.shared.tenantcontext.Messages messages;
 
+    @org.mockito.Spy
+    private com.fasterxml.jackson.databind.ObjectMapper objectMapper =
+            new com.fasterxml.jackson.databind.ObjectMapper();
+
     @InjectMocks
     private AiServiceImpl aiService;
 
@@ -73,17 +77,20 @@ class AiServiceImplTest {
     void generateTemplate_persistsClientOutputAsDraftAndReturnsView() {
         // Arrange: the AI client produces the content; the service persists it
         when(aiClient.generate(TemplateChannel.EMAIL, "banking", "summer"))
-                .thenReturn(new GeneratedTemplate("[banking] Cảnh báo", "tmpl/email/banking", Difficulty.MEDIUM));
+                .thenReturn(new GeneratedTemplate("[banking] Cảnh báo", "tmpl/email/banking",
+                        "Kính gửi Quý khách, vui lòng xác minh…", Difficulty.MEDIUM));
         when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
         SimTemplateView view = aiService.generateTemplate(TemplateChannel.EMAIL, "banking", "summer");
 
-        // Assert: persisted as a lowercase-mapped DRAFT view
+        // Assert: persisted as a lowercase-mapped DRAFT view, now with a real body + category
         assertThat(view.id()).isNotNull();
         assertThat(view.channel()).isEqualTo("email");
         assertThat(view.subject()).isEqualTo("[banking] Cảnh báo");
         assertThat(view.bodyRef()).isEqualTo("tmpl/email/banking");
+        assertThat(view.body()).isEqualTo("Kính gửi Quý khách, vui lòng xác minh…");
+        assertThat(view.category()).isEqualTo("banking");
         assertThat(view.difficulty()).isEqualTo("medium");
         assertThat(view.status()).isEqualTo("draft");
         verify(templateRepository).save(any(AiTemplate.class));
@@ -94,7 +101,7 @@ class AiServiceImplTest {
         // Arrange
         AiTemplate t = new AiTemplate(
                 UUID.randomUUID(), TENANT_ID, TemplateChannel.SMS, "Thông báo",
-                "tmpl/sms/x", Difficulty.EASY, TemplateStatus.APPROVED);
+                "tmpl/sms/x", "Nội dung tin nhắn", "Bảo hiểm xã hội", Difficulty.EASY, TemplateStatus.APPROVED);
         when(templateRepository.findByTenantId(TENANT_ID)).thenReturn(List.of(t));
 
         // Act
@@ -107,6 +114,93 @@ class AiServiceImplTest {
         assertThat(v.difficulty()).isEqualTo("easy");
         assertThat(v.status()).isEqualTo("approved");
         assertThat(v.subject()).isEqualTo("Thông báo");
+        assertThat(v.body()).isEqualTo("Nội dung tin nhắn");
+        assertThat(v.category()).isEqualTo("Bảo hiểm xã hội");
+    }
+
+    @Test
+    void createTemplate_persistsAuthoredDraftWithBodyAndCategory() {
+        // Arrange
+        when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act: author a tax-themed HTML email with a logo + a fake attachment
+        var input = new com.digishield.ai.api.TemplateInput(
+                TemplateChannel.EMAIL, "[Thuế] Hoàn thuế TNCN", "<p>Kính gửi…</p>",
+                com.digishield.ai.domain.BodyFormat.HTML, "Cơ quan thuế", "data:image/svg+xml,<svg/>",
+                List.of(new com.digishield.ai.api.dto.AttachmentView("hoanthue.pdf", "application/pdf")),
+                Difficulty.HARD);
+        SimTemplateView view = aiService.createTemplate(input, false);
+
+        // Assert: persisted with rich content, round-tripped on the view
+        ArgumentCaptor<AiTemplate> captor = ArgumentCaptor.forClass(AiTemplate.class);
+        verify(templateRepository).save(captor.capture());
+        AiTemplate saved = captor.getValue();
+        assertThat(saved.getTenantId()).isEqualTo(TENANT_ID);
+        assertThat(saved.getBody()).isEqualTo("<p>Kính gửi…</p>");
+        assertThat(saved.getCategory()).isEqualTo("Cơ quan thuế");
+        assertThat(saved.getBodyFormat()).isEqualTo(com.digishield.ai.domain.BodyFormat.HTML);
+        assertThat(saved.getStatus()).isEqualTo(TemplateStatus.DRAFT);
+        assertThat(view.bodyFormat()).isEqualTo("html");
+        assertThat(view.logoUrl()).isEqualTo("data:image/svg+xml,<svg/>");
+        assertThat(view.attachments()).singleElement().satisfies(a -> {
+            assertThat(a.name()).isEqualTo("hoanthue.pdf");
+            assertThat(a.mime()).isEqualTo("application/pdf");
+        });
+    }
+
+    @Test
+    void submitTemplate_movesDraftToApproved() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        AiTemplate t = new AiTemplate(
+                id, TENANT_ID, TemplateChannel.EMAIL, "S", "tmpl/email/s", "body", "Cơ quan thuế",
+                Difficulty.MEDIUM, TemplateStatus.DRAFT);
+        when(templateRepository.findById(id)).thenReturn(java.util.Optional.of(t));
+        when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        SimTemplateView view = aiService.submitTemplate(id);
+
+        // Assert
+        assertThat(view.status()).isEqualTo("approved");
+        assertThat(t.getStatus()).isEqualTo(TemplateStatus.APPROVED);
+    }
+
+    @Test
+    void updateTemplate_appliesOnlyProvidedFields() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        AiTemplate t = new AiTemplate(
+                id, TENANT_ID, TemplateChannel.EMAIL, "Old", "tmpl/email/old", "old body", "Ngân hàng",
+                Difficulty.EASY, TemplateStatus.DRAFT);
+        when(templateRepository.findById(id)).thenReturn(java.util.Optional.of(t));
+        when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act: change only the body (leave everything else null → unchanged)
+        SimTemplateView view = aiService.updateTemplate(id, new com.digishield.ai.api.TemplateInput(
+                null, null, "new body", null, null, null, null, null));
+
+        // Assert
+        assertThat(view.body()).isEqualTo("new body");
+        assertThat(view.subject()).isEqualTo("Old");
+        assertThat(view.category()).isEqualTo("Ngân hàng");
+        assertThat(view.difficulty()).isEqualTo("easy");
+    }
+
+    @Test
+    void deleteTemplate_removesTenantOwnedTemplate() {
+        // Arrange
+        UUID id = UUID.randomUUID();
+        AiTemplate t = new AiTemplate(
+                id, TENANT_ID, TemplateChannel.EMAIL, "S", "tmpl/email/s", "body", null,
+                Difficulty.MEDIUM, TemplateStatus.DRAFT);
+        when(templateRepository.findById(id)).thenReturn(java.util.Optional.of(t));
+
+        // Act
+        aiService.deleteTemplate(id);
+
+        // Assert
+        verify(templateRepository).delete(t);
     }
 
     @Test

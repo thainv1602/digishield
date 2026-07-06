@@ -10,9 +10,10 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 
 /**
- * An AI-generated simulation template draft. Each template belongs to a tenant
- * and maps onto the OpenAPI {@code SimTemplate} schema. Drafts are persisted so
- * the simulation builder can browse previously generated content.
+ * A simulation-template draft — AI-generated or authored by a content editor.
+ * Each template belongs to a tenant and maps onto the OpenAPI {@code SimTemplate}
+ * schema. Persisted so the Content Studio library and the simulation builder can
+ * browse and reuse content.
  */
 @Entity
 @Table(name = "ai_template")
@@ -32,8 +33,30 @@ public class AiTemplate {
     @Column(name = "subject", nullable = false)
     private String subject;
 
+    /** Stable slug/reference for the rendered body (kept for back-compat). */
     @Column(name = "body_ref", nullable = false)
     private String bodyRef;
+
+    /** The actual message body (the phishing email/SMS content). */
+    @Column(name = "body", columnDefinition = "text")
+    private String body;
+
+    /** Free-text theme, e.g. "Cơ quan thuế", "Bảo hiểm xã hội" ({@code null} if unset). */
+    @Column(name = "category")
+    private String category;
+
+    /** How {@link #body} is rendered: plain text or HTML (branded email). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "body_format", nullable = false)
+    private BodyFormat bodyFormat = BodyFormat.TEXT;
+
+    /** URL (or data URI) of the impersonated brand logo shown in the preview header. */
+    @Column(name = "logo_url", length = 2048)
+    private String logoUrl;
+
+    /** JSON array of simulated attachments ({@code [{"name":..,"mime":..}]}); metadata only. */
+    @Column(name = "attachments_json", columnDefinition = "text")
+    private String attachmentsJson;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty", nullable = false)
@@ -48,12 +71,15 @@ public class AiTemplate {
     }
 
     public AiTemplate(UUID id, UUID tenantId, TemplateChannel channel, String subject,
-                      String bodyRef, Difficulty difficulty, TemplateStatus status) {
+                      String bodyRef, String body, String category, Difficulty difficulty,
+                      TemplateStatus status) {
         this.id = id;
         this.tenantId = tenantId;
         this.channel = channel;
         this.subject = subject;
         this.bodyRef = bodyRef;
+        this.body = body;
+        this.category = category;
         this.difficulty = difficulty;
         this.status = status;
     }
@@ -78,11 +104,67 @@ public class AiTemplate {
         return bodyRef;
     }
 
+    public String getBody() {
+        return body;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public BodyFormat getBodyFormat() {
+        return bodyFormat;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public String getAttachmentsJson() {
+        return attachmentsJson;
+    }
+
     public Difficulty getDifficulty() {
         return difficulty;
     }
 
     public TemplateStatus getStatus() {
         return status;
+    }
+
+    public void setBodyFormat(BodyFormat bodyFormat) {
+        this.bodyFormat = bodyFormat;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
+    }
+
+    public void setAttachmentsJson(String attachmentsJson) {
+        this.attachmentsJson = attachmentsJson;
+    }
+
+    public void setChannel(TemplateChannel channel) {
+        this.channel = channel;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public void setDifficulty(Difficulty difficulty) {
+        this.difficulty = difficulty;
+    }
+
+    public void setStatus(TemplateStatus status) {
+        this.status = status;
     }
 }

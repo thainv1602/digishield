@@ -1,5 +1,6 @@
 package com.digishield.analytics.application;
 
+import com.digishield.analytics.api.RecentReportsProvider;
 import com.digishield.analytics.api.dto.DashboardDto;
 import com.digishield.analytics.domain.RiskScope;
 import com.digishield.analytics.domain.RiskScore;
@@ -27,6 +28,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,6 +57,9 @@ class AnalyticsServiceImplTest {
 
     @Mock
     private com.digishield.shared.tenantcontext.Messages messages;
+
+    @Mock
+    private RecentReportsProvider recentReportsProvider;
 
     @InjectMocks
     private AnalyticsServiceImpl analyticsService;
@@ -254,5 +259,26 @@ class AnalyticsServiceImplTest {
 
     private RiskScore orgScore(int value, Instant at) {
         return new RiskScore(UUID.randomUUID(), TENANT_ID, RiskScope.ORG, TENANT_ID, value, at);
+    }
+
+    @Test
+    void dashboard_recentReports_comeFromProviderMappedOntoDto() {
+        // Arrange: no risk/dept history; the recent-reports provider returns one report
+        when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(List.of());
+        when(departmentRiskRepository.findByTenantIdOrderByRiskScoreDesc(TENANT_ID)).thenReturn(List.of());
+        when(recentReportsProvider.recentReports(anyInt())).thenReturn(List.of(
+                new RecentReportsProvider.RecentReportView("id-1", "Khoa tai khoan", "Nguyen A", "2p", "threat")));
+
+        // Act
+        DashboardDto dto = analyticsService.dashboard();
+
+        // Assert: sourced from the provider (not hardcoded demo rows) and mapped field-for-field
+        assertThat(dto.recentReports()).singleElement().satisfies(r -> {
+            assertThat(r.id()).isEqualTo("id-1");
+            assertThat(r.title()).isEqualTo("Khoa tai khoan");
+            assertThat(r.who()).isEqualTo("Nguyen A");
+            assertThat(r.age()).isEqualTo("2p");
+            assertThat(r.aiLabel()).isEqualTo("threat");
+        });
     }
 }
