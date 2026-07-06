@@ -80,10 +80,39 @@ public class StubAiClient implements AiClient {
     public GeneratedTemplate generate(TemplateChannel channel, String industry, String season) {
         String safeIndustry = (industry == null || industry.isBlank()) ? "doanh nghiệp" : industry.trim();
         String safeSeason = (season == null || season.isBlank()) ? null : season.trim();
+        String subject = buildSubject(channel, safeIndustry, safeSeason);
         return new GeneratedTemplate(
-                buildSubject(channel, safeIndustry, safeSeason),
+                subject,
                 buildBodyRef(channel, safeIndustry, safeSeason),
+                buildBody(channel, safeIndustry, subject),
                 pickDifficulty(channel, safeIndustry));
+    }
+
+    /**
+     * Deterministic, realistic-looking Vietnamese body for the given channel/industry.
+     * SMS/Zalo get a short one-liner with a link; email gets a short formal message.
+     * This is training content only (defensive security awareness).
+     */
+    private String buildBody(TemplateChannel channel, String industry, String subject) {
+        return switch (channel) {
+            case SMS, ZALO -> "[" + industry + "] Tài khoản của bạn cần xác minh trong 24h để tránh bị khóa. "
+                    + "Nhấp: https://xac-minh-" + slug(industry) + ".example.vn";
+            case VOICE -> "Kịch bản gọi: Xin chào, đây là bộ phận " + industry
+                    + ". Chúng tôi phát hiện giao dịch bất thường trên tài khoản của quý khách và cần xác minh danh tính ngay.";
+            case QR -> "Quét mã QR để nhận thông báo từ " + industry
+                    + ". Mã dẫn tới trang đăng nhập giả mạo yêu cầu nhập thông tin tài khoản.";
+            case USB -> "Tập tin đính kèm: \"Tài liệu mật - " + industry + ".docx\" (macro độc hại mô phỏng).";
+            default -> "Kính gửi Quý khách,\n\n"
+                    + "Hệ thống " + industry + " ghi nhận một yêu cầu cần xác minh liên quan tới " + subject.toLowerCase(Locale.ROOT) + ". "
+                    + "Vui lòng truy cập liên kết bên dưới và đăng nhập để hoàn tất xác minh trong vòng 24 giờ, "
+                    + "nếu không tài khoản có thể bị tạm khóa.\n\n"
+                    + "Xác minh ngay: https://xac-minh-" + slug(industry) + ".example.vn\n\n"
+                    + "Trân trọng,\nBộ phận An toàn " + industry;
+        };
+    }
+
+    private static String slug(String value) {
+        return value.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-");
     }
 
     private String buildSubject(TemplateChannel channel, String industry, String season) {
