@@ -5,6 +5,9 @@ plugins {
 dependencies {
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
+    // WebSocket: real-time fan-out of broadcast alerts to a tenant's connected
+    // clients (endpoint /ws/notifications; see WebSocketConfig).
+    implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // Redis-backed caching. Connection from spring.data.redis.* (env
     // REDIS_HOST/PORT/PASSWORD/SSL). The dev profile disables it (no Redis).
@@ -15,6 +18,9 @@ dependencies {
     // for JSON columns). Spring Boot 4 does not expose one on the app classpath
     // by default.
     implementation("com.fasterxml.jackson.core:jackson-databind")
+    // JSR-310 (java.time) support for the WebSocket alert stream's wire mapper,
+    // so Instant serialises as ISO-8601 like the REST layer.
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // Spring Modulith
     implementation("org.springframework.modulith:spring-modulith-starter-core")

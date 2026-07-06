@@ -61,6 +61,7 @@ export const EN: Record<string, string> = {
   'Vui lòng kiểm tra kết nối tới máy chủ rồi thử lại.': 'Check the server connection and try again.',
   'Hoàn thành ĐT': 'Training done',
   'Cảnh báo mở': 'Open alerts',
+  'Cảnh báo mới': 'New alert',
   'TB ngành gov': 'Gov avg',
   'so tháng trước': 'vs last month',
   'vs tháng trước': 'vs last month',

@@ -1,6 +1,8 @@
 package com.digishield.notification.application;
 
 import com.digishield.notification.api.NotificationGateway;
+import com.digishield.notification.api.NotificationView;
+import com.digishield.notification.api.RealtimeNotifier;
 import com.digishield.notification.api.RecipientResolver;
 import com.digishield.notification.api.UserDirectory;
 import com.digishield.notification.domain.Notification;
@@ -53,6 +55,9 @@ class NotificationServiceImplTest {
 
     @Mock
     private UserDirectory userDirectory;
+
+    @Mock
+    private RealtimeNotifier realtime;
 
     @InjectMocks
     private NotificationServiceImpl notificationService;
@@ -185,5 +190,13 @@ class NotificationServiceImplTest {
                 })
                 .extracting(Notification::getUserId)
                 .containsExactlyInAnyOrder(u1, u2);
+
+        // ...and pushed once to the tenant's connected clients (tenant-scoped view)
+        ArgumentCaptor<NotificationView> viewCaptor = ArgumentCaptor.forClass(NotificationView.class);
+        verify(realtime).publishAlert(eq(TENANT_ID), viewCaptor.capture());
+        NotificationView pushed = viewCaptor.getValue();
+        assertThat(pushed.userId()).isNull();
+        assertThat(pushed.type()).isEqualTo("alert");
+        assertThat(pushed.title()).isEqualTo("[CRITICAL] Heads up");
     }
 }

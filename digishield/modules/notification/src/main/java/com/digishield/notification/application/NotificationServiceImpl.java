@@ -2,6 +2,8 @@ package com.digishield.notification.application;
 
 import com.digishield.notification.api.NotificationGateway;
 import com.digishield.notification.api.NotificationService;
+import com.digishield.notification.api.NotificationView;
+import com.digishield.notification.api.RealtimeNotifier;
 import com.digishield.notification.api.RecipientResolver;
 import com.digishield.notification.api.UserDirectory;
 import com.digishield.notification.domain.Notification;
@@ -42,15 +44,18 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationGateway gateway;
     private final RecipientResolver recipients;
     private final UserDirectory userDirectory;
+    private final RealtimeNotifier realtime;
 
     public NotificationServiceImpl(NotificationRepository repository,
                                    NotificationGateway gateway,
                                    RecipientResolver recipients,
-                                   UserDirectory userDirectory) {
+                                   UserDirectory userDirectory,
+                                   RealtimeNotifier realtime) {
         this.repository = repository;
         this.gateway = gateway;
         this.recipients = recipients;
         this.userDirectory = userDirectory;
+        this.realtime = realtime;
     }
 
     @Override
@@ -121,7 +126,26 @@ public class NotificationServiceImpl implements NotificationService {
                     NotificationStatus.SENT, title, body, now)));
         }
         LOG.info("Broadcast alert to {} users in tenant {}", created.size(), tenantId);
+        pushAlert(tenantId, title, body, now);
         return created;
+    }
+
+    /**
+     * Best-effort real-time push of a tenant-wide alert to connected clients. The
+     * broadcast is already persisted, so a push failure is swallowed (clients still
+     * pick it up on their next poll). The view is tenant-scoped (userId {@code null}).
+     */
+    private void pushAlert(UUID tenantId, String title, String body, Instant at) {
+        try {
+            realtime.publishAlert(tenantId, new NotificationView(
+                    UUID.randomUUID(), null,
+                    NotificationType.ALERT.name().toLowerCase(),
+                    NotificationChannel.IN_APP.name().toLowerCase(),
+                    NotificationStatus.SENT.name().toLowerCase(),
+                    title, body, at));
+        } catch (RuntimeException e) {
+            LOG.warn("Real-time alert push to tenant {} failed: {}", tenantId, e.getMessage());
+        }
     }
 
     @Override
