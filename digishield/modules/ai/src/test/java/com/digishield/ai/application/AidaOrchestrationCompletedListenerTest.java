@@ -88,8 +88,10 @@ class AidaOrchestrationCompletedListenerTest {
         // and the listener does not leak the locale onto its pooled thread.
         assertThat(run.getStatus()).isEqualTo("success");
         assertThat(run.getSummary()).contains("Recomputed risk").contains("5").contains("2");
-        // The event's "en" locale must not leak onto this pooled listener thread.
-        assertThat(LocaleContextHolder.getLocale()).isNotEqualTo(Locale.forLanguageTag("en"));
+        // The listener cleared the locale context, so the event's "en" locale cannot leak onto
+        // this pooled thread. (Asserting the context is cleared, not a concrete locale, keeps
+        // this independent of the JVM default that getLocale() falls back to after a reset.)
+        assertThat(LocaleContextHolder.getLocaleContext()).isNull();
     }
 
     @Test
