@@ -20,8 +20,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +55,9 @@ class AiServiceImplTest {
     @Mock
     private EventPublisher eventPublisher;
 
+    @Mock
+    private com.digishield.shared.tenantcontext.Messages messages;
+
     @org.mockito.Spy
     private com.fasterxml.jackson.databind.ObjectMapper objectMapper =
             new com.fasterxml.jackson.databind.ObjectMapper();
@@ -68,6 +73,7 @@ class AiServiceImplTest {
     @AfterEach
     void tearDown() {
         TenantContext.clear();
+        LocaleContextHolder.resetLocaleContext();
     }
 
     @Test
@@ -216,6 +222,9 @@ class AiServiceImplTest {
         ArgumentCaptor<AidaRun> runCaptor = ArgumentCaptor.forClass(AidaRun.class);
         ArgumentCaptor<AidaOrchestrationRequestedEvent> eventCaptor =
                 ArgumentCaptor.forClass(AidaOrchestrationRequestedEvent.class);
+        when(messages.get(any(), any())).thenReturn("Đang tính lại rủi ro cho phạm vi \"org\"…");
+        // Simulate an English request so we can assert the locale is carried on the event.
+        LocaleContextHolder.setLocale(Locale.forLanguageTag("en"));
 
         // Act
         aiService.runOrchestration("org", scopeId);
@@ -237,6 +246,8 @@ class AiServiceImplTest {
         assertThat(event.runId()).isEqualTo(saved.getId());
         assertThat(event.scope()).isEqualTo("org");
         assertThat(event.scopeId()).isEqualTo(scopeId);
+        // ...carrying the request locale so the async completion summary matches this language.
+        assertThat(event.locale()).isEqualTo("en");
 
         // ...and the template library is not touched.
         verifyNoInteractions(templateRepository);

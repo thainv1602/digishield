@@ -12,6 +12,7 @@ import com.digishield.interception.domain.RiskLevel;
 import com.digishield.interception.domain.WatchType;
 import com.digishield.interception.infrastructure.AccountWatchEntryRepository;
 import com.digishield.interception.infrastructure.InterventionEventRepository;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -37,11 +38,14 @@ public class InterceptionServiceImpl implements InterceptionService {
 
     private final AccountWatchEntryRepository watchRepository;
     private final InterventionEventRepository eventRepository;
+    private final Messages messages;
 
     public InterceptionServiceImpl(AccountWatchEntryRepository watchRepository,
-                                  InterventionEventRepository eventRepository) {
+                                  InterventionEventRepository eventRepository,
+                                  Messages messages) {
         this.watchRepository = watchRepository;
         this.eventRepository = eventRepository;
+        this.messages = messages;
     }
 
     @Override
@@ -66,15 +70,13 @@ public class InterceptionServiceImpl implements InterceptionService {
         String message;
         if (request.onCall() && request.newPayee() && watchlistHit) {
             decision = Decision.PAUSE;
-            message = "Giao dịch đang được tạm dừng để bảo vệ bạn. Bạn đang chuyển tiền cho người nhận lần đầu "
-                    + "trong khi đang nghe điện thoại, và tài khoản đích nằm trong danh sách cảnh báo lừa đảo. "
-                    + "Hãy gác máy và xác minh trực tiếp trước khi tiếp tục.";
+            message = messages.get("intervention.hold");
         } else if (watchlistHit) {
             decision = Decision.WARN;
-            message = "Cảnh báo: tài khoản đích nằm trong danh sách theo dõi. Hãy kiểm tra kỹ trước khi chuyển.";
+            message = messages.get("intervention.watch");
         } else {
             decision = Decision.ALLOW;
-            message = "Không phát hiện dấu hiệu rủi ro đáng kể.";
+            message = messages.get("intervention.clear");
         }
 
         // Record the intervention event.

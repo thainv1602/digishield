@@ -1,11 +1,13 @@
 package com.digishield;
 
+import java.util.Locale;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.modulith.Modulithic;
 
 /**
@@ -21,6 +23,10 @@ import org.springframework.modulith.Modulithic;
 public class DigishieldApplication {
 
     public static void main(String[] args) {
+        // Vietnamese is the product's default language: pin it as the fallback for
+        // threads with no request locale (async event listeners, scheduled jobs) so
+        // backend-produced text doesn't drift to the JVM's default locale.
+        LocaleContextHolder.setDefaultLocale(Locale.forLanguageTag("vi"));
         SpringApplication.run(DigishieldApplication.class, args);
     }
 

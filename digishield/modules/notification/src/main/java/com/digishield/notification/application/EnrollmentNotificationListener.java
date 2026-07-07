@@ -1,6 +1,7 @@
 package com.digishield.notification.application;
 
 import com.digishield.contracts.events.EnrollmentAssignedEvent;
+import com.digishield.shared.tenantcontext.Messages;
 import java.util.UUID;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
@@ -13,9 +14,11 @@ import org.springframework.stereotype.Component;
 public class EnrollmentNotificationListener {
 
     private final NotificationServiceImpl notificationService;
+    private final Messages messages;
 
-    public EnrollmentNotificationListener(NotificationServiceImpl notificationService) {
+    public EnrollmentNotificationListener(NotificationServiceImpl notificationService, Messages messages) {
         this.notificationService = notificationService;
+        this.messages = messages;
     }
 
     @ApplicationModuleListener
@@ -25,7 +28,7 @@ public class EnrollmentNotificationListener {
         notificationService.createReminderForTenant(
                 tenantId,
                 event.userId(),
-                "Bạn có khoá học mới",
-                "Bạn vừa được gán khoá học " + event.courseId() + ". Hãy hoàn thành sớm nhé!");
+                messages.get("notification.enrollment.title"),
+                messages.get("notification.enrollment.body", event.courseId()));
     }
 }

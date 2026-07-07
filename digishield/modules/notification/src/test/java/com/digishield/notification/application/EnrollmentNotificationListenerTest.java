@@ -1,6 +1,7 @@
 package com.digishield.notification.application;
 
 import com.digishield.contracts.events.EnrollmentAssignedEvent;
+import com.digishield.shared.tenantcontext.Messages;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -12,8 +13,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link EnrollmentNotificationListener}.
@@ -26,6 +29,9 @@ class EnrollmentNotificationListenerTest {
 
     @Mock
     private NotificationServiceImpl notificationService;
+
+    @Mock
+    private Messages messages;
 
     @InjectMocks
     private EnrollmentNotificationListener listener;
@@ -41,11 +47,14 @@ class EnrollmentNotificationListenerTest {
         UUID courseId = UUID.randomUUID();
         EnrollmentAssignedEvent event =
                 new EnrollmentAssignedEvent(tenantId, userId, courseId);
+        when(messages.get("notification.enrollment.title")).thenReturn("Bạn có khoá học mới");
+        when(messages.get(eq("notification.enrollment.body"), any()))
+                .thenReturn("Bạn vừa được gán khoá học " + courseId + ". Hãy hoàn thành sớm nhé!");
 
         // Act
         listener.on(event);
 
-        // Assert
+        // Assert: the listener localizes the title/body via Messages and delegates
         verify(notificationService).createReminderForTenant(
                 eq(tenantId), eq(userId), eq("Bạn có khoá học mới"), bodyCaptor.capture());
         assertThat(bodyCaptor.getValue()).contains(courseId.toString());

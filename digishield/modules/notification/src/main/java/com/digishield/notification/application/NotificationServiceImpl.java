@@ -11,6 +11,7 @@ import com.digishield.notification.domain.NotificationChannel;
 import com.digishield.notification.domain.NotificationStatus;
 import com.digishield.notification.domain.NotificationType;
 import com.digishield.notification.infrastructure.NotificationRepository;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,17 +46,20 @@ public class NotificationServiceImpl implements NotificationService {
     private final RecipientResolver recipients;
     private final UserDirectory userDirectory;
     private final RealtimeNotifier realtime;
+    private final Messages messages;
 
     public NotificationServiceImpl(NotificationRepository repository,
                                    NotificationGateway gateway,
                                    RecipientResolver recipients,
                                    UserDirectory userDirectory,
-                                   RealtimeNotifier realtime) {
+                                   RealtimeNotifier realtime,
+                                   Messages messages) {
         this.repository = repository;
         this.gateway = gateway;
         this.recipients = recipients;
         this.userDirectory = userDirectory;
         this.realtime = realtime;
+        this.messages = messages;
     }
 
     @Override
@@ -173,9 +177,9 @@ public class NotificationServiceImpl implements NotificationService {
         Instant dueAt = resolveDueAt(dueRule);
         Set<UUID> recipients = resolveRecipients(tenantId, targetFilter);
 
-        String title = "Nhắc hoàn thành đào tạo bắt buộc";
-        String body = "Bạn có khoá đào tạo bắt buộc cần hoàn thành (quy tắc: "
-                + (dueRule != null && !dueRule.isBlank() ? dueRule : "before_due") + ").";
+        String rule = (dueRule != null && !dueRule.isBlank()) ? dueRule : "before_due";
+        String title = messages.get("notification.reminder.title");
+        String body = messages.get("notification.reminder.body", rule);
 
         List<Notification> scheduled = new ArrayList<>(recipients.size());
         for (UUID userId : recipients) {

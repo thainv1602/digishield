@@ -15,6 +15,7 @@ import com.digishield.analytics.infrastructure.RiskScoreRepository;
 import com.digishield.analytics.infrastructure.RiskSignalRepository;
 import com.digishield.contracts.events.RiskRecomputedEvent;
 import com.digishield.shared.messaging.EventPublisher;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,17 +51,20 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final DepartmentRiskRepository departmentRiskRepository;
     private final RiskSignalRepository riskSignalRepository;
     private final EventPublisher eventPublisher;
+    private final Messages messages;
     private final RecentReportsProvider recentReportsProvider;
 
     public AnalyticsServiceImpl(RiskScoreRepository riskScoreRepository,
                                 DepartmentRiskRepository departmentRiskRepository,
                                 RiskSignalRepository riskSignalRepository,
                                 EventPublisher eventPublisher,
+                                Messages messages,
                                 RecentReportsProvider recentReportsProvider) {
         this.riskScoreRepository = riskScoreRepository;
         this.departmentRiskRepository = departmentRiskRepository;
         this.riskSignalRepository = riskSignalRepository;
         this.eventPublisher = eventPublisher;
+        this.messages = messages;
         this.recentReportsProvider = recentReportsProvider;
     }
 
@@ -159,9 +163,9 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .toList();
 
         List<DashboardDto.Benchmark> benchmarks = List.of(
-                new DashboardDto.Benchmark("Cơ quan ABC (bạn)", orgPhishProne, true),
-                new DashboardDto.Benchmark("TB cơ quan nhà nước", INDUSTRY_AVG_PHISH_PRONE_PCT, false),
-                new DashboardDto.Benchmark("TB ngành tài chính", 14.8, false));
+                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.org"), orgPhishProne, true),
+                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.govAvg"), INDUSTRY_AVG_PHISH_PRONE_PCT, false),
+                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.financeAvg"), 14.8, false));
 
         List<DashboardDto.TrendPoint> trend = orgRiskTrend(tenantId);
 

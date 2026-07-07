@@ -56,6 +56,9 @@ class AnalyticsServiceImplTest {
     private EventPublisher eventPublisher;
 
     @Mock
+    private com.digishield.shared.tenantcontext.Messages messages;
+
+    @Mock
     private RecentReportsProvider recentReportsProvider;
 
     @InjectMocks

@@ -2,6 +2,20 @@ spring:
   application:
     name: digishield
 
+  # Backend-produced user-facing text (notifications, AIDA summaries, intervention
+  # messages, dashboard labels) is resolved from classpath:messages[_locale].properties
+  # (shipped by shared:tenant-context). Vietnamese is the default/fallback bundle.
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+
+  # Resolve the request locale from Accept-Language (the frontend sends its current
+  # language), defaulting to Vietnamese when the header is absent.
+  web:
+    locale: vi
+    locale-resolver: accept-header
+
   # Virtual threads (Java 21+ / Loom) for high-concurrency I/O.
   threads:
     virtual:

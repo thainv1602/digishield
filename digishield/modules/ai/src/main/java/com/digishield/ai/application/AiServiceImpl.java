@@ -17,11 +17,13 @@ import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.ai.infrastructure.AiTemplateRepository;
 import com.digishield.contracts.events.AidaOrchestrationRequestedEvent;
 import com.digishield.shared.messaging.EventPublisher;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,17 +49,20 @@ public class AiServiceImpl implements AiService {
     private final AidaRunRepository aidaRunRepository;
     private final AiClient aiClient;
     private final EventPublisher eventPublisher;
+    private final Messages messages;
     private final ObjectMapper objectMapper;
 
     public AiServiceImpl(AiTemplateRepository templateRepository,
                          AidaRunRepository aidaRunRepository,
                          AiClient aiClient,
                          EventPublisher eventPublisher,
+                         Messages messages,
                          ObjectMapper objectMapper) {
         this.templateRepository = templateRepository;
         this.aidaRunRepository = aidaRunRepository;
         this.aiClient = aiClient;
         this.eventPublisher = eventPublisher;
+        this.messages = messages;
         this.objectMapper = objectMapper;
     }
 
@@ -101,11 +106,15 @@ public class AiServiceImpl implements AiService {
         UUID tenantId = TenantContext.requireUuid();
         String safeScope = (scope == null || scope.isBlank()) ? "org" : scope.trim();
         UUID runId = UUID.randomUUID();
+        // Capture the caller's request locale so the asynchronous completion summary
+        // (written on an event-listener thread with no request context) is localized in
+        // the same language as this "running" summary rather than the default fallback.
+        String locale = LocaleContextHolder.getLocale().toLanguageTag();
         aidaRunRepository.save(new AidaRun(
                 runId, tenantId, safeScope, scopeId, "running",
-                "Đang tính lại rủi ro và tự động đăng ký cho phạm vi \"" + safeScope + "\"…",
+                messages.get("aida.summary.running", safeScope),
                 Instant.now()));
-        eventPublisher.publish(new AidaOrchestrationRequestedEvent(tenantId, runId, safeScope, scopeId));
+        eventPublisher.publish(new AidaOrchestrationRequestedEvent(tenantId, runId, safeScope, scopeId, locale));
         LOG.info("AIDA orchestration started run={} tenant={} scope={} scopeId={}",
                 runId, tenantId, safeScope, scopeId);
     }

@@ -9,6 +9,7 @@ import com.digishield.interception.domain.RiskLevel;
 import com.digishield.interception.domain.WatchType;
 import com.digishield.interception.infrastructure.AccountWatchEntryRepository;
 import com.digishield.interception.infrastructure.InterventionEventRepository;
+import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,6 +51,9 @@ class InterceptionServiceImplTest {
     @Mock
     private InterventionEventRepository eventRepository;
 
+    @Mock
+    private Messages messages;
+
     @InjectMocks
     private InterceptionServiceImpl interceptionService;
 
@@ -60,6 +65,9 @@ class InterceptionServiceImplTest {
         TenantContext.set(TENANT_ID.toString());
         lenient().when(eventRepository.save(any(InterventionEvent.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
+        // Localized decision message: return the key as its text so assertions on
+        // message() (non-blank) hold without loading the real bundle.
+        lenient().when(messages.get(anyString())).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @AfterEach

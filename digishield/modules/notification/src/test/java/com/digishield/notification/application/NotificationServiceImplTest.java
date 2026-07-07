@@ -59,6 +59,9 @@ class NotificationServiceImplTest {
     @Mock
     private RealtimeNotifier realtime;
 
+    @Mock
+    private com.digishield.shared.tenantcontext.Messages messages;
+
     @InjectMocks
     private NotificationServiceImpl notificationService;
 

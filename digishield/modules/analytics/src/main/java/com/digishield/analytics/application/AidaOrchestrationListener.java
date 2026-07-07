@@ -68,7 +68,7 @@ class AidaOrchestrationListener {
             TenantContext.clear();
         }
         eventPublisher.publish(
-                new AidaOrchestrationCompletedEvent(tenantId, event.runId(), evaluated, enrolled));
+                new AidaOrchestrationCompletedEvent(tenantId, event.runId(), evaluated, enrolled, event.locale()));
         LOG.info("AIDA analytics run={} scope={} evaluated={} atRisk={}",
                 event.runId(), event.scope(), evaluated, enrolled);
     }
