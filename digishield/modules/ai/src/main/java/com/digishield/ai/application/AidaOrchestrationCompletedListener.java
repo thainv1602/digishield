@@ -5,8 +5,10 @@ import com.digishield.ai.infrastructure.AidaRunRepository;
 import com.digishield.contracts.events.AidaOrchestrationCompletedEvent;
 import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
+import java.util.Locale;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +37,10 @@ class AidaOrchestrationCompletedListener {
     @ApplicationModuleListener
     void on(AidaOrchestrationCompletedEvent event) {
         TenantContext.set(event.tenantId().toString());
+        // This runs on an async listener thread with no request locale, so restore the
+        // triggering request's language (carried on the event) before resolving the summary;
+        // otherwise it would drift to the default locale and mismatch the "running" summary.
+        applyLocale(event.locale());
         try {
             AidaRun run = aidaRunRepository.findById(event.runId()).orElse(null);
             if (run == null) {
@@ -49,7 +55,17 @@ class AidaOrchestrationCompletedListener {
             LOG.info("AIDA run={} completed: evaluated={} enrolled={}",
                     event.runId(), event.usersEvaluated(), event.usersEnrolled());
         } finally {
+            // Clear the locale too: the listener thread is pooled and would otherwise leak
+            // this locale into the next, unrelated task.
+            LocaleContextHolder.resetLocaleContext();
             TenantContext.clear();
         }
+    }
+
+    private static void applyLocale(String languageTag) {
+        if (languageTag == null || languageTag.isBlank()) {
+            return;
+        }
+        LocaleContextHolder.setLocale(Locale.forLanguageTag(languageTag));
     }
 }

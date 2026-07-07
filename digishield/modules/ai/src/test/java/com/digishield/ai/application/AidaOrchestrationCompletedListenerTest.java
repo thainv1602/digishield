@@ -63,7 +63,7 @@ class AidaOrchestrationCompletedListenerTest {
         ArgumentCaptor<AidaRun> captor = ArgumentCaptor.forClass(AidaRun.class);
 
         // Act
-        listener.on(new AidaOrchestrationCompletedEvent(tenantId, runId, 5, 2));
+        listener.on(new AidaOrchestrationCompletedEvent(tenantId, runId, 5, 2, "vi"));
 
         // Assert: flipped to success with a summary carrying the counts, context cleared.
         verify(aidaRunRepository).save(captor.capture());
@@ -74,13 +74,32 @@ class AidaOrchestrationCompletedListenerTest {
     }
 
     @Test
+    void on_englishLocale_writesEnglishSummary() {
+        // Arrange: the run was triggered by an English request, carried on the event.
+        UUID tenantId = UUID.randomUUID();
+        UUID runId = UUID.randomUUID();
+        AidaRun run = new AidaRun(runId, tenantId, "org", null, "running", "…", Instant.now());
+        when(aidaRunRepository.findById(runId)).thenReturn(Optional.of(run));
+
+        // Act
+        listener.on(new AidaOrchestrationCompletedEvent(tenantId, runId, 5, 2, "en"));
+
+        // Assert: the summary resolves in English (matching the trigger), not the default VI,
+        // and the listener does not leak the locale onto its pooled thread.
+        assertThat(run.getStatus()).isEqualTo("success");
+        assertThat(run.getSummary()).contains("Recomputed risk").contains("5").contains("2");
+        // The event's "en" locale must not leak onto this pooled listener thread.
+        assertThat(LocaleContextHolder.getLocale()).isNotEqualTo(Locale.forLanguageTag("en"));
+    }
+
+    @Test
     void on_zeroUsers_writesNoUsersSummary() {
         UUID tenantId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
         AidaRun run = new AidaRun(runId, tenantId, "org", null, "running", "…", Instant.now());
         when(aidaRunRepository.findById(runId)).thenReturn(Optional.of(run));
 
-        listener.on(new AidaOrchestrationCompletedEvent(tenantId, runId, 0, 0));
+        listener.on(new AidaOrchestrationCompletedEvent(tenantId, runId, 0, 0, "vi"));
 
         assertThat(run.getStatus()).isEqualTo("success");
         assertThat(run.getSummary()).contains("Không có người dùng");
@@ -91,7 +110,7 @@ class AidaOrchestrationCompletedListenerTest {
         UUID runId = UUID.randomUUID();
         when(aidaRunRepository.findById(runId)).thenReturn(Optional.empty());
 
-        listener.on(new AidaOrchestrationCompletedEvent(UUID.randomUUID(), runId, 3, 1));
+        listener.on(new AidaOrchestrationCompletedEvent(UUID.randomUUID(), runId, 3, 1, "en"));
 
         verify(aidaRunRepository, never()).save(org.mockito.ArgumentMatchers.any());
     }

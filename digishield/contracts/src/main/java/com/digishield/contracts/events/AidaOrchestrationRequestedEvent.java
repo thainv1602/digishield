@@ -12,6 +12,11 @@ import java.util.UUID;
  * @param runId    id of the {@code AidaRun} record to finalise when the run completes
  * @param scope    target scope, e.g. {@code "org"}, {@code "user"} or a department key
  * @param scopeId  optional id the scope refers to (e.g. a user id for scope {@code "user"})
+ * @param locale   BCP 47 language tag of the request that triggered the run (e.g.
+ *                 {@code "en"}, {@code "vi"}), carried so the asynchronous completion
+ *                 summary can be localized in the same language as the trigger; may be
+ *                 {@code null} to fall back to the default locale
  */
-public record AidaOrchestrationRequestedEvent(UUID tenantId, UUID runId, String scope, UUID scopeId) {
+public record AidaOrchestrationRequestedEvent(UUID tenantId, UUID runId, String scope, UUID scopeId,
+                                              String locale) {
 }

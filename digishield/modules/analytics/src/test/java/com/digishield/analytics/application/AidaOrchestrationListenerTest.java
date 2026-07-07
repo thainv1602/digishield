@@ -57,13 +57,13 @@ class AidaOrchestrationListenerTest {
                 .thenReturn(scoreOf(tenantId, safe, AidaOrchestrationListener.AT_RISK_THRESHOLD - 1));
 
         // Act
-        listener.on(new AidaOrchestrationRequestedEvent(tenantId, runId, "org", null));
+        listener.on(new AidaOrchestrationRequestedEvent(tenantId, runId, "org", null, "en"));
 
         // Assert: only the at-risk user is sent for remediation...
         verify(eventPublisher).publish(new RemediationEnrollmentRequestedEvent(tenantId, atRisk, runId));
         verify(eventPublisher, never()).publish(new RemediationEnrollmentRequestedEvent(tenantId, safe, runId));
-        // ...and the run completes with real evaluated/enrolled counts.
-        verify(eventPublisher).publish(new AidaOrchestrationCompletedEvent(tenantId, runId, 2, 1));
+        // ...and the run completes with real evaluated/enrolled counts, carrying the trigger locale.
+        verify(eventPublisher).publish(new AidaOrchestrationCompletedEvent(tenantId, runId, 2, 1, "en"));
         assertThat(TenantContext.get()).isNull();
     }
 
@@ -76,11 +76,12 @@ class AidaOrchestrationListenerTest {
         when(analyticsService.recomputeRisk(userId)).thenReturn(scoreOf(tenantId, userId, 10));
 
         // Act
-        listener.on(new AidaOrchestrationRequestedEvent(tenantId, runId, "user", userId));
+        listener.on(new AidaOrchestrationRequestedEvent(tenantId, runId, "user", userId, null));
 
         // Assert: no tenant-wide lookup, single evaluation, nobody enrolled.
         verify(riskScoreRepository, never()).findDistinctScopeIds(tenantId, RiskScope.USER);
         verify(analyticsService).recomputeRisk(userId);
-        verify(eventPublisher).publish(new AidaOrchestrationCompletedEvent(tenantId, runId, 1, 0));
+        // A null trigger locale is propagated as-is (the completion listener falls back to default).
+        verify(eventPublisher).publish(new AidaOrchestrationCompletedEvent(tenantId, runId, 1, 0, null));
     }
 }
