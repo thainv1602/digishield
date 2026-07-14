@@ -1,0 +1,13 @@
+{
+  "name": "digishield-api-tests",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API automation (Newman) for DigiShield - smoke + input negatives.",
+  "scripts": {
+    "test:api": "newman run digishield.postman_collection.json -e dev-local.postman_environment.json --reporters cli,htmlextra --reporter-htmlextra-export reports/api-report.html"
+  },
+  "devDependencies": {
+    "newman": "^6.2.1",
+    "newman-reporter-htmlextra": "^1.23.1"
+  }
+}

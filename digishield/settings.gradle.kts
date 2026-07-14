@@ -17,4 +17,5 @@ include(
     ":modules:notification",
     ":modules:ai",
     ":modules:interception",
+    ":e2e",
 )
