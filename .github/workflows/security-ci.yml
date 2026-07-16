@@ -1,0 +1,192 @@
+# Security CI (DevSecOps): secret scan, SAST, SCA/IaC and DAST.
+# Findings upload as SARIF to the "Security -> Code scanning" tab.
+
+name: security-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: "0 2 * * 1" # weekly deep scan (catches newly-disclosed CVEs)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  secret-scan:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # scan the whole history
+
+      - name: Install Gitleaks
+        run: |
+          VERSION=8.21.2
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks
+        run: gitleaks detect --source . --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none # analyse source without compiling the Java 25 toolchain
+          queries: security-extended
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  semgrep:
+    name: Semgrep (SAST)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep:1.90.0
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: semgrep scan --config p/java --config p/spring --config p/security-audit --config p/secrets --sarif --output semgrep.sarif --metrics off
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  trivy:
+    name: Trivy (SCA + IaC)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Trivy filesystem (dependencies)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-deps.sarif
+
+      - name: Trivy config (IaC)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          format: sarif
+          output: trivy-iac.sarif
+
+      - name: Upload dependency SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-deps.sarif
+          category: trivy-deps
+
+      - name: Upload IaC SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-iac.sarif
+          category: trivy-iac
+
+  dast-zap:
+    name: DAST (OWASP ZAP baseline)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' # heavy: boots the app
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Boot the app (prod-like compose)
+        working-directory: digishield
+        run: |
+          docker compose -f deploy/compose/docker-compose.prodlike.yml up -d --build
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/actuator/health/readiness >/dev/null 2>&1; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::API did not become healthy in time."
+          docker compose -f deploy/compose/docker-compose.prodlike.yml logs --tail=200
+          exit 1
+
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: "http://localhost:8080"
+          rules_file_name: digishield/config/zap/rules.tsv
+          cmd_options: "-a -j -T 5"
+          fail_action: true
+
+      - name: Tear down
+        if: always()
+        working-directory: digishield
+        run: docker compose -f deploy/compose/docker-compose.prodlike.yml down -v
+
+  # Stable required-status gate: fails only if a scan actually failed
+  # (a skipped DAST on PRs still passes).
+  security-ci:
+    name: Security CI
+    needs: [secret-scan, codeql, semgrep, trivy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify security jobs
+        run: |
+          for r in "${{ needs.secret-scan.result }}" "${{ needs.codeql.result }}" "${{ needs.semgrep.result }}" "${{ needs.trivy.result }}"; do
+            case "$r" in
+              failure|cancelled) echo "::error::A security scan did not pass ($r)."; exit 1 ;;
+            esac
+          done
+          echo "Security CI gate passed."
