@@ -6,7 +6,7 @@ image:
   repository: ghcr.io/thainv1602/digishield/app
   # jetson-image-tag — rewritten by the cd.yml deploy-jetson job on each main build.
   tag: "latest"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 # The GHCR package must be public, or create this pull secret on the cluster:
 #   kubectl -n digishield create secret docker-registry ghcr-pull ...
@@ -70,6 +70,12 @@ externalSecrets:
 
 auth:
   issuerUri: "" # LAN-only for now; set when wiring Cognito/OIDC
+
+# Public tunnels terminate TLS before Traefik, so the API sees http while the
+# browser Origin is https — no longer same-origin. Allow the tunnel hostnames
+# (patterns: the trycloudflare subdomain changes on every cloudflared restart).
+cors:
+  origins: "http://localhost:5173,https://*.ts.net,https://*.trycloudflare.com"
 
 ai:
   claude:

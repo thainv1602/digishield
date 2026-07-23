@@ -116,6 +116,12 @@ flyway:
 auth:
   issuerUri: ""
 
+# Comma-separated browser origins (Spring origin *patterns*, so wildcards like
+# https://*.trycloudflare.com work) accepted by the API in addition to its
+# same-origin default. Empty = application.yml default (Vite dev server).
+cors:
+  origins: ""
+
 service:
   type: ClusterIP
   port: 80

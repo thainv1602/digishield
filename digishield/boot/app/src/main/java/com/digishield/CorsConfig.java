@@ -37,7 +37,11 @@ public class CorsConfig {
     @Primary
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(allowedOrigins);
+        // Patterns, not plain origins: entries may use wildcards (e.g.
+        // https://*.trycloudflare.com for the Jetson tunnel, whose subdomain
+        // changes on every restart). Exact origins keep working unchanged, and
+        // unlike a literal "*", patterns are allowed with credentials.
+        config.setAllowedOriginPatterns(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         // Allow any request header, plus explicitly the headers the FE sends.
         config.setAllowedHeaders(List.of("*"));
