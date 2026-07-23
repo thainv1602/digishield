@@ -17,6 +17,11 @@ image:
 api:
   # One replica per Jetson; Traefik load-balances across both.
   replicaCount: 2
+  # LAN demo mode (see RUN_PRODLIKE.md): real Postgres + Flyway via pgdemo, and
+  # dev's permissive security + seeded demo users — the in-cluster frontend is
+  # built without Cognito vars and uses the demo login. Switch back to `api` +
+  # auth.issuerUri when wiring real Cognito/OIDC.
+  profile: dev,pgdemo
   resources:
     requests:
       cpu: 250m
@@ -30,6 +35,17 @@ worker:
 
 scheduler:
   replicaCount: 1
+
+# React SPA served in-cluster by nginx; the Ingress sends / here and keeps
+# /api + /actuator on the API. Image built by cd.yml (multi-arch, no Cognito
+# vars → demo login).
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/thainv1602/digishield/frontend
+    tag: latest
+    pullPolicy: Always
 
 # In-cluster infra (deploy/gitops/jetson/infra), same namespace → short DNS names.
 database:
