@@ -19,6 +19,9 @@ spec:
         app.kubernetes.io/name: digishield
         app.kubernetes.io/component: flyway
     spec:
+      # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
+      # would clobber the app's ${REDIS_PORT:...} placeholders.
+      enableServiceLinks: false
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
