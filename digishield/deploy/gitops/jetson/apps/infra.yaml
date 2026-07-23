@@ -1,0 +1,26 @@
+# Backing services (Postgres/Redis/RabbitMQ) as plain manifests. Synced before
+# the app (sync-wave -1) so the database exists when the Flyway hook runs.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: digishield-infra
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/thainv1602/digishield.git
+    targetRevision: main
+    path: digishield/deploy/gitops/jetson/infra
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: digishield
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

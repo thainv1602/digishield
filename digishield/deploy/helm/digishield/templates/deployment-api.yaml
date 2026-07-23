@@ -35,6 +35,7 @@ spec:
           env:
             {{- include "digishield.dbEnv" . | nindent 12 }}
             {{- include "digishield.redisEnv" . | nindent 12 }}
+            {{- include "digishield.rabbitEnv" . | nindent 12 }}
             {{- include "digishield.authEnv" . | nindent 12 }}
           readinessProbe:
             httpGet:

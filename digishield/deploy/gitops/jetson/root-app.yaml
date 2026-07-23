@@ -1,0 +1,24 @@
+# App-of-apps root for the Jetson k3s cluster. Applied ONCE by hand after
+# installing ArgoCD (see JETSON_SETUP.md):
+#   kubectl apply -f digishield/deploy/gitops/jetson/root-app.yaml
+# Everything else (infra + app) is then managed from git by ArgoCD.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: digishield-root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/thainv1602/digishield.git
+    targetRevision: main
+    path: digishield/deploy/gitops/jetson/apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

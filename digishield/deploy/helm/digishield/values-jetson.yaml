@@ -1,0 +1,73 @@
+# Jetson k3s cluster (2x Jetson 8GB, arm64) — deployed by ArgoCD, not `helm install`.
+# The ArgoCD Application (deploy/gitops/jetson/apps/digishield.yaml) points at this file.
+# Images must be multi-arch (linux/arm64) — built by cd.yml on the arm64 runner.
+
+image:
+  repository: ghcr.io/thainv1602/digishield/app
+  # jetson-image-tag — rewritten by the cd.yml deploy-jetson job on each main build.
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+# The GHCR package must be public, or create this pull secret on the cluster:
+#   kubectl -n digishield create secret docker-registry ghcr-pull ...
+# and uncomment:
+# imagePullSecrets:
+#   - name: ghcr-pull
+
+api:
+  # One replica per Jetson; Traefik load-balances across both.
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+
+worker:
+  replicaCount: 1
+
+scheduler:
+  replicaCount: 1
+
+# In-cluster infra (deploy/gitops/jetson/infra), same namespace → short DNS names.
+database:
+  url: jdbc:postgresql://postgres:5432/digishield
+  username: digishield
+  existingSecret: digishield-db
+  passwordKey: password
+
+redis:
+  host: redis
+  port: 6379
+  tls: false
+  existingSecret: ""
+
+rabbitmq:
+  host: rabbitmq
+  port: 5672
+  existingSecret: digishield-rabbit
+
+externalSecrets:
+  enabled: false # secrets are created manually on the cluster (see JETSON_SETUP.md)
+
+auth:
+  issuerUri: "" # LAN-only for now; set when wiring Cognito/OIDC
+
+ai:
+  claude:
+    enabled: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+# k3s ships Traefik bound to :80/:443 on every node → API reachable at
+# http://<any-jetson-ip>/. Root path so /actuator/* is also reachable in the LAN.
+ingress:
+  enabled: true
+  className: traefik
+  path: /
+  host: ""
+  annotations: {}
