@@ -1,0 +1,49 @@
+{{- if .Values.frontend.enabled }}
+# Static React bundle served by nginx. Only used on self-hosted clusters
+# (Jetson); on AWS the frontend lives on S3 + CloudFront instead.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    app.kubernetes.io/name: digishield
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: digishield
+      app.kubernetes.io/component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: digishield
+        app.kubernetes.io/component: frontend
+    spec:
+      enableServiceLinks: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+{{- end }}
