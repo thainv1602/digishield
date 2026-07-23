@@ -42,6 +42,15 @@ spec:
                 name: {{ .Release.Name }}-api
                 port:
                   number: {{ .Values.service.port }}
+          # Realtime notifications — the WebSocket handshake lives on the API,
+          # not under /api (FE connects to /ws/notifications).
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.service.port }}
           - path: /
             pathType: Prefix
             backend:
