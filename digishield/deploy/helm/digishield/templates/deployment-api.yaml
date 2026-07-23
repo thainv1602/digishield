@@ -40,6 +40,13 @@ spec:
             {{- include "digishield.redisEnv" . | nindent 12 }}
             {{- include "digishield.rabbitEnv" . | nindent 12 }}
             {{- include "digishield.authEnv" . | nindent 12 }}
+            {{- with .Values.cors.origins }}
+            # Browser origins (patterns allowed) the API accepts — needed when
+            # the FE is served from a public hostname (tunnel) while TLS is
+            # terminated upstream, so requests are no longer seen as same-origin.
+            - name: DIGISHIELD_CORS_ALLOWEDORIGINS
+              value: {{ . | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
