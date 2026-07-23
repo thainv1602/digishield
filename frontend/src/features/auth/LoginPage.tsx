@@ -2,39 +2,68 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
-import {
-  PERSONAS,
-  personaToRole,
-  defaultRouteForPersona,
-  type Persona,
-} from '@/app/auth/roles';
+import { roleToPersona, defaultRouteForPersona, type Role } from '@/app/auth/roles';
 import { Logo } from '@/shared/ui';
 import { DEMO_TENANT_ID } from '@/shared/api/tenant';
+import { axiosInstance } from '@/shared/api/client';
 import { cognitoEnabled } from '@/app/auth/cognito';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { AuthScreen, AuthCard, authInputStyle, authLabelStyle } from './authShared';
 
-/** Login — 4-role pill segmented control + email/password + SSO. */
+/** Shape of GET /users rows (snake_case wire format). */
+interface UserRow {
+  id: string;
+  org_id: string;
+  email: string;
+  name: string;
+  role: Role;
+}
+
+/** Login — email/password + SSO; the role comes from the account, not a picker. */
 export default function LoginPage() {
   const navigate = useNavigate();
   const { login, signinRedirect } = useAuth();
   const t = useT();
-  const [persona, setPersona] = useState<Persona>('admin');
   const [email, setEmail] = useState('admin@coquan.gov.vn');
   const [password, setPassword] = useState('demo1234');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function doLogin(e?: FormEvent) {
+  async function doLogin(e?: FormEvent) {
     e?.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      const role = personaToRole(persona);
-      login(
-        { id: 'me', tenantId: DEMO_TENANT_ID, role, email, name: 'Nguyễn Tuấn' },
-        'demo-token',
+    setError(null);
+    try {
+      const { data: tokens } = await axiosInstance.post<{ access_token: string }>(
+        '/auth/login',
+        { email, password },
       );
-      navigate(defaultRouteForPersona(persona));
-    }, 600);
+      // The demo backend issues static tokens without an identity, so resolve
+      // the account (and its role) from the seeded users list by email.
+      const { data: users } = await axiosInstance.get<UserRow[]>('/users');
+      const account = users.find(
+        (u) => u.email?.toLowerCase() === email.trim().toLowerCase(),
+      );
+      if (!account) {
+        setError(t('Không tìm thấy tài khoản với email này.'));
+        return;
+      }
+      login(
+        {
+          id: account.id,
+          tenantId: account.org_id ?? DEMO_TENANT_ID,
+          role: account.role,
+          email: account.email,
+          name: account.name,
+        },
+        tokens.access_token,
+      );
+      navigate(defaultRouteForPersona(roleToPersona(account.role)));
+    } catch {
+      setError(t('Không đăng nhập được — máy chủ chưa sẵn sàng, thử lại sau.'));
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Deployed build: delegate auth to the Cognito hosted UI (OIDC code + PKCE).
@@ -106,57 +135,7 @@ export default function LoginPage() {
             }}
           >
             <Users size={14} strokeWidth={2} />
-            {t('Chọn vai trò để đăng nhập')}
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--color-muted)',
-                letterSpacing: '.08em',
-                textTransform: 'uppercase',
-                marginBottom: 8,
-              }}
-            >
-              {t('Vai trò')}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                background: 'var(--color-bg-auth)',
-                borderRadius: 9,
-                padding: 3,
-                gap: 2,
-              }}
-            >
-              {PERSONAS.map((p) => {
-                const active = p.id === persona;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPersona(p.id)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 2px',
-                      textAlign: 'center',
-                      borderRadius: 7,
-                      border: 'none',
-                      fontSize: 11.5,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all .15s',
-                      background: active ? 'var(--color-blue)' : 'transparent',
-                      color: active ? '#fff' : 'var(--color-muted)',
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
+            {t('Vai trò lấy theo tài khoản — đăng nhập bằng email demo đã seed.')}
           </div>
 
           <form onSubmit={doLogin}>
@@ -203,6 +182,22 @@ export default function LoginPage() {
               />
             </div>
 
+            {error && (
+              <div
+                style={{
+                  marginBottom: 14,
+                  padding: '9px 12px',
+                  borderRadius: 8,
+                  background: 'var(--tint-red-soft, rgba(220,38,38,.08))',
+                  border: '1px solid rgba(220,38,38,.25)',
+                  fontSize: 12.5,
+                  color: 'var(--color-red, #dc2626)',
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={submitting}
@@ -242,6 +237,48 @@ export default function LoginPage() {
           >
             {t('Đăng nhập bằng SSO (Entra ID / Google Workspace)')}
           </button>
+
+          <div style={{ marginTop: 18 }}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: 'var(--color-muted)',
+                letterSpacing: '.08em',
+                textTransform: 'uppercase',
+                marginBottom: 8,
+              }}
+            >
+              {t('Tài khoản demo (mật khẩu bất kỳ)')}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {[
+                'admin@coquan.gov.vn',
+                'manager@coquan.gov.vn',
+                'editor@coquan.gov.vn',
+                'analyst@coquan.gov.vn',
+                'learner@coquan.gov.vn',
+                'superadmin@digishield.vn',
+              ].map((demoEmail) => (
+                <button
+                  key={demoEmail}
+                  type="button"
+                  onClick={() => setEmail(demoEmail)}
+                  style={{
+                    border: '1px solid var(--color-input-border)',
+                    background: email === demoEmail ? 'var(--tint-blue-soft)' : 'transparent',
+                    borderRadius: 999,
+                    padding: '4px 10px',
+                    fontSize: 11.5,
+                    color: 'var(--color-text-soft)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {demoEmail}
+                </button>
+              ))}
+            </div>
+          </div>
         </AuthCard>
 
         <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--color-muted)' }}>
