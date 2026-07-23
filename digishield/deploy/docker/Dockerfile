@@ -24,8 +24,10 @@ RUN cp "$(ls boot/app/build/libs/*.jar | head -n 1)" /workspace/app.jar
 FROM eclipse-temurin:25-jre AS runtime
 WORKDIR /app
 
-# Non-root user.
-RUN useradd -r -u 1001 -g root digishield
+# Non-root user. Also drop pebble (Canonical's service manager, unused here) —
+# its Go deps carry fixable HIGH CVEs that trip the Trivy image gate.
+RUN useradd -r -u 1001 -g root digishield \
+    && rm -f /usr/bin/pebble
 
 # Layered jar - copied as a single artifact, run with java -jar.
 COPY --from=build /workspace/app.jar app.jar
