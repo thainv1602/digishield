@@ -1,0 +1,28 @@
+# DigiShield app — the existing Helm chart rendered with the Jetson values.
+# Image tag rolls forward via git: cd.yml rewrites the jetson-image-tag line in
+# values-jetson.yaml, ArgoCD picks the commit up and syncs.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: digishield
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/thainv1602/digishield.git
+    targetRevision: main
+    path: digishield/deploy/helm/digishield
+    helm:
+      valueFiles:
+        - values-jetson.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: digishield
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

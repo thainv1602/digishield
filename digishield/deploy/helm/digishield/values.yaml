@@ -67,6 +67,16 @@ redis:
   existingSecret: ""
   passwordKey: auth-token
 
+rabbitmq:
+  # In-cluster broker host (e.g. "rabbitmq" on k3s/on-prem). Empty = no
+  # SPRING_RABBITMQ_* env is injected and the app falls back to its defaults.
+  host: ""
+  port: 5672
+  # Secret holding the broker credentials; empty = connect without SPRING_RABBITMQ_USERNAME/PASSWORD.
+  existingSecret: ""
+  usernameKey: username
+  passwordKey: password
+
 # External Secrets Operator: pull DB/Redis credentials from AWS Secrets Manager
 # into the Secrets the workloads reference. Disabled by default (local/on-prem
 # create the Secrets manually); enabled in values-dev.yaml / values-prod.yaml.

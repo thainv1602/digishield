@@ -20,6 +20,30 @@
 {{- end }}
 {{- end -}}
 
+{{/* RabbitMQ env — shared by api/worker/scheduler. Only rendered when a host is
+     configured (in-cluster broker on k3s/on-prem); credentials come from a
+     Secret when one is set. */}}
+{{- define "digishield.rabbitEnv" -}}
+{{- if .Values.rabbitmq.host }}
+- name: SPRING_RABBITMQ_HOST
+  value: {{ .Values.rabbitmq.host | quote }}
+- name: SPRING_RABBITMQ_PORT
+  value: {{ .Values.rabbitmq.port | quote }}
+{{- if .Values.rabbitmq.existingSecret }}
+- name: SPRING_RABBITMQ_USERNAME
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.rabbitmq.existingSecret }}
+      key: {{ .Values.rabbitmq.usernameKey }}
+- name: SPRING_RABBITMQ_PASSWORD
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.rabbitmq.existingSecret }}
+      key: {{ .Values.rabbitmq.passwordKey }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
 {{/* Redis env — shared by api/worker/scheduler (REDIS_PASSWORD only when a secret is set). */}}
 {{- define "digishield.redisEnv" -}}
 - name: REDIS_HOST
