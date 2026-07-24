@@ -2,7 +2,7 @@
 aws_region = "ap-southeast-1"
 
 # Public HTTPS URL of the frontend on the Jetson ingress (exact origin, no wildcard).
-app_url = "https://digishield.duckdns.org"
+app_urls = ["https://ubuntu.tail761165.ts.net", "https://digishield.duckdns.org"]
 
 # Optional overrides:
 # name          = "digishield-jetson"
