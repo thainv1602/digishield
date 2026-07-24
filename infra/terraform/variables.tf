@@ -132,3 +132,9 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "dev_tenant_id" {
+  description = "Fixed tenant UUID injected as the JWT `tid` claim by the Cognito pre-token-generation Lambda. Must match a tenant_id present in the DB (RLS filters on it). Defaults to the seeded demo tenant."
+  type        = string
+  default     = "11111111-1111-1111-1111-111111111111"
+}

@@ -7,4 +7,6 @@ crash.log
 .terraform.tfstate.lock.info
 override.tf
 override.tf.json
+# Build artifacts (e.g. Lambda zips produced by archive_file).
+.build/
 # Keep .terraform.lock.hcl committed for reproducible provider versions.
