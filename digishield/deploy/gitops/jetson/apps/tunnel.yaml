@@ -1,0 +1,22 @@
+# ArgoCD's own Cloudflare Tunnel (see ../tunnel). A separate app so it lives in
+# the argocd namespace, next to the argocd-server it fronts.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudflared-tunnel
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/thainv1602/digishield.git
+    targetRevision: main
+    path: digishield/deploy/gitops/jetson/tunnel
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

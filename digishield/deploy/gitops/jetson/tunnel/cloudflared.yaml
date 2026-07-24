@@ -1,0 +1,49 @@
+# Cloudflare Tunnel for ArgoCD. Gives GitHub a public path to POST webhooks to
+# `/api/webhook` (and gives us remote UI access) WITHOUT opening a port on the
+# home router: cloudflared dials out to Cloudflare and Cloudflare routes the
+# public hostname back down the tunnel.
+#
+# This is a remotely-managed (token) tunnel: the public hostname -> service
+# mapping is configured in the Cloudflare Zero Trust dashboard, not here. Point
+# the hostname (e.g. argocd.<your-domain>) at:
+#     Service type: HTTPS
+#     URL:          argocd-server.argocd.svc.cluster.local:443
+#     TLS -> No TLS Verify: ON   (argocd-server uses a self-signed cert)
+#
+# The tunnel token is a credential and is NOT stored in git. Create it once on
+# the cluster (self-heals this Deployment when it appears):
+#     kubectl -n argocd create secret generic cloudflared-token \
+#       --from-literal=token='<TUNNEL_TOKEN from the dashboard>'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflared
+  namespace: argocd
+  labels:
+    app: cloudflared
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflared
+  template:
+    metadata:
+      labels:
+        app: cloudflared
+    spec:
+      containers:
+        - name: cloudflared
+          image: cloudflare/cloudflared:latest
+          args: ["tunnel", "--no-autoupdate", "run", "--token", "$(TUNNEL_TOKEN)"]
+          env:
+            - name: TUNNEL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cloudflared-token
+                  key: token
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
