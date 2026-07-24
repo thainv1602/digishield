@@ -78,3 +78,19 @@ export function useBroadcastAlert() {
     },
   });
 }
+
+/** POST /notifications/read-all — mark every notification of the tenant as read. */
+export function markAllNotificationsRead(): Promise<{ updated: number }> {
+  return apiRequest<{ updated: number }>({ url: '/notifications/read-all', method: 'POST' });
+}
+
+/** Mutation hook powering the bell's "Đánh dấu đã đọc"; refreshes the list. */
+export function useMarkAllNotificationsRead() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: markAllNotificationsRead,
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.notifications });
+    },
+  });
+}
