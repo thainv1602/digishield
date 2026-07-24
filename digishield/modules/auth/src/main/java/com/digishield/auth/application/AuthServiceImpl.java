@@ -3,6 +3,9 @@ package com.digishield.auth.application;
 import com.digishield.auth.api.AuthProvider;
 import com.digishield.auth.api.AuthService;
 import com.digishield.auth.api.CurrentUser;
+import com.digishield.auth.api.ProfileView;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import com.digishield.auth.api.ImportResult;
 import com.digishield.auth.api.MfaSetupView;
 import com.digishield.auth.api.TokenPair;
@@ -72,6 +75,87 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         return tenantUsers.stream().findFirst().map(this::toView);
+    }
+
+    @Override
+    public ProfileView getMyProfile() {
+        UUID tenantId = TenantContext.requireUuid();
+        Optional<Jwt> jwt = currentJwt();
+        if (jwt.isEmpty()) {
+            // Non-JWT (dev): fall back to the demo current user.
+            return currentUser()
+                    .map(u -> new ProfileView(u.id(), u.tenantId(), u.email(), u.role(), u.name(), null))
+                    .orElse(null);
+        }
+        UUID sub = subjectUuid(jwt.get());
+        Role role = roleFromJwt(jwt.get());
+        if (sub == null) {
+            return new ProfileView(null, tenantId, null, role.wireName(), null, null);
+        }
+        return userRepository.findByTenantIdAndId(tenantId, sub)
+                .map(this::toProfileView)
+                .orElseGet(() -> new ProfileView(sub, tenantId, null, role.wireName(), null, null));
+    }
+
+    @Override
+    @Transactional
+    public ProfileView updateMyProfile(String name, String locale, String email) {
+        UUID tenantId = TenantContext.requireUuid();
+        Jwt jwt = currentJwt().orElseThrow(() -> new IllegalStateException("No authenticated JWT user"));
+        UUID sub = subjectUuid(jwt);
+        if (sub == null) {
+            throw new IllegalStateException("JWT subject is not a UUID");
+        }
+        AppUser user = userRepository.findByTenantIdAndId(tenantId, sub).orElse(null);
+        if (user == null) {
+            // JIT-provision on first save; the frontend supplies the ID-token email.
+            String em = (email != null && !email.isBlank()) ? email.trim() : (sub + "@cognito.local");
+            user = new AppUser(sub, tenantId, em, roleFromJwt(jwt), UserStatus.ACTIVE);
+        } else if (email != null && !email.isBlank()) {
+            user.setEmail(email.trim());
+        }
+        if (name != null) {
+            String n = name.trim();
+            user.setName(n.isEmpty() ? null : n);
+        }
+        if (locale != null && !locale.isBlank()) {
+            user.setLocale(locale.trim());
+        }
+        return toProfileView(userRepository.save(user));
+    }
+
+    private Optional<Jwt> currentJwt() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof Jwt jwt) {
+            return Optional.of(jwt);
+        }
+        return Optional.empty();
+    }
+
+    private static UUID subjectUuid(Jwt jwt) {
+        try {
+            return UUID.fromString(jwt.getSubject());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return null;
+        }
+    }
+
+    private static Role roleFromJwt(Jwt jwt) {
+        List<String> groups = jwt.getClaimAsStringList("cognito:groups");
+        if (groups != null) {
+            for (Role r : List.of(Role.SUPER_ADMIN, Role.ORG_ADMIN, Role.MANAGER,
+                    Role.CONTENT_EDITOR, Role.ANALYST, Role.LEARNER)) {
+                if (groups.contains(r.wireName())) {
+                    return r;
+                }
+            }
+        }
+        return Role.LEARNER;
+    }
+
+    private ProfileView toProfileView(AppUser u) {
+        return new ProfileView(u.getId(), u.getTenantId(), u.getEmail(),
+                u.getRole() != null ? u.getRole().wireName() : null, u.getName(), u.getLocale());
     }
 
     @Override

@@ -31,6 +31,19 @@ public interface AuthService {
     Optional<CurrentUser> findById(UUID userId);
 
     /**
+     * Returns the signed-in user's own profile, keyed by the JWT subject. When no
+     * {@code app_user} row exists yet the identity is derived from the JWT
+     * (name/locale null until first save).
+     */
+    ProfileView getMyProfile();
+
+    /**
+     * Updates the signed-in user's own name and/or UI locale, provisioning an
+     * {@code app_user} row (keyed by the JWT subject) on first save.
+     */
+    ProfileView updateMyProfile(String name, String locale, String email);
+
+    /**
      * Lists users for the current tenant (Users screen).
      */
     List<UserView> listUsers();
