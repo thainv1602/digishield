@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut } from 'lucide-react';
+import { LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import styles from './UserMenu.module.css';
@@ -68,6 +68,18 @@ export function UserMenu() {
               {roleLabel ? <span className={styles.role}>{roleLabel}</span> : null}
             </div>
           </div>
+          <button
+            type="button"
+            className={styles.item}
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              navigate('/profile');
+            }}
+          >
+            <Settings size={15} strokeWidth={2} />
+            {t('Hồ sơ & Cài đặt')}
+          </button>
           <button
             type="button"
             className={styles.logout}

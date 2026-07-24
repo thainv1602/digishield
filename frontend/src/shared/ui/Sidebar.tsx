@@ -65,7 +65,7 @@ export function Sidebar() {
         <button
           type="button"
           className={styles.profile}
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/profile')}
         >
           <span className={styles.avatar} aria-hidden="true">
             {initialsOf(user?.name, user?.email)}

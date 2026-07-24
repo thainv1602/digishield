@@ -2,7 +2,7 @@ import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/shared/ui';
 import { RequireRole } from './auth/RequireRole';
-import { ROLES, defaultRouteForRole, type Role } from './auth/roles';
+import { ROLES, ALL_ROLES, defaultRouteForRole, type Role } from './auth/roles';
 import { useAuth } from './auth/useAuth';
 
 /* ── Auth (owned here) — login delegates to the Cognito hosted UI, which also
@@ -15,6 +15,7 @@ const CampaignWizardPage = lazy(() => import('@/features/campaigns/CampaignWizar
 const CampaignResultsPage = lazy(() => import('@/features/campaigns/CampaignResultsPage'));
 const UsersPage = lazy(() => import('@/features/users/UsersPage'));
 const GroupsPage = lazy(() => import('@/features/groups/GroupsPage'));
+const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
 const CompliancePage = lazy(() => import('@/features/compliance/CompliancePage'));
 const ContentStudioPage = lazy(() => import('@/features/content/ContentStudioPage'));
 const OrgSettingsPage = lazy(() => import('@/features/admin/OrgSettingsPage'));
@@ -109,6 +110,7 @@ export function AppRouter() {
         <Route path="/campaigns/:id" element={guarded(ADMIN, CampaignResultsPage)} />
         <Route path="/users" element={guarded(ADMIN, UsersPage)} />
         <Route path="/groups" element={guarded(ADMIN, GroupsPage)} />
+        <Route path="/profile" element={guarded(ALL_ROLES, ProfilePage)} />
         <Route path="/compliance" element={guarded(ADMIN, CompliancePage)} />
         <Route path="/content/studio" element={guarded(ADMIN, ContentStudioPage)} />
         <Route path="/settings/org" element={guarded(ADMIN, OrgSettingsPage)} />
