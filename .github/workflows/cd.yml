@@ -1,5 +1,5 @@
 # CD: build once, scan/sign the image, then deploy.
-#   build-push -> image-scan -> sign-attest -> deploy-dev -> deploy-prod
+#   build-push -> image-scan -> sign-attest -> deploy-jetson (AWS deploy-dev/prod commented out; Jetson-only)
 # The image is built once (by digest); every environment deploys that exact
 # digest. Production is deferred (cost) and stays OFF unless PROD_DEPLOY_ENABLED.
 
@@ -227,81 +227,81 @@ jobs:
           cosign sign "${{ needs.build-push.outputs.image }}"
           cosign attest --predicate sbom.cdx.json --type cyclonedx "${{ needs.build-push.outputs.image }}"
 
-  deploy-dev:
-    name: Deploy dev
-    needs: [build-push, image-scan, sign-attest]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write # OIDC -> AWS
-    environment:
-      name: dev
-      url: https://digishield.duckdns.org
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      # Set DEPLOY_ENABLED=true (+ the AWS vars/secrets below) to switch from
-      # this placeholder to the real EKS deploy.
-      - name: Deploy (placeholder)
-        if: vars.DEPLOY_ENABLED != 'true'
-        run: echo "[placeholder] would deploy ${{ needs.build-push.outputs.image }} to dev"
-
-      - name: Configure AWS credentials (OIDC)
-        if: vars.DEPLOY_ENABLED == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Set up kubectl & Helm
-        if: vars.DEPLOY_ENABLED == 'true'
-        uses: azure/setup-helm@v4
-
-      - name: Helm deploy to EKS
-        if: vars.DEPLOY_ENABLED == 'true'
-        env:
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-        run: |
-          if [ -z "${GHCR_PULL_TOKEN}" ]; then
-            echo "::error::GHCR_PULL_TOKEN is not set (PAT with read:packages)."; exit 1
-          fi
-          aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION }}"
-          kubectl create namespace digishield-dev --dry-run=client -o yaml | kubectl apply -f -
-          kubectl -n digishield-dev create secret docker-registry ghcr-pull \
-            --docker-server=ghcr.io --docker-username=${{ github.repository_owner }} \
-            --docker-password="${GHCR_PULL_TOKEN}" --dry-run=client -o yaml | kubectl apply -f -
-          # --atomic auto-rolls-back a failed rollout.
-          helm upgrade --install digishield digishield/deploy/helm/digishield \
-            -f digishield/deploy/helm/digishield/values-dev.yaml \
-            --namespace digishield-dev --create-namespace \
-            --set image.repository=ghcr.io/${{ github.repository }}/app \
-            --set image.tag=sha-${{ needs.build-push.outputs.tag }} \
-            --set imagePullSecrets[0].name=ghcr-pull \
-            --atomic --wait --timeout 10m
-
-      - name: Smoke test (internal readiness)
-        if: vars.DEPLOY_ENABLED == 'true'
-        run: |
-          kubectl -n digishield-dev rollout status deploy/digishield-api --timeout=5m
-          kubectl -n digishield-dev run smoke-${GITHUB_RUN_ID} \
-            --rm -i --restart=Never --image=curlimages/curl:8.10.1 --quiet -- \
-            curl -fsS --retry 5 --retry-delay 5 --max-time 10 \
-            http://digishield-api.digishield-dev.svc.cluster.local/actuator/health/readiness
-
-      - name: Smoke test (public ingress)
-        if: vars.DEPLOY_ENABLED == 'true'
-        continue-on-error: true # DNS/NLB can lag
-        run: |
-          curl -fsS --retry 8 --retry-delay 10 --max-time 15 https://digishield.duckdns.org/actuator/health \
-            || echo "::warning::Public ingress smoke test did not pass."
-
-      - name: Rollback on failure
-        if: failure() && vars.DEPLOY_ENABLED == 'true'
-        run: |
-          helm history digishield --namespace digishield-dev || true
-          kubectl -n digishield-dev get pods
-
+#   deploy-dev:
+#     name: Deploy dev
+#     needs: [build-push, image-scan, sign-attest]
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       id-token: write # OIDC -> AWS
+#     environment:
+#       name: dev
+#       url: https://digishield.duckdns.org
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+#
+#       # Set DEPLOY_ENABLED=true (+ the AWS vars/secrets below) to switch from
+#       # this placeholder to the real EKS deploy.
+#       - name: Deploy (placeholder)
+#         if: vars.DEPLOY_ENABLED != 'true'
+#         run: echo "[placeholder] would deploy ${{ needs.build-push.outputs.image }} to dev"
+#
+#       - name: Configure AWS credentials (OIDC)
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
+#
+#       - name: Set up kubectl & Helm
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         uses: azure/setup-helm@v4
+#
+#       - name: Helm deploy to EKS
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         env:
+#           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+#         run: |
+#           if [ -z "${GHCR_PULL_TOKEN}" ]; then
+#             echo "::error::GHCR_PULL_TOKEN is not set (PAT with read:packages)."; exit 1
+#           fi
+#           aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION }}"
+#           kubectl create namespace digishield-dev --dry-run=client -o yaml | kubectl apply -f -
+#           kubectl -n digishield-dev create secret docker-registry ghcr-pull \
+#             --docker-server=ghcr.io --docker-username=${{ github.repository_owner }} \
+#             --docker-password="${GHCR_PULL_TOKEN}" --dry-run=client -o yaml | kubectl apply -f -
+#           # --atomic auto-rolls-back a failed rollout.
+#           helm upgrade --install digishield digishield/deploy/helm/digishield \
+#             -f digishield/deploy/helm/digishield/values-dev.yaml \
+#             --namespace digishield-dev --create-namespace \
+#             --set image.repository=ghcr.io/${{ github.repository }}/app \
+#             --set image.tag=sha-${{ needs.build-push.outputs.tag }} \
+#             --set imagePullSecrets[0].name=ghcr-pull \
+#             --atomic --wait --timeout 10m
+#
+#       - name: Smoke test (internal readiness)
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         run: |
+#           kubectl -n digishield-dev rollout status deploy/digishield-api --timeout=5m
+#           kubectl -n digishield-dev run smoke-${GITHUB_RUN_ID} \
+#             --rm -i --restart=Never --image=curlimages/curl:8.10.1 --quiet -- \
+#             curl -fsS --retry 5 --retry-delay 5 --max-time 10 \
+#             http://digishield-api.digishield-dev.svc.cluster.local/actuator/health/readiness
+#
+#       - name: Smoke test (public ingress)
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         continue-on-error: true # DNS/NLB can lag
+#         run: |
+#           curl -fsS --retry 8 --retry-delay 10 --max-time 15 https://digishield.duckdns.org/actuator/health \
+#             || echo "::warning::Public ingress smoke test did not pass."
+#
+#       - name: Rollback on failure
+#         if: failure() && vars.DEPLOY_ENABLED == 'true'
+#         run: |
+#           helm history digishield --namespace digishield-dev || true
+#           kubectl -n digishield-dev get pods
+#
   # Jetson k3s cluster (GitOps): CI never touches the cluster — it commits the
   # new image tag into values-jetson.yaml and ArgoCD on the cluster pulls and
   # syncs it. [skip ci] keeps the bump commit from re-triggering this workflow.
@@ -332,68 +332,68 @@ jobs:
           git commit -m "chore(gitops): jetson image sha-${{ needs.build-push.outputs.tag }} [skip ci]"
           git push origin main
 
-  # Production is deferred (cost); kept for structure, OFF by default.
-  deploy-prod:
-    name: Deploy production
-    needs: [build-push, image-scan, sign-attest, deploy-dev]
-    if: vars.PROD_DEPLOY_ENABLED == 'true'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-    environment:
-      name: production # required-reviewer gate pauses the run here
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Deploy (placeholder)
-        if: vars.DEPLOY_ENABLED != 'true'
-        run: echo "[placeholder] would deploy ${{ needs.build-push.outputs.image }} to production"
-
-      - name: Configure AWS credentials (OIDC)
-        if: vars.DEPLOY_ENABLED == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-
-      - name: Set up kubectl & Helm
-        if: vars.DEPLOY_ENABLED == 'true'
-        uses: azure/setup-helm@v4
-
-      - name: Helm deploy to EKS
-        if: vars.DEPLOY_ENABLED == 'true'
-        env:
-          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
-        run: |
-          if [ -z "${GHCR_PULL_TOKEN}" ]; then echo "::error::GHCR_PULL_TOKEN is not set."; exit 1; fi
-          aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION }}"
-          kubectl create namespace digishield-prod --dry-run=client -o yaml | kubectl apply -f -
-          kubectl -n digishield-prod create secret docker-registry ghcr-pull \
-            --docker-server=ghcr.io --docker-username=${{ github.repository_owner }} \
-            --docker-password="${GHCR_PULL_TOKEN}" --dry-run=client -o yaml | kubectl apply -f -
-          helm upgrade --install digishield digishield/deploy/helm/digishield \
-            -f digishield/deploy/helm/digishield/values-prod.yaml \
-            --namespace digishield-prod --create-namespace \
-            --set image.repository=ghcr.io/${{ github.repository }}/app \
-            --set image.tag=sha-${{ needs.build-push.outputs.tag }} \
-            --set imagePullSecrets[0].name=ghcr-pull \
-            --atomic --wait --timeout 10m
-
-      - name: Smoke test (internal readiness)
-        if: vars.DEPLOY_ENABLED == 'true'
-        run: |
-          kubectl -n digishield-prod rollout status deploy/digishield-api --timeout=5m
-          kubectl -n digishield-prod run smoke-${GITHUB_RUN_ID} \
-            --rm -i --restart=Never --image=curlimages/curl:8.10.1 --quiet -- \
-            curl -fsS --retry 5 --retry-delay 5 --max-time 10 \
-            http://digishield-api.digishield-prod.svc.cluster.local/actuator/health/readiness
-
-      - name: Rollback on failure
-        if: failure() && vars.DEPLOY_ENABLED == 'true'
-        run: helm history digishield --namespace digishield-prod || true
-
+#   # Production is deferred (cost); kept for structure, OFF by default.
+#   deploy-prod:
+#     name: Deploy production
+#     needs: [build-push, image-scan, sign-attest, deploy-dev]
+#     if: vars.PROD_DEPLOY_ENABLED == 'true'
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       id-token: write
+#     environment:
+#       name: production # required-reviewer gate pauses the run here
+#     steps:
+#       - name: Checkout
+#         uses: actions/checkout@v4
+#
+#       - name: Deploy (placeholder)
+#         if: vars.DEPLOY_ENABLED != 'true'
+#         run: echo "[placeholder] would deploy ${{ needs.build-push.outputs.image }} to production"
+#
+#       - name: Configure AWS credentials (OIDC)
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         uses: aws-actions/configure-aws-credentials@v4
+#         with:
+#           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+#           aws-region: ${{ vars.AWS_REGION }}
+#
+#       - name: Set up kubectl & Helm
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         uses: azure/setup-helm@v4
+#
+#       - name: Helm deploy to EKS
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         env:
+#           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+#         run: |
+#           if [ -z "${GHCR_PULL_TOKEN}" ]; then echo "::error::GHCR_PULL_TOKEN is not set."; exit 1; fi
+#           aws eks update-kubeconfig --name "${{ vars.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION }}"
+#           kubectl create namespace digishield-prod --dry-run=client -o yaml | kubectl apply -f -
+#           kubectl -n digishield-prod create secret docker-registry ghcr-pull \
+#             --docker-server=ghcr.io --docker-username=${{ github.repository_owner }} \
+#             --docker-password="${GHCR_PULL_TOKEN}" --dry-run=client -o yaml | kubectl apply -f -
+#           helm upgrade --install digishield digishield/deploy/helm/digishield \
+#             -f digishield/deploy/helm/digishield/values-prod.yaml \
+#             --namespace digishield-prod --create-namespace \
+#             --set image.repository=ghcr.io/${{ github.repository }}/app \
+#             --set image.tag=sha-${{ needs.build-push.outputs.tag }} \
+#             --set imagePullSecrets[0].name=ghcr-pull \
+#             --atomic --wait --timeout 10m
+#
+#       - name: Smoke test (internal readiness)
+#         if: vars.DEPLOY_ENABLED == 'true'
+#         run: |
+#           kubectl -n digishield-prod rollout status deploy/digishield-api --timeout=5m
+#           kubectl -n digishield-prod run smoke-${GITHUB_RUN_ID} \
+#             --rm -i --restart=Never --image=curlimages/curl:8.10.1 --quiet -- \
+#             curl -fsS --retry 5 --retry-delay 5 --max-time 10 \
+#             http://digishield-api.digishield-prod.svc.cluster.local/actuator/health/readiness
+#
+#       - name: Rollback on failure
+#         if: failure() && vars.DEPLOY_ENABLED == 'true'
+#         run: helm history digishield --namespace digishield-prod || true
+#
   # Frontend image for self-hosted clusters (Jetson): nginx + the React bundle
   # built WITHOUT Cognito vars (demo login). Same native-runner-per-arch shape
   # as the backend build. AWS keeps using S3 + CloudFront (frontend-cd.yml).
