@@ -21,11 +21,13 @@ import org.springframework.stereotype.Component;
  * superusers</em>. To get real isolation, this aspect also issues
  * {@code SET LOCAL ROLE <appRole>} (a NOSUPERUSER / NOBYPASSRLS role created by
  * migration {@code V2026.07.24.001}); within the transaction the effective role
- * is non-privileged, so the {@code tenant_isolation} policies apply. Configurable
- * via {@code digishield.rls.app-role} — set it blank to disable the SET ROLE
- * (e.g. when the app already connects as a non-superuser). Flyway and the seeders
- * do not go through this aspect's SET ROLE at the connection level, so they keep
- * their privileges.
+ * is non-privileged, so the {@code tenant_isolation} policies apply. Controlled
+ * by {@code digishield.rls.app-role}, which is <strong>blank by default</strong>
+ * (no SET ROLE) and set to {@code digishield_app} only in the {@code pgdemo}
+ * profile — the one that connects as the superuser. Deployments that already
+ * connect as a non-superuser (RLS enforced by the connection) and integration
+ * tests leave it blank. Flyway and the seeders do not go through this aspect's
+ * SET ROLE, so they keep their privileges.
  *
  * <p>Disabled in the {@code dev} profile: it issues PostgreSQL-only
  * {@code set_config} calls that the in-memory H2 database does not support.
@@ -44,7 +46,7 @@ public class RlsTenantAspect
     private final String appRole;
 
     public RlsTenantAspect(JdbcTemplate jdbcTemplate,
-                           @Value("${digishield.rls.app-role:digishield_app}") String appRole) {
+                           @Value("${digishield.rls.app-role:}") String appRole) {
         this.jdbcTemplate = jdbcTemplate;
         String role = appRole == null ? "" : appRole.trim();
         if (!role.isEmpty() && !SAFE_ROLE.matcher(role).matches()) {

@@ -42,3 +42,12 @@ spring:
     enabled: true
     locations: classpath:db/migration
     baseline-on-migrate: true
+
+# Real RLS enforcement. This profile connects as the superuser `digishield`, so
+# PostgreSQL would bypass RLS; RlsTenantAspect drops to the non-superuser role
+# `digishield_app` (migration V2026.07.24.001) per request to enforce the
+# tenant_isolation policies. Blank (the default) everywhere else — tests and
+# deployments that already connect as a non-superuser.
+digishield:
+  rls:
+    app-role: digishield_app
