@@ -1,250 +1,54 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Users } from 'lucide-react';
-import { useAuth } from '@/app/auth/useAuth';
-import {
-  PERSONAS,
-  personaToRole,
-  defaultRouteForPersona,
-  type Persona,
-} from '@/app/auth/roles';
 import { Logo } from '@/shared/ui';
-import { DEMO_TENANT_ID } from '@/shared/api/tenant';
+import { useAuth } from '@/app/auth/useAuth';
 import { cognitoEnabled } from '@/app/auth/cognito';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { AuthScreen, AuthCard, authInputStyle, authLabelStyle } from './authShared';
+import { AuthScreen, AuthCard } from './authShared';
 
-/** Login — 4-role pill segmented control + email/password + SSO. */
+/** Login — delegates entirely to the Cognito hosted UI (OIDC code + PKCE). */
 export default function LoginPage() {
-  const navigate = useNavigate();
-  const { login, signinRedirect } = useAuth();
+  const { signinRedirect } = useAuth();
   const t = useT();
-  const [persona, setPersona] = useState<Persona>('admin');
-  const [email, setEmail] = useState('admin@coquan.gov.vn');
-  const [password, setPassword] = useState('demo1234');
-  const [submitting, setSubmitting] = useState(false);
-
-  function doLogin(e?: FormEvent) {
-    e?.preventDefault();
-    setSubmitting(true);
-    setTimeout(() => {
-      const role = personaToRole(persona);
-      login(
-        { id: 'me', tenantId: DEMO_TENANT_ID, role, email, name: 'Nguyễn Tuấn' },
-        'demo-token',
-      );
-      navigate(defaultRouteForPersona(persona));
-    }, 600);
-  }
-
-  // Deployed build: delegate auth to the Cognito hosted UI (OIDC code + PKCE).
-  if (cognitoEnabled) {
-    return (
-      <AuthScreen>
-        <div style={{ width: 400, animation: 'fadeUp .4s ease', textAlign: 'center' }}>
-          <div style={{ marginBottom: 12, display: 'inline-flex' }}>
-            <Logo size={36} wordmarkSize={26} />
-          </div>
-          <div style={{ fontSize: 13.5, color: 'var(--color-muted)', marginBottom: 28 }}>
-            {t('Nền tảng nhận thức an ninh số')}
-          </div>
-          <AuthCard style={{ padding: 32 }}>
-            <div style={{ fontSize: 14, color: 'var(--color-text-soft)', marginBottom: 20 }}>
-              {t('Đăng nhập bằng tài khoản tổ chức (AWS Cognito).')}
-            </div>
-            <button
-              type="button"
-              onClick={() => signinRedirect()}
-              style={{
-                width: '100%',
-                background: 'var(--color-blue)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 9,
-                padding: 13,
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: 15,
-              }}
-            >
-              {t('Đăng nhập')}
-            </button>
-          </AuthCard>
-          <div style={{ marginTop: 20, fontSize: 12, color: 'var(--color-muted)' }}>
-            DigiShield v1.0 · Lá Chắn Số · 2026
-          </div>
-        </div>
-      </AuthScreen>
-    );
-  }
 
   return (
     <AuthScreen>
-      <div style={{ width: 400, animation: 'fadeUp .4s ease' }}>
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <div style={{ marginBottom: 12, display: 'inline-flex' }}>
-            <Logo size={36} wordmarkSize={26} />
-          </div>
-          <div style={{ fontSize: 13.5, color: 'var(--color-muted)' }}>
-            {t('Nền tảng nhận thức an ninh số')}
-          </div>
+      <div style={{ width: 400, animation: 'fadeUp .4s ease', textAlign: 'center' }}>
+        <div style={{ marginBottom: 12, display: 'inline-flex' }}>
+          <Logo size={36} wordmarkSize={26} />
         </div>
-
+        <div style={{ fontSize: 13.5, color: 'var(--color-muted)', marginBottom: 28 }}>
+          {t('Nền tảng nhận thức an ninh số')}
+        </div>
         <AuthCard style={{ padding: 32 }}>
-          <div
-            style={{
-              background: 'var(--tint-blue-soft)',
-              border: '1px solid rgba(37,102,235,.15)',
-              borderRadius: 8,
-              padding: '10px 14px',
-              marginBottom: 24,
-              fontSize: 12.5,
-              color: 'var(--color-primary-strong)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <Users size={14} strokeWidth={2} />
-            {t('Chọn vai trò để đăng nhập')}
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <div
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: 'var(--color-muted)',
-                letterSpacing: '.08em',
-                textTransform: 'uppercase',
-                marginBottom: 8,
-              }}
-            >
-              {t('Vai trò')}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                background: 'var(--color-bg-auth)',
-                borderRadius: 9,
-                padding: 3,
-                gap: 2,
-              }}
-            >
-              {PERSONAS.map((p) => {
-                const active = p.id === persona;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPersona(p.id)}
-                    style={{
-                      flex: 1,
-                      padding: '8px 2px',
-                      textAlign: 'center',
-                      borderRadius: 7,
-                      border: 'none',
-                      fontSize: 11.5,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all .15s',
-                      background: active ? 'var(--color-blue)' : 'transparent',
-                      color: active ? '#fff' : 'var(--color-muted)',
-                    }}
-                  >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <form onSubmit={doLogin}>
-            <div style={{ marginBottom: 14 }}>
-              <label htmlFor="login-email" style={authLabelStyle}>
-                {t('Email công việc')}
-              </label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={authInputStyle}
-              />
-            </div>
-
-            <div style={{ marginBottom: 24 }}>
-              <div
+          {cognitoEnabled ? (
+            <>
+              <div style={{ fontSize: 14, color: 'var(--color-text-soft)', marginBottom: 20 }}>
+                {t('Đăng nhập bằng tài khoản tổ chức (AWS Cognito).')}
+              </div>
+              <button
+                type="button"
+                onClick={() => signinRedirect()}
                 style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 6,
+                  width: '100%',
+                  background: 'var(--color-blue)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 9,
+                  padding: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontSize: 15,
                 }}
               >
-                <label htmlFor="login-pw" style={{ ...authLabelStyle, marginBottom: 0 }}>
-                  {t('Mật khẩu')}
-                </label>
-                <span
-                  onClick={() => navigate('/auth/forgot-password')}
-                  style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer' }}
-                >
-                  {t('Quên mật khẩu?')}
-                </span>
-              </div>
-              <input
-                id="login-pw"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={authInputStyle}
-              />
+                {t('Đăng nhập')}
+              </button>
+            </>
+          ) : (
+            <div style={{ fontSize: 13.5, color: 'var(--color-muted)', lineHeight: 1.6 }}>
+              {t('Chưa cấu hình đăng nhập. Đặt VITE_COGNITO_AUTHORITY và VITE_COGNITO_CLIENT_ID rồi build lại.')}
             </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                width: '100%',
-                background: 'var(--color-blue)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 9,
-                padding: 13,
-                textAlign: 'center',
-                fontWeight: 600,
-                cursor: 'pointer',
-                fontSize: 15,
-                marginBottom: 12,
-                opacity: submitting ? 0.7 : 1,
-              }}
-            >
-              {submitting ? t('Đang đăng nhập…') : t('Đăng nhập')}
-            </button>
-          </form>
-
-          <button
-            type="button"
-            onClick={() => navigate('/auth/sso')}
-            style={{
-              width: '100%',
-              border: '1px solid var(--color-input-border)',
-              background: 'transparent',
-              borderRadius: 9,
-              padding: 11,
-              textAlign: 'center',
-              fontSize: 13.5,
-              color: 'var(--color-text-soft)',
-              cursor: 'pointer',
-            }}
-          >
-            {t('Đăng nhập bằng SSO (Entra ID / Google Workspace)')}
-          </button>
+          )}
         </AuthCard>
-
-        <div style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--color-muted)' }}>
+        <div style={{ marginTop: 20, fontSize: 12, color: 'var(--color-muted)' }}>
           DigiShield v1.0 · Lá Chắn Số · 2026
         </div>
       </div>

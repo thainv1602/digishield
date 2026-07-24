@@ -5,12 +5,9 @@ import { RequireRole } from './auth/RequireRole';
 import { ROLES, defaultRouteForRole, type Role } from './auth/roles';
 import { useAuth } from './auth/useAuth';
 
-/* ── Auth (owned here) ── */
+/* ── Auth (owned here) — login delegates to the Cognito hosted UI, which also
+   handles MFA, SSO, password reset and onboarding externally. ── */
 const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
-const ForgotPasswordPage = lazy(() => import('@/features/auth/ForgotPasswordPage'));
-const MfaPage = lazy(() => import('@/features/auth/MfaPage'));
-const SsoPage = lazy(() => import('@/features/auth/SsoPage'));
-const OnboardingPage = lazy(() => import('@/features/auth/OnboardingPage'));
 
 /* ── Admin / Super (Agent 2) ── */
 const AdminDashboardPage = lazy(() => import('@/features/dashboard/AdminDashboardPage'));
@@ -104,10 +101,6 @@ export function AppRouter() {
       <Routes>
         {/* ── Public / Auth ── */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/auth/mfa" element={<MfaPage />} />
-        <Route path="/auth/sso" element={<SsoPage />} />
-        <Route path="/onboarding" element={<OnboardingPage />} />
 
         {/* ── Admin / Super ── */}
         <Route path="/dashboard" element={guarded(ADMIN, AdminDashboardPage)} />

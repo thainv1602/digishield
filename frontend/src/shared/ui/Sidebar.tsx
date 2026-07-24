@@ -4,8 +4,6 @@ import { ChevronRight } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
 import { NAV_BY_PERSONA, roleToPersona, type NavItem } from '@/app/auth/roles';
 import { Logo } from './Logo';
-import { RoleSwitcher } from './RoleSwitcher';
-import { cognitoEnabled } from '@/app/auth/cognito';
 import { NavIcon } from './navIcons';
 import { useT } from '@/shared/i18n/I18nProvider';
 import styles from './Sidebar.module.css';
@@ -20,7 +18,7 @@ function initialsOf(name?: string, email?: string): string {
     .toUpperCase();
 }
 
-/** Left navigation: logo header, persona switcher, RBAC nav, profile card. */
+/** Left navigation: logo header, persona-scoped RBAC nav, profile card. */
 export function Sidebar() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -41,13 +39,6 @@ export function Sidebar() {
       <div className={styles.brand}>
         <Logo size={26} />
       </div>
-
-      {/* Demo-only role switcher; with real Cognito auth the role is fixed. */}
-      {!cognitoEnabled && (
-        <div className={styles.switcher}>
-          <RoleSwitcher />
-        </div>
-      )}
 
       <nav className={styles.nav}>
         {sections.map((section, si) => (
@@ -80,7 +71,7 @@ export function Sidebar() {
             {initialsOf(user?.name, user?.email)}
           </span>
           <span className={styles.profileMeta}>
-            <span className={styles.profileName}>{user?.name ?? 'Nguyễn Tuấn'}</span>
+            <span className={styles.profileName}>{user?.name ?? user?.email ?? t('Người dùng')}</span>
             <span className={styles.profileLink}>{t('Hồ sơ & Cài đặt')}</span>
           </span>
           <ChevronRight size={13} strokeWidth={2} color="var(--color-muted)" />

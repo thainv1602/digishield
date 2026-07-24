@@ -1,8 +1,8 @@
 /**
  * RBAC role constants, persona mapping, and persona-scoped navigation trees.
  * Roles mirror the backend authorization model (org-scoped JWT). The sidebar
- * groups roles into 4 UI personas (Admin / Learner / Analyst / Super) that drive
- * the role switcher and the nav tree, while route guards still use raw roles.
+ * groups the 6 roles into 4 UI personas (Admin / Learner / Analyst / Super) to
+ * pick which nav tree to show, while route guards still use raw roles.
  */
 
 export const ROLES = {
@@ -26,15 +26,8 @@ export const ADMIN_ROLES: Role[] = [
   ROLES.CONTENT_EDITOR,
 ];
 
-/* ── UI personas (sidebar role switcher = 4 pills) ── */
+/* ── UI personas: group the 6 RBAC roles into the 4 sidebar nav trees ── */
 export type Persona = 'admin' | 'learner' | 'analyst' | 'super';
-
-export const PERSONAS: { id: Persona; label: string }[] = [
-  { id: 'admin', label: 'Admin' },
-  { id: 'learner', label: 'Learner' },
-  { id: 'analyst', label: 'Analyst' },
-  { id: 'super', label: 'Super' },
-];
 
 /** Map a raw RBAC role to its sidebar persona. */
 export function roleToPersona(role: Role): Persona {
@@ -48,21 +41,6 @@ export function roleToPersona(role: Role): Persona {
     // org_admin | manager | content_editor -> "admin" persona for nav
     default:
       return 'admin';
-  }
-}
-
-/** A representative raw role for a chosen persona (used by the demo switcher). */
-export function personaToRole(persona: Persona): Role {
-  switch (persona) {
-    case 'learner':
-      return ROLES.LEARNER;
-    case 'analyst':
-      return ROLES.ANALYST;
-    case 'super':
-      return ROLES.SUPER_ADMIN;
-    case 'admin':
-    default:
-      return ROLES.ORG_ADMIN;
   }
 }
 
@@ -116,9 +94,9 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
   ],
 };
 
-/** Default landing route per persona. */
-export function defaultRouteForPersona(persona: Persona): string {
-  switch (persona) {
+/** Default landing route per raw role (used by the `/` redirect). */
+export function defaultRouteForRole(role: Role): string {
+  switch (roleToPersona(role)) {
     case 'learner':
       return '/learn';
     case 'analyst':
@@ -129,11 +107,6 @@ export function defaultRouteForPersona(persona: Persona): string {
     default:
       return '/dashboard';
   }
-}
-
-/** Default landing route per raw role (used by the `/` redirect). */
-export function defaultRouteForRole(role: Role): string {
-  return defaultRouteForPersona(roleToPersona(role));
 }
 
 /** Type guard for narrowing arbitrary strings to a known Role. */
