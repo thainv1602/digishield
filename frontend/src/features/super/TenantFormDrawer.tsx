@@ -42,7 +42,7 @@ export function TenantFormDrawer({
   const pending = create.isPending || update.isPending;
 
   const submit = () => {
-    if (!editing && !name.trim()) {
+    if (!name.trim()) {
       toast({ msg: t('Vui lòng nhập tên tổ chức.'), variant: 'warning' });
       return;
     }
@@ -54,7 +54,7 @@ export function TenantFormDrawer({
       onError: () => toast({ msg: t('Thao tác thất bại, thử lại.'), variant: 'error' }),
     };
     if (editing && tenant) {
-      update.mutate({ id: tenant.id, body: { tier, status, dataRegion: region.trim() } }, onDone);
+      update.mutate({ id: tenant.id, body: { name: name.trim(), tier, status, dataRegion: region.trim() } }, onDone);
     } else {
       create.mutate({ name: name.trim(), tier, dataRegion: region.trim() }, onDone);
     }
@@ -67,8 +67,6 @@ export function TenantFormDrawer({
           label={t('Tên tổ chức')}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          disabled={editing}
-          hint={editing ? t('Tên tổ chức không đổi ở đây.') : undefined}
         />
         <Select label={t('Mức cô lập (tier)')} value={tier} onChange={(e) => setTier(e.target.value)}>
           {TIERS.map((x) => (

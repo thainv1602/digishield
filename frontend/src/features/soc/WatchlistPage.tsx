@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { useBlacklist, useAddBlacklist, type BlacklistEntry } from './watchlistApi';
+import { useBlacklist, useAddBlacklist, useDeleteBlacklist, type BlacklistEntry } from './watchlistApi';
 
 const ADD_TYPES = ['phone', 'domain', 'url', 'email', 'ip'] as const;
 
@@ -70,6 +70,15 @@ export default function WatchlistPage() {
   const [filter, setFilter] = useState<Filter>('all');
   const { data, isLoading, isError, refetch } = useBlacklist();
   const addMut = useAddBlacklist();
+  const delMut = useDeleteBlacklist();
+
+  const removeEntry = (id: string, value: string) => {
+    if (!window.confirm(t('Xóa "{value}" khỏi watchlist?', { value }))) return;
+    delMut.mutate(id, {
+      onSuccess: () => toast({ msg: t('Đã xóa khỏi watchlist.'), variant: 'success' }),
+      onError: () => toast({ msg: t('Xóa thất bại, thử lại.'), variant: 'error' }),
+    });
+  };
 
   const entries = useMemo<WatchEntry[]>(() => (data ?? []).map(toEntry), [data]);
 
@@ -339,7 +348,8 @@ export default function WatchlistPage() {
                   <div style={{ fontSize: 12, color: 'var(--muted)' }}>{e.source}</div>
                   <button
                     type="button"
-                    onClick={() => toast(t('Đã xóa {value}', { value: e.value }))}
+                    onClick={() => removeEntry(e.id, e.value)}
+                    disabled={delMut.isPending}
                     style={{
                       all: 'unset',
                       fontSize: 12,

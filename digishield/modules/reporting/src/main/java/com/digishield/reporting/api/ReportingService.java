@@ -63,6 +63,14 @@ public interface ReportingService {
     BlacklistEntryDto addBlacklist(BlacklistType type, String value, String source);
 
     /**
+     * Deletes a blacklist entry of the current tenant (no-op if it does not
+     * exist or belongs to another tenant).
+     *
+     * @param id the entry id
+     */
+    void deleteBlacklist(UUID id);
+
+    /**
      * Lists threat-intel records for the current tenant (newest first).
      *
      * @return threat-intel views

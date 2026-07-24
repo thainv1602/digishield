@@ -1,4 +1,4 @@
-import { Button } from '@/shared/ui';
+import { Button, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { Award, ShieldCheck, Target, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -51,6 +51,7 @@ const cardStyle: React.CSSProperties = {
 
 export default function GamificationPage() {
   const t = useT();
+  const toast = useToast();
   const badges = useUserBadges(DEMO_USER_ID);
   const leaderboard = useLeaderboard();
   const pointRulesQuery = usePointRules();
@@ -89,7 +90,13 @@ export default function GamificationPage() {
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Huy hiệu · Badges')}</div>
-              <Button size="sm" variant="primary">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() =>
+                  toast({ msg: t('Tạo huy hiệu cần thêm API danh mục huy hiệu (chưa khả dụng).'), variant: 'info' })
+                }
+              >
                 {t('+ Thêm')}
               </Button>
             </div>
