@@ -4,6 +4,7 @@ import com.digishield.learning.api.AssessmentResultView;
 import com.digishield.learning.api.AssessmentResultsView;
 import com.digishield.learning.api.AssessmentView;
 import com.digishield.learning.api.BadgeView;
+import com.digishield.learning.api.BadgeCatalogView;
 import com.digishield.learning.api.CertificateView;
 import com.digishield.learning.api.CoachingPageView;
 import com.digishield.learning.api.CompliancePolicyView;
@@ -22,6 +23,7 @@ import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -195,6 +197,28 @@ class LearningController {
     ResponseEntity<java.util.List<PointRuleView>> pointRules() {
         UUID tenantId = TenantContext.requireUuid();
         return ResponseEntity.ok(learningService.listPointRules(tenantId));
+    }
+
+    @GetMapping("/api/v1/gamification/badges")
+    ResponseEntity<java.util.List<BadgeCatalogView>> badgeCatalog() {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(learningService.listBadgeCatalog(tenantId));
+    }
+
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @PostMapping("/api/v1/gamification/badges")
+    ResponseEntity<BadgeCatalogView> createBadge(@RequestBody BadgeCatalogView command) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+                .body(learningService.createBadge(tenantId, command));
+    }
+
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @DeleteMapping("/api/v1/gamification/badges/{id}")
+    ResponseEntity<Void> deleteBadge(@PathVariable UUID id) {
+        UUID tenantId = TenantContext.requireUuid();
+        learningService.deleteBadge(tenantId, id);
+        return ResponseEntity.noContent().build();
     }
 
     // ---- Compliance --------------------------------------------------------

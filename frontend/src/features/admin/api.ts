@@ -143,6 +143,67 @@ export function useUserBadges(userId: string) {
   });
 }
 
+// ---- Badge catalog (tenant badge definitions) -----------------------------
+
+const BADGE_CATALOG_KEY = ['gamification', 'badge-catalog'] as const;
+
+/** Mirrors `BadgeCatalogView` (`/gamification/badges`). */
+export interface BadgeCatalog {
+  id: string;
+  name: string;
+  description: string | null;
+  iconRef: string | null;
+}
+
+/** Create/edit payload for a badge definition. */
+export interface BadgeCatalogInput {
+  name: string;
+  description?: string | null;
+  iconRef?: string | null;
+}
+
+/** GET /gamification/badges — the tenant's badge catalog. */
+export function fetchBadgeCatalog(signal?: AbortSignal): Promise<BadgeCatalog[]> {
+  return apiRequest<BadgeCatalog[]>({
+    url: '/gamification/badges',
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/** POST /gamification/badges — create a badge definition. */
+export function createBadgeCatalog(body: BadgeCatalogInput): Promise<BadgeCatalog> {
+  return apiRequest<BadgeCatalog>({ url: '/gamification/badges', method: 'POST', data: body });
+}
+
+/** DELETE /gamification/badges/{id} — remove a badge definition. */
+export function deleteBadgeCatalog(id: string): Promise<void> {
+  return apiRequest<void>({ url: `/gamification/badges/${id}`, method: 'DELETE' });
+}
+
+export function useBadgeCatalog() {
+  return useQuery({
+    queryKey: BADGE_CATALOG_KEY,
+    queryFn: ({ signal }) => fetchBadgeCatalog(signal),
+  });
+}
+
+export function useCreateBadge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createBadgeCatalog,
+    onSuccess: () => qc.invalidateQueries({ queryKey: BADGE_CATALOG_KEY }),
+  });
+}
+
+export function useDeleteBadge() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteBadgeCatalog,
+    onSuccess: () => qc.invalidateQueries({ queryKey: BADGE_CATALOG_KEY }),
+  });
+}
+
 export function useUserPoints(userId: string) {
   return useQuery({
     queryKey: queryKeys.userPoints(userId),

@@ -5,6 +5,7 @@ import com.digishield.learning.api.AssessmentResultView;
 import com.digishield.learning.api.AssessmentResultsView;
 import com.digishield.learning.api.AssessmentView;
 import com.digishield.learning.api.BadgeView;
+import com.digishield.learning.api.BadgeCatalogView;
 import com.digishield.learning.api.PointRuleView;
 import com.digishield.learning.api.CertificateView;
 import com.digishield.learning.api.CoachingPageView;
@@ -21,6 +22,7 @@ import com.digishield.learning.api.UserCertificateView;
 import com.digishield.learning.domain.Assessment;
 import com.digishield.learning.domain.AssessmentType;
 import com.digishield.learning.domain.Badge;
+import com.digishield.learning.domain.BadgeCatalog;
 import com.digishield.learning.domain.PointRule;
 import com.digishield.learning.domain.Certificate;
 import com.digishield.learning.domain.CoachingPage;
@@ -33,6 +35,7 @@ import com.digishield.learning.domain.Lesson;
 import com.digishield.learning.domain.QuizQuestion;
 import com.digishield.learning.infrastructure.AssessmentRepository;
 import com.digishield.learning.infrastructure.BadgeRepository;
+import com.digishield.learning.infrastructure.BadgeCatalogRepository;
 import com.digishield.learning.infrastructure.CertificateRepository;
 import com.digishield.learning.infrastructure.CoachingPageRepository;
 import com.digishield.learning.infrastructure.CompliancePolicyRepository;
@@ -65,6 +68,7 @@ public class LearningServiceImpl implements LearningService {
     private final QuizQuestionRepository quizQuestionRepository;
     private final CertificateRepository certificateRepository;
     private final BadgeRepository badgeRepository;
+    private final BadgeCatalogRepository badgeCatalogRepository;
     private final GamificationProfileRepository gamificationProfileRepository;
     private final CompliancePolicyRepository compliancePolicyRepository;
     private final AssessmentRepository assessmentRepository;
@@ -79,6 +83,7 @@ public class LearningServiceImpl implements LearningService {
                                QuizQuestionRepository quizQuestionRepository,
                                CertificateRepository certificateRepository,
                                BadgeRepository badgeRepository,
+                               BadgeCatalogRepository badgeCatalogRepository,
                                GamificationProfileRepository gamificationProfileRepository,
                                CompliancePolicyRepository compliancePolicyRepository,
                                AssessmentRepository assessmentRepository,
@@ -92,6 +97,7 @@ public class LearningServiceImpl implements LearningService {
         this.quizQuestionRepository = quizQuestionRepository;
         this.certificateRepository = certificateRepository;
         this.badgeRepository = badgeRepository;
+        this.badgeCatalogRepository = badgeCatalogRepository;
         this.gamificationProfileRepository = gamificationProfileRepository;
         this.compliancePolicyRepository = compliancePolicyRepository;
         this.assessmentRepository = assessmentRepository;
@@ -413,6 +419,30 @@ public class LearningServiceImpl implements LearningService {
         return badgeRepository.findByTenantIdAndUserId(tenantId, userId).stream()
                 .map(this::toBadgeView)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BadgeCatalogView> listBadgeCatalog(UUID tenantId) {
+        return badgeCatalogRepository.findByTenantIdOrderByName(tenantId).stream()
+                .map(b -> new BadgeCatalogView(b.getId(), b.getName(), b.getDescription(), b.getIconRef()))
+                .toList();
+    }
+
+    @Override
+    public BadgeCatalogView createBadge(UUID tenantId, BadgeCatalogView command) {
+        BadgeCatalog badge = new BadgeCatalog(
+                UUID.randomUUID(), tenantId, command.name(), command.description(), command.iconRef());
+        BadgeCatalog saved = badgeCatalogRepository.save(badge);
+        return new BadgeCatalogView(saved.getId(), saved.getName(), saved.getDescription(), saved.getIconRef());
+    }
+
+    @Override
+    public void deleteBadge(UUID tenantId, UUID id) {
+        // RLS-scoped: findById only returns this tenant's rows.
+        badgeCatalogRepository.findById(id)
+                .filter(b -> b.getTenantId().equals(tenantId))
+                .ifPresent(badgeCatalogRepository::delete);
     }
 
     @Override
