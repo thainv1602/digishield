@@ -1,18 +1,28 @@
 import { useEffect, useState } from 'react';
 import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { useCreateGroup, type GroupUpsert } from './api';
+import { useCreateGroup, useUpdateGroup, type GroupDto, type GroupUpsert } from './api';
 
 /**
- * Create-group drawer. A "smart" group carries a `rule_json` built from the
- * documented rule keys (`risk_score_gte`, `department`); a "static" group is
- * created with `rule_json = null`. There is no update endpoint, so this is
- * create-only.
+ * Create/edit group drawer. `group === null` is create mode (POST /groups);
+ * otherwise edit mode (PATCH /groups/{id}). A "smart" group carries a
+ * `rule_json` built from the documented keys (`risk_score_gte`, `department`);
+ * a "static" group is created/updated with `rule_json = {}` (cleared).
  */
-export function GroupFormDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function GroupFormDrawer({
+  open,
+  onClose,
+  group,
+}: {
+  open: boolean;
+  onClose: () => void;
+  group?: GroupDto | null;
+}) {
   const t = useT();
   const toast = useToast();
   const create = useCreateGroup();
+  const update = useUpdateGroup();
+  const editing = group != null;
 
   const [name, setName] = useState('');
   const [smart, setSmart] = useState(false);
@@ -21,11 +31,14 @@ export function GroupFormDrawer({ open, onClose }: { open: boolean; onClose: () 
 
   useEffect(() => {
     if (!open) return;
-    setName('');
-    setSmart(false);
-    setRiskGte('');
-    setDepartment('');
-  }, [open]);
+    const rule = group?.rule_json ?? null;
+    setName(group?.name ?? '');
+    setSmart(Boolean(rule && Object.keys(rule).length > 0));
+    setRiskGte(rule && rule.risk_score_gte != null ? String(rule.risk_score_gte) : '');
+    setDepartment(rule && typeof rule.department === 'string' ? rule.department : '');
+  }, [open, group]);
+
+  const pending = create.isPending || update.isPending;
 
   const submit = () => {
     const trimmed = name.trim();
@@ -33,25 +46,31 @@ export function GroupFormDrawer({ open, onClose }: { open: boolean; onClose: () 
       toast({ msg: t('Vui lòng nhập tên nhóm.'), variant: 'warning' });
       return;
     }
-    let rule: Record<string, unknown> | null = null;
+    const rule: Record<string, unknown> = {};
     if (smart) {
-      rule = {};
       const r = Number(riskGte);
       if (riskGte.trim() && !Number.isNaN(r)) rule.risk_score_gte = r;
       if (department.trim()) rule.department = department.trim();
     }
+    // Static groups (and edits that clear the rule) send an empty object so the
+    // backend clears rule_json; smart groups send the built rule.
     const body: GroupUpsert = { name: trimmed, rule_json: rule };
-    create.mutate(body, {
+    const onDone = {
       onSuccess: () => {
-        toast({ msg: t('Đã tạo nhóm.'), variant: 'success' });
+        toast({ msg: editing ? t('Đã cập nhật nhóm.') : t('Đã tạo nhóm.'), variant: 'success' });
         onClose();
       },
-      onError: () => toast({ msg: t('Tạo nhóm thất bại, thử lại.'), variant: 'error' }),
-    });
+      onError: () => toast({ msg: t('Thao tác thất bại, thử lại.'), variant: 'error' }),
+    };
+    if (editing && group) {
+      update.mutate({ id: group.id, body }, onDone);
+    } else {
+      create.mutate(body, onDone);
+    }
   };
 
   return (
-    <Drawer open={open} onClose={onClose} title={t('Tạo nhóm')}>
+    <Drawer open={open} onClose={onClose} title={editing ? t('Sửa nhóm') : t('Tạo nhóm')}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 20 }}>
         <Input
           label={t('Tên nhóm')}
@@ -84,18 +103,18 @@ export function GroupFormDrawer({ open, onClose }: { open: boolean; onClose: () 
               label={t('Phòng ban')}
               value={department}
               onChange={(e) => setDepartment(e.target.value)}
-              placeholder="ke-toan"
+              placeholder={t('Tên phòng ban (khớp chính xác)')}
               hint={t('Để trống nếu không lọc theo phòng ban.')}
             />
           </>
         )}
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
-          <Button variant="outline" onClick={onClose} disabled={create.isPending}>
+          <Button variant="outline" onClick={onClose} disabled={pending}>
             {t('Hủy')}
           </Button>
-          <Button variant="primary" onClick={submit} disabled={create.isPending}>
-            {create.isPending ? t('Đang tạo…') : t('Tạo nhóm')}
+          <Button variant="primary" onClick={submit} disabled={pending}>
+            {pending ? t('Đang lưu…') : editing ? t('Lưu') : t('Tạo nhóm')}
           </Button>
         </div>
       </div>

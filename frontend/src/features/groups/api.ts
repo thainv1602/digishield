@@ -38,6 +38,42 @@ export function createGroup(body: GroupUpsert): Promise<GroupDto> {
   return apiRequest<GroupDto>({ url: '/groups', method: 'POST', data: body });
 }
 
+/** PATCH /groups/{id} — update name and/or rule (empty rule_json clears it). */
+export function updateGroup(id: string, body: GroupUpsert): Promise<GroupDto> {
+  return apiRequest<GroupDto>({ url: `/groups/${id}`, method: 'PATCH', data: body });
+}
+
+/** DELETE /groups/{id} — remove a group and its memberships. */
+export function deleteGroup(id: string): Promise<void> {
+  return apiRequest<void>({ url: `/groups/${id}`, method: 'DELETE' });
+}
+
+/** GET /groups/{id}/members — user ids of the group's members. */
+export function fetchGroupMembers(id: string, signal?: AbortSignal): Promise<string[]> {
+  return apiRequest<string[]>({
+    url: `/groups/${id}/members`,
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/** POST /groups/{id}/members — add a user; returns the new count. */
+export function addGroupMember(id: string, userId: string): Promise<{ member_count: number }> {
+  return apiRequest<{ member_count: number }>({
+    url: `/groups/${id}/members`,
+    method: 'POST',
+    data: { user_id: userId },
+  });
+}
+
+/** DELETE /groups/{id}/members/{userId} — remove a user; returns the new count. */
+export function removeGroupMember(id: string, userId: string): Promise<{ member_count: number }> {
+  return apiRequest<{ member_count: number }>({
+    url: `/groups/${id}/members/${userId}`,
+    method: 'DELETE',
+  });
+}
+
 /** POST /groups/{id}/evaluate — re-evaluate a smart group's membership. */
 export function evaluateGroup(id: string): Promise<{ member_count: number }> {
   return apiRequest<{ member_count: number }>({
@@ -69,5 +105,56 @@ export function useEvaluateGroup() {
   return useMutation({
     mutationFn: evaluateGroup,
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.groups }),
+  });
+}
+
+/** Update-group mutation. */
+export function useUpdateGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; body: GroupUpsert }) => updateGroup(vars.id, vars.body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.groups }),
+  });
+}
+
+/** Delete-group mutation. */
+export function useDeleteGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteGroup,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.groups }),
+  });
+}
+
+/** Members (user ids) of a group. */
+export function useGroupMembers(groupId: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.groups, groupId, 'members'],
+    queryFn: ({ signal }) => fetchGroupMembers(groupId as string, signal),
+    enabled: Boolean(groupId),
+  });
+}
+
+/** Add-member mutation; refreshes the group's member list and the group list. */
+export function useAddGroupMember(groupId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => addGroupMember(groupId, userId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...queryKeys.groups, groupId, 'members'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.groups });
+    },
+  });
+}
+
+/** Remove-member mutation. */
+export function useRemoveGroupMember(groupId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => removeGroupMember(groupId, userId),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: [...queryKeys.groups, groupId, 'members'] });
+      void qc.invalidateQueries({ queryKey: queryKeys.groups });
+    },
   });
 }

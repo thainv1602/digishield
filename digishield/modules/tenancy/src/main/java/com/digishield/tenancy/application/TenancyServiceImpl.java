@@ -18,6 +18,7 @@ import com.digishield.tenancy.domain.AuditLog;
 import com.digishield.tenancy.domain.BusinessThresholds;
 import com.digishield.tenancy.domain.FeatureFlag;
 import com.digishield.tenancy.domain.Group;
+import com.digishield.tenancy.domain.GroupMember;
 import com.digishield.tenancy.domain.Plan;
 import com.digishield.tenancy.domain.ScimConfig;
 import com.digishield.tenancy.domain.Subscription;
@@ -30,6 +31,8 @@ import com.digishield.tenancy.infrastructure.AuditLogRepository;
 import com.digishield.tenancy.infrastructure.BusinessThresholdsRepository;
 import com.digishield.tenancy.infrastructure.FeatureFlagRepository;
 import com.digishield.tenancy.infrastructure.GroupRepository;
+import com.digishield.tenancy.infrastructure.GroupMemberRepository;
+import org.springframework.jdbc.core.JdbcTemplate;
 import com.digishield.tenancy.infrastructure.PlanRepository;
 import com.digishield.tenancy.infrastructure.ScimConfigRepository;
 import com.digishield.tenancy.infrastructure.SubscriptionRepository;
@@ -42,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +69,8 @@ public class TenancyServiceImpl implements TenancyService {
     private final TenantSettingsRepository tenantSettingsRepository;
     private final BusinessThresholdsRepository businessThresholdsRepository;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final PlanRepository planRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final UsageMeteringRepository usageMeteringRepository;
@@ -77,6 +83,8 @@ public class TenancyServiceImpl implements TenancyService {
                               TenantSettingsRepository tenantSettingsRepository,
                               BusinessThresholdsRepository businessThresholdsRepository,
                               GroupRepository groupRepository,
+                              GroupMemberRepository groupMemberRepository,
+                              JdbcTemplate jdbcTemplate,
                               PlanRepository planRepository,
                               SubscriptionRepository subscriptionRepository,
                               UsageMeteringRepository usageMeteringRepository,
@@ -88,6 +96,8 @@ public class TenancyServiceImpl implements TenancyService {
         this.tenantSettingsRepository = tenantSettingsRepository;
         this.businessThresholdsRepository = businessThresholdsRepository;
         this.groupRepository = groupRepository;
+        this.groupMemberRepository = groupMemberRepository;
+        this.jdbcTemplate = jdbcTemplate;
         this.planRepository = planRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.usageMeteringRepository = usageMeteringRepository;
@@ -255,20 +265,72 @@ public class TenancyServiceImpl implements TenancyService {
                 command.name(),
                 command.ruleJson() != null ? writeJson(command.ruleJson()) : null,
                 0);
-        // A fresh smart group gets an initial materialised count.
-        group.setMemberCount(evaluateMembers(group));
+        groupRepository.save(group);
+        // A smart group is materialised from its rule immediately; a static group
+        // starts empty and is populated by adding members.
+        int count = isSmart(group) ? materialiseMembers(group) : 0;
+        group.setMemberCount(count);
         return toGroupView(groupRepository.save(group));
     }
 
     @Override
     public MemberCountView evaluateGroup(UUID tenantId, UUID groupId) {
-        Group group = groupRepository.findById(groupId)
-                .filter(g -> g.getTenantId().equals(tenantId))
-                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
-        int count = evaluateMembers(group);
+        Group group = requireGroup(tenantId, groupId);
+        // Smart groups are recomputed from their rule; static groups just recount.
+        int count = isSmart(group) ? materialiseMembers(group) : (int) groupMemberRepository.countByGroupId(groupId);
         group.setMemberCount(count);
         groupRepository.save(group);
         return new MemberCountView(count);
+    }
+
+    @Override
+    public GroupView updateGroup(UUID tenantId, UUID groupId, GroupView command) {
+        Group group = requireGroup(tenantId, groupId);
+        if (command.name() != null && !command.name().isBlank()) {
+            group.setName(command.name().trim());
+        }
+        // A present rule replaces the group's rule; an empty rule clears it
+        // (turns a smart group into a static one). Omitted -> unchanged.
+        if (command.ruleJson() != null) {
+            group.setRuleJson(command.ruleJson().isEmpty() ? null : writeJson(command.ruleJson()));
+        }
+        return toGroupView(groupRepository.save(group));
+    }
+
+    @Override
+    public void deleteGroup(UUID tenantId, UUID groupId) {
+        Group group = requireGroup(tenantId, groupId);
+        // group_member rows are removed by the FK ON DELETE CASCADE.
+        groupRepository.delete(group);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> listGroupMembers(UUID tenantId, UUID groupId) {
+        requireGroup(tenantId, groupId);
+        return groupMemberRepository.findUserIdsByGroupId(groupId);
+    }
+
+    @Override
+    public MemberCountView addGroupMember(UUID tenantId, UUID groupId, UUID userId) {
+        Group group = requireGroup(tenantId, groupId);
+        Integer inTenant = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM app_user WHERE id = ? AND tenant_id = ?",
+                Integer.class, userId, tenantId);
+        if (inTenant == null || inTenant == 0) {
+            throw new IllegalArgumentException("User not found in tenant: " + userId);
+        }
+        if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
+            groupMemberRepository.save(new GroupMember(UUID.randomUUID(), tenantId, groupId, userId));
+        }
+        return refreshCount(group);
+    }
+
+    @Override
+    public MemberCountView removeGroupMember(UUID tenantId, UUID groupId, UUID userId) {
+        Group group = requireGroup(tenantId, groupId);
+        groupMemberRepository.deleteByGroupIdAndUserId(groupId, userId);
+        return refreshCount(group);
     }
 
     @Override
@@ -377,24 +439,55 @@ public class TenancyServiceImpl implements TenancyService {
      * directory query is performed in this module). A higher {@code risk_score_gte}
      * threshold yields fewer members; a department filter narrows the pool.
      */
-    private int evaluateMembers(Group group) {
+    /** A group is "smart" when it carries a non-empty membership rule. */
+    private boolean isSmart(Group group) {
         Map<String, Object> rule = readJson(group.getRuleJson());
-        if (rule == null || rule.isEmpty()) {
-            // Static group: keep its existing count, defaulting to 0.
-            return group.getMemberCount() != null ? group.getMemberCount() : 0;
+        return rule != null && !rule.isEmpty();
+    }
+
+    private Group requireGroup(UUID tenantId, UUID groupId) {
+        return groupRepository.findById(groupId)
+                .filter(g -> g.getTenantId().equals(tenantId))
+                .orElseThrow(() -> new IllegalArgumentException("Group not found: " + groupId));
+    }
+
+    /** Recomputes and persists a group's member_count from group_member. */
+    private MemberCountView refreshCount(Group group) {
+        int count = (int) groupMemberRepository.countByGroupId(group.getId());
+        group.setMemberCount(count);
+        groupRepository.save(group);
+        return new MemberCountView(count);
+    }
+
+    /**
+     * Replaces a smart group's membership with the tenant users matching its rule
+     * (supported keys: {@code risk_score_gte}, {@code department}) and returns the
+     * resulting count. Runs raw SQL on the request transaction, so the RLS GUC /
+     * role set by the preceding repository call still apply.
+     */
+    private int materialiseMembers(Group group) {
+        Map<String, Object> rule = readJson(group.getRuleJson());
+        jdbcTemplate.update("DELETE FROM group_member WHERE group_id = ? AND tenant_id = ?",
+                group.getId(), group.getTenantId());
+        StringBuilder sql = new StringBuilder(
+                "INSERT INTO group_member (id, tenant_id, group_id, user_id) "
+                + "SELECT gen_random_uuid(), ?, ?, u.id FROM app_user u WHERE u.tenant_id = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(group.getTenantId());
+        params.add(group.getId());
+        params.add(group.getTenantId());
+        if (rule != null) {
+            if (rule.get("risk_score_gte") instanceof Number n) {
+                sql.append(" AND u.risk_score >= ?");
+                params.add(n.intValue());
+            }
+            if (rule.get("department") instanceof String s && !s.isBlank()) {
+                sql.append(" AND u.department = ?");
+                params.add(s);
+            }
         }
-        int base = 420;
-        Object riskGte = rule.get("risk_score_gte");
-        if (riskGte instanceof Number n) {
-            // Fewer people exceed a higher risk threshold.
-            base = Math.max(3, (int) Math.round(base * (100 - Math.min(100, n.doubleValue())) / 100.0));
-        }
-        if (rule.containsKey("department") || rule.containsKey("department_id")) {
-            base = Math.max(1, base / 5);
-        }
-        // Stable jitter from the rule contents so repeated evaluations match.
-        int jitter = Math.floorMod(group.getRuleJson() != null ? group.getRuleJson().hashCode() : 0, 17);
-        return base + jitter;
+        jdbcTemplate.update(sql.toString(), params.toArray());
+        return (int) groupMemberRepository.countByGroupId(group.getId());
     }
 
     private TenantStatus parseStatus(String raw) {
