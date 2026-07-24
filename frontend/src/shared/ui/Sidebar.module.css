@@ -17,12 +17,6 @@
   flex-shrink: 0;
 }
 
-.switcher {
-  padding: 10px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
 .nav {
   flex: 1;
   padding: 8px;

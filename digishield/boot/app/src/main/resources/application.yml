@@ -109,9 +109,23 @@ digishield:
         enabled: ${NOTIFICATIONS_SNS_ENABLED:false}
   # AI: off by default → deterministic StubAiClient (no token cost). Set true and
   # provide ANTHROPIC_API_KEY to route classify/moderate/generate through Claude.
+  # On any Claude error/timeout/malformed response the call degrades to the stub,
+  # so the endpoints never 500 because of the model. Models are configurable —
+  # cheap Haiku for classify/moderate, Sonnet for generation (bump to
+  # claude-sonnet-5 / claude-opus-4-8 via env for higher quality at higher cost).
   ai:
     claude:
       enabled: ${AI_CLAUDE_ENABLED:false}
+      # timeout-ms guards the high-frequency synchronous classify/moderate so a slow
+      # Claude can't tie up web threads; generate-timeout-ms is looser (Sonnet, longer
+      # body). Worst-case block per call = timeout x (max-retries + 1).
+      timeout-ms: ${AI_CLAUDE_TIMEOUT_MS:8000}
+      generate-timeout-ms: ${AI_CLAUDE_GENERATE_TIMEOUT_MS:30000}
+      max-retries: ${AI_CLAUDE_MAX_RETRIES:1}
+      model:
+        classify: ${AI_CLAUDE_MODEL_CLASSIFY:claude-haiku-4-5}
+        moderate: ${AI_CLAUDE_MODEL_MODERATE:claude-haiku-4-5}
+        template: ${AI_CLAUDE_MODEL_TEMPLATE:claude-sonnet-4-6}
     # ML: self-hosted phishing classifier (research/service/phishing-ai). When on,
     # classify() hits the fine-tuned models first and escalates to Claude/Stub on
     # low confidence, escalate=true, or any error. moderate()/generate() delegate.

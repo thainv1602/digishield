@@ -47,6 +47,5 @@ export type { LogoProps } from './Logo';
 export { AppShell } from './AppShell';
 export { Sidebar } from './Sidebar';
 export { Topbar } from './Topbar';
-export { RoleSwitcher } from './RoleSwitcher';
 export { NotificationBell } from './NotificationBell';
 export { LanguageSwitcher } from './LanguageSwitcher';

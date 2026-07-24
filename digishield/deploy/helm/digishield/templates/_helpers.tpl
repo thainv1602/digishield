@@ -20,6 +20,24 @@
 {{- end }}
 {{- end -}}
 
+{{/* AI (Claude) env — shared by api/worker/scheduler. Off by default (StubAiClient).
+     When enabled, ANTHROPIC_API_KEY is injected from a Secret (never values). All
+     app instances load the AI beans, so every workload that enables Claude needs
+     the key. */}}
+{{- define "digishield.aiEnv" -}}
+{{- if .Values.ai.claude.enabled }}
+- name: AI_CLAUDE_ENABLED
+  value: "true"
+{{- if .Values.ai.claude.existingSecret }}
+- name: ANTHROPIC_API_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.ai.claude.existingSecret }}
+      key: {{ .Values.ai.claude.apiKeyKey }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
 {{/* RabbitMQ env — shared by api/worker/scheduler. Only rendered when a host is
      configured (in-cluster broker on k3s/on-prem); credentials come from a
      Secret when one is set. */}}

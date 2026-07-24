@@ -122,6 +122,48 @@ Optional H2 web console: `http://localhost:8080/h2-console`
 - `GET /api/v1/users` — users for the Users screen
   (`id, org_id, email, name, role, status, department, riskScore / risk_score`).
 
+### Run the AI (Claude) locally
+
+By default the AI module uses `StubAiClient` — deterministic, offline, no token
+cost — so `classify` / `moderate` / template generation work with no key. To
+exercise the **real** Anthropic Claude path, set two environment variables when
+starting the dev backend:
+
+```bash
+AI_CLAUDE_ENABLED=true ANTHROPIC_API_KEY=sk-ant-... \
+  ./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
+On any Claude error (timeout, rate limit, malformed response) the call degrades
+back to `StubAiClient`, so the endpoints never fail because of the model.
+
+| Env var | Default | Purpose |
+|---------|---------|---------|
+| `AI_CLAUDE_ENABLED` | `false` | Turn the real Claude client on |
+| `ANTHROPIC_API_KEY` | — | Anthropic API key (required when enabled) |
+| `AI_CLAUDE_MODEL_CLASSIFY` | `claude-haiku-4-5` | Model for `classify` |
+| `AI_CLAUDE_MODEL_MODERATE` | `claude-haiku-4-5` | Model for `moderate` |
+| `AI_CLAUDE_MODEL_TEMPLATE` | `claude-sonnet-4-6` | Model for template generation (bump to `claude-sonnet-5` / `claude-opus-4-8` for higher quality) |
+| `AI_CLAUDE_TIMEOUT_MS` | `8000` | Per-request timeout for `classify` / `moderate` (ms) |
+| `AI_CLAUDE_GENERATE_TIMEOUT_MS` | `30000` | Per-request timeout for template generation (ms) |
+| `AI_CLAUDE_MAX_RETRIES` | `1` | SDK retries on 429 / 5xx (worst-case block = timeout × (retries + 1)) |
+
+Smoke test (dev security is permissive — `@PreAuthorize` is `@Profile("!dev")` —
+so no token is needed):
+
+```bash
+curl -sX POST http://localhost:8080/api/v1/ai/classify \
+  -H 'content-type: application/json' \
+  -d '{"payload":"Tài khoản của bạn bị khóa. Xác minh ngay: http://bit.ly/x"}'
+# -> {"label":"threat","confidence":0.7,"reason":"..."}
+```
+
+With `AI_CLAUDE_ENABLED` unset, the same call returns the deterministic stub
+result. For **Docker Compose**, pass the same two variables on the host before
+`up` (see `deploy/compose/docker-compose.yml`); for **Helm**, set
+`ai.claude.enabled=true` and point `ai.claude.existingSecret` at a Secret holding
+the key (see `deploy/helm/digishield/values.yaml`).
+
 ### Frontend `.env`
 
 The frontend lives in the sibling `../frontend` repo. Point it at the dev backend via

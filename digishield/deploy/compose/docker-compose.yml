@@ -12,6 +12,11 @@ x-app-env: &app-env
   DB_PASSWORD: digishield
   SPRING_RABBITMQ_HOST: rabbitmq
   SPRING_DATA_REDIS_HOST: redis
+  # AI (Claude). Off by default → deterministic StubAiClient. To route
+  # classify/moderate/generate through Claude, set both on the host before `up`:
+  #   AI_CLAUDE_ENABLED=true ANTHROPIC_API_KEY=sk-ant-... docker compose up
+  AI_CLAUDE_ENABLED: ${AI_CLAUDE_ENABLED:-false}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
 services:
   api:
