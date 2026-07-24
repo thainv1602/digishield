@@ -86,6 +86,26 @@
   background: var(--tint-blue-soft);
 }
 
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  text-align: left;
+}
+
+.item:hover {
+  background: var(--tint-blue-soft);
+}
+
 .logout {
   display: flex;
   align-items: center;
