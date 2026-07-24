@@ -125,7 +125,7 @@ export default function UsersPage() {
                 letterSpacing: '-.02em',
               }}
             >
-              {t('Người dùng & Nhóm')}
+              {t('Người dùng')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
               {t('{n} người dùng', { n: rows.length })}

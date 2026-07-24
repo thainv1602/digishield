@@ -14,6 +14,7 @@ const AdminDashboardPage = lazy(() => import('@/features/dashboard/AdminDashboar
 const CampaignWizardPage = lazy(() => import('@/features/campaigns/CampaignWizardPage'));
 const CampaignResultsPage = lazy(() => import('@/features/campaigns/CampaignResultsPage'));
 const UsersPage = lazy(() => import('@/features/users/UsersPage'));
+const GroupsPage = lazy(() => import('@/features/groups/GroupsPage'));
 const CompliancePage = lazy(() => import('@/features/compliance/CompliancePage'));
 const ContentStudioPage = lazy(() => import('@/features/content/ContentStudioPage'));
 const OrgSettingsPage = lazy(() => import('@/features/admin/OrgSettingsPage'));
@@ -107,6 +108,7 @@ export function AppRouter() {
         <Route path="/campaigns/new" element={guarded(ADMIN, CampaignWizardPage)} />
         <Route path="/campaigns/:id" element={guarded(ADMIN, CampaignResultsPage)} />
         <Route path="/users" element={guarded(ADMIN, UsersPage)} />
+        <Route path="/groups" element={guarded(ADMIN, GroupsPage)} />
         <Route path="/compliance" element={guarded(ADMIN, CompliancePage)} />
         <Route path="/content/studio" element={guarded(ADMIN, ContentStudioPage)} />
         <Route path="/settings/org" element={guarded(ADMIN, OrgSettingsPage)} />

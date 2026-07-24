@@ -68,7 +68,8 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
   admin: [
     { key: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: 'grid', section: 'Quản trị · Admin' },
     { key: 'campaigns', label: 'Mô phỏng', path: '/campaigns/new', icon: 'triangle', section: 'Quản trị · Admin' },
-    { key: 'users', label: 'Người dùng & Nhóm', path: '/users', icon: 'users', section: 'Quản trị · Admin' },
+    { key: 'users', label: 'Người dùng', path: '/users', icon: 'users', section: 'Quản trị · Admin' },
+    { key: 'groups', label: 'Nhóm', path: '/groups', icon: 'layers', section: 'Quản trị · Admin' },
     { key: 'compliance', label: 'Tuân thủ', path: '/compliance', icon: 'clipboard-check', section: 'Quản trị · Admin' },
     { key: 'content', label: 'Content Studio', path: '/content/studio', icon: 'pen-square', section: 'Quản trị · Admin' },
     { key: 'audit', label: 'Nhật ký kiểm toán', path: '/super/audit', icon: 'file-text', section: 'Quản trị · Admin' },
