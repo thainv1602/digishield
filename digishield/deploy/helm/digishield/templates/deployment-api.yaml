@@ -37,6 +37,7 @@ spec:
             {{- include "digishield.redisEnv" . | nindent 12 }}
             {{- include "digishield.rabbitEnv" . | nindent 12 }}
             {{- include "digishield.authEnv" . | nindent 12 }}
+            {{- include "digishield.aiEnv" . | nindent 12 }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness

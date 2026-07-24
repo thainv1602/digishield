@@ -98,6 +98,17 @@ flyway:
 auth:
   issuerUri: ""
 
+# AI (Claude). Off by default → deterministic StubAiClient (no token cost). When
+# claude.enabled is true, ANTHROPIC_API_KEY is injected from a Secret (never
+# values) — populate it via External Secrets (e.g. digishield/<env>/anthropic ->
+# { "api-key": "sk-ant-..." }) or create the Secret manually. Model ids / timeout
+# use the application.yml defaults (override with AI_CLAUDE_* env if needed).
+ai:
+  claude:
+    enabled: false
+    existingSecret: ""
+    apiKeyKey: api-key
+
 service:
   type: ClusterIP
   port: 80
