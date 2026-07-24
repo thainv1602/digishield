@@ -436,6 +436,13 @@ jobs:
           context: .
           file: frontend/Dockerfile
           platforms: ${{ matrix.platform }}
+          # Cognito config is public (issuer URL, public SPA client id, tenant id),
+          # so it comes from repo variables, not secrets. Unset -> empty -> the app
+          # shows the "login not configured" screen.
+          build-args: |
+            VITE_COGNITO_AUTHORITY=${{ vars.VITE_COGNITO_AUTHORITY }}
+            VITE_COGNITO_CLIENT_ID=${{ vars.VITE_COGNITO_CLIENT_ID }}
+            VITE_TENANT_ID=${{ vars.VITE_TENANT_ID }}
           outputs: type=image,name=ghcr.io/${{ github.repository }}/frontend,push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=frontend-${{ steps.plat.outputs.pair }}
           cache-to: type=gha,mode=max,scope=frontend-${{ steps.plat.outputs.pair }}
