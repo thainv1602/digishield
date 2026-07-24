@@ -15,6 +15,7 @@ import {
   Bell,
   Eye,
   Monitor,
+  Layers,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -36,6 +37,7 @@ const ICONS: Record<string, LucideIcon> = {
   bell: Bell,
   eye: Eye,
   monitor: Monitor,
+  layers: Layers,
 };
 
 export function NavIcon({ name, size = 15 }: { name: string; size?: number }) {
