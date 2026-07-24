@@ -127,6 +127,21 @@ public interface LearningService {
     List<BadgeView> getBadges(UUID tenantId, UUID userId);
 
     /**
+     * Lists the tenant's badge catalog (badge definitions), ordered by name.
+     */
+    List<BadgeCatalogView> listBadgeCatalog(UUID tenantId);
+
+    /**
+     * Creates a badge definition in the tenant's catalog.
+     */
+    BadgeCatalogView createBadge(UUID tenantId, BadgeCatalogView command);
+
+    /**
+     * Deletes a badge definition from the tenant's catalog.
+     */
+    void deleteBadge(UUID tenantId, UUID id);
+
+    /**
      * Gets a user's total accumulated points.
      */
     int getPoints(UUID tenantId, UUID userId);

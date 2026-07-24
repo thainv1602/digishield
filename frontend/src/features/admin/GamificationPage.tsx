@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Button, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { Award, ShieldCheck, Target, Zap } from 'lucide-react';
+import { Award, ShieldCheck, Target, Zap, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useLeaderboard, useUserBadges, usePointRules, type PointRule } from './api';
+import { useLeaderboard, useBadgeCatalog, useDeleteBadge, usePointRules, type PointRule } from './api';
+import { BadgeFormDrawer } from './BadgeFormDrawer';
 
 /**
  * GamificationPage — badge definitions, point rules, leaderboard scope.
@@ -16,7 +18,6 @@ import { useLeaderboard, useUserBadges, usePointRules, type PointRule } from './
  */
 
 // Seeded demo learner (dev profile) — the user whose badges/points are shown.
-const DEMO_USER_ID = '22222222-2222-2222-2222-222222222222';
 
 // BE `iconRef` hint → lucide icon.
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -52,7 +53,16 @@ const cardStyle: React.CSSProperties = {
 export default function GamificationPage() {
   const t = useT();
   const toast = useToast();
-  const badges = useUserBadges(DEMO_USER_ID);
+  const badges = useBadgeCatalog();
+  const delBadge = useDeleteBadge();
+  const [badgeFormOpen, setBadgeFormOpen] = useState(false);
+  const removeBadge = (id: string, name: string) => {
+    if (!window.confirm(t('Xóa huy hiệu "{name}"?', { name }))) return;
+    delBadge.mutate(id, {
+      onSuccess: () => toast({ msg: t('Đã xóa huy hiệu.'), variant: 'success' }),
+      onError: () => toast({ msg: t('Xóa thất bại, thử lại.'), variant: 'error' }),
+    });
+  };
   const leaderboard = useLeaderboard();
   const pointRulesQuery = usePointRules();
   const pointRules: PointRule[] = pointRulesQuery.data ?? [];
@@ -90,13 +100,7 @@ export default function GamificationPage() {
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Huy hiệu · Badges')}</div>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={() =>
-                  toast({ msg: t('Tạo huy hiệu cần thêm API danh mục huy hiệu (chưa khả dụng).'), variant: 'info' })
-                }
-              >
+              <Button size="sm" variant="primary" onClick={() => setBadgeFormOpen(true)}>
                 {t('+ Thêm')}
               </Button>
             </div>
@@ -129,22 +133,28 @@ export default function GamificationPage() {
                         gap: 12,
                       }}
                     >
-                      <Icon size={26} color={b.earned ? 'var(--color-amber)' : 'var(--color-muted)'} />
+                      <Icon size={26} color="var(--color-amber)" />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text)', marginBottom: 3 }}>
                           {b.name}
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{b.description ?? ''}</div>
                       </div>
-                      <div
+                      <button
+                        type="button"
+                        aria-label={t('Xóa huy hiệu')}
+                        onClick={() => removeBadge(b.id, b.name)}
+                        disabled={delBadge.isPending}
                         style={{
-                          fontSize: 11.5,
-                          color: b.earned ? 'var(--color-teal)' : 'var(--color-muted)',
-                          fontWeight: 500,
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--color-muted)',
+                          display: 'flex',
                         }}
                       >
-                        {b.earned ? t('Đã đạt') : t('Chưa đạt')}
-                      </div>
+                        <X size={15} />
+                      </button>
                     </div>
                   );
                 })}
@@ -255,6 +265,8 @@ export default function GamificationPage() {
           </div>
         </div>
       </div>
+
+      <BadgeFormDrawer open={badgeFormOpen} onClose={() => setBadgeFormOpen(false)} />
     </>
   );
 }
