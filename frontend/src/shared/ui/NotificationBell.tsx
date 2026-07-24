@@ -19,9 +19,11 @@ const DEFAULT_NOTIFICATIONS: Notification[] = [
 export function NotificationBell({
   count = 3,
   notifications = DEFAULT_NOTIFICATIONS,
+  onMarkRead,
 }: {
   count?: number;
   notifications?: Notification[];
+  onMarkRead?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -52,7 +54,17 @@ export function NotificationBell({
         <div className={styles.panel} role="menu">
           <div className={styles.panelHead}>
             <span className={styles.panelTitle}>Thông báo</span>
-            <span className={styles.panelAction}>Đánh dấu đã đọc</span>
+            <button
+              type="button"
+              className={styles.panelAction}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', font: 'inherit' }}
+              onClick={() => {
+                onMarkRead?.();
+                setOpen(false);
+              }}
+            >
+              Đánh dấu đã đọc
+            </button>
           </div>
           <div className={styles.list}>
             {notifications.map((n) => (
@@ -65,7 +77,9 @@ export function NotificationBell({
               </div>
             ))}
           </div>
-          <div className={styles.panelFoot}>Xem tất cả thông báo →</div>
+          {notifications.length === 0 ? (
+            <div className={styles.panelFoot}>Không có thông báo</div>
+          ) : null}
         </div>
       ) : null}
     </div>

@@ -1,9 +1,9 @@
 import { useLocation } from 'react-router-dom';
-import { Search } from 'lucide-react';
-import { useNotifications } from '@/features/notifications/api';
+import { useNotifications, useMarkAllNotificationsRead } from '@/features/notifications/api';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { SearchBox } from './SearchBox';
 import { UserMenu } from './UserMenu';
 import { titleForPath } from './pageTitles';
 import styles from './Topbar.module.css';
@@ -27,6 +27,7 @@ function relativeLabel(iso: string | null | undefined, t: Translate): string {
 export function Topbar() {
   const { pathname } = useLocation();
   const { data: notifications } = useNotifications();
+  const markRead = useMarkAllNotificationsRead();
   const { lang, t } = useI18n();
 
   const bellItems = (notifications ?? []).map((n, i) => {
@@ -45,14 +46,15 @@ export function Topbar() {
     <header className={styles.topbar}>
       <div className={styles.title}>{titleForPath(pathname, lang)}</div>
 
-      <button type="button" className={styles.search}>
-        <Search size={13} strokeWidth={2.5} color="var(--color-muted)" />
-        <span className={styles.searchPlaceholder}>{t('Tìm kiếm...')}</span>
-      </button>
+      <SearchBox />
 
       <LanguageSwitcher />
 
-      <NotificationBell count={unread} notifications={bellItems} />
+      <NotificationBell
+        count={unread}
+        notifications={bellItems}
+        onMarkRead={() => markRead.mutate()}
+      />
 
       <UserMenu />
     </header>

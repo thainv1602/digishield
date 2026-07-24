@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * REST controller for the Notification module (bell dropdown + Alert Center).
@@ -45,6 +46,27 @@ public class NotificationController {
         return repository.findByTenantId(tenantId).stream()
                 .map(NotificationController::toView)
                 .toList();
+    }
+
+    /**
+     * Marks every notification of the current tenant as read.
+     */
+    @Transactional
+    @PostMapping("/api/v1/notifications/read-all")
+    public Map<String, Integer> markAllRead() {
+        UUID tenantId = TenantContext.requireUuid();
+        List<Notification> items = repository.findByTenantId(tenantId);
+        int updated = 0;
+        for (Notification n : items) {
+            if (n.getStatus() != NotificationStatus.READ) {
+                n.setStatus(NotificationStatus.READ);
+                updated++;
+            }
+        }
+        if (updated > 0) {
+            repository.saveAll(items);
+        }
+        return Map.of("updated", updated);
     }
 
     /**
