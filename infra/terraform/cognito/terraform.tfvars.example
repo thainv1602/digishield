@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and adjust, then: terraform init && terraform apply
+aws_region = "ap-southeast-1"
+
+# Public HTTPS URL of the frontend on the Jetson ingress (exact origin, no wildcard).
+app_url = "https://digishield.duckdns.org"
+
+# Optional overrides:
+# name          = "digishield-jetson"
+# dev_tenant_id = "11111111-1111-1111-1111-111111111111"
