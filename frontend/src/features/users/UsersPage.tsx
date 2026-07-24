@@ -1,22 +1,59 @@
+import { useMemo, useState } from 'react';
 import { Button, DataTable, Input, Select, StatusPill, riskToVariant } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { Search } from 'lucide-react';
 import { useT } from '@/shared/i18n/I18nProvider';
+import { ROLES } from '@/app/auth/roles';
 import { useUsers, type UserRow } from './api';
+import { UserFormDrawer } from './UserFormDrawer';
+import { ImportDrawer } from './ImportDrawer';
+
+const ROLE_OPTIONS = Object.values(ROLES);
 
 /**
  * UsersPage — users & smart groups management.
- * Pixel-matched to the design handoff "USERS & GROUPS" screen.
  *
- * Data comes from the live backend via `useUsers()` (`GET /users`). The hook
- * maps the BE `department`/`riskScore` fields onto the FE `dept`/`risk` shape.
- * Loading/error/empty states handled inline below.
+ * Data comes from the live backend via `useUsers()` (`GET /users`). The toolbar
+ * buttons and the per-row "Sửa" action are wired to the real create/update/
+ * import endpoints (drawers below); the filter bar filters the loaded rows
+ * client-side.
  */
-
 export default function UsersPage() {
   const t = useT();
   const { data: users, isLoading, isError, refetch } = useUsers();
-  const rows = users ?? [];
+  const rows = useMemo(() => users ?? [], [users]);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [deptFilter, setDeptFilter] = useState('');
+
+  const deptOptions = useMemo(
+    () => Array.from(new Set(rows.map((u) => u.dept).filter(Boolean))).sort(),
+    [rows],
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return rows.filter((u) => {
+      if (q && !`${u.name} ${u.email}`.toLowerCase().includes(q)) return false;
+      if (roleFilter && u.role !== roleFilter) return false;
+      if (deptFilter && u.dept !== deptFilter) return false;
+      return true;
+    });
+  }, [rows, search, roleFilter, deptFilter]);
+
+  const openAdd = () => {
+    setEditing(null);
+    setFormOpen(true);
+  };
+  const openEdit = (u: UserRow) => {
+    setEditing(u);
+    setFormOpen(true);
+  };
+
   const columns: ColumnDef<UserRow>[] = [
     {
       id: 'user',
@@ -53,9 +90,10 @@ export default function UsersPage() {
     {
       id: 'edit',
       header: '',
-      cell: () => (
+      cell: (u) => (
         <button
           type="button"
+          onClick={() => openEdit(u)}
           style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
         >
           {t('Sửa')}
@@ -90,12 +128,16 @@ export default function UsersPage() {
               {t('Người dùng & Nhóm')}
             </div>
             <div style={{ fontSize: 13, color: 'var(--color-muted)', marginTop: 4 }}>
-              {t('{n} người dùng · 8 nhóm thông minh', { n: rows.length })}
+              {t('{n} người dùng', { n: rows.length })}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="outline">{t('Nhập CSV / SCIM')}</Button>
-            <Button variant="primary">{t('+ Thêm người dùng')}</Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)}>
+              {t('Nhập CSV / SCIM')}
+            </Button>
+            <Button variant="primary" onClick={openAdd}>
+              {t('+ Thêm người dùng')}
+            </Button>
           </div>
         </div>
 
@@ -127,20 +169,34 @@ export default function UsersPage() {
               <Input
                 placeholder={t('Tìm kiếm...')}
                 aria-label={t('Tìm kiếm người dùng')}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
                 style={{ paddingLeft: 32, width: '100%' }}
               />
             </div>
-            <Select aria-label={t('Lọc theo vai trò')} defaultValue="">
+            <Select
+              aria-label={t('Lọc theo vai trò')}
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
               <option value="">{t('Vai trò')}</option>
-              <option>{t('Nhân viên')}</option>
-              <option>{t('Trưởng phòng')}</option>
-              <option>Admin IT</option>
+              {ROLE_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </Select>
-            <Select aria-label={t('Lọc theo phòng ban')} defaultValue="">
+            <Select
+              aria-label={t('Lọc theo phòng ban')}
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+            >
               <option value="">{t('Phòng ban')}</option>
-              <option>{t('Kế toán')}</option>
-              <option>{t('Kinh doanh')}</option>
-              <option>IT</option>
+              {deptOptions.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
             </Select>
           </div>
 
@@ -158,11 +214,17 @@ export default function UsersPage() {
           {!isLoading && !isError && rows.length === 0 && (
             <TableMessage>{t('Không có người dùng nào.')}</TableMessage>
           )}
-          {!isLoading && !isError && rows.length > 0 && (
-            <DataTable<UserRow> columns={columns} data={rows} rowKey={(u) => u.id} />
+          {!isLoading && !isError && rows.length > 0 && filtered.length === 0 && (
+            <TableMessage>{t('Không có kết quả khớp bộ lọc.')}</TableMessage>
+          )}
+          {!isLoading && !isError && filtered.length > 0 && (
+            <DataTable<UserRow> columns={columns} data={filtered} rowKey={(u) => u.id} />
           )}
         </div>
       </div>
+
+      <UserFormDrawer open={formOpen} onClose={() => setFormOpen(false)} user={editing} />
+      <ImportDrawer open={importOpen} onClose={() => setImportOpen(false)} />
     </>
   );
 }
