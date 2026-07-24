@@ -48,17 +48,25 @@ spec:
             - name: DIGISHIELD_CORS_ALLOWEDORIGINS
               value: {{ . | quote }}
             {{- end }}
+          # Boot is slow on arm64 (Jetson): the app takes ~66s to start, plus
+          # Flyway migrations and seeders. The startupProbe gives it up to 300s
+          # (30 * 10s) to come up; liveness/readiness only begin polling once it
+          # succeeds, so no initialDelaySeconds is needed on them.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 10
+            failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
               port: http
-            initialDelaySeconds: 15
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
               port: http
-            initialDelaySeconds: 30
             periodSeconds: 15
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
