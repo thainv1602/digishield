@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/shared/api/client';
 import { queryKeys } from '@/shared/api/queryKeys';
 
@@ -30,5 +30,26 @@ export function useBlacklist() {
   return useQuery({
     queryKey: queryKeys.blacklist,
     queryFn: ({ signal }) => fetchBlacklist(signal),
+  });
+}
+
+/** Add-blacklist payload (`type` matches the BE BlacklistType enum, lower-case ok). */
+export interface AddBlacklistInput {
+  type: string;
+  value: string;
+  source: string;
+}
+
+/** POST /blacklist — add an entry to the tenant's blacklist. */
+export function addBlacklist(body: AddBlacklistInput): Promise<BlacklistEntry> {
+  return apiRequest<BlacklistEntry>({ url: '/blacklist', method: 'POST', data: body });
+}
+
+/** Add-entry mutation; refreshes the list on success. */
+export function useAddBlacklist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: addBlacklist,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.blacklist }),
   });
 }

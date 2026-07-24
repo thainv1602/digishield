@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { Button, DataTable, StatusPill } from '@/shared/ui';
 import type { ColumnDef, StatusVariant } from '@/shared/ui';
 import { useTenants, type Tenant as TenantDto } from './api';
+import { TenantFormDrawer } from './TenantFormDrawer';
 
 /**
  * TenantConsolePage — Super Admin multi-tenant overview.
@@ -59,6 +60,18 @@ export default function TenantConsolePage() {
   const { data, isLoading, isError, refetch } = useTenants();
 
   const tenants = useMemo<TenantRow[]>(() => (data ?? []).map(toRow), [data]);
+  const byId = useMemo(() => new Map((data ?? []).map((d) => [d.id, d])), [data]);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [formTenant, setFormTenant] = useState<TenantDto | null>(null);
+  const openCreate = () => {
+    setFormTenant(null);
+    setFormOpen(true);
+  };
+  const openManage = (id: string) => {
+    setFormTenant(byId.get(id) ?? null);
+    setFormOpen(true);
+  };
 
   const kpis = useMemo(() => {
     const activeCount = (data ?? []).filter((t) => t.status === 'active').length;
@@ -113,9 +126,10 @@ export default function TenantConsolePage() {
     {
       id: 'manage',
       header: '',
-      cell: () => (
+      cell: (row) => (
         <button
           type="button"
+          onClick={() => openManage(row.id)}
           style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
         >
           {t('Quản lý')}
@@ -153,7 +167,9 @@ export default function TenantConsolePage() {
               {t('{n} tổ chức · {m} người dùng tổng', { n: tenants.length, m: totalUsers.toLocaleString('vi-VN') })}
             </div>
           </div>
-          <Button variant="primary">{t('+ Tạo tổ chức')}</Button>
+          <Button variant="primary" onClick={openCreate}>
+            {t('+ Tạo tổ chức')}
+          </Button>
         </div>
 
         {/* KPI cards */}
@@ -201,6 +217,8 @@ export default function TenantConsolePage() {
           )}
         </div>
       </div>
+
+      <TenantFormDrawer open={formOpen} onClose={() => setFormOpen(false)} tenant={formTenant} />
     </>
   );
 }
