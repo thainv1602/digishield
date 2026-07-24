@@ -56,3 +56,6 @@ Thumbs.db
 # Environment
 .env
 *.local
+
+# Personal coursework material (not part of the application)
+Software Testing Slide/
