@@ -25,7 +25,7 @@ import java.util.UUID;
  * All rows are scoped to the fixed demo tenant.
  */
 @Component
-@Profile("dev")
+@Profile("dev | seed")
 @Order(20)
 public class ReportingDevSeeder implements CommandLineRunner {
 

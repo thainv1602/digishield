@@ -17,11 +17,15 @@ image:
 api:
   # One replica per Jetson; Traefik load-balances across both.
   replicaCount: 2
-  # LAN demo mode (see RUN_PRODLIKE.md): real Postgres + Flyway via pgdemo, and
-  # dev's permissive security + seeded demo users — the in-cluster frontend is
-  # built without Cognito vars and uses the demo login. Switch back to `api` +
-  # auth.issuerUri when wiring real Cognito/OIDC.
-  profile: dev,pgdemo
+  # Real-auth mode: `pgdemo` = real Postgres + Flyway; NO `dev`, so the JWT
+  # resource server (SecurityConfig) and RLS TenantFilter are active — Cognito
+  # tokens are validated and @PreAuthorize/RLS enforced. `seed` re-runs the demo
+  # seeders (now @Profile("dev | seed")) so the demo tenant + data exist. The app
+  # connects as the superuser `digishield`; RlsTenantAspect drops to the
+  # non-superuser role `digishield_app` (migration V2026.07.24.001) per request so
+  # RLS actually isolates tenants. Requires auth.issuerUri below + a frontend
+  # image built with the VITE_COGNITO_* vars.
+  profile: pgdemo,seed
   resources:
     requests:
       cpu: 250m
@@ -69,7 +73,8 @@ externalSecrets:
   enabled: false # secrets are created manually on the cluster (see JETSON_SETUP.md)
 
 auth:
-  issuerUri: "" # LAN-only for now; set when wiring Cognito/OIDC
+  # Cognito user pool issuer — the app validates JWTs against this OIDC issuer.
+  issuerUri: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_8nUpkhk0s"
 
 # Public tunnels terminate TLS before Traefik, so the API sees http while the
 # browser Origin is https — no longer same-origin. Allow the tunnel hostnames

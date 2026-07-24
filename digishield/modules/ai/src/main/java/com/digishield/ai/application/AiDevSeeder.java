@@ -24,7 +24,7 @@ import java.util.UUID;
  * rows are scoped to the fixed demo tenant.
  */
 @Component
-@Profile("dev")
+@Profile("dev | seed")
 @Order(20)
 public class AiDevSeeder implements CommandLineRunner {
 

@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
  * users existing. Only active under the {@code dev} profile.
  */
 @Component
-@Profile("dev")
+@Profile("dev | seed")
 @Order(0)
 public class DevDataSeeder implements CommandLineRunner {
 

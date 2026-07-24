@@ -116,6 +116,10 @@ class TenantIsolationIT {
         registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
         registry.add("spring.datasource.username", () -> "normal_user");
         registry.add("spring.datasource.password", () -> "normal_pass");
+        // The app already connects as a non-superuser here, so RLS is enforced by
+        // the connection role — disable the aspect's SET LOCAL ROLE (there is no
+        // digishield_app role in this test DB).
+        registry.add("digishield.rls.app-role", () -> "");
     }
 
     @BeforeAll

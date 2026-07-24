@@ -15,7 +15,9 @@
      app boots a JwtDecoder from this OIDC issuer (e.g. a Cognito user pool). */}}
 {{- define "digishield.authEnv" -}}
 {{- with .Values.auth.issuerUri }}
-- name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+{{- /* The app's SecurityConfig reads digishield.auth.jwt.issuer-uri, bound to
+       AUTH_JWT_ISSUER_URI in application.yml — set that, not the Spring default. */}}
+- name: AUTH_JWT_ISSUER_URI
   value: {{ . | quote }}
 {{- end }}
 {{- end -}}
