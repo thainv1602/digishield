@@ -12,7 +12,11 @@ spec:
   project: default
   source:
     repoURL: https://github.com/thainv1602/digishield.git
-    targetRevision: main
+    # Deploy branch written by cd.yml's deploy-jetson job: main + sha-pinned image
+    # tags. Tracking a branch the CI bot can push to (main is protected) and using
+    # sha tags gives auto-deploy with immutable images (a tag change is a manifest
+    # diff, so ArgoCD rolls out both api and frontend).
+    targetRevision: deploy/jetson
     path: digishield/deploy/helm/digishield
     helm:
       valueFiles:

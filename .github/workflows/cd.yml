@@ -302,35 +302,45 @@ jobs:
 #           helm history digishield --namespace digishield-dev || true
 #           kubectl -n digishield-dev get pods
 #
-  # Jetson k3s cluster (GitOps): CI never touches the cluster — it commits the
-  # new image tag into values-jetson.yaml and ArgoCD on the cluster pulls and
-  # syncs it. [skip ci] keeps the bump commit from re-triggering this workflow.
+  # Jetson k3s cluster (GitOps): CI never touches the cluster — it writes the
+  # sha-pinned image tags to the deploy/jetson branch, which ArgoCD tracks and
+  # syncs. That branch is separate from main (which the bot cannot push to) and
+  # is not a CD trigger, so there is no re-trigger loop.
   # OFF unless the JETSON_DEPLOY_ENABLED repo variable is "true".
   deploy-jetson:
-    name: Deploy jetson (GitOps tag bump)
-    needs: [build-push, image-scan, sign-attest]
+    name: Deploy jetson (GitOps sha pin)
+    # Needs both images' sha tags to exist (backend build-push, frontend frontend-push).
+    needs: [build-push, image-scan, sign-attest, frontend-push]
     if: vars.JETSON_DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
+          fetch-depth: 0
 
-      - name: Bump image tag in values-jetson.yaml
+      - name: Pin image tags on the deploy/jetson branch
+        env:
+          TAG: "sha-${{ needs.build-push.outputs.tag }}"
         run: |
+          # ArgoCD tracks the deploy/jetson branch (see gitops/jetson/apps/digishield.yaml).
+          # It mirrors main + the sha-pinned image tags. Pushing here avoids main's
+          # branch protection (the github-actions bot cannot push to main), and
+          # because the tag changes on every build ArgoCD sees a manifest diff and
+          # rolls out both the api and the frontend — no stale `latest` pods.
           f=digishield/deploy/helm/digishield/values-jetson.yaml
-          sed -i -E 's|^(  tag:) .*$|\1 "sha-${{ needs.build-push.outputs.tag }}"|' "$f"
-          if git diff --quiet; then
-            echo "Tag unchanged; nothing to commit."; exit 0
-          fi
+          # backend image.tag (2-space indent) and frontend.image.tag (4-space indent)
+          sed -i -E "s|^(  tag:) .*$|\1 \"${TAG}\"|" "$f"
+          sed -i -E "s|^(    tag:) .*$|\1 \"${TAG}\"|" "$f"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B deploy/jetson
           git add "$f"
-          git commit -m "chore(gitops): jetson image sha-${{ needs.build-push.outputs.tag }} [skip ci]"
-          git push origin main
+          git commit -m "gitops(jetson): pin images to ${TAG}"
+          git push -f origin deploy/jetson
 
 #   # Production is deferred (cost); kept for structure, OFF by default.
 #   deploy-prod:
