@@ -133,6 +133,12 @@ resource "aws_iam_role_policy_attachment" "pre_token_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+# Lets the function ship traces when X-Ray tracing is enabled below.
+resource "aws_iam_role_policy_attachment" "pre_token_xray" {
+  role       = aws_iam_role.pre_token_lambda.name
+  policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
+}
+
 resource "aws_lambda_function" "pre_token" {
   function_name    = "${local.name}-cognito-pretoken"
   role             = aws_iam_role.pre_token_lambda.arn
@@ -140,6 +146,11 @@ resource "aws_lambda_function" "pre_token" {
   runtime          = "nodejs20.x"
   filename         = data.archive_file.pre_token_zip.output_path
   source_code_hash = data.archive_file.pre_token_zip.output_base64sha256
+
+  # X-Ray tracing (Trivy AWS-0066).
+  tracing_config {
+    mode = "Active"
+  }
 
   environment {
     variables = {
