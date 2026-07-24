@@ -99,6 +99,32 @@ public interface TenancyService {
     MemberCountView evaluateGroup(UUID tenantId, UUID groupId);
 
     /**
+     * Updates a group's name and/or rule (null fields left unchanged; pass an
+     * empty rule to turn a smart group into a static one).
+     */
+    GroupView updateGroup(UUID tenantId, UUID groupId, GroupView command);
+
+    /**
+     * Deletes a group and its memberships.
+     */
+    void deleteGroup(UUID tenantId, UUID groupId);
+
+    /**
+     * Returns the user ids that belong to a group.
+     */
+    List<UUID> listGroupMembers(UUID tenantId, UUID groupId);
+
+    /**
+     * Adds a user to a group (no-op if already a member); returns the new count.
+     */
+    MemberCountView addGroupMember(UUID tenantId, UUID groupId, UUID userId);
+
+    /**
+     * Removes a user from a group; returns the new count.
+     */
+    MemberCountView removeGroupMember(UUID tenantId, UUID groupId, UUID userId);
+
+    /**
      * Lists the usage-metering data points of a tenant, optionally filtered by
      * billing period.
      */

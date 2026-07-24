@@ -16,7 +16,9 @@ import com.digishield.tenancy.api.TenantView;
 import com.digishield.tenancy.api.UpdateTenantCommand;
 import com.digishield.tenancy.api.UsageMeteringView;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -165,6 +167,63 @@ class TenantController {
     ResponseEntity<MemberCountView> evaluateGroup(@PathVariable UUID groupId) {
         UUID tenantId = TenantContext.requireUuid();
         return ResponseEntity.ok(tenancyService.evaluateGroup(tenantId, groupId));
+    }
+
+    /**
+     * Updates a group's name and/or rule.
+     */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @PatchMapping("/api/v1/groups/{groupId}")
+    ResponseEntity<GroupView> updateGroup(@PathVariable UUID groupId, @RequestBody GroupView command) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(tenancyService.updateGroup(tenantId, groupId, command));
+    }
+
+    /**
+     * Deletes a group (and its memberships).
+     */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @DeleteMapping("/api/v1/groups/{groupId}")
+    ResponseEntity<Void> deleteGroup(@PathVariable UUID groupId) {
+        UUID tenantId = TenantContext.requireUuid();
+        tenancyService.deleteGroup(tenantId, groupId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Lists the user ids that belong to a group.
+     */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @GetMapping("/api/v1/groups/{groupId}/members")
+    ResponseEntity<List<UUID>> groupMembers(@PathVariable UUID groupId) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(tenancyService.listGroupMembers(tenantId, groupId));
+    }
+
+    /**
+     * Adds a user to a group.
+     */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @PostMapping("/api/v1/groups/{groupId}/members")
+    ResponseEntity<MemberCountView> addGroupMember(@PathVariable UUID groupId,
+                                                   @RequestBody MemberCommand command) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(tenancyService.addGroupMember(tenantId, groupId, command.userId()));
+    }
+
+    /**
+     * Removes a user from a group.
+     */
+    @PreAuthorize("hasRole('ORG_ADMIN')")
+    @DeleteMapping("/api/v1/groups/{groupId}/members/{userId}")
+    ResponseEntity<MemberCountView> removeGroupMember(@PathVariable UUID groupId,
+                                                      @PathVariable UUID userId) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(tenancyService.removeGroupMember(tenantId, groupId, userId));
+    }
+
+    /** Request body for adding a member (snake_case wire field {@code user_id}). */
+    record MemberCommand(@JsonProperty("user_id") UUID userId) {
     }
 
     /**

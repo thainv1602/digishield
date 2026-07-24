@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Button, DataTable, StatusPill, useToast } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { useGroups, useEvaluateGroup, type GroupDto } from './api';
+import { useGroups, useEvaluateGroup, useDeleteGroup, type GroupDto } from './api';
 import { GroupFormDrawer } from './GroupFormDrawer';
+import { GroupMembersDrawer } from './GroupMembersDrawer';
 
 /** Short human summary of a smart group's rule_json. */
 function ruleSummary(rule: Record<string, unknown> | null): string {
@@ -23,10 +24,31 @@ export default function GroupsPage() {
   const toast = useToast();
   const { data: groups, isLoading, isError, refetch } = useGroups();
   const evaluate = useEvaluateGroup();
+  const del = useDeleteGroup();
   const [formOpen, setFormOpen] = useState(false);
+  const [formGroup, setFormGroup] = useState<GroupDto | null>(null);
+  const [membersGroup, setMembersGroup] = useState<GroupDto | null>(null);
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
 
   const rows = groups ?? [];
+
+  const openCreate = () => {
+    setFormGroup(null);
+    setFormOpen(true);
+  };
+  const openEdit = (g: GroupDto) => {
+    setFormGroup(g);
+    setFormOpen(true);
+  };
+  const doDelete = (g: GroupDto) => {
+    if (!window.confirm(t('Xóa nhóm "{name}"? Hành động này không thể hoàn tác.', { name: g.name ?? '' }))) {
+      return;
+    }
+    del.mutate(g.id, {
+      onSuccess: () => toast({ msg: t('Đã xóa nhóm.'), variant: 'success' }),
+      onError: () => toast({ msg: t('Xóa nhóm thất bại, thử lại.'), variant: 'error' }),
+    });
+  };
 
   const runEvaluate = (g: GroupDto) => {
     setEvaluatingId(g.id);
@@ -80,24 +102,30 @@ export default function GroupsPage() {
     {
       id: 'action',
       header: '',
-      cell: (g) =>
-        g.rule_json ? (
-          <button
-            type="button"
-            onClick={() => runEvaluate(g)}
-            disabled={evaluate.isPending && evaluatingId === g.id}
-            style={{
-              fontSize: 12,
-              color: 'var(--color-blue)',
-              cursor: 'pointer',
-              background: 'none',
-              border: 'none',
-            }}
-          >
-            {evaluate.isPending && evaluatingId === g.id ? t('Đang…') : t('Đánh giá lại')}
+      cell: (g) => (
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button type="button" onClick={() => setMembersGroup(g)} style={linkBtn()}>
+            {t('Thành viên')}
           </button>
-        ) : null,
-      width: '110px',
+          {g.rule_json ? (
+            <button
+              type="button"
+              onClick={() => runEvaluate(g)}
+              disabled={evaluate.isPending && evaluatingId === g.id}
+              style={linkBtn()}
+            >
+              {evaluate.isPending && evaluatingId === g.id ? t('Đang…') : t('Đánh giá lại')}
+            </button>
+          ) : null}
+          <button type="button" onClick={() => openEdit(g)} style={linkBtn()}>
+            {t('Sửa')}
+          </button>
+          <button type="button" onClick={() => doDelete(g)} style={linkBtn('var(--color-red)')}>
+            {t('Xóa')}
+          </button>
+        </div>
+      ),
+      width: '280px',
       align: 'right',
     },
   ];
@@ -129,7 +157,7 @@ export default function GroupsPage() {
               {t('{n} nhóm', { n: rows.length })}
             </div>
           </div>
-          <Button variant="primary" onClick={() => setFormOpen(true)}>
+          <Button variant="primary" onClick={openCreate}>
             {t('+ Tạo nhóm')}
           </Button>
         </div>
@@ -162,9 +190,15 @@ export default function GroupsPage() {
         </div>
       </div>
 
-      <GroupFormDrawer open={formOpen} onClose={() => setFormOpen(false)} />
+      <GroupFormDrawer open={formOpen} onClose={() => setFormOpen(false)} group={formGroup} />
+      <GroupMembersDrawer group={membersGroup} onClose={() => setMembersGroup(null)} />
     </>
   );
+}
+
+/** Inline "link" button style used by the row actions. */
+function linkBtn(color = 'var(--color-blue)'): React.CSSProperties {
+  return { fontSize: 12, color, cursor: 'pointer', background: 'none', border: 'none', padding: 0 };
 }
 
 function TableMessage({ children }: { children: React.ReactNode }) {
