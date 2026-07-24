@@ -21,7 +21,7 @@ import java.util.UUID;
  * demo tenant {@link DemoTenants#DEMO_TENANT_ID}.
  */
 @Component
-@Profile("dev")
+@Profile("dev | seed")
 @Order(20)
 class NotificationDevSeeder implements CommandLineRunner {
 

@@ -42,7 +42,7 @@ import java.util.UUID;
  * rows shown in the Super Admin / Billing consoles.
  */
 @Component
-@Profile("dev")
+@Profile("dev | seed")
 @Order(20)
 class TenancyDevSeeder implements CommandLineRunner {
 
