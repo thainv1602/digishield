@@ -53,3 +53,17 @@ export function useAddBlacklist() {
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.blacklist }),
   });
 }
+
+/** DELETE /blacklist/{id} — remove an entry. */
+export function deleteBlacklist(id: string): Promise<void> {
+  return apiRequest<void>({ url: `/blacklist/${id}`, method: 'DELETE' });
+}
+
+/** Delete-entry mutation; refreshes the list on success. */
+export function useDeleteBlacklist() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteBlacklist,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.blacklist }),
+  });
+}

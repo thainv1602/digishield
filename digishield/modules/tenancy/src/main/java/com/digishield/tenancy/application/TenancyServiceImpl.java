@@ -171,6 +171,9 @@ public class TenancyServiceImpl implements TenancyService {
     public TenantView updateTenant(UUID id, UpdateTenantCommand command) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + id));
+        if (command.name() != null && !command.name().isBlank()) {
+            tenant.setName(command.name().trim());
+        }
         if (command.tier() != null && !command.tier().isBlank()) {
             tenant.setTier(TenantTier.valueOf(command.tier().trim().toUpperCase()));
         }

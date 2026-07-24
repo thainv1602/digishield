@@ -107,6 +107,13 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     @Override
+    public void deleteBlacklist(UUID id) {
+        // Tenant must be set; the RLS-scoped findById only sees this tenant's rows.
+        TenantContext.requireUuid();
+        blacklistRepository.findById(id).ifPresent(blacklistRepository::delete);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ThreatIntelDto> listThreatIntel() {
         UUID tenantId = TenantContext.requireUuid();

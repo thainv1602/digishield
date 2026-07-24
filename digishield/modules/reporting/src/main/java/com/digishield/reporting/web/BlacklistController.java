@@ -4,7 +4,9 @@ import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.domain.BlacklistType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 /**
@@ -41,6 +44,12 @@ public class BlacklistController {
         return ResponseEntity
                 .created(URI.create("/api/v1/blacklist/" + created.id()))
                 .body(created);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        reportingService.deleteBlacklist(id);
+        return ResponseEntity.noContent().build();
     }
 
     /**

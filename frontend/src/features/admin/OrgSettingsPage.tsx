@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Button, Input, Select, StatusPill, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
+import { useAuth } from '@/app/auth/useAuth';
+import { useTenant, useUpdateTenant } from '@/features/super/api';
 import {
   useFeatureFlags,
   useTenantSettings,
@@ -8,6 +10,8 @@ import {
   useUpdateThresholds,
   type BusinessThresholds,
 } from './api';
+
+const REGION_OPTIONS = ['in-country', 'on-prem', 'cloud'];
 
 /**
  * OrgSettingsPage — tenant configuration, data region, business thresholds.
@@ -75,6 +79,35 @@ export default function OrgSettingsPage() {
   const thresholdsQuery = useBusinessThresholds();
   const updateThresholds = useUpdateThresholds();
 
+  // Org info (name + data region) — backed by GET/PATCH /tenants/{id}.
+  const { user } = useAuth();
+  const tenantId = user?.tenantId ?? null;
+  const tenantQuery = useTenant(tenantId);
+  const updateTenant = useUpdateTenant();
+  const [orgName, setOrgName] = useState('');
+  const [region, setRegion] = useState('in-country');
+  useEffect(() => {
+    const tn = tenantQuery.data;
+    if (!tn) return;
+    setOrgName(tn.name ?? '');
+    setRegion(tn.dataRegion && REGION_OPTIONS.includes(tn.dataRegion) ? tn.dataRegion : 'in-country');
+  }, [tenantQuery.data]);
+
+  function saveOrgInfo() {
+    if (!tenantId) return;
+    if (!orgName.trim()) {
+      toast.push({ msg: t('Vui lòng nhập tên tổ chức.'), variant: 'warning' });
+      return;
+    }
+    updateTenant.mutate(
+      { id: tenantId, body: { name: orgName.trim(), dataRegion: region } },
+      {
+        onSuccess: () => toast.push({ msg: t('Đã lưu thông tin tổ chức'), variant: 'success' }),
+        onError: () => toast.push({ msg: t('Không lưu được, thử lại'), variant: 'error' }),
+      },
+    );
+  }
+
   // Editable copy of the thresholds, seeded once the query resolves.
   const [form, setForm] = useState<BusinessThresholds | null>(null);
   useEffect(() => {
@@ -122,7 +155,11 @@ export default function OrgSettingsPage() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
               <Field label={t('Tên tổ chức')}>
-                <Input defaultValue={t('Cơ quan ABC')} aria-label={t('Tên tổ chức')} />
+                <Input
+                  value={orgName}
+                  onChange={(e) => setOrgName(e.target.value)}
+                  aria-label={t('Tên tổ chức')}
+                />
               </Field>
               <Field label={t('Tên miền')}>
                 <Input defaultValue="abc.gov.vn" disabled aria-label={t('Tên miền')} />
@@ -135,12 +172,26 @@ export default function OrgSettingsPage() {
                 </Select>
               </Field>
               <Field label={t('Vùng lưu trữ dữ liệu')}>
-                <Select aria-label={t('Vùng lưu trữ dữ liệu')} defaultValue="in-country">
+                <Select
+                  aria-label={t('Vùng lưu trữ dữ liệu')}
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                >
                   <option value="in-country">{t('In-country (Việt Nam)')}</option>
                   <option value="on-prem">On-premises</option>
                   <option value="cloud">Cloud (Singapore)</option>
                 </Select>
               </Field>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 14 }}>
+              <Button
+                variant="primary"
+                disabled={!tenantId || updateTenant.isPending}
+                onClick={saveOrgInfo}
+              >
+                {updateTenant.isPending ? t('Đang lưu…') : t('Lưu thông tin')}
+              </Button>
             </div>
             <div
               style={{

@@ -43,6 +43,23 @@ export function useTenants() {
   });
 }
 
+/** GET /tenants/{id} — a single tenant (Super Admin, or Org Admin for self). */
+export function fetchTenant(id: string, signal?: AbortSignal): Promise<Tenant> {
+  return apiRequest<Tenant>({
+    url: `/tenants/${id}`,
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+export function useTenant(id: string | null) {
+  return useQuery({
+    queryKey: [...queryKeys.tenants, id],
+    queryFn: ({ signal }) => fetchTenant(id as string, signal),
+    enabled: Boolean(id),
+  });
+}
+
 /** Create-tenant payload (`CreateTenantCommand`). */
 export interface CreateTenantInput {
   name: string;
@@ -50,8 +67,9 @@ export interface CreateTenantInput {
   dataRegion: string;
 }
 
-/** Update-tenant payload (`UpdateTenantCommand`); null fields left unchanged. */
+/** Update-tenant payload (`UpdateTenantCommand`); omitted fields left unchanged. */
 export interface UpdateTenantInput {
+  name?: string;
   tier?: string;
   status?: string;
   dataRegion?: string;
