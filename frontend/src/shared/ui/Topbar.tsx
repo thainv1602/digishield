@@ -1,10 +1,10 @@
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { useAuth } from '@/app/auth/useAuth';
 import { useNotifications } from '@/features/notifications/api';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
+import { UserMenu } from './UserMenu';
 import { titleForPath } from './pageTitles';
 import styles from './Topbar.module.css';
 
@@ -25,8 +25,6 @@ function relativeLabel(iso: string | null | undefined, t: Translate): string {
 
 /** Top bar: page title + global search + notification bell + avatar. */
 export function Topbar() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const { data: notifications } = useNotifications();
   const { lang, t } = useI18n();
@@ -43,13 +41,6 @@ export function Topbar() {
   });
   const unread = (notifications ?? []).filter((n) => n.status !== 'read').length;
 
-  const initials = (user?.name ?? user?.email ?? 'NT')
-    .split(/\s+/)
-    .map((p) => p.charAt(0))
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
   return (
     <header className={styles.topbar}>
       <div className={styles.title}>{titleForPath(pathname, lang)}</div>
@@ -63,17 +54,7 @@ export function Topbar() {
 
       <NotificationBell count={unread} notifications={bellItems} />
 
-      <button
-        type="button"
-        className={styles.avatar}
-        aria-label="Đăng xuất"
-        onClick={() => {
-          logout();
-          navigate('/login', { replace: true });
-        }}
-      >
-        {initials}
-      </button>
+      <UserMenu />
     </header>
   );
 }
