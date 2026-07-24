@@ -4,12 +4,14 @@ import com.digishield.auth.api.AuthService;
 import com.digishield.auth.api.CurrentUser;
 import com.digishield.auth.api.MfaChallengeRequiredException;
 import com.digishield.auth.api.MfaSetupView;
+import com.digishield.auth.api.ProfileView;
 import com.digishield.auth.api.TokenPair;
 import com.digishield.auth.domain.Role;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -128,6 +130,29 @@ class AuthController {
                 .map(MeResponse::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(401).build());
+    }
+
+    /**
+     * Returns the signed-in user's own profile (self-service).
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/profile")
+    ResponseEntity<ProfileView> profile() {
+        return ResponseEntity.ok(authService.getMyProfile());
+    }
+
+    /**
+     * Updates the signed-in user's own name and/or UI locale.
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/profile")
+    ResponseEntity<ProfileView> updateProfile(@RequestBody ProfileUpdateRequest request) {
+        return ResponseEntity.ok(
+                authService.updateMyProfile(request.name(), request.locale(), request.email()));
+    }
+
+    /** Self-profile update body (all fields optional). */
+    record ProfileUpdateRequest(String name, String locale, String email) {
     }
 
     /**

@@ -1,8 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/shared/ui';
+import { Button, Input, useToast } from '@/shared/ui';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import type { Lang } from '@/shared/i18n/messages';
 import { useAuth } from '@/app/auth/useAuth';
+import { useMyProfile, useUpdateProfile } from './api';
 
 const ROLE_LABELS: Record<string, string> = {
   super_admin: 'Quản trị hệ thống',
@@ -28,15 +30,44 @@ const cardStyle: React.CSSProperties = {
  */
 export default function ProfilePage() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { user, logout } = useAuth();
   const { lang, setLang, t } = useI18n();
+  const { data: profile } = useMyProfile();
+  const updateProfile = useUpdateProfile();
 
-  const displayName = user?.name ?? user?.email ?? t('Người dùng');
+  const [name, setName] = useState('');
+  // Seed the name field from the persisted profile, else the JWT name.
+  useEffect(() => {
+    setName(profile?.name ?? user?.name ?? '');
+  }, [profile?.name, user?.name]);
+  // Apply the persisted UI language once the profile loads.
+  useEffect(() => {
+    if (profile?.locale === 'vi' || profile?.locale === 'en') setLang(profile.locale);
+  }, [profile?.locale, setLang]);
+
+  const email = user?.email ?? null;
   const roleLabel = user?.role ? t(ROLE_LABELS[user.role] ?? user.role) : '—';
   const langs: { value: Lang; label: string }[] = [
     { value: 'vi', label: 'Tiếng Việt' },
     { value: 'en', label: 'English' },
   ];
+
+  const saveName = () => {
+    updateProfile.mutate(
+      { name: name.trim(), locale: lang, email },
+      {
+        onSuccess: () => toast({ msg: t('Đã lưu hồ sơ'), variant: 'success' }),
+        onError: () => toast({ msg: t('Không lưu được, thử lại'), variant: 'error' }),
+      },
+    );
+  };
+
+  const changeLang = (next: Lang) => {
+    setLang(next);
+    // Persist the choice to the account (best effort — local change already applied).
+    updateProfile.mutate({ locale: next, name: name.trim(), email });
+  };
 
   return (
     <div style={{ animation: 'fadeUp .3s ease', maxWidth: 640 }}>
@@ -63,7 +94,20 @@ export default function ProfilePage() {
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
             {t('Thông tin tài khoản')}
           </div>
-          <Row label={t('Tên')} value={displayName} />
+          <Row label={t('Tên')}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                aria-label={t('Tên')}
+                placeholder={t('Tên hiển thị')}
+                style={{ width: 200 }}
+              />
+              <Button variant="primary" onClick={saveName} disabled={updateProfile.isPending}>
+                {updateProfile.isPending ? t('Đang lưu…') : t('Lưu')}
+              </Button>
+            </div>
+          </Row>
           <Row label={t('Email')} value={user?.email ?? '—'} />
           <Row label={t('Vai trò')}>
             <span
@@ -100,7 +144,7 @@ export default function ProfilePage() {
                   <button
                     key={o.value}
                     type="button"
-                    onClick={() => setLang(o.value)}
+                    onClick={() => changeLang(o.value)}
                     aria-pressed={active}
                     style={{
                       all: 'unset',
