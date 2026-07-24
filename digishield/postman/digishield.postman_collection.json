@@ -1,0 +1,108 @@
+{
+  "info": {
+    "name": "DigiShield - smoke + input negatives",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Minimal Newman API suite for CI against the dev profile: smoke checks on the critical endpoints plus input-level negatives (400/404). NOTE: authorization negatives (401/403) are intentionally NOT here - the dev profile is permissive (SecurityConfig and MethodSecurityConfig are @Profile(\"!dev\"), so @PreAuthorize is inert). Role/tenant enforcement is covered by the integration tests (TenantIsolationIT, RlsCoverageIT) which run under a secured profile with Testcontainers. BTL groups add one request per new feature, including at least one negative case."
+  },
+  "item": [
+    {
+      "name": "SM-01 health is UP",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/actuator/health", "host": ["{{baseUrl}}"], "path": ["actuator", "health"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "pm.test('status UP', () => pm.expect(pm.response.json().status).to.eql('UP'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "SM-02 evaluate (ANALYST) returns a valid decision",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Demo-Role", "value": "ANALYST" },
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"userId\": \"22222222-2222-2222-2222-222222222222\",\n  \"amount\": 5000000,\n  \"destAccount\": \"0909123456\",\n  \"onCall\": true,\n  \"newPayee\": true\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/v1/interventions/evaluate", "host": ["{{baseUrl}}"], "path": ["api", "v1", "interventions", "evaluate"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const d = pm.response.json();",
+              "pm.test('decision is valid', () => pm.expect(['PAUSE','WARN','ALLOW']).to.include(d.decision));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "NEG-01 malformed evaluate body -> 400",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "X-Demo-Role", "value": "ANALYST" },
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{ \"amount\": }" },
+        "url": { "raw": "{{baseUrl}}/api/v1/interventions/evaluate", "host": ["{{baseUrl}}"], "path": ["api", "v1", "interventions", "evaluate"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('400 Bad Request on malformed JSON', () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "NEG-02 unknown route -> 404",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "X-Demo-Role", "value": "ANALYST" },
+          { "key": "X-Tenant-Id", "value": "{{tenant}}" }
+        ],
+        "url": { "raw": "{{baseUrl}}/api/v1/no-such-endpoint", "host": ["{{baseUrl}}"], "path": ["api", "v1", "no-such-endpoint"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "tenant", "value": "11111111-1111-1111-1111-111111111111" }
+  ]
+}

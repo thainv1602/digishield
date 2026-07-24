@@ -19,7 +19,10 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  *
  * <p>Allowed origins reuse {@code digishield.cors.allowed-origins} (the same list
  * the REST CORS config uses), so the Vite dev server / configured web origin can
- * open the socket while others are refused at handshake time.
+ * open the socket while others are refused at handshake time. They are applied
+ * as origin <em>patterns</em>, matching {@link CorsConfig}: behind a TLS-
+ * terminating tunnel the app sees http while the browser sends an https origin,
+ * so the handshake is no longer same-origin and wildcards are needed.
  */
 @Configuration
 @EnableWebSocket
@@ -42,6 +45,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(handler, "/ws/notifications")
                 .addInterceptors(handshakeInterceptor)
-                .setAllowedOrigins(allowedOrigins.toArray(String[]::new));
+                .setAllowedOriginPatterns(allowedOrigins.toArray(String[]::new));
     }
 }

@@ -26,6 +26,24 @@ api:
     targetCPUUtilizationPercentage: 70
     targetMemoryUtilizationPercentage: 0 # 0 = disabled
 
+# In-cluster frontend (nginx serving the React bundle). Off by default — on AWS
+# the frontend is S3 + CloudFront; self-hosted clusters (Jetson) enable it and
+# the Ingress then routes / to it while the API keeps /api and /actuator.
+frontend:
+  enabled: false
+  replicaCount: 1
+  image:
+    repository: ghcr.io/thainv1602/digishield/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
 worker:
   replicaCount: 1
   profile: worker
@@ -108,6 +126,12 @@ ai:
     enabled: false
     existingSecret: ""
     apiKeyKey: api-key
+
+# Comma-separated browser origins (Spring origin *patterns*, so wildcards like
+# https://*.trycloudflare.com work) accepted by the API in addition to its
+# same-origin default. Empty = application.yml default (Vite dev server).
+cors:
+  origins: ""
 
 service:
   type: ClusterIP

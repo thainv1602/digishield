@@ -1,0 +1,6 @@
+# BuildKit per-Dockerfile ignore (context is the repo root — keep it tiny).
+*
+!frontend/
+!docs/DigiShield_openapi.yaml
+frontend/node_modules
+frontend/dist

@@ -49,6 +49,12 @@ export const EN: Record<string, string> = {
   'Nền tảng nhận thức an ninh số': 'Digital Security Awareness Platform',
   'Đăng nhập bằng tài khoản tổ chức (AWS Cognito).': 'Sign in with your organization account (AWS Cognito).',
   'Chọn vai trò để đăng nhập': 'Pick a role to sign in',
+  'Vai trò lấy theo tài khoản — đăng nhập bằng email demo đã seed.':
+    'The role comes from the account — sign in with a seeded demo email.',
+  'Không tìm thấy tài khoản với email này.': 'No account found for this email.',
+  'Không đăng nhập được — máy chủ chưa sẵn sàng, thử lại sau.':
+    'Sign-in failed — the server is not ready, try again shortly.',
+  'Tài khoản demo (mật khẩu bất kỳ)': 'Demo accounts (any password)',
   'Vai trò': 'Role',
   'Email công việc': 'Work email',
   'Mật khẩu': 'Password',

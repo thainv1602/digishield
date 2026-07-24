@@ -11,6 +11,14 @@ java {
     }
 }
 
+// Spring resolves @PathVariable/@RequestParam names via reflection; without
+// -parameters every unnamed binding fails at runtime with "parameter name
+// information not available". The Boot plugin adds this only to the app
+// project, so set it explicitly for every convention.
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.add("-parameters")
+}
+
 checkstyle {
     toolVersion = "10.21.0"
     configDirectory.set(rootProject.layout.projectDirectory.dir("config/checkstyle"))
@@ -28,6 +36,11 @@ checkstyle {
 tasks.named("check") {
     dependsOn(tasks.withType<Checkstyle>())
 }
+
+// Pin BOM-managed versions past fixable HIGH CVEs (Trivy image gate in cd.yml):
+// netty 4.2.16 — CVE-2026-59901/55831/55833/56745; pgjdbc 42.7.12 — CVE-2026-54291.
+extra["netty.version"] = "4.2.16.Final"
+extra["postgresql.version"] = "42.7.12"
 
 dependencyManagement {
     imports {

@@ -6,7 +6,7 @@ image:
   repository: ghcr.io/thainv1602/digishield/app
   # jetson-image-tag — rewritten by the cd.yml deploy-jetson job on each main build.
   tag: "latest"
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
 
 # The GHCR package must be public, or create this pull secret on the cluster:
 #   kubectl -n digishield create secret docker-registry ghcr-pull ...
@@ -17,6 +17,11 @@ image:
 api:
   # One replica per Jetson; Traefik load-balances across both.
   replicaCount: 2
+  # LAN demo mode (see RUN_PRODLIKE.md): real Postgres + Flyway via pgdemo, and
+  # dev's permissive security + seeded demo users — the in-cluster frontend is
+  # built without Cognito vars and uses the demo login. Switch back to `api` +
+  # auth.issuerUri when wiring real Cognito/OIDC.
+  profile: dev,pgdemo
   resources:
     requests:
       cpu: 250m
@@ -30,6 +35,17 @@ worker:
 
 scheduler:
   replicaCount: 1
+
+# React SPA served in-cluster by nginx; the Ingress sends / here and keeps
+# /api + /actuator on the API. Image built by cd.yml (multi-arch, no Cognito
+# vars → demo login).
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/thainv1602/digishield/frontend
+    tag: latest
+    pullPolicy: Always
 
 # In-cluster infra (deploy/gitops/jetson/infra), same namespace → short DNS names.
 database:
@@ -54,6 +70,12 @@ externalSecrets:
 
 auth:
   issuerUri: "" # LAN-only for now; set when wiring Cognito/OIDC
+
+# Public tunnels terminate TLS before Traefik, so the API sees http while the
+# browser Origin is https — no longer same-origin. Allow the tunnel hostnames
+# (patterns: the trycloudflare subdomain changes on every cloudflared restart).
+cors:
+  origins: "http://localhost:5173,https://*.ts.net,https://*.trycloudflare.com"
 
 ai:
   claude:

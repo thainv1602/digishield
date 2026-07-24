@@ -1,0 +1,17 @@
+# Traefik ingress on the Jetson cluster. k3s's bundled klipper-lb (svclb)
+# cannot run on the Tegra kernel — it inserts iptables rules through the nft
+# backend and 5.15.x-tegra ships without the nft_compat module — so the
+# LoadBalancer service never gets an address. Publish ports 80/443 on the node
+# IPs via externalIPs instead; kube-proxy (which does work on this kernel)
+# routes them. servicelb is disabled in the k3s server config.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    service:
+      externalIPs:
+        - 192.168.1.50
+        - 192.168.1.205

@@ -25,6 +25,40 @@ spec:
   rules:
     - http:
         paths:
+          {{- if .Values.frontend.enabled }}
+          # With the in-cluster frontend, the API keeps /api + /actuator and
+          # everything else serves the SPA (longest prefix wins).
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.service.port }}
+          - path: /actuator
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.service.port }}
+          # Realtime notifications — the WebSocket handshake lives on the API,
+          # not under /api (FE connects to /ws/notifications).
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-api
+                port:
+                  number: {{ .Values.service.port }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-frontend
+                port:
+                  number: 80
+          {{- else }}
           - path: {{ .Values.ingress.path }}
             pathType: Prefix
             backend:
@@ -32,6 +66,7 @@ spec:
                 name: {{ .Release.Name }}-api
                 port:
                   number: {{ .Values.service.port }}
+          {{- end }}
       {{- with .Values.ingress.host }}
       host: {{ . | quote }}
       {{- end }}

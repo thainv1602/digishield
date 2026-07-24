@@ -19,6 +19,9 @@ spec:
         app.kubernetes.io/name: digishield
         app.kubernetes.io/component: api
     spec:
+      # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
+      # would clobber the app's ${REDIS_PORT:...} placeholders.
+      enableServiceLinks: false
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -38,6 +41,13 @@ spec:
             {{- include "digishield.rabbitEnv" . | nindent 12 }}
             {{- include "digishield.authEnv" . | nindent 12 }}
             {{- include "digishield.aiEnv" . | nindent 12 }}
+            {{- with .Values.cors.origins }}
+            # Browser origins (patterns allowed) the API accepts — needed when
+            # the FE is served from a public hostname (tunnel) while TLS is
+            # terminated upstream, so requests are no longer seen as same-origin.
+            - name: DIGISHIELD_CORS_ALLOWEDORIGINS
+              value: {{ . | quote }}
+            {{- end }}
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
