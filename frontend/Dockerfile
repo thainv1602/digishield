@@ -2,9 +2,11 @@
 # Frontend image for self-hosted clusters (Jetson k3s). Built by cd.yml with
 # the REPO ROOT as context (gen:api reads ../docs/DigiShield_openapi.yaml):
 #   docker build -f frontend/Dockerfile .
-# Vite bakes VITE_* into the bundle at build time. Cognito vars are deliberately
-# NOT passed: without them the app falls back to the demo login, which matches
-# the API's dev,pgdemo profile on the Jetson cluster.
+# Vite bakes VITE_* into the bundle at build time. The Cognito vars are optional:
+# when set (via build args, sourced from repo variables in cd.yml) the app uses
+# the Cognito hosted UI for login; when empty the login screen shows a
+# "not configured" message. The OAuth redirect_uri is derived from
+# window.location.origin at runtime, so it is intentionally not baked here.
 
 # ---- Build stage ---------------------------------------------------------
 FROM node:20-alpine AS build
@@ -18,7 +20,13 @@ COPY docs/DigiShield_openapi.yaml /app/docs/DigiShield_openapi.yaml
 COPY frontend/ ./
 
 ARG VITE_API_BASE_URL=/api/v1
-ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ARG VITE_COGNITO_AUTHORITY=""
+ARG VITE_COGNITO_CLIENT_ID=""
+ARG VITE_TENANT_ID=""
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
+    VITE_COGNITO_AUTHORITY=$VITE_COGNITO_AUTHORITY \
+    VITE_COGNITO_CLIENT_ID=$VITE_COGNITO_CLIENT_ID \
+    VITE_TENANT_ID=$VITE_TENANT_ID
 RUN npm run gen:api && npm run build
 
 # ---- Runtime stage -------------------------------------------------------
