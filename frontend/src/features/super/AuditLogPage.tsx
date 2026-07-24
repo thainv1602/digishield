@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Button, DataTable, Select } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { useAuditLogs, type AuditLogEntry } from './api';
 import { useT } from '@/shared/i18n/I18nProvider';
+import { downloadCsv } from '@/shared/lib/csv';
 
 /**
  * AuditLogPage — Super Admin sensitive-action audit trail.
@@ -64,7 +65,42 @@ export default function AuditLogPage() {
   const t = useT();
   const { data, isLoading, isError, refetch } = useAuditLogs();
 
-  const rows = useMemo<AuditRow[]>(() => (data ?? []).map(toRow), [data]);
+  const allRows = useMemo<AuditRow[]>(() => (data ?? []).map(toRow), [data]);
+
+  const [actorF, setActorF] = useState('');
+  const [actionF, setActionF] = useState('');
+  const [dateF, setDateF] = useState('');
+
+  const actorOptions = useMemo(
+    () => Array.from(new Set(allRows.map((r) => r.actor).filter((v) => v && v !== '—'))).sort(),
+    [allRows],
+  );
+  const actionOptions = useMemo(
+    () => Array.from(new Set(allRows.map((r) => r.action).filter((v) => v && v !== '—'))).sort(),
+    [allRows],
+  );
+  const dateOptions = useMemo(
+    () => Array.from(new Set(allRows.map((r) => r.time.split(' ')[0]).filter(Boolean))).sort(),
+    [allRows],
+  );
+
+  const rows = useMemo(
+    () =>
+      allRows.filter((r) => {
+        if (actorF && r.actor !== actorF) return false;
+        if (actionF && r.action !== actionF) return false;
+        if (dateF && !r.time.startsWith(dateF)) return false;
+        return true;
+      }),
+    [allRows, actorF, actionF, dateF],
+  );
+
+  const exportCsv = () =>
+    downloadCsv(
+      'audit-log.csv',
+      [t('Thời gian'), t('Người thực hiện'), t('Hành động'), t('Đối tượng'), 'IP'],
+      rows.map((r) => [r.time, r.actor, r.action, r.object, r.ip]),
+    );
 
   const columns: ColumnDef<AuditRow>[] = [
     { id: 'time', header: t('Thời gian'), cell: (r) => <span style={monoMuted}>{r.time}</span>, width: '140px' },
@@ -131,27 +167,44 @@ export default function AuditLogPage() {
               {t('Toàn bộ hành động nhạy cảm · Phục vụ điều tra & tuân thủ')}
             </div>
           </div>
-          <Button variant="outline">{t('Xuất CSV')}</Button>
+          <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
+            {t('Xuất CSV')}
+          </Button>
         </div>
 
         {/* Filter bar */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-          <Select aria-label={t('Lọc theo người thực hiện')} defaultValue="">
+          <Select
+            aria-label={t('Lọc theo người thực hiện')}
+            value={actorF}
+            onChange={(e) => setActorF(e.target.value)}
+          >
             <option value="">{t('Người thực hiện')}</option>
-            <option>admin@abc.gov.vn</option>
-            <option>analyst1@abc.vn</option>
-            <option>superadmin@ds.vn</option>
+            {actorOptions.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
           </Select>
-          <Select aria-label={t('Lọc theo hành động')} defaultValue="">
+          <Select
+            aria-label={t('Lọc theo hành động')}
+            value={actionF}
+            onChange={(e) => setActionF(e.target.value)}
+          >
             <option value="">{t('Hành động')}</option>
-            <option>broadcast_alert</option>
-            <option>triage:confirm</option>
-            <option>tenant.suspend</option>
+            {actionOptions.map((a) => (
+              <option key={a} value={a}>
+                {a}
+              </option>
+            ))}
           </Select>
-          <Select aria-label={t('Lọc theo ngày')} defaultValue="">
-            <option value="">27/06/2026</option>
-            <option>26/06/2026</option>
-            <option>25/06/2026</option>
+          <Select aria-label={t('Lọc theo ngày')} value={dateF} onChange={(e) => setDateF(e.target.value)}>
+            <option value="">{t('Tất cả ngày')}</option>
+            {dateOptions.map((d) => (
+              <option key={d} value={d}>
+                {d}
+              </option>
+            ))}
           </Select>
         </div>
 

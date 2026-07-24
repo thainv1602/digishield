@@ -115,7 +115,9 @@ export default function CompliancePage() {
               {t('Theo dõi việc hoàn thành các chính sách bắt buộc')}
             </div>
           </div>
-          <Button variant="outline">{t('Xuất báo cáo PDF')}</Button>
+          <Button variant="outline" onClick={() => window.print()}>
+            {t('Xuất báo cáo PDF')}
+          </Button>
         </div>
 
         {/* KPI tiles */}

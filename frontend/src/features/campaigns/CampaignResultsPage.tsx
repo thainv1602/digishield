@@ -3,6 +3,7 @@ import { useT } from '@/shared/i18n/I18nProvider';
 import { DataTable, StatusPill } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { useCampaign, type CampaignDetail, type CampaignResultRow } from './api';
+import { downloadCsv } from '@/shared/lib/csv';
 
 /**
  * CampaignResultsPage — completed simulation campaign results.
@@ -295,6 +296,14 @@ export default function CampaignResultsPage() {
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Danh sách hành động')}</div>
             <button
               type="button"
+              onClick={() =>
+                downloadCsv(
+                  'campaign-results.csv',
+                  [t('Tên'), t('Phòng ban'), t('Hành động'), t('Học tập')],
+                  rows.map((r) => [r.name, r.dept, r.action, r.learning]),
+                )
+              }
+              disabled={rows.length === 0}
               style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
             >
               {t('Xuất CSV')}
