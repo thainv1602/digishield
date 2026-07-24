@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { Button, useToast } from '@/shared/ui';
+import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { useBlacklist, type BlacklistEntry } from './watchlistApi';
+import { useBlacklist, useAddBlacklist, type BlacklistEntry } from './watchlistApi';
+
+const ADD_TYPES = ['phone', 'domain', 'url', 'email', 'ip'] as const;
 
 /**
  * WatchlistPage — suspicious accounts / numbers / domains watchlist (`/soc/watchlist`).
@@ -67,8 +69,46 @@ export default function WatchlistPage() {
   const toast = useToast();
   const [filter, setFilter] = useState<Filter>('all');
   const { data, isLoading, isError, refetch } = useBlacklist();
+  const addMut = useAddBlacklist();
 
   const entries = useMemo<WatchEntry[]>(() => (data ?? []).map(toEntry), [data]);
+
+  // Quick check: look the value up in the loaded blacklist (client-side).
+  const [query, setQuery] = useState('');
+  const runCheck = () => {
+    const q = query.trim().toLowerCase();
+    if (!q) return;
+    const hit = (data ?? []).find((e) => (e.value ?? '').toLowerCase().includes(q));
+    if (hit) {
+      toast({ msg: t('⚠ Có trong watchlist: {value} (nguồn {src})', { value: hit.value ?? q, src: hit.source ?? '—' }), variant: 'warning' });
+    } else {
+      toast({ msg: t('✓ Không có trong watchlist: {value}', { value: query.trim() }), variant: 'success' });
+    }
+  };
+
+  // Add-manual drawer.
+  const [addOpen, setAddOpen] = useState(false);
+  const [addType, setAddType] = useState<string>('phone');
+  const [addValue, setAddValue] = useState('');
+  const [addSource, setAddSource] = useState('Thủ công');
+  const submitAdd = () => {
+    const value = addValue.trim();
+    if (!value) {
+      toast({ msg: t('Vui lòng nhập giá trị.'), variant: 'warning' });
+      return;
+    }
+    addMut.mutate(
+      { type: addType, value, source: addSource.trim() || 'Thủ công' },
+      {
+        onSuccess: () => {
+          toast({ msg: t('Đã thêm vào watchlist.'), variant: 'success' });
+          setAddOpen(false);
+          setAddValue('');
+        },
+        onError: () => toast({ msg: t('Thêm thất bại, thử lại.'), variant: 'error' }),
+      },
+    );
+  };
 
   const counts = useMemo(
     () => ({
@@ -109,10 +149,16 @@ export default function WatchlistPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button type="button" variant="secondary" onClick={() => toast(t('Đang đồng bộ NCSC...'))}>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() =>
+                toast({ msg: t('Đồng bộ NCSC cần tích hợp nguồn dữ liệu NCSC (chưa khả dụng).'), variant: 'info' })
+              }
+            >
               {t('Đồng bộ NCSC')}
             </Button>
-            <Button type="button" variant="primary" onClick={() => toast(t('Thêm mục thủ công'))}>
+            <Button type="button" variant="primary" onClick={() => setAddOpen(true)}>
               {t('+ Thêm thủ công')}
             </Button>
           </div>
@@ -134,7 +180,7 @@ export default function WatchlistPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              toast(t('Đang kiểm tra...'));
+              runCheck();
             }}
             style={{ display: 'flex', gap: 10 }}
           >
@@ -153,6 +199,8 @@ export default function WatchlistPage() {
               <Search size={14} color="var(--muted)" aria-hidden="true" />
               <input
                 type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
                 aria-label={t('Tra cứu watchlist')}
                 placeholder={t('Nhập số tài khoản, SĐT, hoặc domain...')}
                 style={{
@@ -305,6 +353,38 @@ export default function WatchlistPage() {
               );
             })}
         </div>
+
+      <Drawer open={addOpen} onClose={() => setAddOpen(false)} title={t('Thêm vào watchlist')}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 20 }}>
+          <Select label={t('Loại')} value={addType} onChange={(e) => setAddType(e.target.value)}>
+            {ADD_TYPES.map((ty) => (
+              <option key={ty} value={ty}>
+                {ty}
+              </option>
+            ))}
+          </Select>
+          <Input
+            label={t('Giá trị')}
+            value={addValue}
+            onChange={(e) => setAddValue(e.target.value)}
+            placeholder={t('SĐT / domain / URL / email / IP')}
+          />
+          <Input
+            label={t('Nguồn')}
+            value={addSource}
+            onChange={(e) => setAddSource(e.target.value)}
+            placeholder={t('Thủ công')}
+          />
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
+            <Button variant="outline" onClick={() => setAddOpen(false)} disabled={addMut.isPending}>
+              {t('Hủy')}
+            </Button>
+            <Button variant="primary" onClick={submitAdd} disabled={addMut.isPending}>
+              {addMut.isPending ? t('Đang thêm…') : t('Thêm')}
+            </Button>
+          </div>
+        </div>
+      </Drawer>
     </div>
   );
 }

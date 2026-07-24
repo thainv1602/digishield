@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/shared/api/client';
 import { queryKeys } from '@/shared/api/queryKeys';
 
@@ -40,6 +40,46 @@ export function useTenants() {
   return useQuery({
     queryKey: queryKeys.tenants,
     queryFn: ({ signal }) => fetchTenants(signal),
+  });
+}
+
+/** Create-tenant payload (`CreateTenantCommand`). */
+export interface CreateTenantInput {
+  name: string;
+  tier: string;
+  dataRegion: string;
+}
+
+/** Update-tenant payload (`UpdateTenantCommand`); null fields left unchanged. */
+export interface UpdateTenantInput {
+  tier?: string;
+  status?: string;
+  dataRegion?: string;
+}
+
+/** POST /tenants — create a tenant. */
+export function createTenant(body: CreateTenantInput): Promise<Tenant> {
+  return apiRequest<Tenant>({ url: '/tenants', method: 'POST', data: body });
+}
+
+/** PATCH /tenants/{id} — update tier / status / data region. */
+export function updateTenant(id: string, body: UpdateTenantInput): Promise<Tenant> {
+  return apiRequest<Tenant>({ url: `/tenants/${id}`, method: 'PATCH', data: body });
+}
+
+export function useCreateTenant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: createTenant,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.tenants }),
+  });
+}
+
+export function useUpdateTenant() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; body: UpdateTenantInput }) => updateTenant(vars.id, vars.body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.tenants }),
   });
 }
 
