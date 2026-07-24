@@ -293,6 +293,12 @@ export default function CampaignWizardPage() {
                   );
                 })}
                 <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => navigate('/content/studio')}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') navigate('/content/studio');
+                  }}
                   style={{
                     borderRadius: 9,
                     padding: 14,
