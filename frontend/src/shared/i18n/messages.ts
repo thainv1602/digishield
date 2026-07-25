@@ -74,6 +74,13 @@ export const EN: Record<string, string> = {
   'Cấu hình thời điểm và tốc độ gửi email mô phỏng': 'Configure send timing and pace for the simulated emails',
   'Danh sách chính sách': 'Policy list',
   'Danh sách hành động': 'Action list',
+  'Gửi mô phỏng': 'Send simulation',
+  'Đã gửi tới {n} người nhận': 'Sent to {n} recipients',
+  'Gửi mô phỏng thất bại, thử lại': 'Failed to send simulation, try again',
+  'Nhóm mục tiêu chưa có thành viên nào.': 'The target group has no members yet.',
+  'Mở liên kết mô phỏng': 'Open the simulation link',
+  'Chưa nối máy chủ email thật — mở liên kết bên dưới để mô phỏng người nhận bấm vào (ghi nhận sự kiện Bấm).':
+    'No real mail server is wired — open a link below to simulate a recipient clicking (records a Click event).',
   'Doanh nghiệp (enterprise)': 'Enterprise',
   'Dễ': 'Easy',
   'Dữ liệu được lưu trữ tại datacenter trong lãnh thổ Việt Nam, tuân thủ Nghị định 13/2023/NĐ-CP.': 'Data is stored in data centers within Vietnam, compliant with Decree 13/2023/NĐ-CP.',

@@ -103,6 +103,10 @@ public class SecurityConfig {
                             // text into a picture; scanned by external devices, so
                             // it must be reachable without a bearer token.
                             .requestMatchers("/api/v1/qr").permitAll()
+                            // Public simulation tracking links: an employee (often
+                            // unauthenticated) follows the link from a simulated
+                            // phishing email; the opaque token is the only secret.
+                            .requestMatchers("/api/v1/sim/track/**").permitAll()
                             // The WebSocket upgrade carries its token as a query param
                             // (browsers can't set Authorization on a WS handshake); the
                             // JwtWsHandshakeInterceptor validates it and fails closed.
