@@ -83,7 +83,7 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
     { key: 'learn', label: 'Cổng học viên', path: '/learn', icon: 'home', section: 'Học viên · Learner' },
     { key: 'courses', label: 'Khóa học', path: '/learn/courses', icon: 'book-open', section: 'Học viên · Learner' },
     { key: 'quiz', label: 'Bài kiểm tra', path: '/learn/quiz/1', icon: 'help-circle', section: 'Học viên · Learner' },
-    { key: 'certificate', label: 'Chứng chỉ của tôi', path: '/certificates/1', icon: 'award', section: 'Học viên · Learner' },
+    { key: 'certificate', label: 'Chứng chỉ của tôi', path: '/certificates', icon: 'award', section: 'Học viên · Learner' },
   ],
   analyst: [
     { key: 'inbox', label: 'Hộp báo cáo', path: '/soc/inbox', icon: 'inbox', section: 'SOC Analyst' },

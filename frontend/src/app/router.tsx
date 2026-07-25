@@ -32,6 +32,7 @@ const LessonPlayerPage = lazy(() => import('@/features/learning/LessonPlayerPage
 const QuizPage = lazy(() => import('@/features/learning/QuizPage'));
 const QuizResultsPage = lazy(() => import('@/features/learning/QuizResultsPage'));
 const CertificatePage = lazy(() => import('@/features/certificates/CertificatePage'));
+const MyCertificatesPage = lazy(() => import('@/features/certificates/MyCertificatesPage'));
 const SocInboxPage = lazy(() => import('@/features/soc/SocInboxPage'));
 const AlertCenterPage = lazy(() => import('@/features/soc/AlertCenterPage'));
 const WatchlistPage = lazy(() => import('@/features/soc/WatchlistPage'));
@@ -128,6 +129,7 @@ export function AppRouter() {
         <Route path="/learn/lessons/:id" element={guarded(LEARNER, LessonPlayerPage)} />
         <Route path="/learn/quiz/:id" element={guarded(LEARNER, QuizPage)} />
         <Route path="/learn/quiz/:id/results" element={guarded(LEARNER, QuizResultsPage)} />
+        <Route path="/certificates" element={guarded(LEARNER, MyCertificatesPage)} />
         <Route path="/certificates/:id" element={guarded(LEARNER, CertificatePage)} />
 
         {/* ── SOC / Analyst ── */}

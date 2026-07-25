@@ -304,6 +304,34 @@ export function useCertificate(id: string | null | undefined) {
   });
 }
 
+/** Mirrors `UserCertificateView` (`GET /users/{id}/certificates`, snake_case wire). */
+export interface UserCertificate {
+  id: string;
+  user_id: string | null;
+  course_id: string | null;
+  serial: string | null;
+  pdf_ref: string | null;
+  issued_at: string | null;
+}
+
+/** GET /users/{id}/certificates — certificates issued to a user. */
+export function fetchUserCertificates(userId: string, signal?: AbortSignal): Promise<UserCertificate[]> {
+  return apiRequest<UserCertificate[]>({
+    url: `/users/${userId}/certificates`,
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/** The signed-in learner's own certificates. */
+export function useUserCertificates(userId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['learning', 'user-certificates', userId ?? 'none'],
+    queryFn: ({ signal }) => fetchUserCertificates(userId as string, signal),
+    enabled: Boolean(userId),
+  });
+}
+
 // ---- Report phishing (learner CTA) ----------------------------------------
 
 /** Channel a learner reports a scam from. */
