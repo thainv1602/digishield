@@ -29,6 +29,7 @@ const AuditLogPage = lazy(() => import('@/features/super/AuditLogPage'));
 const LearnerPortalPage = lazy(() => import('@/features/learning/LearnerPortalPage'));
 const CourseCatalogPage = lazy(() => import('@/features/learning/CourseCatalogPage'));
 const LessonPlayerPage = lazy(() => import('@/features/learning/LessonPlayerPage'));
+const QuizLandingPage = lazy(() => import('@/features/learning/QuizLandingPage'));
 const QuizPage = lazy(() => import('@/features/learning/QuizPage'));
 const QuizResultsPage = lazy(() => import('@/features/learning/QuizResultsPage'));
 const CertificatePage = lazy(() => import('@/features/certificates/CertificatePage'));
@@ -127,6 +128,7 @@ export function AppRouter() {
         <Route path="/learn" element={guarded(LEARNER, LearnerPortalPage)} />
         <Route path="/learn/courses" element={guarded(LEARNER, CourseCatalogPage)} />
         <Route path="/learn/lessons/:id" element={guarded(LEARNER, LessonPlayerPage)} />
+        <Route path="/learn/quiz" element={guarded(LEARNER, QuizLandingPage)} />
         <Route path="/learn/quiz/:id" element={guarded(LEARNER, QuizPage)} />
         <Route path="/learn/quiz/:id/results" element={guarded(LEARNER, QuizResultsPage)} />
         <Route path="/certificates" element={guarded(LEARNER, MyCertificatesPage)} />

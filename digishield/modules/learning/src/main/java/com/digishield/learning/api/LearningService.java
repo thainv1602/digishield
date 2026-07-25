@@ -48,6 +48,11 @@ public interface LearningService {
     EnrollmentView completeQuiz(UUID tenantId, UUID enrollmentId, int score);
 
     /**
+     * Lists the tenant's lessons (with quiz question counts) for list screens.
+     */
+    List<LessonSummaryView> listLessons(UUID tenantId);
+
+    /**
      * Gets the lesson content + checkpoint outline for the Lesson Player.
      */
     LessonView getLesson(UUID tenantId, UUID lessonId);

@@ -14,6 +14,7 @@ import com.digishield.learning.api.EnrollmentView;
 import com.digishield.learning.api.LeaderboardRowView;
 import com.digishield.learning.api.PointRuleView;
 import com.digishield.learning.api.LearningService;
+import com.digishield.learning.api.LessonSummaryView;
 import com.digishield.learning.api.LessonView;
 import com.digishield.learning.api.PlacementResultView;
 import com.digishield.learning.api.QuizView;
@@ -82,6 +83,12 @@ class LearningController {
     }
 
     // ---- Lessons & quizzes -------------------------------------------------
+
+    @GetMapping("/api/v1/lessons")
+    ResponseEntity<java.util.List<LessonSummaryView>> lessons() {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(learningService.listLessons(tenantId));
+    }
 
     @GetMapping("/api/v1/lessons/{id}")
     ResponseEntity<LessonView> lesson(@PathVariable UUID id) {
