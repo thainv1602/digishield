@@ -10,7 +10,7 @@
 #
 # The `!cancelled() && !contains(needs.*.result,'failure')` guard lets a stage
 # run when an earlier stage was *skipped* (not applicable) but not when it failed.
-name: pipeline
+name: DigiShield CI/CD
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pipeline-${{ github.ref }}
+  group: ci-cd-${{ github.ref }}
   # Cancel superseded PR runs; never cancel a push-to-main run mid-deploy.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -64,12 +64,15 @@ jobs:
           filters: |
             backend:
               - 'digishield/**'
+              - '!**/*.md'
             frontend:
               - 'frontend/**'
               - 'docs/DigiShield_openapi.yaml'
+              - '!**/*.md'
             deploy:
               - 'deploy/**'
               - 'digishield/deploy/**'
+              - '!**/*.md'
 
   # 3a) Backend unit tests — fast feedback before the heavier IT suite.
   backend:
@@ -264,10 +267,12 @@ jobs:
   #    static gates pass.
   e2e:
     name: API & E2E
-    needs: [security, codeql]
-    # PR gate (+ nightly / manual). Not re-run on push-to-main — the merging PR
-    # already passed it — so a deploy doesn't pay to boot the whole stack again.
-    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && github.event_name != 'push' }}
+    needs: [changes, security, codeql]
+    # PR gate (+ nightly / manual). Skipped on push-to-main (the merging PR
+    # already passed it) and on docs-only PRs (no backend/frontend change) — so a
+    # README/CI change doesn't pay to boot the whole stack. Always runs on the
+    # weekly schedule / manual dispatch (the DAST stage depends on it).
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && github.event_name != 'push' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
