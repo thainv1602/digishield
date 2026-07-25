@@ -61,6 +61,8 @@ export interface NavItem {
   section?: string;
   /** Optional trailing badge (e.g. unread count). */
   badge?: string;
+  /** Hidden from manager/content_editor (page is org-admin-only end to end). */
+  orgAdminOnly?: boolean;
 }
 
 /** Persona-scoped nav trees, derived from the prototype's sidebar. */
@@ -68,12 +70,12 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
   admin: [
     { key: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: 'grid', section: 'Quản trị · Admin' },
     { key: 'campaigns', label: 'Mô phỏng', path: '/campaigns/new', icon: 'triangle', section: 'Quản trị · Admin' },
-    { key: 'users', label: 'Người dùng', path: '/users', icon: 'users', section: 'Quản trị · Admin' },
-    { key: 'groups', label: 'Nhóm', path: '/groups', icon: 'layers', section: 'Quản trị · Admin' },
+    { key: 'users', label: 'Người dùng', path: '/users', icon: 'users', section: 'Quản trị · Admin', orgAdminOnly: true },
+    { key: 'groups', label: 'Nhóm', path: '/groups', icon: 'layers', section: 'Quản trị · Admin', orgAdminOnly: true },
     { key: 'compliance', label: 'Tuân thủ', path: '/compliance', icon: 'clipboard-check', section: 'Quản trị · Admin' },
     { key: 'content', label: 'Content Studio', path: '/content/studio', icon: 'pen-square', section: 'Quản trị · Admin' },
-    { key: 'audit', label: 'Nhật ký kiểm toán', path: '/super/audit', icon: 'file-text', section: 'Quản trị · Admin' },
-    { key: 'org', label: 'Cài đặt tổ chức', path: '/settings/org', icon: 'settings', section: 'Hệ thống' },
+    { key: 'audit', label: 'Nhật ký kiểm toán', path: '/super/audit', icon: 'file-text', section: 'Quản trị · Admin', orgAdminOnly: true },
+    { key: 'org', label: 'Cài đặt tổ chức', path: '/settings/org', icon: 'settings', section: 'Hệ thống', orgAdminOnly: true },
     { key: 'gamification', label: 'Gamification', path: '/gamification', icon: 'award', section: 'Hệ thống' },
     { key: 'aida', label: 'AI Orchestration', path: '/aida', icon: 'circle-check', section: 'Hệ thống' },
   ],
@@ -96,6 +98,17 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
 };
 
 /** Default landing route per raw role (used by the `/` redirect). */
+/** True for roles that satisfy the backend's ORG_ADMIN gate (org_admin, super_admin). */
+export function canOrgAdmin(role: Role | undefined | null): boolean {
+  return role === ROLES.ORG_ADMIN || role === ROLES.SUPER_ADMIN;
+}
+
+/** Nav items visible to a role — hides org-admin-only pages from lower admins. */
+export function navForRole(role: Role): NavItem[] {
+  const items = NAV_BY_PERSONA[roleToPersona(role)] ?? [];
+  return canOrgAdmin(role) ? items : items.filter((i) => !i.orgAdminOnly);
+}
+
 export function defaultRouteForRole(role: Role): string {
   switch (roleToPersona(role)) {
     case 'learner':

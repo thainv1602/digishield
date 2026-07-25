@@ -3,6 +3,8 @@ import { Button, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { Award, ShieldCheck, Target, Zap, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useAuth } from '@/app/auth/useAuth';
+import { canOrgAdmin } from '@/app/auth/roles';
 import { useLeaderboard, useBadgeCatalog, useDeleteBadge, usePointRules, type PointRule } from './api';
 import { BadgeFormDrawer } from './BadgeFormDrawer';
 
@@ -53,6 +55,8 @@ const cardStyle: React.CSSProperties = {
 export default function GamificationPage() {
   const t = useT();
   const toast = useToast();
+  const { user } = useAuth();
+  const canWrite = canOrgAdmin(user?.role);
   const badges = useBadgeCatalog();
   const delBadge = useDeleteBadge();
   const [badgeFormOpen, setBadgeFormOpen] = useState(false);
@@ -100,9 +104,11 @@ export default function GamificationPage() {
               }}
             >
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Huy hiệu · Badges')}</div>
-              <Button size="sm" variant="primary" onClick={() => setBadgeFormOpen(true)}>
-                {t('+ Thêm')}
-              </Button>
+              {canWrite ? (
+                <Button size="sm" variant="primary" onClick={() => setBadgeFormOpen(true)}>
+                  {t('+ Thêm')}
+                </Button>
+              ) : null}
             </div>
 
             {badges.isLoading && <InlineMessage>{t('Đang tải huy hiệu…')}</InlineMessage>}
@@ -140,21 +146,23 @@ export default function GamificationPage() {
                         </div>
                         <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{b.description ?? ''}</div>
                       </div>
-                      <button
-                        type="button"
-                        aria-label={t('Xóa huy hiệu')}
-                        onClick={() => removeBadge(b.id, b.name)}
-                        disabled={delBadge.isPending}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'var(--color-muted)',
-                          display: 'flex',
-                        }}
-                      >
-                        <X size={15} />
-                      </button>
+                      {canWrite ? (
+                        <button
+                          type="button"
+                          aria-label={t('Xóa huy hiệu')}
+                          onClick={() => removeBadge(b.id, b.name)}
+                          disabled={delBadge.isPending}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'var(--color-muted)',
+                            display: 'flex',
+                          }}
+                        >
+                          <X size={15} />
+                        </button>
+                      ) : null}
                     </div>
                   );
                 })}
