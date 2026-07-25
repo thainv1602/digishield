@@ -260,7 +260,7 @@ export default function QuizResultsPage() {
             type="button"
             variant="secondary"
             fullWidth
-            onClick={() => navigate('/certificates/cert-phishing')}
+            onClick={() => navigate('/certificates')}
           >
             {t('Xem chứng chỉ')}
           </Button>
@@ -268,9 +268,9 @@ export default function QuizResultsPage() {
             type="button"
             variant="primary"
             fullWidth
-            onClick={() => navigate(`/learn/lessons/${id ?? 'next'}`)}
+            onClick={() => navigate('/learn/courses')}
           >
-            {t('Bài tiếp theo →')}
+            {t('Học tiếp →')}
           </Button>
         </div>
     </div>
