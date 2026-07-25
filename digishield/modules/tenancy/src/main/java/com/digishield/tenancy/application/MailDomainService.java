@@ -44,7 +44,7 @@ public class MailDomainService {
                     "Không tìm thấy bản ghi DMARC tại _dmarc." + domain);
             return new MailDomainCheckDto(domain, mx, spf, dmarc);
         } catch (Exception e) {
-            LOG.warn("DNS check failed for {}: {}", domain, e.toString());
+            LOG.warn("DNS check failed for {}: {}", clean(domain), clean(e.toString()));
             RecordCheck err = new RecordCheck(false, List.of(), "Không truy vấn được DNS: " + e.getMessage());
             return new MailDomainCheckDto(domain, err, err, err);
         } finally {
@@ -83,7 +83,7 @@ public class MailDomainService {
         } catch (javax.naming.NameNotFoundException e) {
             // domain/subdomain doesn't exist — treated as "no records"
         } catch (Exception e) {
-            LOG.debug("DNS {} lookup for {} failed: {}", type, name, e.toString());
+            LOG.debug("DNS {} lookup for {} failed: {}", type, clean(name), clean(e.toString()));
         }
         return out;
     }
@@ -113,6 +113,11 @@ public class MailDomainService {
         }
         d = d.replaceFirst("\\.$", "");
         return DOMAIN.matcher(d).matches() && d.contains(".") ? d : null;
+    }
+
+    /** Strips CR/LF and control chars so user-derived values can't forge log lines. */
+    private static String clean(String s) {
+        return s == null ? null : s.replaceAll("[\\p{Cntrl}]", "_");
     }
 
     private void close(DirContext ctx) {
