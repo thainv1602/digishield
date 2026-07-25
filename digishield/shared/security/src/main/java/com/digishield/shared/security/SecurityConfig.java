@@ -99,6 +99,10 @@ public class SecurityConfig {
             http
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers("/actuator/**").permitAll()
+                            // QR image generator: encodes only the caller-supplied
+                            // text into a picture; scanned by external devices, so
+                            // it must be reachable without a bearer token.
+                            .requestMatchers("/api/v1/qr").permitAll()
                             // The WebSocket upgrade carries its token as a query param
                             // (browsers can't set Authorization on a WS handshake); the
                             // JwtWsHandshakeInterceptor validates it and fails closed.
