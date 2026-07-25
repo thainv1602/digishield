@@ -10,7 +10,7 @@
 #
 # The `!cancelled() && !contains(needs.*.result,'failure')` guard lets a stage
 # run when an earlier stage was *skipped* (not applicable) but not when it failed.
-name: pipeline
+name: DigiShield CI/CD
 
 on:
   pull_request:
@@ -25,7 +25,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: pipeline-${{ github.ref }}
+  group: ci-cd-${{ github.ref }}
   # Cancel superseded PR runs; never cancel a push-to-main run mid-deploy.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 

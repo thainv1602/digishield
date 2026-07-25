@@ -294,7 +294,7 @@ before rolling out the Deployments.
 
 ## CI/CD
 
-> One workflow — **`.github/workflows/pipeline.yml`** at the monorepo root (GitHub
+> One workflow — **`.github/workflows/ci-cd.yml`** at the monorepo root (GitHub
 > only reads workflows from the repo root). It replaces the previous seven
 > separate workflows with a single **sequential, fail-fast** pipeline: each stage
 > `needs` the previous, so a failure early stops everything downstream and saves
