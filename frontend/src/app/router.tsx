@@ -28,6 +28,7 @@ const AuditLogPage = lazy(() => import('@/features/super/AuditLogPage'));
 /* ── Learner / SOC (Agent 3) ── */
 const LearnerPortalPage = lazy(() => import('@/features/learning/LearnerPortalPage'));
 const CourseCatalogPage = lazy(() => import('@/features/learning/CourseCatalogPage'));
+const CourseDetailPage = lazy(() => import('@/features/learning/CourseDetailPage'));
 const LessonPlayerPage = lazy(() => import('@/features/learning/LessonPlayerPage'));
 const QuizLandingPage = lazy(() => import('@/features/learning/QuizLandingPage'));
 const QuizPage = lazy(() => import('@/features/learning/QuizPage'));
@@ -127,6 +128,7 @@ export function AppRouter() {
         {/* ── Learner ── */}
         <Route path="/learn" element={guarded(LEARNER, LearnerPortalPage)} />
         <Route path="/learn/courses" element={guarded(LEARNER, CourseCatalogPage)} />
+        <Route path="/learn/courses/:id" element={guarded(LEARNER, CourseDetailPage)} />
         <Route path="/learn/lessons/:id" element={guarded(LEARNER, LessonPlayerPage)} />
         <Route path="/learn/quiz" element={guarded(LEARNER, QuizLandingPage)} />
         <Route path="/learn/quiz/:id" element={guarded(LEARNER, QuizPage)} />
