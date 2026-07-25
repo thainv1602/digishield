@@ -2,6 +2,7 @@ package com.digishield.reporting.web;
 
 import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.dto.PhishingReportDto;
+import com.digishield.reporting.api.dto.UserReportDto;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
 import org.springframework.http.HttpStatus;
@@ -49,8 +50,21 @@ public class ReportingController {
     @PreAuthorize("hasRole('LEARNER')")
     @PostMapping("/phishing")
     public ResponseEntity<PhishingReport> submit(@RequestBody SubmitReportRequest request) {
-        PhishingReport report = reportingService.submit(request.userId(), request.payload());
+        PhishingReport report = reportingService.submit(
+                request.userId(), request.payload(), request.channel());
         return ResponseEntity.ok(report);
+    }
+
+    /**
+     * A learner's own submitted reports ("My reports"). Matches
+     * {@code GET /reports/phishing/mine/{userId}}.
+     *
+     * @param userId the reporting learner
+     */
+    @PreAuthorize("hasRole('LEARNER')")
+    @GetMapping("/phishing/mine/{userId}")
+    public ResponseEntity<List<UserReportDto>> myReports(@PathVariable("userId") UUID userId) {
+        return ResponseEntity.ok(reportingService.listUserReports(userId));
     }
 
     @PreAuthorize("hasRole('ANALYST')")
@@ -77,7 +91,7 @@ public class ReportingController {
     /**
      * Report submission payload.
      */
-    public record SubmitReportRequest(UUID userId, String payload) {
+    public record SubmitReportRequest(UUID userId, String payload, String channel) {
     }
 
     /**

@@ -21,6 +21,7 @@ import java.util.UUID;
  * @param reasoning      AI reasoning for the classification
  * @param blacklistMatch whether the message matched a blacklist source
  * @param status         processing status (lowercase)
+ * @param channel        channel the report came from (email | sms; may be null)
  * @param ageLabel       relative age label (e.g. "2p", "8p")
  */
 public record PhishingReportDto(
@@ -35,5 +36,6 @@ public record PhishingReportDto(
         @JsonProperty("reasoning") String reasoning,
         @JsonProperty("blacklistMatch") boolean blacklistMatch,
         @JsonProperty("status") String status,
+        @JsonProperty("channel") String channel,
         @JsonProperty("ageLabel") String ageLabel) {
 }

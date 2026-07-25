@@ -394,3 +394,31 @@ export function useReportPhishing() {
     mutationFn: reportPhishing,
   });
 }
+
+/** Mirrors `UserReportDto` (`GET /reports/phishing/mine/{userId}`). */
+export interface MyReport {
+  id: string;
+  payload: string | null;
+  channel: string | null;
+  status: string | null;
+  reportedAt: string | null;
+  ageLabel: string | null;
+}
+
+/** GET /reports/phishing/mine/{userId} — the learner's own submitted reports. */
+export function fetchMyReports(userId: string, signal?: AbortSignal): Promise<MyReport[]> {
+  return apiRequest<MyReport[]>({
+    url: `/reports/phishing/mine/${userId}`,
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/** The signed-in learner's own phishing reports (enabled once the id is known). */
+export function useMyReports(userId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['learning', 'my-reports', userId ?? 'none'],
+    queryFn: ({ signal }) => fetchMyReports(userId as string, signal),
+    enabled: Boolean(userId),
+  });
+}
