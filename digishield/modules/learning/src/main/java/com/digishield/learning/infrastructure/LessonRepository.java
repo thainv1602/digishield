@@ -14,5 +14,7 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
 
     List<Lesson> findByTenantIdAndCourseIdOrderBySortOrderAsc(UUID tenantId, UUID courseId);
 
+    List<Lesson> findByTenantIdOrderBySortOrderAsc(UUID tenantId);
+
     Optional<Lesson> findByTenantIdAndId(UUID tenantId, UUID id);
 }

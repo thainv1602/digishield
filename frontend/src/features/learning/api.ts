@@ -197,6 +197,35 @@ export function useLesson(id: string | null | undefined) {
   });
 }
 
+// ---- Lessons list (Quiz landing) ------------------------------------------
+
+/** Mirrors `LessonSummaryView` (`GET /lessons`). Plain record → camelCase. */
+export interface LessonSummary {
+  id: string;
+  courseId: string | null;
+  courseTitle: string | null;
+  title: string | null;
+  durationMin: number | null;
+  questionCount: number;
+}
+
+/** GET /lessons — tenant lessons with quiz question counts. */
+export function fetchLessons(signal?: AbortSignal): Promise<LessonSummary[]> {
+  return apiRequest<LessonSummary[]>({
+    url: '/lessons',
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/** TanStack Query hook powering the quiz landing page. */
+export function useLessons() {
+  return useQuery({
+    queryKey: ['learning', 'lessons'],
+    queryFn: ({ signal }) => fetchLessons(signal),
+  });
+}
+
 // ---- Quiz (Quiz screen) ----------------------------------------------------
 
 /** Mirrors `QuizView.QuizQuestionView`. `correct` is the 0-based answer index. */

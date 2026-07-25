@@ -15,6 +15,7 @@ import com.digishield.learning.api.CourseView;
 import com.digishield.learning.api.EnrollmentView;
 import com.digishield.learning.api.LeaderboardRowView;
 import com.digishield.learning.api.LearningService;
+import com.digishield.learning.api.LessonSummaryView;
 import com.digishield.learning.api.LessonView;
 import com.digishield.learning.api.PlacementResultView;
 import com.digishield.learning.api.QuizView;
@@ -218,6 +219,29 @@ public class LearningServiceImpl implements LearningService {
         enrollment.setProgress(100);
         enrollment.setStatus(EnrollmentStatus.COMPLETED);
         return toEnrollmentView(enrollment, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LessonSummaryView> listLessons(UUID tenantId) {
+        Map<UUID, String> courseTitles = new java.util.HashMap<>();
+        for (Course c : courseRepository.findByTenantId(tenantId)) {
+            courseTitles.put(c.getId(), c.getTitle());
+        }
+        List<LessonSummaryView> views = new ArrayList<>();
+        for (Lesson lesson : lessonRepository.findByTenantIdOrderBySortOrderAsc(tenantId)) {
+            int questionCount = quizQuestionRepository
+                    .findByTenantIdAndLessonIdOrderBySortOrderAsc(tenantId, lesson.getId())
+                    .size();
+            views.add(new LessonSummaryView(
+                    lesson.getId(),
+                    lesson.getCourseId(),
+                    courseTitles.get(lesson.getCourseId()),
+                    lesson.getTitle(),
+                    lesson.getDurationMin(),
+                    questionCount));
+        }
+        return views;
     }
 
     @Override
