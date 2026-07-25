@@ -30,6 +30,18 @@ function displayUrl(url: string | null | undefined): string {
   return url.replace(/^https?:\/\//, '');
 }
 
+/** Build a QR image URL (backend `/api/v1/qr`) encoding the given data. */
+function qrSrc(data: string, size = 104): string {
+  const base = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  let origin = window.location.origin;
+  try {
+    if (base && /^https?:\/\//.test(base)) origin = new URL(base).origin;
+  } catch {
+    /* keep page origin */
+  }
+  return `${origin}/api/v1/qr?size=${size}&data=${encodeURIComponent(data)}`;
+}
+
 export default function CertificatePage() {
   const { id } = useParams<{ id: string }>();
   const { data: cert, isLoading, isError, refetch } = useCertificate(id);
@@ -222,18 +234,13 @@ export default function CertificatePage() {
                 justifyContent: 'center',
               }}
             >
-              <svg width="52" height="52" viewBox="0 0 52 52" role="img" aria-label={t('Mã QR xác minh')}>
-                <rect x="4" y="4" width="16" height="16" fill="none" stroke="var(--text)" strokeWidth="3" />
-                <rect x="8" y="8" width="8" height="8" fill="var(--text)" />
-                <rect x="32" y="4" width="16" height="16" fill="none" stroke="var(--text)" strokeWidth="3" />
-                <rect x="36" y="8" width="8" height="8" fill="var(--text)" />
-                <rect x="4" y="32" width="16" height="16" fill="none" stroke="var(--text)" strokeWidth="3" />
-                <rect x="8" y="36" width="8" height="8" fill="var(--text)" />
-                <rect x="32" y="32" width="4" height="4" fill="var(--text)" />
-                <rect x="40" y="32" width="4" height="4" fill="var(--text)" />
-                <rect x="32" y="40" width="4" height="4" fill="var(--text)" />
-                <rect x="40" y="40" width="8" height="8" fill="var(--text)" />
-              </svg>
+              <img
+                src={qrSrc(cert.verifyUrl || cert.serial || cert.id, 104)}
+                width={56}
+                height={56}
+                alt={t('Mã QR xác minh')}
+                style={{ display: 'block' }}
+              />
             </div>
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>{t('Mã xác minh')}</div>

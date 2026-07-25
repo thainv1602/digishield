@@ -25,6 +25,7 @@ export interface PhishingReport {
   reasoning: string | null;
   blacklistMatch: boolean;
   status: string | null;
+  channel: string | null;
   ageLabel: string | null;
 }
 

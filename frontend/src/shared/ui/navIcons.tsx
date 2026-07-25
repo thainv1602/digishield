@@ -16,6 +16,7 @@ import {
   Eye,
   Monitor,
   Layers,
+  ShieldAlert,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -38,6 +39,7 @@ const ICONS: Record<string, LucideIcon> = {
   eye: Eye,
   monitor: Monitor,
   layers: Layers,
+  'shield-alert': ShieldAlert,
 };
 
 export function NavIcon({ name, size = 15 }: { name: string; size?: number }) {

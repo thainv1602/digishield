@@ -67,6 +67,10 @@ public class PhishingReport {
     @Column(name = "reported_at")
     private Instant reportedAt;
 
+    /** Channel the report came from (email | sms). */
+    @Column(name = "channel")
+    private String channel;
+
     /** Whether this report has been flipped into training content. */
     @Column(name = "converted_to_training")
     private boolean convertedToTraining;
@@ -177,5 +181,13 @@ public class PhishingReport {
 
     public void setConvertedToTraining(boolean convertedToTraining) {
         this.convertedToTraining = convertedToTraining;
+    }
+
+    public String getChannel() {
+        return channel;
+    }
+
+    public void setChannel(String channel) {
+        this.channel = channel;
     }
 }

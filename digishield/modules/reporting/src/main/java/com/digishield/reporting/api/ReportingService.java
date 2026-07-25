@@ -4,6 +4,7 @@ import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
 import com.digishield.reporting.api.dto.ThreatIntelDto;
+import com.digishield.reporting.api.dto.UserReportDto;
 import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
@@ -21,9 +22,18 @@ public interface ReportingService {
      *
      * @param userId  the user submitting the report
      * @param payload the raw content of the suspicious email/message
+     * @param channel the channel it came from (email | sms; may be null)
      * @return the newly created report (status SUBMITTED)
      */
-    PhishingReport submit(UUID userId, String payload);
+    PhishingReport submit(UUID userId, String payload, String channel);
+
+    /**
+     * Lists the reports submitted by a single user (their own "My reports").
+     *
+     * @param userId the reporting user
+     * @return the user's reports (newest first)
+     */
+    List<UserReportDto> listUserReports(UUID userId);
 
     /**
      * Triages a report.

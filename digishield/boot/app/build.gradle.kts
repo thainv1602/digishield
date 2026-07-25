@@ -48,6 +48,9 @@ dependencies {
     implementation("software.amazon.awssdk:cognitoidentityprovider")
     implementation("software.amazon.awssdk:sns")
 
+    // QR code generation (MFA otpauth, certificate verify link, quishing links).
+    implementation("com.google.zxing:core:3.5.3")
+
     // Contracts
     implementation(project(":contracts"))
 

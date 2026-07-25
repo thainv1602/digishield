@@ -6,6 +6,7 @@ import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
 import com.digishield.reporting.api.dto.ThreatIntelDto;
+import com.digishield.reporting.api.dto.UserReportDto;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.BlacklistEntry;
 import com.digishield.reporting.domain.BlacklistType;
@@ -48,12 +49,31 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     @Override
-    public PhishingReport submit(UUID userId, String payload) {
+    public PhishingReport submit(UUID userId, String payload, String channel) {
         UUID tenantId = TenantContext.requireUuid();
         PhishingReport report = new PhishingReport(
                 UUID.randomUUID(), tenantId, userId, payload,
                 null, 0.0, ReportStatus.SUBMITTED);
+        report.setChannel(channel);
         return reportRepository.save(report);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserReportDto> listUserReports(UUID userId) {
+        UUID tenantId = TenantContext.requireUuid();
+        Instant now = Instant.now();
+        return reportRepository
+                .findByTenantIdAndUserIdOrderByReportedAtDesc(tenantId, userId)
+                .stream()
+                .map(r -> new UserReportDto(
+                        r.getId(),
+                        r.getPayload(),
+                        r.getChannel(),
+                        r.getStatus() != null ? r.getStatus().name().toLowerCase() : null,
+                        r.getReportedAt(),
+                        ageLabel(r.getReportedAt(), now)))
+                .toList();
     }
 
     @Override
@@ -184,6 +204,7 @@ public class ReportingServiceImpl implements ReportingService {
                 r.getAiReason(),
                 r.isBlacklistMatch(),
                 r.getStatus() != null ? r.getStatus().name().toLowerCase() : null,
+                r.getChannel(),
                 ageLabel(r.getReportedAt(), now));
     }
 

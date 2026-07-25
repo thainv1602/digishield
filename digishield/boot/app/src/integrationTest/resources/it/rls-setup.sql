@@ -50,7 +50,8 @@ CREATE TABLE phishing_report (
     ai_reason       text,
     blacklist_match boolean          NOT NULL DEFAULT false,
     converted_to_training boolean    NOT NULL DEFAULT false,
-    reported_at     timestamptz
+    reported_at     timestamptz,
+    channel         varchar(20)
 );
 
 ALTER TABLE phishing_report ENABLE ROW LEVEL SECURITY;

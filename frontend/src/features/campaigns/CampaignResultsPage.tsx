@@ -1,9 +1,27 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { DataTable, StatusPill } from '@/shared/ui';
+import { Button, DataTable, StatusPill, useToast } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
-import { useCampaign, type CampaignDetail, type CampaignResultRow } from './api';
+import {
+  useCampaign,
+  useSendCampaign,
+  type CampaignDetail,
+  type CampaignResultRow,
+  type SendResult,
+} from './api';
 import { downloadCsv } from '@/shared/lib/csv';
+
+/** Absolute origin the tracking links resolve against (the API host). */
+function trackOrigin(): string {
+  const base = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  try {
+    if (base && /^https?:\/\//.test(base)) return new URL(base).origin;
+  } catch {
+    /* fall through to the page origin */
+  }
+  return window.location.origin;
+}
 
 /**
  * CampaignResultsPage — completed simulation campaign results.
@@ -104,8 +122,30 @@ const labelStyle: React.CSSProperties = {
 
 export default function CampaignResultsPage() {
   const t = useT();
+  const toast = useToast();
   const { id } = useParams<{ id: string }>();
   const { data: detail, isLoading, isError, refetch } = useCampaign(id);
+
+  const sendMut = useSendCampaign();
+  const [sendResult, setSendResult] = useState<SendResult | null>(null);
+  const status = (detail?.status ?? '').toLowerCase();
+  // Show "send" until the campaign is actively running or finished.
+  const canSend = Boolean(id) && (status === 'draft' || status === 'scheduled' || status === '');
+
+  function handleSend() {
+    if (!id) return;
+    sendMut.mutate(
+      { campaignId: id, groupId: detail?.groupId ?? null },
+      {
+        onSuccess: (res) => {
+          setSendResult(res);
+          toast(t('Đã gửi tới {n} người nhận', { n: res.recipientCount }));
+          refetch();
+        },
+        onError: () => toast(t('Gửi mô phỏng thất bại, thử lại')),
+      },
+    );
+  }
 
   const funnel = toFunnel(detail);
   const rows = (detail?.results ?? []).map(toResultRow);
@@ -165,10 +205,58 @@ export default function CampaignResultsPage() {
               {[channelLabel, detail?.status].filter(Boolean).join(' · ')}
             </div>
           </div>
-          <StatusPill variant={isCompleted ? 'safe' : 'warning'} dot>
-            {isCompleted ? t('Đã hoàn thành') : detail?.status ?? '—'}
-          </StatusPill>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {canSend && (
+              <Button
+                type="button"
+                variant="primary"
+                disabled={sendMut.isPending}
+                onClick={handleSend}
+              >
+                {sendMut.isPending ? t('Đang gửi…') : t('Gửi mô phỏng')}
+              </Button>
+            )}
+            <StatusPill variant={isCompleted ? 'safe' : 'warning'} dot>
+              {isCompleted ? t('Đã hoàn thành') : detail?.status ?? '—'}
+            </StatusPill>
+          </div>
         </div>
+
+        {/* Tracking links after a send (no real MTA wired — click to simulate) */}
+        {sendResult && (
+          <div style={{ ...cardStyle, padding: 20, marginBottom: 14 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 6 }}>
+              {t('Đã gửi tới {n} người nhận', { n: sendResult.recipientCount })}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--color-muted)', marginBottom: 12 }}>
+              {t('Chưa nối máy chủ email thật — mở liên kết bên dưới để mô phỏng người nhận bấm vào (ghi nhận sự kiện Bấm).')}
+            </div>
+            {sendResult.recipients.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
+                {t('Nhóm mục tiêu chưa có thành viên nào.')}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {sendResult.recipients.map((r) => (
+                  <a
+                    key={r.token}
+                    href={`${trackOrigin()}${r.trackUrl}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: 12.5,
+                      color: 'var(--color-blue)',
+                      fontFamily: "'JetBrains Mono', monospace",
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {r.userId} → {t('Mở liên kết mô phỏng')}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {isError && (
           <div
