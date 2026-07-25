@@ -38,6 +38,8 @@ const WatchlistPage = lazy(() => import('@/features/soc/WatchlistPage'));
 
 /* ── Role groupings ── */
 const ADMIN: Role[] = [ROLES.ORG_ADMIN, ROLES.MANAGER, ROLES.CONTENT_EDITOR, ROLES.SUPER_ADMIN];
+// Pages that are org-admin-only end to end (backend gates even reads on ORG_ADMIN).
+const ORG_ADMIN_ROLES: Role[] = [ROLES.ORG_ADMIN, ROLES.SUPER_ADMIN];
 const SUPER: Role[] = [ROLES.SUPER_ADMIN];
 const LEARNER: Role[] = [ROLES.LEARNER];
 const ANALYST: Role[] = [ROLES.ANALYST];
@@ -108,17 +110,17 @@ export function AppRouter() {
         <Route path="/dashboard" element={guarded(ADMIN, AdminDashboardPage)} />
         <Route path="/campaigns/new" element={guarded(ADMIN, CampaignWizardPage)} />
         <Route path="/campaigns/:id" element={guarded(ADMIN, CampaignResultsPage)} />
-        <Route path="/users" element={guarded(ADMIN, UsersPage)} />
-        <Route path="/groups" element={guarded(ADMIN, GroupsPage)} />
+        <Route path="/users" element={guarded(ORG_ADMIN_ROLES, UsersPage)} />
+        <Route path="/groups" element={guarded(ORG_ADMIN_ROLES, GroupsPage)} />
         <Route path="/profile" element={guarded(ALL_ROLES, ProfilePage)} />
         <Route path="/compliance" element={guarded(ADMIN, CompliancePage)} />
         <Route path="/content/studio" element={guarded(ADMIN, ContentStudioPage)} />
-        <Route path="/settings/org" element={guarded(ADMIN, OrgSettingsPage)} />
+        <Route path="/settings/org" element={guarded(ORG_ADMIN_ROLES, OrgSettingsPage)} />
         <Route path="/gamification" element={guarded(ADMIN, GamificationPage)} />
         <Route path="/aida" element={guarded(ADMIN, AidaPage)} />
         <Route path="/super/tenants" element={guarded(SUPER, TenantConsolePage)} />
         <Route path="/super/scim" element={guarded(SUPER, ScimConfigPage)} />
-        <Route path="/super/audit" element={guarded(ADMIN, AuditLogPage)} />
+        <Route path="/super/audit" element={guarded(ORG_ADMIN_ROLES, AuditLogPage)} />
 
         {/* ── Learner ── */}
         <Route path="/learn" element={guarded(LEARNER, LearnerPortalPage)} />

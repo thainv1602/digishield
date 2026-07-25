@@ -2,7 +2,7 @@ import { Fragment } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
-import { NAV_BY_PERSONA, roleToPersona, type NavItem } from '@/app/auth/roles';
+import { navForRole, type NavItem } from '@/app/auth/roles';
 import { Logo } from './Logo';
 import { NavIcon } from './navIcons';
 import { useT } from '@/shared/i18n/I18nProvider';
@@ -23,8 +23,7 @@ export function Sidebar() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const t = useT();
-  const persona = user ? roleToPersona(user.role) : 'admin';
-  const items = NAV_BY_PERSONA[persona] ?? [];
+  const items: NavItem[] = user ? navForRole(user.role) : [];
 
   // Group items by section, preserving order.
   const sections: { heading: string | undefined; items: NavItem[] }[] = [];

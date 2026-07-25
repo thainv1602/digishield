@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
-import { NAV_BY_PERSONA, roleToPersona } from '@/app/auth/roles';
+import { navForRole } from '@/app/auth/roles';
 import { useI18n } from '@/shared/i18n/I18nProvider';
 import { NavIcon } from './navIcons';
 import styles from './SearchBox.module.css';
@@ -21,8 +21,7 @@ export function SearchBox() {
   const [active, setActive] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
 
-  const persona = user ? roleToPersona(user.role) : 'admin';
-  const pages = useMemo(() => NAV_BY_PERSONA[persona] ?? [], [persona]);
+  const pages = useMemo(() => (user ? navForRole(user.role) : []), [user]);
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
