@@ -1,6 +1,7 @@
 package com.digishield.simulation.web;
 
 import com.digishield.simulation.api.SimulationService;
+import com.digishield.simulation.api.dto.SendResultDto;
 import com.digishield.simulation.api.dto.SimCampaignDetailDto;
 import com.digishield.simulation.api.dto.SimCampaignDto;
 import com.digishield.simulation.domain.Channel;
@@ -59,6 +60,18 @@ public class SimulationController {
     }
 
     /**
+     * Launches ("sends") a campaign to a set of recipients (resolved from the
+     * target group by the caller). Returns per-recipient tracking links.
+     */
+    @PostMapping("/campaigns/{id}/send")
+    public ResponseEntity<SendResultDto> send(@PathVariable("id") UUID id,
+                                              @RequestBody SendCampaignRequest request) {
+        // Tracking links are returned relative (the token path); the client
+        // prepends its own origin. Real email delivery would use an absolute URL.
+        return ResponseEntity.ok(simulationService.sendCampaign(id, request.userIds(), ""));
+    }
+
+    /**
      * Campaign creation payload.
      */
     public record CreateCampaignRequest(Channel channel, UUID templateId, UUID groupId) {
@@ -68,5 +81,11 @@ public class SimulationController {
      * Event recording payload.
      */
     public record RecordEventRequest(UUID campaignId, UUID userId, SimAction action) {
+    }
+
+    /**
+     * Send payload — the recipient user ids (resolved from the target group).
+     */
+    public record SendCampaignRequest(List<UUID> userIds) {
     }
 }

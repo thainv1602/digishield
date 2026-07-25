@@ -15,6 +15,7 @@ public record SimCampaignDetailDto(
         @JsonProperty("channel") String channel,
         @JsonProperty("status") String status,
         @JsonProperty("templateId") UUID templateId,
+        @JsonProperty("groupId") UUID groupId,
         @JsonProperty("funnel") Funnel funnel,
         @JsonProperty("results") List<ResultRow> results) {
 

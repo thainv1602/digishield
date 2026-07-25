@@ -41,6 +41,8 @@ export interface CampaignDetail {
   /** lowercase status, e.g. "completed". */
   status: string | null;
   templateId: string | null;
+  /** Target audience group id (used to resolve recipients when sending). */
+  groupId: string | null;
   funnel: CampaignFunnel | null;
   results: CampaignResultRow[] | null;
 }
@@ -96,6 +98,57 @@ export function useCampaign(id: string | undefined) {
 export function useCreateCampaign() {
   return useMutation({
     mutationFn: (body: CreateCampaignRequest) => createCampaign(body),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Send / launch a campaign — POST /sim/campaigns/{id}/send
+// ---------------------------------------------------------------------------
+
+/** One recipient's tracking link (`SendResultDto.Recipient`). */
+export interface SendRecipient {
+  userId: string;
+  token: string;
+  /** Relative tracking path; prepend the app origin to open it. */
+  trackUrl: string;
+}
+
+/** Wire shape of `SendResultDto`. */
+export interface SendResult {
+  campaignId: string;
+  status: string;
+  recipientCount: number;
+  recipients: SendRecipient[];
+}
+
+/** GET /groups/{groupId}/members — the user ids in a target group. */
+export function fetchGroupMembers(groupId: string, signal?: AbortSignal): Promise<string[]> {
+  return apiRequest<string[]>({
+    url: `/groups/${groupId}/members`,
+    method: 'GET',
+    ...(signal ? { signal } : {}),
+  });
+}
+
+/** POST /sim/campaigns/{id}/send — launch the campaign to the given recipients. */
+export function sendCampaign(campaignId: string, userIds: string[]): Promise<SendResult> {
+  return apiRequest<SendResult>({
+    url: `/sim/campaigns/${campaignId}/send`,
+    method: 'POST',
+    data: { userIds },
+  });
+}
+
+/**
+ * Mutation that resolves the campaign's group members, then sends. Returns the
+ * per-recipient tracking links.
+ */
+export function useSendCampaign() {
+  return useMutation({
+    mutationFn: async ({ campaignId, groupId }: { campaignId: string; groupId: string | null }) => {
+      const userIds = groupId ? await fetchGroupMembers(groupId) : [];
+      return sendCampaign(campaignId, userIds);
+    },
   });
 }
 
