@@ -285,6 +285,33 @@ jobs:
             digishield/e2e/build/reports/tests/
           if-no-files-found: ignore
 
+  # Stable, always-running required-status gate. Make THIS the required check in
+  # branch protection (a single context that reports on every PR, unlike the
+  # path-gated jobs which skip and would otherwise deadlock a required check).
+  ci-gate:
+    name: CI gate
+    needs: [commit-lint, changes, backend, frontend, security, codeql, e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify CI stages
+        run: |
+          declare -A R=(
+            [commit-lint]="${{ needs.commit-lint.result }}"
+            [changes]="${{ needs.changes.result }}"
+            [backend]="${{ needs.backend.result }}"
+            [frontend]="${{ needs.frontend.result }}"
+            [security]="${{ needs.security.result }}"
+            [codeql]="${{ needs.codeql.result }}"
+            [e2e]="${{ needs.e2e.result }}"
+          )
+          fail=0
+          for k in "${!R[@]}"; do
+            echo "$k = ${R[$k]}"
+            case "${R[$k]}" in failure|cancelled) echo "::error::CI stage '$k' did not pass (${R[$k]})."; fail=1 ;; esac
+          done
+          exit $fail
+
   # 7) Weekly / manual DAST (boots the app) — only on schedule / dispatch.
   dast:
     name: DAST (OWASP ZAP baseline)
