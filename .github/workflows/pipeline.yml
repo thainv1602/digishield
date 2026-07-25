@@ -71,9 +71,9 @@ jobs:
               - 'deploy/**'
               - 'digishield/deploy/**'
 
-  # 3) Backend: unit + integration tests, checks, coverage.
+  # 3a) Backend unit tests — fast feedback before the heavier IT suite.
   backend:
-    name: Backend tests
+    name: Backend unit tests
     needs: [changes]
     if: ${{ !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.backend == 'true' }}
     runs-on: ubuntu-latest
@@ -92,15 +92,44 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Unit tests
         run: ./gradlew test --no-daemon
-      - name: Integration tests, checks & coverage
-        run: ./gradlew check jacocoTestReport testCodeCoverageReport --no-daemon
-      - name: Upload reports
+      - name: Upload unit test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: backend-reports
+          name: backend-unit-reports
+          path: digishield/**/build/reports/tests/test/**
+          if-no-files-found: ignore
+
+  # 3b) Backend integration tests (Testcontainers / Spring context) + static
+  #     analysis + aggregated coverage. `check` runs the integrationTest suite
+  #     (boot/app/build.gradle.kts wires check -> integrationTest).
+  backend-it:
+    name: Backend integration tests
+    needs: [changes, backend]
+    if: ${{ !cancelled() && needs.backend.result == 'success' && needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: digishield
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Integration tests, checks & coverage
+        run: ./gradlew check jacocoTestReport testCodeCoverageReport --no-daemon
+      - name: Upload IT + coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-it-reports
           path: |
-            digishield/**/build/reports/tests/**
+            digishield/**/build/reports/tests/integrationTest/**
             digishield/**/build/reports/checkstyle/**
             digishield/build/reports/jacoco/testCodeCoverageReport/**
           if-no-files-found: ignore
@@ -108,7 +137,7 @@ jobs:
   # 4) Frontend: lint, typecheck, test, build.
   frontend:
     name: Frontend checks
-    needs: [changes, backend]
+    needs: [changes, backend-it]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.changes.outputs.frontend == 'true' }}
     runs-on: ubuntu-latest
     defaults:
@@ -140,7 +169,7 @@ jobs:
   #    Gitleaks + Semgrep + Trivy in one job; CodeQL is its own matrix job.
   security:
     name: Security scans
-    needs: [backend, frontend]
+    needs: [backend-it, frontend]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     permissions:
@@ -165,8 +194,9 @@ jobs:
           category: gitleaks
       - name: Semgrep (SAST)
         run: |
-          pipx install semgrep==1.90.0 || pip install semgrep==1.90.0
-          semgrep scan --config p/java --config p/security-audit --config p/secrets --sarif --output semgrep.sarif --metrics off
+          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.90.0 \
+            semgrep scan --config p/java --config p/security-audit --config p/secrets \
+            --sarif --output semgrep.sarif --metrics off
       - name: Upload Semgrep SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@v3
@@ -206,7 +236,7 @@ jobs:
 
   codeql:
     name: CodeQL (${{ matrix.language }})
-    needs: [backend, frontend]
+    needs: [backend-it, frontend]
     if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
     runs-on: ubuntu-latest
     permissions:
@@ -289,7 +319,7 @@ jobs:
   # path-gated jobs which skip and would otherwise deadlock a required check).
   ci-gate:
     name: CI gate
-    needs: [commit-lint, changes, backend, frontend, security, codeql, e2e]
+    needs: [commit-lint, changes, backend, backend-it, frontend, security, codeql, e2e]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -299,6 +329,7 @@ jobs:
             [commit-lint]="${{ needs.commit-lint.result }}"
             [changes]="${{ needs.changes.result }}"
             [backend]="${{ needs.backend.result }}"
+            [backend-it]="${{ needs.backend-it.result }}"
             [frontend]="${{ needs.frontend.result }}"
             [security]="${{ needs.security.result }}"
             [codeql]="${{ needs.codeql.result }}"
