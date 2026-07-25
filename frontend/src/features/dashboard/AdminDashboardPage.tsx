@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ProgressBar, RiskGauge, StatusPill } from '@/shared/ui';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +60,7 @@ export default function AdminDashboardPage() {
   const navigate = useNavigate();
   const t = useT();
   const { data, isLoading, isError, refetch } = useDashboard();
+  const [rangeDays, setRangeDays] = useState(90);
 
   if (isLoading) {
     return <DashboardState>{t('Đang tải bảng điều khiển…')}</DashboardState>;
@@ -249,9 +251,12 @@ export default function AdminDashboardPage() {
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
                   {t('Xu hướng rủi ro')}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>90 {t('ngày qua')}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{rangeDays} {t('ngày qua')}</div>
               </div>
-              <div
+              <select
+                aria-label={t('Khoảng thời gian')}
+                value={rangeDays}
+                onChange={(e) => setRangeDays(Number(e.target.value))}
                 style={{
                   fontSize: 12,
                   color: 'var(--color-muted)',
@@ -259,10 +264,13 @@ export default function AdminDashboardPage() {
                   borderRadius: 6,
                   padding: '4px 10px',
                   border: '1px solid var(--color-border)',
+                  cursor: 'pointer',
                 }}
               >
-                90D ▾
-              </div>
+                <option value={30}>30D</option>
+                <option value={60}>60D</option>
+                <option value={90}>90D</option>
+              </select>
             </div>
             <svg
               viewBox="0 0 480 88"
@@ -281,7 +289,10 @@ export default function AdminDashboardPage() {
               <line x1="0" y1="44" x2="480" y2="44" stroke="rgba(105,120,143,.08)" strokeWidth="1" />
               <line x1="0" y1="66" x2="480" y2="66" stroke="rgba(105,120,143,.08)" strokeWidth="1" />
               {(() => {
-                const trend = data.risk_trend ?? [];
+                // Show only the most recent slice of points for the chosen range.
+                const fullTrend = data.risk_trend ?? [];
+                const keep = Math.max(2, Math.round((fullTrend.length * rangeDays) / 90));
+                const trend = fullTrend.slice(-keep);
                 if (trend.length === 0) return null;
                 const W = 480;
                 const H = 88;

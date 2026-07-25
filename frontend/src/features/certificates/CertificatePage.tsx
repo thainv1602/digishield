@@ -247,11 +247,21 @@ export default function CertificatePage() {
               >
                 {serial}
               </div>
-              {verifyUrl && (
-                <div style={{ fontSize: 11.5, color: 'var(--blue)', marginTop: 4 }}>
-                  {t('Xác minh tại {verifyUrl} →', { verifyUrl })}
-                </div>
-              )}
+              {verifyUrl &&
+                (cert.verifyUrl && cert.verifyUrl.startsWith('http') ? (
+                  <a
+                    href={cert.verifyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ fontSize: 11.5, color: 'var(--blue)', marginTop: 4, display: 'inline-block', textDecoration: 'none' }}
+                  >
+                    {t('Xác minh tại {verifyUrl} →', { verifyUrl })}
+                  </a>
+                ) : (
+                  <div style={{ fontSize: 11.5, color: 'var(--blue)', marginTop: 4 }}>
+                    {t('Xác minh tại {verifyUrl} →', { verifyUrl })}
+                  </div>
+                ))}
             </div>
           </div>
         </article>
