@@ -368,17 +368,23 @@ export type ReportChannel = 'email' | 'sms';
 
 /** Body for `POST /reports/phishing` — the suspicious content + its channel. */
 export interface ReportPhishingInput {
+  /** Reporting learner's id (backend `SubmitReportRequest.userId`). */
+  userId?: string | null;
   /** Email/SMS content, headers or link. */
   payload: string;
   channel?: ReportChannel;
 }
 
-/** POST /reports/phishing — a learner reports a suspected scam. */
-export function reportPhishing({ payload, channel = 'email' }: ReportPhishingInput): Promise<unknown> {
+/**
+ * POST /reports/phishing — a learner reports a suspected scam.
+ * The backend `SubmitReportRequest` needs `userId`; without it the report is
+ * saved with a null reporter and the submit fails.
+ */
+export function reportPhishing({ userId, payload, channel = 'email' }: ReportPhishingInput): Promise<unknown> {
   return apiRequest<unknown>({
     url: '/reports/phishing',
     method: 'POST',
-    data: { payload, channel },
+    data: { userId, payload, channel },
   });
 }
 

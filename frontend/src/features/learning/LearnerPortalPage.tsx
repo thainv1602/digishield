@@ -189,7 +189,7 @@ export default function LearnerPortalPage() {
       return;
     }
     reportMut.mutate(
-      { payload, channel: reportChannel },
+      { userId, payload, channel: reportChannel },
       {
         onSuccess: () => {
           toast(t('Đã gửi báo cáo. Cảm ơn bạn!'));
@@ -479,7 +479,7 @@ export default function LearnerPortalPage() {
       onClose={() => setReportOpen(false)}
       title={t('Báo cáo lừa đảo')}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, padding: 20 }}>
         <p style={{ margin: 0, fontSize: 13, color: 'var(--muted)' }}>
           {t('Dán nội dung email/SMS đáng ngờ (kèm link, người gửi nếu có). Đội SOC sẽ phân tích và cảnh báo cả tổ chức nếu là mối đe dọa thật.')}
         </p>
