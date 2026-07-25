@@ -64,12 +64,15 @@ jobs:
           filters: |
             backend:
               - 'digishield/**'
+              - '!**/*.md'
             frontend:
               - 'frontend/**'
               - 'docs/DigiShield_openapi.yaml'
+              - '!**/*.md'
             deploy:
               - 'deploy/**'
               - 'digishield/deploy/**'
+              - '!**/*.md'
 
   # 3a) Backend unit tests — fast feedback before the heavier IT suite.
   backend:

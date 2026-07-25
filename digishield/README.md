@@ -292,25 +292,51 @@ before rolling out the Deployments.
 
 ---
 
-## CI
+## CI/CD
 
-> CI lives at the **monorepo root** (`../.github/workflows/`, i.e. the
-> `DigiShield_Project/` git root — GitHub only reads workflows from the repo root),
-> with **path filters** so each side runs only when its code changes.
+> One workflow — **`.github/workflows/pipeline.yml`** at the monorepo root (GitHub
+> only reads workflows from the repo root). It replaces the previous seven
+> separate workflows with a single **sequential, fail-fast** pipeline: each stage
+> `needs` the previous, so a failure early stops everything downstream and saves
+> runner minutes. A `!cancelled() && !contains(needs.*.result,'failure')` guard
+> lets a *skipped* (not-applicable) stage still let the rest run. A `changes`
+> path-filter decides which stages apply.
 
-**`backend-ci.yml`** (runs on `digishield/**`), all Gradle steps in `working-directory: digishield`:
-1. `setup-java` 25 + Gradle, then:
-   - `./gradlew test` — fast unit-test feedback (no Docker).
-   - `./gradlew check jacocoTestReport testCodeCoverageReport` — integration tests
-     (Testcontainers; ubuntu-latest runners ship Docker), **Checkstyle**, **JaCoCo**
-     verification, per-module reports and the aggregated coverage report.
-   - Checkstyle and test reports are uploaded on failure; JaCoCo per-module and
-     aggregated coverage reports are uploaded always.
-2. Build the Docker image (`context: digishield`, `file: digishield/deploy/docker/Dockerfile`)
-   and, **on pushes to `main`**, push it to **GHCR** (`ghcr.io/<owner>/<repo>/app`) tagged
-   `latest`, `0.1.0-SNAPSHOT` and the short commit SHA (auth via the built-in
-   `GITHUB_TOKEN`; PRs build only, no push).
+**Stages (CI, on every PR + push):**
 
-**`frontend-ci.yml`** (runs on `frontend/**` or `docs/DigiShield_openapi.yaml`), in
-`working-directory: frontend`: `npm ci` → `npm run gen:api` (generate the typed client
-from the OpenAPI spec) → `lint` → `typecheck` → `test` → `build`, uploading `dist/`.
+```
+commit-lint → changes → backend → backend-it → frontend → security + codeql → e2e
+```
+
+| Stage | What runs |
+|-------|-----------|
+| `commit-lint` | Conventional Commits + English (`scripts/check-commits.sh`), PR only |
+| `changes` | path filter → `backend` / `frontend` / `deploy` outputs |
+| `backend` | JDK 25 + Gradle · `./gradlew test` (unit, fast, no Docker) |
+| `backend-it` | `./gradlew check jacocoTestReport testCodeCoverageReport` — integration tests (Testcontainers), **Checkstyle**, **JaCoCo** + aggregated coverage |
+| `frontend` | `npm ci` → `gen:api` → `lint` → `typecheck` → `test` → `build` |
+| `security` | Gitleaks (secrets) + Semgrep (SAST, via `semgrep/semgrep` image) + Trivy (SCA + IaC) — SARIF to the Security tab |
+| `codeql` | CodeQL (`java-kotlin`, `javascript-typescript`) |
+| `e2e` | Boots backend (dev) + frontend, then Newman (API) + Selenium (E2E) — PR / nightly only, not re-run on push |
+
+`ci-gate` is an always-running summary job — make **that** the single required
+status check (path-gated jobs skip, which would otherwise deadlock a required
+check). `dast` (OWASP ZAP baseline) runs only on the weekly schedule / manual
+dispatch.
+
+**CD (only on push to `main`, and only when `digishield/**`, `frontend/**` or
+`deploy/**` changed):**
+
+```
+build (+ build-frontend, multi-arch native runners) → build-push (+ frontend-push,
+merge to one manifest) → image-scan (Trivy) → sign-attest (cosign + SBOM) →
+deploy-jetson
+```
+
+Backend and frontend images are built once per arch (amd64 + arm64, no QEMU) and
+pushed to **GHCR** tagged `latest` + short-SHA. `deploy-jetson` (gated by the
+`JETSON_DEPLOY_ENABLED` repo variable) pins **both** image tags to `sha-<commit>`
+and force-pushes them to the **`deploy/jetson`** branch that ArgoCD tracks — the
+CI bot can push there (`main` is protected) and the sha change is a manifest diff,
+so ArgoCD rolls out api + frontend with immutable images. See
+`deploy/gitops/jetson/` for the app-of-apps.
