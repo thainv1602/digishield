@@ -1,0 +1,626 @@
+# Single main CI/CD pipeline — sequential, fail-fast.
+#
+# One workflow instead of many parallel ones (cheaper on runner minutes): each
+# stage gates the next, so a failure stops everything downstream.
+#
+#   commit-lint → changes → backend → frontend → security → e2e
+#                                                              └─(push main)→ build ┐ build-frontend ┐
+#                                                                    build-push ┘   frontend-push ┘
+#                                                                    → image-scan → sign-attest → deploy-jetson
+#
+# The `!cancelled() && !contains(needs.*.result,'failure')` guard lets a stage
+# run when an earlier stage was *skipped* (not applicable) but not when it failed.
+name: pipeline
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 2 * * 1" # weekly deep security + DAST
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  # Cancel superseded PR runs; never cancel a push-to-main run mid-deploy.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # 1) Cheapest gate first: Conventional Commits + English (PR only).
+  commit-lint:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate commit messages
+        if: github.event_name == 'pull_request'
+        run: bash scripts/check-commits.sh "origin/${{ github.base_ref }}" "${{ github.event.pull_request.head.sha }}"
+
+  # 2) What changed — drives which checks run.
+  changes:
+    name: Detect changes
+    needs: [commit-lint]
+    if: ${{ !cancelled() && needs.commit-lint.result == 'success' }}
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.f.outputs.backend }}
+      frontend: ${{ steps.f.outputs.frontend }}
+      deploy: ${{ steps.f.outputs.deploy }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Filter paths
+        id: f
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'digishield/**'
+            frontend:
+              - 'frontend/**'
+              - 'docs/DigiShield_openapi.yaml'
+            deploy:
+              - 'deploy/**'
+              - 'digishield/deploy/**'
+              - '.github/workflows/pipeline.yml'
+
+  # 3) Backend: unit + integration tests, checks, coverage.
+  backend:
+    name: Backend tests
+    needs: [changes]
+    if: ${{ !cancelled() && needs.changes.result == 'success' && needs.changes.outputs.backend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: digishield
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Unit tests
+        run: ./gradlew test --no-daemon
+      - name: Integration tests, checks & coverage
+        run: ./gradlew check jacocoTestReport testCodeCoverageReport --no-daemon
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-reports
+          path: |
+            digishield/**/build/reports/tests/**
+            digishield/**/build/reports/checkstyle/**
+            digishield/build/reports/jacoco/testCodeCoverageReport/**
+          if-no-files-found: ignore
+
+  # 4) Frontend: lint, typecheck, test, build.
+  frontend:
+    name: Frontend checks
+    needs: [changes, backend]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.changes.outputs.frontend == 'true' }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate API client
+        run: npm run gen:api
+      - name: Lint
+        run: npm run lint
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+      - name: Build
+        run: npm run build
+
+  # 5) Security scans (gated behind CI so failing PRs never pay for them).
+  #    Gitleaks + Semgrep + Trivy in one job; CodeQL is its own matrix job.
+  security:
+    name: Security scans
+    needs: [backend, frontend]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Gitleaks (secret scan)
+        run: |
+          VERSION=8.21.2
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          gitleaks detect --source . --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
+      - name: Upload Gitleaks SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: gitleaks.sarif
+          category: gitleaks
+      - name: Semgrep (SAST)
+        run: |
+          pipx install semgrep==1.90.0 || pip install semgrep==1.90.0
+          semgrep scan --config p/java --config p/security-audit --config p/secrets --sarif --output semgrep.sarif --metrics off
+      - name: Upload Semgrep SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+      - name: Trivy filesystem (dependencies)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-deps.sarif
+      - name: Trivy config (IaC)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: CRITICAL,HIGH
+          format: sarif
+          output: trivy-iac.sarif
+      - name: Upload Trivy SARIF (deps)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-deps.sarif
+          category: trivy-deps
+      - name: Upload Trivy SARIF (IaC)
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-iac.sarif
+          category: trivy-iac
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    needs: [backend, frontend]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [java-kotlin, javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+          queries: security-extended
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # 6) API (Newman) + E2E (Selenium headless) — heavy; runs only after all
+  #    static gates pass.
+  e2e:
+    name: API & E2E
+    needs: [security, codeql]
+    # PR gate (+ nightly / manual). Not re-run on push-to-main — the merging PR
+    # already passed it — so a deploy doesn't pay to boot the whole stack again.
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && github.event_name != 'push' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Start backend (dev profile)
+        working-directory: digishield
+        run: nohup ./gradlew :boot:app:bootRun --args='--spring.profiles.active=dev' --no-daemon > backend.log 2>&1 &
+      - name: Build & serve frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          nohup npm run dev -- --host > frontend.log 2>&1 &
+      - name: Wait for backend + frontend
+        run: npx --yes wait-on -t 120000 http://localhost:8080/actuator/health http://localhost:5173
+      - name: API tests (Newman)
+        working-directory: digishield/postman
+        run: |
+          npm install
+          npm run test:api
+      - name: E2E tests (Selenium headless)
+        continue-on-error: true
+        working-directory: digishield
+        run: ./gradlew :e2e:test -De2e.enabled=true -Dselenium.headless=true --no-daemon
+      - name: Upload automation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: automation-reports
+          path: |
+            digishield/postman/reports/
+            digishield/e2e/build/screenshots/
+            digishield/e2e/build/reports/tests/
+          if-no-files-found: ignore
+
+  # 7) Weekly / manual DAST (boots the app) — only on schedule / dispatch.
+  dast:
+    name: DAST (OWASP ZAP baseline)
+    needs: [e2e]
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Boot the app (prod-like compose)
+        working-directory: digishield
+        run: |
+          docker compose -f deploy/compose/docker-compose.prodlike.yml up -d --build
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/actuator/health/readiness >/dev/null 2>&1; then exit 0; fi
+            sleep 5
+          done
+          echo "::error::API did not become healthy in time."
+          docker compose -f deploy/compose/docker-compose.prodlike.yml logs --tail=200
+          exit 1
+      - name: ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: "http://localhost:8080"
+          rules_file_name: digishield/config/zap/rules.tsv
+          cmd_options: "-a -j -T 5"
+          fail_action: true
+      - name: Tear down
+        if: always()
+        working-directory: digishield
+        run: docker compose -f deploy/compose/docker-compose.prodlike.yml down -v
+
+  # ─────────────────────────── CD (push to main only) ───────────────────────
+  # Multi-arch backend image (native runners, no QEMU) — one per arch, by digest.
+  build:
+    name: CD · build ${{ matrix.platform }}
+    needs: [changes, security, codeql]
+    if: ${{ !cancelled() && needs.security.result == 'success' && needs.codeql.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.deploy == 'true') }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sanitize platform name
+        id: plat
+        run: echo "pair=${{ matrix.platform }}" | tr '/' '-' >> "$GITHUB_OUTPUT"
+      - name: Compute image labels
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/app
+      - name: Build & push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: digishield
+          file: digishield/deploy/docker/Dockerfile
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=ghcr.io/${{ github.repository }}/app,push-by-digest=true,name-canonical=true,push=true
+          provenance: true
+          sbom: true
+          cache-from: type=gha,scope=${{ steps.plat.outputs.pair }}
+          cache-to: type=gha,mode=max,scope=${{ steps.plat.outputs.pair }}
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ steps.plat.outputs.pair }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  build-push:
+    name: CD · merge backend image
+    needs: [build]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.ref.outputs.image }}
+      tag: ${{ steps.sha.outputs.short }}
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Short SHA
+        id: sha
+        run: echo "short=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - name: Compute image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/app
+          tags: |
+            type=raw,value=latest
+            type=raw,value=0.1.0-SNAPSHOT
+            type=sha,format=short
+      - name: Create multi-arch manifest
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'ghcr.io/${{ github.repository }}/app@sha256:%s ' *)
+      - name: Export image ref
+        id: ref
+        run: |
+          digest="$(docker buildx imagetools inspect \
+            "ghcr.io/${{ github.repository }}/app:sha-${{ steps.sha.outputs.short }}" \
+            --format '{{ .Manifest.Digest }}')"
+          echo "image=ghcr.io/${{ github.repository }}/app@${digest}" >> "$GITHUB_OUTPUT"
+
+  build-frontend:
+    name: CD · build frontend ${{ matrix.platform }}
+    needs: [changes, security, codeql]
+    if: ${{ !cancelled() && needs.security.result == 'success' && needs.codeql.result == 'success' && github.event_name == 'push' && github.ref == 'refs/heads/main' && (needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.deploy == 'true') }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Sanitize platform name
+        id: plat
+        run: echo "pair=${{ matrix.platform }}" | tr '/' '-' >> "$GITHUB_OUTPUT"
+      - name: Build & push by digest
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend/Dockerfile
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            VITE_COGNITO_AUTHORITY=${{ vars.VITE_COGNITO_AUTHORITY }}
+            VITE_COGNITO_CLIENT_ID=${{ vars.VITE_COGNITO_CLIENT_ID }}
+            VITE_TENANT_ID=${{ vars.VITE_TENANT_ID }}
+          outputs: type=image,name=ghcr.io/${{ github.repository }}/frontend,push-by-digest=true,name-canonical=true,push=true
+          cache-from: type=gha,scope=frontend-${{ steps.plat.outputs.pair }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ steps.plat.outputs.pair }}
+      - name: Export digest
+        run: |
+          mkdir -p "${{ runner.temp }}/fe-digests"
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/fe-digests/${digest#sha256:}"
+      - name: Upload digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: fe-digests-${{ steps.plat.outputs.pair }}
+          path: ${{ runner.temp }}/fe-digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  frontend-push:
+    name: CD · merge frontend image
+    needs: [build-frontend]
+    if: ${{ !cancelled() && needs.build-frontend.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v4
+        with:
+          path: ${{ runner.temp }}/fe-digests
+          pattern: fe-digests-*
+          merge-multiple: true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create multi-arch manifest
+        working-directory: ${{ runner.temp }}/fe-digests
+        run: |
+          docker buildx imagetools create \
+            -t "ghcr.io/${{ github.repository }}/frontend:latest" \
+            -t "ghcr.io/${{ github.repository }}/frontend:sha-${GITHUB_SHA::7}" \
+            $(printf 'ghcr.io/${{ github.repository }}/frontend@sha256:%s ' *)
+
+  image-scan:
+    name: CD · scan image (Trivy)
+    needs: [build-push]
+    if: ${{ !cancelled() && needs.build-push.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Trivy scan (SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ needs.build-push.outputs.image }}
+          format: sarif
+          output: trivy-image.sarif
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+      - name: Trivy scan (gate)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ needs.build-push.outputs.image }}
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+  sign-attest:
+    name: CD · SBOM & sign (cosign)
+    needs: [build-push, image-scan]
+    if: ${{ !cancelled() && needs.image-scan.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v3
+      - name: Generate CycloneDX SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ needs.build-push.outputs.image }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: true
+      - name: Sign & attest
+        env:
+          COSIGN_YES: "true"
+        run: |
+          cosign sign "${{ needs.build-push.outputs.image }}"
+          cosign attest --predicate sbom.cdx.json --type cyclonedx "${{ needs.build-push.outputs.image }}"
+
+  # Jetson k3s (GitOps): pin BOTH image tags to sha-<commit> on the deploy/jetson
+  # branch that ArgoCD tracks (main is protected — the bot can push there). OFF
+  # unless the JETSON_DEPLOY_ENABLED repo variable is "true".
+  deploy-jetson:
+    name: CD · deploy jetson (GitOps sha pin)
+    needs: [build-push, frontend-push, image-scan, sign-attest]
+    if: ${{ !cancelled() && needs.build-push.result == 'success' && needs.frontend-push.result == 'success' && needs.image-scan.result == 'success' && needs.sign-attest.result == 'success' && vars.JETSON_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Pin image tags on the deploy/jetson branch
+        env:
+          TAG: "sha-${{ needs.build-push.outputs.tag }}"
+        run: |
+          f=digishield/deploy/helm/digishield/values-jetson.yaml
+          sed -i -E "s|^(  tag:) .*$|\1 \"${TAG}\"|" "$f"
+          sed -i -E "s|^(    tag:) .*$|\1 \"${TAG}\"|" "$f"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B deploy/jetson
+          git add "$f"
+          git commit -m "gitops(jetson): pin images to ${TAG}"
+          git push -f origin deploy/jetson
