@@ -70,7 +70,6 @@ jobs:
             deploy:
               - 'deploy/**'
               - 'digishield/deploy/**'
-              - '.github/workflows/pipeline.yml'
 
   # 3) Backend: unit + integration tests, checks, coverage.
   backend:
