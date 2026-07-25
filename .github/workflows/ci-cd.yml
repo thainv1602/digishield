@@ -186,22 +186,31 @@ jobs:
       - name: Gitleaks (secret scan)
         run: |
           VERSION=8.21.2
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
+          curl -sSL --retry 4 --retry-delay 5 --retry-all-errors --connect-timeout 20 \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz" | tar -xz gitleaks
           sudo mv gitleaks /usr/local/bin/
           gitleaks detect --source . --redact --report-format sarif --report-path gitleaks.sarif --exit-code 1
       - name: Upload Gitleaks SARIF
-        if: always()
+        if: ${{ !cancelled() && hashFiles('gitleaks.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: gitleaks.sarif
           category: gitleaks
       - name: Semgrep (SAST)
         run: |
-          docker run --rm -v "$PWD:/src" -w /src semgrep/semgrep:1.90.0 \
+          img=semgrep/semgrep:1.90.0
+          # Docker Hub pulls occasionally time out on hosted runners; retry the
+          # pull so a transient registry hiccup doesn't fail the whole scan.
+          for attempt in 1 2 3 4; do
+            if docker pull "$img"; then break; fi
+            echo "docker pull failed (attempt $attempt/4), retrying in 15s..."
+            sleep 15
+          done
+          docker run --rm -v "$PWD:/src" -w /src "$img" \
             semgrep scan --config p/java --config p/security-audit --config p/secrets \
             --sarif --output semgrep.sarif --metrics off
       - name: Upload Semgrep SARIF
-        if: always()
+        if: ${{ !cancelled() && hashFiles('semgrep.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: semgrep.sarif
@@ -225,13 +234,13 @@ jobs:
           format: sarif
           output: trivy-iac.sarif
       - name: Upload Trivy SARIF (deps)
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-deps.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-deps.sarif
           category: trivy-deps
       - name: Upload Trivy SARIF (IaC)
-        if: always()
+        if: ${{ !cancelled() && hashFiles('trivy-iac.sarif') != '' }}
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-iac.sarif
