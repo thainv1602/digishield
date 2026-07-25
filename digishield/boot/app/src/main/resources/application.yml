@@ -28,6 +28,11 @@ spring:
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${DB_POOL_SIZE:10}
+      # Retire pooled connections before the DB/network drops idle ones (Postgres
+      # or the k3s CNI can close idle TCP), and keepalive-ping idle connections so
+      # a dead one is detected and replaced instead of surfacing as a warning.
+      max-lifetime: ${DB_MAX_LIFETIME:600000} # 10 min (< any idle drop)
+      keepalive-time: ${DB_KEEPALIVE:120000} # 2 min idle validation
 
   jpa:
     hibernate:
