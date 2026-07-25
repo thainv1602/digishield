@@ -1,6 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useNotifications, useMarkAllNotificationsRead } from '@/features/notifications/api';
 import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useToast } from './Toast';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { SearchBox } from './SearchBox';
@@ -28,7 +29,20 @@ export function Topbar() {
   const { pathname } = useLocation();
   const { data: notifications } = useNotifications();
   const markRead = useMarkAllNotificationsRead();
+  const toast = useToast();
   const { lang, t } = useI18n();
+
+  const handleMarkRead = () =>
+    markRead.mutate(undefined, {
+      onSuccess: (r) =>
+        toast({
+          msg: r.updated > 0
+            ? t('Đã đánh dấu {n} thông báo là đã đọc', { n: r.updated })
+            : t('Không có thông báo chưa đọc'),
+          variant: 'success',
+        }),
+      onError: () => toast({ msg: t('Không đánh dấu được, thử lại'), variant: 'error' }),
+    });
 
   const bellItems = (notifications ?? []).map((n, i) => {
     const critical = n.type === 'alert';
@@ -53,7 +67,7 @@ export function Topbar() {
       <NotificationBell
         count={unread}
         notifications={bellItems}
-        onMarkRead={() => markRead.mutate()}
+        onMarkRead={handleMarkRead}
       />
 
       <UserMenu />
