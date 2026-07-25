@@ -78,7 +78,7 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.submit(userId, "suspicious email body");
+        PhishingReport result = reportingService.submit(userId, "suspicious email body", "email");
 
         // Assert
         verify(reportRepository).save(reportCaptor.capture());
@@ -87,6 +87,7 @@ class ReportingServiceImplTest {
         assertThat(persisted.getTenantId()).isEqualTo(TENANT_ID);
         assertThat(persisted.getUserId()).isEqualTo(userId);
         assertThat(persisted.getPayload()).isEqualTo("suspicious email body");
+        assertThat(persisted.getChannel()).isEqualTo("email");
         assertThat(persisted.getStatus()).isEqualTo(ReportStatus.SUBMITTED);
         assertThat(persisted.getAiLabel()).isNull();
         assertThat(persisted.getAiConfidence()).isEqualTo(0.0);

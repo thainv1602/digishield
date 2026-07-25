@@ -17,4 +17,6 @@ public interface PhishingReportRepository extends JpaRepository<PhishingReport, 
     List<PhishingReport> findByTenantIdOrderByReportedAtDesc(UUID tenantId);
 
     List<PhishingReport> findByTenantIdAndStatusOrderByReportedAtDesc(UUID tenantId, ReportStatus status);
+
+    List<PhishingReport> findByTenantIdAndUserIdOrderByReportedAtDesc(UUID tenantId, UUID userId);
 }

@@ -33,6 +33,7 @@ interface Report {
   time: string;
   reasoning: string;
   blacklistMatch: boolean;
+  channel: string | null;
 }
 
 // label pill colors keyed by AI label (display labels are uppercase EN per design)
@@ -58,6 +59,7 @@ function toReport(dto: PhishingReport): Report {
     time: dto.ageLabel ?? '',
     reasoning: dto.reasoning ?? '',
     blacklistMatch: Boolean(dto.blacklistMatch),
+    channel: dto.channel ?? null,
   };
 }
 
@@ -442,6 +444,15 @@ function ReportDrawerBody({
         }}
       >
         {t('Chi tiết báo cáo · Report Detail')}
+      </div>
+
+      {/* Channel the learner reported from + relative age */}
+      <div style={{ fontSize: 12.5, color: 'var(--muted)', marginBottom: 12 }}>
+        {t('Kênh:')}{' '}
+        <span style={{ color: 'var(--text)', fontWeight: 600 }}>
+          {report.channel === 'sms' ? t('SMS') : report.channel === 'email' ? t('Email') : t('Không rõ')}
+        </span>
+        {report.time ? ` · ${report.time}` : ''}
       </div>
 
       {/* AI judgment */}
