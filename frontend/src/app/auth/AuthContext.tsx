@@ -76,7 +76,10 @@ export function AuthProvider({ children, initialState }: AuthProviderProps) {
   }, []);
 
   const signinRedirect = useCallback(() => {
-    userManager?.signinRedirect().catch(() => {});
+    // `prompt=login` forces Cognito to re-authenticate instead of silently
+    // reusing its hosted-UI session cookie — so after signing out the user is
+    // asked for credentials again rather than being logged straight back in.
+    userManager?.signinRedirect({ extraQueryParams: { prompt: 'login' } }).catch(() => {});
   }, []);
 
   // On first load: complete the hosted-UI redirect, or restore a stored session.
