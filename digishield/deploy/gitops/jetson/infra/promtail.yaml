@@ -1,0 +1,131 @@
+# Promtail — ships every pod's stdout to Loki, one agent per node.
+#
+# Tails the kubelet's log tree directly rather than using Kubernetes service
+# discovery. SD started cleanly here ("Using pod service account via in-cluster
+# config") but produced zero targets, and the image carries no shell tooling to
+# interrogate the API from inside. The log files are laid out predictably:
+#
+#   /var/log/pods/<namespace>_<pod>_<uid>/<container>/0.log
+#
+# so the same labels come out of the path with no API dependency, no RBAC, and
+# nothing to go wrong at discovery time. On a two-node cluster that trade is
+# firmly worth it — the point is that logs outlive their pod, not that the
+# pipeline is sophisticated.
+#
+# On labels: only low-cardinality values become Loki labels. requestId is the
+# most useful field the app emits and is deliberately *not* one — a label per
+# request would create a stream per request and wreck the index. It stays in the
+# JSON line, where LogQL reaches it at query time:
+#
+#   {namespace="digishield"} | json | requestId = "f39099d6-..."
+#
+# `level` is promoted because it is bounded (INFO/WARN/ERROR/DEBUG) and is what
+# you filter on first when something breaks.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  labels:
+    app.kubernetes.io/name: promtail
+data:
+  promtail.yaml: |
+    server:
+      http_listen_port: 9080
+      log_level: info
+
+    positions:
+      # On the host so a restarted agent resumes where it stopped instead of
+      # re-shipping every file it can still see.
+      filename: /run/promtail/positions.yaml
+
+    clients:
+      - url: http://loki:3100/loki/api/v1/push
+
+    scrape_configs:
+      - job_name: pods
+        static_configs:
+          - targets: [localhost]
+            labels:
+              job: pods
+              __path__: /var/log/pods/*/*/*.log
+        pipeline_stages:
+          # k3s uses containerd: unwrap the CRI envelope before the payload is
+          # readable as JSON.
+          - cri: {}
+          # Pull namespace / pod / container out of the file path.
+          - regex:
+              source: filename
+              expression: '/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_[^_/]+/(?P<container>[^/]+)/[^/]+\.log'
+          - labels:
+              namespace:
+              pod:
+              container:
+          # The app's own lines are ECS JSON. Lift the level out so it can be a
+          # label; lines that are not JSON (kube-system components) fail this
+          # stage harmlessly and keep their message intact.
+          - json:
+              expressions:
+                level: log.level
+          - labels:
+              level:
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: promtail
+  labels:
+    app.kubernetes.io/name: promtail
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: promtail
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: promtail
+    spec:
+      tolerations:
+        # Ship logs from control-plane nodes too — k3s servers run workloads.
+        - operator: Exists
+      containers:
+        - name: promtail
+          image: grafana/promtail:3.3.2
+          args:
+            - -config.file=/etc/promtail/promtail.yaml
+          ports:
+            - containerPort: 9080
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 192Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/promtail
+            - name: pods
+              mountPath: /var/log/pods
+              readOnly: true
+            # The kubelet's files under /var/log/pods are symlinks into here;
+            # without this mount the agent tails dangling links.
+            - name: containers
+              mountPath: /var/lib/containerd
+              readOnly: true
+            - name: positions
+              mountPath: /run/promtail
+      volumes:
+        - name: config
+          configMap:
+            name: promtail-config
+        - name: pods
+          hostPath:
+            path: /var/log/pods
+        - name: containers
+          hostPath:
+            path: /var/lib/containerd
+        - name: positions
+          hostPath:
+            path: /var/lib/promtail
+            type: DirectoryOrCreate

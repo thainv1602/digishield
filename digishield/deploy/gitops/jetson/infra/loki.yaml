@@ -1,0 +1,152 @@
+# Loki — log storage, so a pod restart stops erasing the evidence.
+#
+# The app emits structured JSON with a requestId (LOG_FORMAT=ecs), but until now
+# those lines lived only in the pod's stdout: `kubectl logs` after a rollout
+# showed a few hours at best, and nothing at all from the pod that died. That is
+# how a bug gets diagnosed only if you happen to be watching.
+#
+# Single binary with filesystem storage rather than the microservices layout —
+# two Jetsons and one small app do not need a distributed ring, and the extra
+# components would cost more memory than the logs are worth.
+#
+# Retention is bounded on purpose. Loki writes to the same local-path disk as
+# Postgres; unbounded growth here eventually takes the database down with it.
+# 14 days at this volume is a rounding error against the 173G free, and the
+# limit is what stops it becoming one.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-config
+  labels:
+    app.kubernetes.io/name: loki
+data:
+  loki.yaml: |
+    auth_enabled: false
+
+    server:
+      http_listen_port: 3100
+      log_level: warn
+
+    common:
+      path_prefix: /loki
+      storage:
+        filesystem:
+          chunks_directory: /loki/chunks
+          rules_directory: /loki/rules
+      replication_factor: 1
+      ring:
+        kvstore:
+          store: inmemory
+
+    schema_config:
+      configs:
+        - from: 2024-01-01
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+
+    limits_config:
+      retention_period: 336h
+      reject_old_samples: true
+      reject_old_samples_max_age: 168h
+      # One small cluster; the defaults are tuned for far larger ingest.
+      ingestion_rate_mb: 8
+      ingestion_burst_size_mb: 16
+
+    compactor:
+      working_directory: /loki/compactor
+      retention_enabled: true
+      delete_request_store: filesystem
+
+    ruler:
+      storage:
+        type: local
+        local:
+          directory: /loki/rules
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loki
+  labels:
+    app.kubernetes.io/name: loki
+spec:
+  ports:
+    - port: 3100
+      name: http
+  selector:
+    app.kubernetes.io/name: loki
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loki
+  labels:
+    app.kubernetes.io/name: loki
+spec:
+  replicas: 1
+  strategy:
+    # The PV is ReadWriteOnce on local-path: a rolling update would leave two
+    # pods contending for the same volume and neither becoming ready.
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loki
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loki
+    spec:
+      securityContext:
+        # The image runs as 10001; the mounted volume must be writable by it.
+        fsGroup: 10001
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+        - name: loki
+          image: grafana/loki:3.3.2
+          args: ["-config.file=/etc/loki/loki.yaml"]
+          ports:
+            - containerPort: 3100
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/loki
+            - name: data
+              mountPath: /loki
+      volumes:
+        - name: config
+          configMap:
+            name: loki-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: loki-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: loki-data
+  labels:
+    app.kubernetes.io/name: loki
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
