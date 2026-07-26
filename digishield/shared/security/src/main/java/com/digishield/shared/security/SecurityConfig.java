@@ -1,5 +1,6 @@
 package com.digishield.shared.security;
 
+import jakarta.servlet.DispatcherType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -98,6 +99,15 @@ public class SecurityConfig {
                     issuerUri, StringUtils.hasText(audience) ? audience : "(any)", rolesClaim);
             http
                     .authorizeHttpRequests(auth -> auth
+                            // Servlet ERROR forwards are re-evaluated by the filter
+                            // chain, so an anonymous request to a permitAll endpoint
+                            // that fails validation (bad path variable, missing param)
+                            // lands on /error and comes back 401 instead of the real
+                            // 4xx. Permit the ERROR dispatch — not the /error path —
+                            // so a direct GET /error still needs a token. Bodies carry
+                            // no stack trace (server.error.include-stacktrace defaults
+                            // to never).
+                            .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                             .requestMatchers("/actuator/**").permitAll()
                             // QR image generator: encodes only the caller-supplied
                             // text into a picture; scanned by external devices, so
