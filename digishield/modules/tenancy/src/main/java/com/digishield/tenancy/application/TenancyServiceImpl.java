@@ -1,6 +1,8 @@
 package com.digishield.tenancy.application;
 
+import com.digishield.shared.tenantcontext.CurrentActor;
 import com.digishield.shared.tenantcontext.PlatformScope;
+import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.tenancy.api.AuditLogView;
 import com.digishield.tenancy.api.BusinessThresholdsView;
 import com.digishield.tenancy.api.CreateTenantCommand;
@@ -137,15 +139,25 @@ public class TenancyServiceImpl implements TenancyService {
 
     @Override
     public void recordImpersonation(UUID tenantId, String actor, String ip) {
-        recordAudit(tenantId, actor, "tenant.impersonate.start",
-                "tenant:" + tenantId, ip, "critical");
-    }
-
-    /** Authenticated principal, for audit entries written inside this module. */
-    private static String currentActor() {
-        var authentication = org.springframework.security.core.context.SecurityContextHolder
-                .getContext().getAuthentication();
-        return authentication == null ? null : authentication.getName();
+        UUID actingFrom = TenantContext.requireUuid();
+        if (tenantId == null || tenantId.equals(actingFrom)) {
+            // Entering your own tenant is not impersonation. Recording it as
+            // `critical` buried the real entries in noise.
+            return;
+        }
+        // The entry belongs to the tenant being entered, while the operator is
+        // still in their own context — a cross-tenant write, which RLS refuses.
+        // Rather than bypass the policy, satisfy it: run this write *as* the
+        // target tenant, so WITH CHECK passes on its own terms. Deliberately not
+        // PlatformScope — that only works because production happens to connect
+        // as a superuser, and would fail on a deployment that does not.
+        TenantContext.set(tenantId.toString());
+        try {
+            recordAudit(tenantId, actor, "tenant.impersonate.start",
+                    "tenant:" + tenantId, ip, "critical");
+        } finally {
+            TenantContext.set(actingFrom.toString());
+        }
     }
 
     @Override
@@ -232,7 +244,7 @@ public class TenancyServiceImpl implements TenancyService {
         // Suspending or reactivating a tenant decides whether an entire
         // organisation can use the product; it is filed in that tenant's log.
         if (statusBefore != tenant.getStatus()) {
-            recordAudit(id, currentActor(), "tenant.status_change",
+            recordAudit(id, CurrentActor.resolve(), "tenant.status_change",
                     "tenant:" + id + " " + statusBefore + "->" + tenant.getStatus(),
                     null, "critical");
         }

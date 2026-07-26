@@ -1,14 +1,13 @@
 package com.digishield;
 
 import com.digishield.shared.tenantcontext.AuditRecorder;
+import com.digishield.shared.tenantcontext.CurrentActor;
 import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.tenancy.api.TenancyService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -66,8 +65,7 @@ class TenancyAuditRecorder implements AuditRecorder {
     }
 
     private static String currentActor() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication == null ? null : authentication.getName();
+        return CurrentActor.resolve();
     }
 
     /** Source address of the request being audited, when there is one. */
