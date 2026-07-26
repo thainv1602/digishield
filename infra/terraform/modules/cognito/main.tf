@@ -96,14 +96,21 @@ data "archive_file" "pre_token_zip" {
     filename = "index.js"
     content  = <<-JS
       'use strict';
-      // Cognito pre-token-generation V2_0 trigger. Adds `tid` to both the ID and
-      // access tokens so the backend's TenantFilter can resolve the tenant.
+      // Cognito pre-token-generation V2_0 trigger.
+      //
+      // `tid` goes on both tokens so the backend's TenantFilter can resolve the
+      // tenant. `email` goes on the ACCESS token because the backend only ever
+      // sees that one, and Cognito does not put email there by default — without
+      // it every audit entry is attributed to the `sub` UUID, which answers
+      // "who did this" with another question.
       exports.handler = async (event) => {
         const tid = process.env.FIXED_TENANT_ID;
+        const email = (event.request.userAttributes || {}).email;
+        const accessClaims = email ? { tid, email } : { tid };
         event.response = {
           claimsAndScopeOverrideDetails: {
             idTokenGeneration: { claimsToAddOrOverride: { tid } },
-            accessTokenGeneration: { claimsToAddOrOverride: { tid } },
+            accessTokenGeneration: { claimsToAddOrOverride: accessClaims },
           },
         };
         return event;
