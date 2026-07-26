@@ -108,7 +108,16 @@ public class SecurityConfig {
                             // no stack trace (server.error.include-stacktrace defaults
                             // to never).
                             .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                            .requestMatchers("/actuator/**").permitAll()
+                            // Only the health probes are anonymous — kubelet cannot
+                            // present a token, and liveness/readiness expose nothing
+                            // beyond up/down.
+                            .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                            // The rest of actuator (metrics, prometheus, info) is
+                            // operational telemetry: JVM internals, DB pool state,
+                            // per-route request counts. Reachable from the public
+                            // internet through the ingress, so it is admin-only
+                            // rather than merely authenticated.
+                            .requestMatchers("/actuator/**").hasRole(Roles.SUPER_ADMIN)
                             // QR image generator: encodes only the caller-supplied
                             // text into a picture; scanned by external devices, so
                             // it must be reachable without a bearer token.
@@ -135,7 +144,10 @@ public class SecurityConfig {
                     // the real problem. Only the internal forward is permitted —
                     // a direct GET /error is still denied here.
                     .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                    .requestMatchers("/actuator/**").permitAll()
+                    // No issuer means no way to authenticate anyone, so only the
+                    // health probes stay open — enough to keep the pod schedulable
+                    // while the misconfiguration is visible. Telemetry stays shut.
+                    .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .anyRequest().denyAll());
         }
         return http.build();
