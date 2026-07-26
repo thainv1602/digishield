@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useT } from '@/shared/i18n/I18nProvider';
-import { Button, DataTable, StatusPill } from '@/shared/ui';
+import { Button, DataTable, StatusPill, useToast } from '@/shared/ui';
 import type { ColumnDef, StatusVariant } from '@/shared/ui';
 import { useNavigate } from 'react-router-dom';
 import { setActingTenant } from '@/shared/api/actingTenant';
@@ -60,6 +60,7 @@ const cardStyle: React.CSSProperties = {
 export default function TenantConsolePage() {
   const t = useT();
   const navigate = useNavigate();
+  const toast = useToast();
   const { data, isLoading, isError, refetch } = useTenants();
 
   const tenants = useMemo<TenantRow[]>(() => (data ?? []).map(toRow), [data]);
@@ -83,12 +84,22 @@ export default function TenantConsolePage() {
    * operator half-switched, so the switch happens either way.
    */
   const enterTenant = async (id: string, name: string) => {
+    let audited = true;
     try {
       await recordImpersonation(id);
     } catch {
-      // Logged server-side regardless; see TenantFilter.
+      audited = false;
     }
     setActingTenant({ id, name });
+    // Still enter the tenant — stranding the operator half-switched helps nobody —
+    // but do not let a missing audit entry pass unnoticed. Swallowing this is how
+    // the trail silently stopped being written in the first place.
+    if (!audited) {
+      toast({
+        msg: t('Đã vào tenant nhưng KHÔNG ghi được nhật ký kiểm toán — báo quản trị hệ thống.'),
+        variant: 'error',
+      });
+    }
     navigate('/dashboard');
   };
 

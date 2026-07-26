@@ -7,7 +7,9 @@ import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
+import com.digishield.shared.tenantcontext.PlatformScope;
 import com.digishield.shared.tenantcontext.TenantContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -240,5 +242,84 @@ class TenantIsolationIT {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to count rows", e);
         }
+    }
+
+    /**
+     * Regression for a bug every unit test missed and production found.
+     *
+     * <p>Entering a tenant writes an audit entry belonging to that tenant while the
+     * operator is still in their own context — a cross-tenant write. Mocked
+     * repositories have no RLS, so the unit tests passed; against a real database
+     * the insert was refused and the trail for the most sensitive action there is
+     * silently never appeared.
+     *
+     * <p>The fix satisfies the policy instead of bypassing it: the write runs as
+     * the target tenant. This test pins both halves — refused from the wrong
+     * context, accepted from the right one — and needs no elevated privilege, so
+     * it also holds on a deployment that connects as an unprivileged role.
+     */
+    @Test
+    void aWriteForAnotherTenantMustRunAsThatTenant() {
+        UUID actingFrom = UUID.randomUUID();
+        UUID target = UUID.randomUUID();
+
+        assertThatThrownBy(() -> runAsTenant(actingFrom, () ->
+                reportRepository.save(report(target))))
+                .hasMessageContaining("row-level security");
+
+        UUID id = runAsTenant(target, () -> reportRepository.save(report(target)).getId());
+
+        assertThat(runAsTenant(target, () -> reportRepository.findById(id).isPresent())).isTrue();
+        assertThat(runAsTenant(actingFrom, () -> reportRepository.findById(id).isPresent())).isFalse();
+    }
+
+    /**
+     * PlatformScope skips the tenant GUC so a super admin can read across tenants.
+     * That works only while the connection can bypass RLS — as a superuser does.
+     * Here the role is unprivileged and the table is FORCE'd, so skipping the GUC
+     * leaves the policy comparing against NULL and the write is refused.
+     *
+     * <p>Pinning it makes the dependency visible instead of latent: cross-tenant
+     * *reads* still rest on the production connection being a superuser, and that
+     * wants replacing with an explicit predicate in the policies.
+     */
+    @Test
+    void platformScopeDoesNotSubstituteForPrivilegeOnAnUnprivilegedConnection() {
+        SecurityContextHolder.getContext().setAuthentication(authentication("ROLE_SUPER_ADMIN"));
+        try {
+            UUID actingFrom = UUID.randomUUID();
+            UUID target = UUID.randomUUID();
+            assertThatThrownBy(() -> runAsTenant(actingFrom, () ->
+                    PlatformScope.call(() -> reportRepository.save(report(target)))))
+                    .hasMessageContaining("row-level security");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    /** PlatformScope refuses to open for anyone else, so it is not a general bypass. */
+    @Test
+    void platformScopeStaysShutForANonSuperAdmin() {
+        SecurityContextHolder.getContext().setAuthentication(authentication("ROLE_ORG_ADMIN"));
+        try {
+            assertThatThrownBy(() -> PlatformScope.call(() -> "nope"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("SUPER_ADMIN");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+    }
+
+    private static PhishingReport report(UUID tenantId) {
+        return new PhishingReport(UUID.randomUUID(), tenantId, UUID.randomUUID(),
+                "cross-tenant", AiLabel.THREAT, 0.5, ReportStatus.SUBMITTED);
+    }
+
+    private static org.springframework.security.core.Authentication authentication(String authority) {
+        var token = new org.springframework.security.authentication.TestingAuthenticationToken(
+                "operator", null,
+                java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority(authority)));
+        token.setAuthenticated(true);
+        return token;
     }
 }
