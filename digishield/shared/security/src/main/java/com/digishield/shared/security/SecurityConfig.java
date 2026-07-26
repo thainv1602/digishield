@@ -129,6 +129,12 @@ public class SecurityConfig {
             LOG.warn("No JWT issuer configured (AUTH_JWT_ISSUER_URI unset) in a non-dev profile — "
                     + "API is locked down (actuator only). Set the issuer to enable authentication.");
             http.authorizeHttpRequests(auth -> auth
+                    // Same ERROR-dispatch carve-out as the configured branch: a
+                    // failing /actuator request would otherwise forward to /error,
+                    // hit denyAll() and report an authorization failure instead of
+                    // the real problem. Only the internal forward is permitted —
+                    // a direct GET /error is still denied here.
+                    .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                     .requestMatchers("/actuator/**").permitAll()
                     .anyRequest().denyAll());
         }
