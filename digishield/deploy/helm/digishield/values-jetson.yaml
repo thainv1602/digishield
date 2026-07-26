@@ -86,6 +86,33 @@ ai:
   claude:
     enabled: false
 
+# Notification delivery (email via AWS SES, SMS via AWS SNS). Kept disabled until
+# the AWS side is ready; until then the app persists notifications without
+# sending them (LoggingNotificationGateway). To go live:
+#   1. Verify the `from` identity in SES and enable SNS SMS in `aws.region`.
+#   2. Create the AWS credentials Secret (Jetson k3s has no IRSA):
+#        kubectl -n digishield create secret generic digishield-aws \
+#          --from-literal=access-key-id=AKIA... \
+#          --from-literal=secret-access-key=...
+#   3. Flip the `enabled` flags below to true and commit (ArgoCD rolls it out).
+# region + existingSecret are pre-set, so only step 2 and the flags remain.
+notifications:
+  email:
+    from: "no-reply@digishield.duckdns.org" # must be a verified SES identity
+    ses:
+      enabled: false # set true once SES + the Secret are ready
+  sms:
+    senderId: "" # optional; must be registered with the carrier for VN (+84)
+    sns:
+      enabled: false # set true once SNS + the Secret are ready
+  # Absolute base URL so simulation tracking links in delivered messages resolve.
+  publicBaseUrl: "https://ubuntu.tail761165.ts.net"
+  aws:
+    region: "us-east-1"
+    existingSecret: "digishield-aws" # created in step 2; only referenced when enabled
+    accessKeyIdKey: access-key-id
+    secretAccessKeyKey: secret-access-key
+
 service:
   type: ClusterIP
   port: 80
