@@ -242,10 +242,9 @@ class LearningController {
     ResponseEntity<CompliancePolicyView> createCompliancePolicy(
             @RequestBody CreateCompliancePolicyRequest request) {
         UUID tenantId = TenantContext.requireUuid();
-        int completion = request.completionPct() != null ? request.completionPct() : 0;
         CompliancePolicyView created = learningService.createCompliancePolicy(
                 tenantId, request.name(), request.framework(), request.dueRule(),
-                request.mandatory() != null && request.mandatory(), completion);
+                request.mandatory() != null && request.mandatory(), request.courseId());
         return ResponseEntity
                 .created(URI.create("/api/v1/compliance/policies/" + created.id()))
                 .body(created);
@@ -284,6 +283,6 @@ class LearningController {
             @JsonProperty("due_rule") String dueRule,
             @JsonProperty("mandatory") Boolean mandatory,
             @JsonProperty("mapping_json") Object mappingJson,
-            @JsonProperty("completion_pct") Integer completionPct) {
+            @JsonProperty("course_id") UUID courseId) {
     }
 }

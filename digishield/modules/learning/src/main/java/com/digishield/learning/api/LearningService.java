@@ -170,11 +170,12 @@ public interface LearningService {
      * @param framework     mapped compliance framework
      * @param dueRule       human-readable due rule / deadline text
      * @param mandatory     whether the policy is mandatory
-     * @param completionPct initial completion percentage (0..100)
+     * @param courseId      course that satisfies the policy; {@code null} when the
+     *                      policy maps to no single course
      */
     CompliancePolicyView createCompliancePolicy(UUID tenantId, String name, String framework,
                                                 String dueRule, boolean mandatory,
-                                                int completionPct);
+                                                UUID courseId);
 
     /**
      * Gets the aggregated compliance status of a tenant.

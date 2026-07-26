@@ -35,23 +35,27 @@ public class CompliancePolicy {
     @Column(name = "mandatory", nullable = false)
     private boolean mandatory;
 
-    /** Completion percentage for this policy (0..100). */
-    @Column(name = "completion_pct", nullable = false)
-    private int completionPct;
+    /**
+     * Course that satisfies this policy, or {@code null} when the policy maps to
+     * no single course. Completion is derived from this course's enrollments —
+     * it is never stored, so it cannot drift away from reality.
+     */
+    @Column(name = "course_id")
+    private UUID courseId;
 
     /** Default constructor required by JPA. */
     protected CompliancePolicy() {
     }
 
     public CompliancePolicy(UUID id, UUID tenantId, String name, String framework,
-                            String dueRule, boolean mandatory, int completionPct) {
+                            String dueRule, boolean mandatory, UUID courseId) {
         this.id = id;
         this.tenantId = tenantId;
         this.name = name;
         this.framework = framework;
         this.dueRule = dueRule;
         this.mandatory = mandatory;
-        this.completionPct = completionPct;
+        this.courseId = courseId;
     }
 
     public UUID getId() {
@@ -78,7 +82,7 @@ public class CompliancePolicy {
         return mandatory;
     }
 
-    public int getCompletionPct() {
-        return completionPct;
+    public UUID getCourseId() {
+        return courseId;
     }
 }

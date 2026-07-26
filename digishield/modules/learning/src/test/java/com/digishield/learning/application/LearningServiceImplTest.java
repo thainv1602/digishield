@@ -175,26 +175,101 @@ class LearningServiceImplTest {
         assertThat(views.get(1).points()).isEqualTo(-5);
     }
 
-    @Test
-    void getComplianceStatus_usesRealEnrolledHeadcountNotAFixedNumber() {
-        // Arrange: two policies averaging 80% completion, 10 real enrolled users
-        when(compliancePolicyRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
-                policy(90), policy(70)));
-        when(enrollmentRepository.countDistinctUsers(TENANT_ID)).thenReturn(10L);
+    // ---- Compliance: completion is derived, never stored -------------------
 
-        // Act
+    private static final UUID COURSE_A = UUID.fromString("aaaaaaaa-0000-0000-0000-000000000001");
+    private static final UUID COURSE_B = UUID.fromString("bbbbbbbb-0000-0000-0000-000000000002");
+    private static final UUID USER_1 = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID USER_2 = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID USER_3 = UUID.fromString("00000000-0000-0000-0000-000000000003");
+
+    /**
+     * course A: 2 of 3 done (67%), course B: 1 of 2 done (50%).
+     * Only USER_1 has finished everything they were given.
+     */
+    private void givenEnrollments() {
+        when(enrollmentRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
+                enrollment(USER_1, COURSE_A, EnrollmentStatus.COMPLETED),
+                enrollment(USER_2, COURSE_A, EnrollmentStatus.COMPLETED),
+                enrollment(USER_3, COURSE_A, EnrollmentStatus.ASSIGNED),
+                enrollment(USER_1, COURSE_B, EnrollmentStatus.COMPLETED),
+                enrollment(USER_2, COURSE_B, EnrollmentStatus.IN_PROGRESS)));
+    }
+
+    @Test
+    void listCompliancePolicies_reportsEachCoursesRealCompletion() {
+        givenEnrollments();
+        when(compliancePolicyRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
+                policy(COURSE_A), policy(COURSE_B)));
+
+        var views = learningService.listCompliancePolicies(TENANT_ID);
+
+        // 2/3 and 1/2 — read off the enrollments, not off a stored column.
+        assertThat(views).extracting(com.digishield.learning.api.CompliancePolicyView::completionPct)
+                .containsExactly(67, 50);
+    }
+
+    @Test
+    void policyWithoutACourse_fallsBackToOverallCompletion() {
+        givenEnrollments();
+        when(compliancePolicyRepository.findByTenantId(TENANT_ID))
+                .thenReturn(java.util.List.of(policy(null)));
+
+        var views = learningService.listCompliancePolicies(TENANT_ID);
+
+        // 3 of 5 enrollments completed overall.
+        assertThat(views.get(0).completionPct()).isEqualTo(60);
+    }
+
+    @Test
+    void policyWhoseCourseNobodyIsEnrolledIn_readsZeroRatherThanInventingANumber() {
+        givenEnrollments();
+        UUID unusedCourse = UUID.fromString("cccccccc-0000-0000-0000-000000000003");
+        when(compliancePolicyRepository.findByTenantId(TENANT_ID))
+                .thenReturn(java.util.List.of(policy(unusedCourse)));
+
+        assertThat(learningService.listCompliancePolicies(TENANT_ID).get(0).completionPct())
+                .isZero();
+    }
+
+    @Test
+    void getComplianceStatus_countsCompliantPeopleIndividually() {
+        givenEnrollments();
+        when(compliancePolicyRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
+                policy(COURSE_A), policy(COURSE_B)));
+        when(enrollmentRepository.countDistinctUsers(TENANT_ID)).thenReturn(3L);
+
         com.digishield.learning.api.ComplianceStatusView status =
                 learningService.getComplianceStatus(TENANT_ID);
 
-        // Assert: headcount is the real distinct-enrolled count, KPIs derive from it
-        assertThat(status.totalCount()).isEqualTo(10);
-        assertThat(status.compliantCount()).isEqualTo(8);   // round(80% * 10)
-        assertThat(status.overdueCount()).isEqualTo(2);     // 10 - 8
-        assertThat(status.compliantPct()).isEqualTo(80.0);
+        assertThat(status.totalCount()).isEqualTo(3);
+        // Derived per person: only USER_1 has nothing outstanding. The old code
+        // multiplied the average by head count, which invents people.
+        assertThat(status.compliantCount()).isEqualTo(1);
+        assertThat(status.overdueCount()).isEqualTo(2);
+        assertThat(status.compliantPct()).isEqualTo(58.5);   // mean of 67 and 50
+        assertThat(status.dueSoonCount()).isEqualTo(2);      // both in 50..89
+        assertThat(status.completedCount()).isZero();        // neither reaches 90
     }
 
-    private com.digishield.learning.domain.CompliancePolicy policy(int completionPct) {
+    @Test
+    void getComplianceStatus_withNoPoliciesIsAllZeroes() {
+        when(compliancePolicyRepository.findByTenantId(TENANT_ID))
+                .thenReturn(java.util.List.of());
+
+        com.digishield.learning.api.ComplianceStatusView status =
+                learningService.getComplianceStatus(TENANT_ID);
+
+        assertThat(status.totalCount()).isZero();
+        assertThat(status.compliantPct()).isZero();
+    }
+
+    private Enrollment enrollment(UUID userId, UUID courseId, EnrollmentStatus status) {
+        return new Enrollment(UUID.randomUUID(), TENANT_ID, userId, courseId, status, null);
+    }
+
+    private com.digishield.learning.domain.CompliancePolicy policy(UUID courseId) {
         return new com.digishield.learning.domain.CompliancePolicy(
-                UUID.randomUUID(), TENANT_ID, "Policy", "GDPR", "before_due:7d", true, completionPct);
+                UUID.randomUUID(), TENANT_ID, "Policy", "GDPR", "before_due:7d", true, courseId);
     }
 }
