@@ -448,6 +448,9 @@ export default function ContentStudioPage() {
                 }
                 style={{ ...inputStyle, fontSize: 13.5, resize: 'vertical', lineHeight: 1.5, fontFamily: draft.bodyFormat === 'html' ? 'monospace' : 'inherit' }}
               />
+              <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 6 }}>
+                {t('Đặt {{link}} ở nơi muốn chèn link theo dõi của từng người nhận. Không có thì link được nối vào cuối nội dung.')}
+              </div>
             </div>
 
             {/* Attachments */}

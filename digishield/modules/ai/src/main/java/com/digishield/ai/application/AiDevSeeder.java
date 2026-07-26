@@ -62,7 +62,7 @@ public class AiDevSeeder implements CommandLineRunner {
                           <p>Cơ quan Thuế xác định bạn đủ điều kiện được hoàn thuế TNCN năm 2025 với số tiền
                           <b>2.480.000đ</b>. Vui lòng đăng nhập Cổng dịch vụ và xác nhận thông tin tài khoản
                           ngân hàng trước ngày <b>30/07/2026</b>, nếu không hồ sơ sẽ bị hủy.</p>
-                          <p><a href="https://hoanthue-tct.example.vn">Xác nhận hoàn thuế ngay</a></p>
+                          <p><a href="{{link}}">Xác nhận hoàn thuế ngay</a></p>
                           <p>Trân trọng,<br/>Tổng cục Thuế</p>
                         </div>""",
                 "Cơ quan thuế", Difficulty.HARD, TemplateStatus.APPROVED);
@@ -79,7 +79,7 @@ public class AiDevSeeder implements CommandLineRunner {
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.SMS,
                 "[BHXH] Cập nhật thông tin sổ bảo hiểm",
                 "tmpl/sms/bhxh", "BHXH: So bao hiem cua ban chua duoc dong bo VssID. "
-                        + "Cap nhat trong 24h de tranh gian doan quyen loi: https://vssid-capnhat.example.vn",
+                        + "Cap nhat trong 24h de tranh gian doan quyen loi: {{link}}",
                 "Bảo hiểm xã hội", Difficulty.MEDIUM, TemplateStatus.APPROVED));
 
         templateRepository.save(new AiTemplate(
@@ -91,7 +91,7 @@ public class AiDevSeeder implements CommandLineRunner {
                         Hồ sơ định danh điện tử mức 2 của bạn thiếu thông tin và sẽ bị khóa sau 48 giờ.
                         Vui lòng truy cập Cổng Dịch vụ công và đăng nhập để bổ sung, xác thực ngay.
 
-                        Bổ sung hồ sơ: https://dichvucong-xacthuc.example.vn
+                        Bổ sung hồ sơ: {{link}}
 
                         Trân trọng,
                         Cổng Dịch vụ công Quốc gia""",
@@ -106,21 +106,21 @@ public class AiDevSeeder implements CommandLineRunner {
                         Chúng tôi ghi nhận một lần đăng nhập bất thường vào tài khoản của Quý khách. Nếu
                         không phải bạn, vui lòng xác minh danh tính ngay để tránh tài khoản bị tạm khóa.
 
-                        Xác minh ngay: https://xacminh-nganhang.example.vn""",
+                        Xác minh ngay: {{link}}""",
                 "Ngân hàng", Difficulty.MEDIUM, TemplateStatus.DRAFT));
 
         templateRepository.save(new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.SMS,
                 "[EVN] Cảnh báo nợ tiền điện",
                 "tmpl/sms/evn", "EVN: Hoa don tien dien thang nay chua thanh toan, dien se bi cat trong "
-                        + "hom nay. Thanh toan ngay: https://evn-thanhtoan.example.vn",
+                        + "hom nay. Thanh toan ngay: {{link}}",
                 "Điện lực", Difficulty.EASY, TemplateStatus.APPROVED));
 
         templateRepository.save(new AiTemplate(
                 UUID.randomUUID(), DEMO_TENANT, TemplateChannel.ZALO,
                 "[Bảo hiểm] Nhận quyền lợi hợp đồng đến hạn",
                 "tmpl/zalo/baohiem", "Hop dong bao hiem cua ban co quyen loi den han. Quet ma / nhan lien "
-                        + "ket de xac nhan nhan tien: https://baohiem-quyenloi.example.vn",
+                        + "ket de xac nhan nhan tien: {{link}}",
                 "Bảo hiểm", Difficulty.HARD, TemplateStatus.DRAFT));
     }
 

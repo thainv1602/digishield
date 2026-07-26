@@ -36,15 +36,31 @@ const STEPS = [
   { label: 'Xem trước' },
 ];
 
+// `supported: false` = the backend has no delivery transport for the channel yet,
+// so launching it would record a send that never leaves the system. Shown but not
+// selectable, rather than hidden, so the roadmap stays visible.
 const channels = [
-  { id: 'email', icon: Mail, title: 'Email Phishing', desc: 'SMTP relay, DKIM, tùy chỉnh domain' },
-  { id: 'sms', icon: MessageSquare, title: 'SMS / Smishing', desc: 'Brandname giả, OTP giả, link rút gọn' },
-  { id: 'qr', icon: QrCode, title: 'QR Code (Quishing)', desc: 'Mã QR nhúng trong email/tài liệu in' },
-  { id: 'zalo', icon: Smartphone, title: 'Zalo / Teams / Viber', desc: 'Tin nhắn nội bộ giả qua chat platform' },
+  { id: 'email', icon: Mail, title: 'Email Phishing', desc: 'SMTP relay, DKIM, tùy chỉnh domain', supported: true },
+  { id: 'sms', icon: MessageSquare, title: 'SMS / Smishing', desc: 'Brandname giả, OTP giả, link rút gọn', supported: true },
+  { id: 'qr', icon: QrCode, title: 'QR Code (Quishing)', desc: 'Mã QR nhúng trong email/tài liệu in', supported: true },
+  { id: 'zalo', icon: Smartphone, title: 'Zalo / Teams / Viber', desc: 'Tin nhắn nội bộ giả qua chat platform', supported: false },
 ] as const;
+
+/**
+ * Template channels accepted for a given campaign channel. A QR campaign is
+ * delivered as an email carrying the QR, so it draws on the email library.
+ */
+const TEMPLATE_CHANNELS: Record<string, string[]> = {
+  email: ['email'],
+  qr: ['email', 'qr'],
+  sms: ['sms'],
+  zalo: ['zalo'],
+};
 
 interface TemplateCard {
   id: string;
+  /** backend template channel (lowercase), used to match the campaign channel */
+  channel: string;
   title: string;
   diff: string;
   diffDots: string;
@@ -65,7 +81,12 @@ function difficultyOf(difficulty: string, t: TFn): { diff: string; diffDots: str
 
 /** Map a backend `SimTemplate` onto the template-step card. */
 function toTemplateCard(dto: SimTemplate, t: TFn): TemplateCard {
-  return { id: dto.id, title: dto.subject, ...difficultyOf(dto.difficulty, t) };
+  return {
+    id: dto.id,
+    channel: (dto.channel ?? 'email').toLowerCase(),
+    title: dto.subject,
+    ...difficultyOf(dto.difficulty, t),
+  };
 }
 
 interface GroupCard {
@@ -123,7 +144,7 @@ export default function CampaignWizardPage() {
   const templatesQuery = useTemplates();
   const groupsQuery = useGroups();
 
-  const templates = useMemo<TemplateCard[]>(
+  const allTemplates = useMemo<TemplateCard[]>(
     () => (templatesQuery.data ?? []).map((dto) => toTemplateCard(dto, t)),
     [templatesQuery.data, t],
   );
@@ -135,6 +156,21 @@ export default function CampaignWizardPage() {
   const [step, setStep] = useState(1);
   const [channel, setChannel] = useState<string | null>(null);
   const [template, setTemplate] = useState<string | null>(null);
+
+  // Only templates authored for the chosen channel: an HTML email lure with a
+  // brand logo and attachments is not a smishing payload.
+  const templates = useMemo<TemplateCard[]>(() => {
+    if (!channel) return allTemplates;
+    const allowed = TEMPLATE_CHANNELS[channel] ?? [channel];
+    return allTemplates.filter((tpl) => allowed.includes(tpl.channel));
+  }, [allTemplates, channel]);
+
+  /** Switching channel invalidates a template picked for the previous one. */
+  const selectChannel = (id: string) => {
+    if (id === channel) return;
+    setChannel(id);
+    setTemplate(null);
+  };
   const [group, setGroup] = useState<string | null>(null);
   const [speed, setSpeed] = useState(0);
   const [date, setDate] = useState('2026-07-05');
@@ -207,10 +243,13 @@ export default function CampaignWizardPage() {
                   <button
                     type="button"
                     key={c.id}
-                    onClick={() => setChannel(c.id)}
+                    disabled={!c.supported}
+                    title={c.supported ? undefined : t('Kênh này chưa có kênh gửi thật')}
+                    onClick={() => selectChannel(c.id)}
                     style={{
                       textAlign: 'left',
-                      cursor: 'pointer',
+                      cursor: c.supported ? 'pointer' : 'not-allowed',
+                      opacity: c.supported ? 1 : 0.55,
                       borderRadius: 10,
                       padding: 20,
                       border: sel ? '1.5px solid var(--color-blue)' : '1.5px solid var(--color-border)',
@@ -221,6 +260,11 @@ export default function CampaignWizardPage() {
                     <Icon size={22} color={sel ? 'var(--color-blue)' : 'var(--color-muted)'} style={{ marginBottom: 10 }} />
                     <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
                       {c.title}
+                      {!c.supported && (
+                        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-muted)', marginLeft: 8 }}>
+                          {t('Sắp có')}
+                        </span>
+                      )}
                     </div>
                     <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>{t(c.desc)}</div>
                   </button>
@@ -250,7 +294,11 @@ export default function CampaignWizardPage() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(templatesQuery.isLoading || (!templatesQuery.isLoading && templates.length === 0)) && (
                   <div style={{ fontSize: 12.5, color: 'var(--color-muted)', padding: '4px 2px' }}>
-                    {templatesQuery.isLoading ? t('Đang tải mẫu…') : t('Chưa có mẫu nào — tạo bằng AI bên dưới.')}
+                    {templatesQuery.isLoading
+                      ? t('Đang tải mẫu…')
+                      : allTemplates.length > 0
+                        ? t('Chưa có mẫu nào cho kênh này — tạo bằng AI bên dưới.')
+                        : t('Chưa có mẫu nào — tạo bằng AI bên dưới.')}
                   </div>
                 )}
                 {templates.map((t) => {

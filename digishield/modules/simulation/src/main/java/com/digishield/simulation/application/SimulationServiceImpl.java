@@ -4,6 +4,7 @@ import com.digishield.contracts.events.SimulationDeliveryRequestedEvent;
 import com.digishield.contracts.events.UserClickedSimulationEvent;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.digishield.simulation.api.CampaignTemplateProvider;
 import com.digishield.simulation.api.SimulationService;
 import com.digishield.simulation.api.dto.SendResultDto;
 import com.digishield.simulation.api.dto.SimCampaignDetailDto;
@@ -21,6 +22,9 @@ import com.digishield.simulation.infrastructure.SimCampaignRepository;
 import com.digishield.simulation.infrastructure.SimEventRepository;
 import com.digishield.simulation.infrastructure.SimRecipientRepository;
 import com.digishield.simulation.infrastructure.SimResultRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +42,8 @@ import java.util.UUID;
 @Transactional
 public class SimulationServiceImpl implements SimulationService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SimulationServiceImpl.class);
+
     private final SimCampaignRepository campaignRepository;
     private final SimEventRepository eventRepository;
     private final SimResultRepository resultRepository;
@@ -45,6 +51,11 @@ public class SimulationServiceImpl implements SimulationService {
     private final SimRecipientRepository recipientRepository;
     private final EventPublisher eventPublisher;
     private final JdbcTemplate jdbcTemplate;
+    /**
+     * Optional: absent in slices that do not wire the AI module, in which case a
+     * campaign delivers without template content.
+     */
+    private final ObjectProvider<CampaignTemplateProvider> templateProvider;
 
     public SimulationServiceImpl(SimCampaignRepository campaignRepository,
                                  SimEventRepository eventRepository,
@@ -52,7 +63,9 @@ public class SimulationServiceImpl implements SimulationService {
                                  SimCampaignFunnelRepository funnelRepository,
                                  SimRecipientRepository recipientRepository,
                                  EventPublisher eventPublisher,
-                                 JdbcTemplate jdbcTemplate) {
+                                 JdbcTemplate jdbcTemplate,
+                                 ObjectProvider<CampaignTemplateProvider> templateProvider) {
+        this.templateProvider = templateProvider;
         this.campaignRepository = campaignRepository;
         this.eventRepository = eventRepository;
         this.resultRepository = resultRepository;
@@ -95,6 +108,10 @@ public class SimulationServiceImpl implements SimulationService {
         List<UUID> recipients = userIds == null ? List.of() : userIds;
         List<SendResultDto.Recipient> links = new ArrayList<>();
         Instant now = Instant.now();
+
+        // Resolve the campaign's template once, not per recipient: every recipient
+        // receives the same lure, only the tracking link differs.
+        CampaignTemplateProvider.TemplateContent template = resolveTemplate(campaign.getTemplateId());
         for (UUID userId : recipients) {
             UUID token = UUID.randomUUID();
             recipientRepository.save(new SimRecipient(token, tenantId, campaignId, userId, now));
@@ -105,7 +122,10 @@ public class SimulationServiceImpl implements SimulationService {
             // Ask the notification module to actually deliver this link over the
             // campaign channel (email/SMS). Decoupled via a domain event.
             eventPublisher.publish(new SimulationDeliveryRequestedEvent(
-                    tenantId, userId, campaignId, campaign.getChannel().name(), trackPath));
+                    tenantId, userId, campaignId, campaign.getChannel().name(), trackPath,
+                    template == null ? null : template.subject(),
+                    template == null ? null : template.body(),
+                    template == null ? null : template.bodyFormat()));
             links.add(new SendResultDto.Recipient(userId, token, base + trackPath));
         }
 
@@ -117,6 +137,27 @@ public class SimulationServiceImpl implements SimulationService {
                 CampaignStatus.RUNNING.name().toLowerCase(),
                 links.size(),
                 links);
+    }
+
+    /**
+     * Looks up the campaign's template content, or {@code null} when the campaign
+     * has none, no provider is wired, or the lookup fails. A template problem must
+     * never abort a launch — delivery degrades to the generic message instead.
+     */
+    private CampaignTemplateProvider.TemplateContent resolveTemplate(UUID templateId) {
+        if (templateId == null) {
+            return null;
+        }
+        CampaignTemplateProvider provider = templateProvider.getIfAvailable();
+        if (provider == null) {
+            return null;
+        }
+        try {
+            return provider.findById(templateId).orElse(null);
+        } catch (RuntimeException e) {
+            LOG.warn("Could not resolve template {} for the campaign send: {}", templateId, e.toString());
+            return null;
+        }
     }
 
     @Override

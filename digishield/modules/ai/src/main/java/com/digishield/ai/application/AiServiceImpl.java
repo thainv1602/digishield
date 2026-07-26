@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -84,6 +85,18 @@ public class AiServiceImpl implements AiService {
         return templateRepository.findByTenantId(tenantId).stream()
                 .map(this::toView)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<SimTemplateView> findTemplate(UUID id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        UUID tenantId = TenantContext.requireUuid();
+        return templateRepository.findById(id)
+                .filter(t -> tenantId.equals(t.getTenantId()))
+                .map(this::toView);
     }
 
     @Override
