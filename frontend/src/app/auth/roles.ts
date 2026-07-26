@@ -90,6 +90,8 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
     { key: 'inbox', label: 'Hộp báo cáo', path: '/soc/inbox', icon: 'inbox', section: 'SOC Analyst' },
     { key: 'alerts', label: 'Trung tâm cảnh báo', path: '/soc/alerts', icon: 'bell', section: 'SOC Analyst' },
     { key: 'watchlist', label: 'Watchlist', path: '/soc/watchlist', icon: 'eye', section: 'SOC Analyst' },
+    { key: 'threat-intel', label: 'Threat Intelligence', path: '/soc/threat-intel', icon: 'shield-alert', section: 'SOC Analyst' },
+    { key: 'interventions', label: 'Nhật ký can thiệp', path: '/soc/interventions', icon: 'file-text', section: 'SOC Analyst' },
   ],
   super: [
     { key: 'tenants', label: 'Quản trị Tenant', path: '/super/tenants', icon: 'monitor', section: 'Super Admin' },

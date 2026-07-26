@@ -163,7 +163,7 @@ export default function LessonPlayerPage() {
               <Button
                 type="button"
                 variant="primary"
-                onClick={() => navigate(`/learn/quiz/${id ?? 'quiz-1'}`)}
+                onClick={() => id && navigate(`/learn/quiz/${id}`)}
               >
                 {t('Bài tiếp → Thực hành')}
               </Button>

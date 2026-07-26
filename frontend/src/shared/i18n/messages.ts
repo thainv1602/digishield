@@ -422,6 +422,11 @@ export const EN: Record<string, string> = {
   'Chứng chỉ của tôi': 'My Certificates',
   'Hộp báo cáo': 'Report Inbox',
   'Trung tâm cảnh báo': 'Alert Center',
+  'Nhật ký can thiệp': 'Intervention Log',
+  'Threat Intelligence': 'Threat Intelligence',
+  '✓ Đã tạo bài học': '✓ Lesson created',
+  'Ví dụ minh hoạ ánh xạ mặc định — cấu hình theo IdP thực tế khi tích hợp SCIM.':
+    'Illustrative default mapping — configure per your actual IdP when integrating SCIM.',
   Watchlist: 'Watchlist',
   'Quản trị Tenant': 'Tenant Console',
   'SCIM & SSO Config': 'SCIM & SSO Config',

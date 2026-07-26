@@ -39,6 +39,8 @@ const MyReportsPage = lazy(() => import('@/features/learning/MyReportsPage'));
 const SocInboxPage = lazy(() => import('@/features/soc/SocInboxPage'));
 const AlertCenterPage = lazy(() => import('@/features/soc/AlertCenterPage'));
 const WatchlistPage = lazy(() => import('@/features/soc/WatchlistPage'));
+const ThreatIntelPage = lazy(() => import('@/features/soc/ThreatIntelPage'));
+const InterventionLogPage = lazy(() => import('@/features/soc/InterventionLogPage'));
 
 /* ── Role groupings ── */
 const ADMIN: Role[] = [ROLES.ORG_ADMIN, ROLES.MANAGER, ROLES.CONTENT_EDITOR, ROLES.SUPER_ADMIN];
@@ -142,6 +144,8 @@ export function AppRouter() {
         <Route path="/soc/inbox" element={guarded(ANALYST, SocInboxPage)} />
         <Route path="/soc/alerts" element={guarded(ANALYST, AlertCenterPage)} />
         <Route path="/soc/watchlist" element={guarded(ANALYST, WatchlistPage)} />
+        <Route path="/soc/threat-intel" element={guarded(ANALYST, ThreatIntelPage)} />
+        <Route path="/soc/interventions" element={guarded(ANALYST, InterventionLogPage)} />
 
         {/* ── Utility ── */}
         <Route path="/403" element={<Forbidden />} />

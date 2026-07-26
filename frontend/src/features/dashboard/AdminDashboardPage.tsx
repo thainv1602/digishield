@@ -451,7 +451,7 @@ export default function AdminDashboardPage() {
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>{t('Báo cáo gần đây')}</div>
               <button
                 type="button"
-                onClick={() => navigate('/soc')}
+                onClick={() => navigate('/soc/inbox')}
                 style={{
                   fontSize: 12,
                   color: 'var(--color-blue)',
