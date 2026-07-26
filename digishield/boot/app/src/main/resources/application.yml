@@ -63,6 +63,11 @@ spring:
     locations: classpath:db/migration
 
 management:
+  server:
+    # Own port when set, so metrics can be scraped in-cluster without a token
+    # while staying off the port the ingress publishes. Empty keeps everything
+    # on the main port, which is what local runs want.
+    port: ${MANAGEMENT_PORT:}
   endpoints:
     web:
       exposure:

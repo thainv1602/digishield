@@ -1,0 +1,193 @@
+# Prometheus — stores the metrics the app was already emitting to nobody.
+#
+# /actuator/prometheus has served 111 metric families since long before this;
+# nothing scraped them, so a pod that died took its history with it and there
+# was no way to answer "when did this start".
+#
+# Scrapes the API's management port (8081), which the Ingress does not publish.
+# That is the whole reason the port exists: #132 put metrics behind SUPER_ADMIN
+# because they were reachable from the internet, and a scraper cannot present a
+# token. Separating the port satisfies both.
+#
+# Retention is 15 days and the volume is capped. Prometheus shares the
+# local-path disk with Postgres and Loki; letting any of them grow without a
+# limit eventually takes the database down.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+
+    scrape_configs:
+      # The application: api, worker and scheduler all expose actuator.
+      - job_name: digishield
+        metrics_path: /actuator/prometheus
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [digishield]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            regex: (api|worker|scheduler)
+            action: keep
+          # Actuator lives on the management port, not the app port.
+          - source_labels: [__address__]
+            regex: '([^:]+)(?::\d+)?'
+            replacement: '$1:8081'
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_component]
+            target_label: component
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+      - job_name: prometheus
+        static_configs:
+          - targets: [localhost:9090]
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+rules:
+  # Service discovery only — read which pods exist. No write access anywhere.
+  - apiGroups: [""]
+    resources: ["nodes", "services", "endpoints", "pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/name: prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: digishield
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  ports:
+    - port: 9090
+      name: http
+  selector:
+    app.kubernetes.io/name: prometheus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  replicas: 1
+  strategy:
+    # ReadWriteOnce volume on local-path: a rolling update would leave two pods
+    # fighting over it and neither becoming ready.
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: prometheus
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: 65534
+        runAsGroup: 65534
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.1.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            # State lives on the mounted volume; nothing legitimately writes to
+            # the image layers. /tmp is mounted separately below.
+            readOnlyRootFilesystem: true
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=15d
+            - --storage.tsdb.retention.size=4GB
+            - --web.enable-lifecycle
+          ports:
+            - containerPort: 9090
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 640Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+            - name: tmp
+              mountPath: /tmp
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-data
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: prometheus
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 8Gi

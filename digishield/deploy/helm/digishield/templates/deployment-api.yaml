@@ -35,6 +35,14 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.api.port }}
+            {{- if .Values.api.managementPort }}
+            # Actuator moves here so an in-cluster scraper can read metrics
+            # without a bearer token, while the ingress keeps publishing only
+            # the port above. Probes follow it — leaving them on `http` would
+            # 404 and no pod would ever become ready.
+            - name: management
+              containerPort: {{ .Values.api.managementPort }}
+            {{- end }}
           env:
             {{- include "digishield.dbEnv" . | nindent 12 }}
             {{- include "digishield.redisEnv" . | nindent 12 }}
@@ -43,6 +51,10 @@ spec:
             {{- include "digishield.aiEnv" . | nindent 12 }}
             {{- include "digishield.loggingEnv" . | nindent 12 }}
             {{- include "digishield.rlsEnv" . | nindent 12 }}
+            {{- with .Values.api.managementPort }}
+            - name: MANAGEMENT_PORT
+              value: {{ . | quote }}
+            {{- end }}
             {{- include "digishield.notificationsEnv" . | nindent 12 }}
             {{- with .Values.cors.origins }}
             # Browser origins (patterns allowed) the API accepts — needed when
@@ -58,18 +70,18 @@ spec:
           startupProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: http
+              port: {{ if .Values.api.managementPort }}management{{ else }}http{{ end }}
             periodSeconds: 10
             failureThreshold: 30
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: http
+              port: {{ if .Values.api.managementPort }}management{{ else }}http{{ end }}
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: http
+              port: {{ if .Values.api.managementPort }}management{{ else }}http{{ end }}
             periodSeconds: 15
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
