@@ -504,8 +504,150 @@ export default function ContentStudioPage() {
         </div>
       </div>
 
+      <div style={{ marginTop: 14 }}>
+        <QrTool t={t} />
+      </div>
+
       <div style={{ ...cardStyle, padding: '12px 16px', marginTop: 14, fontSize: 12.5, color: 'var(--color-muted)' }}>
         {t('Đây là nội dung mô phỏng phục vụ huấn luyện nhận thức an toàn thông tin — không dùng cho mục đích khác.')}
+      </div>
+    </div>
+  );
+}
+
+/** API origin the QR endpoint lives on. */
+function qrOrigin(): string {
+  const base = import.meta.env.VITE_API_BASE_URL as string | undefined;
+  try {
+    if (base && /^https?:\/\//.test(base)) return new URL(base).origin;
+  } catch {
+    /* fall through to the page origin */
+  }
+  return window.location.origin;
+}
+
+/**
+ * QrTool — a standalone "type text/URL → get a real QR" generator (backend
+ * `/api/v1/qr`). Live preview + download as SVG or PNG. Handy for building
+ * quishing materials (a QR that points at a simulation tracking link) or any
+ * other QR the content editor needs.
+ */
+function QrTool({ t }: { t: (s: string) => string }) {
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const value = text.trim();
+  const previewSrc = value
+    ? `${qrOrigin()}/api/v1/qr?size=200&data=${encodeURIComponent(value)}`
+    : '';
+
+  async function fetchSvg(): Promise<string> {
+    const res = await fetch(`${qrOrigin()}/api/v1/qr?size=512&data=${encodeURIComponent(value)}`);
+    if (!res.ok) throw new Error('qr fetch failed');
+    return res.text();
+  }
+
+  function triggerDownload(href: string, filename: string) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  async function downloadSvg() {
+    if (!value) return;
+    setBusy(true);
+    try {
+      const svg = await fetchSvg();
+      const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      triggerDownload(url, 'qr.svg');
+      URL.revokeObjectURL(url);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadPng() {
+    if (!value) return;
+    setBusy(true);
+    try {
+      const svg = await fetchSvg();
+      // Draw the (same-origin blob) SVG onto a canvas → PNG, avoiding CORS taint.
+      const svgUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('img load failed'));
+        img.src = svgUrl;
+      });
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+      }
+      URL.revokeObjectURL(svgUrl);
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        triggerDownload(url, 'qr.png');
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ ...cardStyle, padding: 20 }}>
+      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
+        {t('Tạo mã QR')}
+      </div>
+      <div style={{ fontSize: 12.5, color: 'var(--color-muted)', marginBottom: 14 }}>
+        {t('Dán URL hoặc nội dung để tạo mã QR thật (dùng cho poster quishing, tài liệu in…).')}
+      </div>
+      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 240 }}>
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={4}
+            placeholder="https://…"
+            aria-label={t('Tạo mã QR')}
+            style={{ ...inputStyle, width: '100%', resize: 'vertical', fontFamily: "'JetBrains Mono', monospace" }}
+          />
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <Button variant="secondary" disabled={!value || busy} onClick={downloadPng}>
+              {t('Tải PNG')}
+            </Button>
+            <Button variant="secondary" disabled={!value || busy} onClick={downloadSvg}>
+              {t('Tải SVG')}
+            </Button>
+          </div>
+        </div>
+        <div
+          style={{
+            width: 168,
+            height: 168,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: '#fff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+          }}
+        >
+          {previewSrc ? (
+            <img src={previewSrc} width={148} height={148} alt={t('Xem trước mã QR')} style={{ display: 'block' }} />
+          ) : (
+            <span style={{ fontSize: 12, color: 'var(--color-muted)' }}>{t('Xem trước')}</span>
+          )}
+        </div>
       </div>
     </div>
   );
