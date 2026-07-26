@@ -9,14 +9,27 @@
 # An Ingress can be added later if it is wanted, as a deliberate decision rather
 # than a side effect of the default.
 #
-# The admin password is NOT in git. Create the secret on the cluster once:
+# The admin password is NOT in git, and is not chosen by hand either. Same shape
+# as ArgoCD's initial admin secret: generate a random one into a Secret once, then
+# read it back with kubectl when you need it.
 #
+#   # generate (once)
 #   kubectl -n digishield create secret generic grafana-admin \
-#     --from-literal=admin-password='<choose one>'
+#     --from-literal=admin-password="$(head -c 18 /dev/urandom | base64 | tr -d /+=)"
 #
-# Without it the pod stays Pending with a clear reason, which is the failure mode
-# to want — a committed default password is how a repo ends up handing out access
-# to anyone who reads it, exactly as COGNITO_MANUAL_SETUP.md did.
+#   # read it back, the way you would ArgoCD's
+#   kubectl -n digishield get secret grafana-admin \
+#     -o jsonpath='{.data.admin-password}' | base64 -d; echo
+#
+#   # rotate
+#   kubectl -n digishield delete secret grafana-admin && <generate again>
+#   kubectl -n digishield rollout restart deploy/grafana
+#
+# A generated value beats a chosen one: nobody has to invent a password under
+# time pressure, and it never passes through a chat log, a ticket or a commit.
+# Without the secret the pod stays Pending with a clear reason — the failure mode
+# to want. A committed default is how a repo ends up handing out access to anyone
+# who reads it, exactly as COGNITO_MANUAL_SETUP.md did.
 apiVersion: v1
 kind: ConfigMap
 metadata:
