@@ -1,6 +1,7 @@
 package com.digishield.reporting.application;
 
 import com.digishield.contracts.events.PhishingReportConfirmedEvent;
+import com.digishield.contracts.events.ThreatIntelConvertedEvent;
 import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
@@ -158,15 +159,19 @@ public class ReportingServiceImpl implements ReportingService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Không tìm thấy threat intel: " + threatIntelId));
 
-        // Generate de-identified template + coaching page drafts. The actual
-        // content lives in the training module; here we mint the identifiers and
-        // record the link so the intel is marked as converted.
+        // Mint the de-identified template id + coaching page id, mark the intel
+        // converted, then ask the learning module (via event) to create the
+        // actual coaching page with that id — so the returned coachingPageId
+        // references real content instead of a dangling identifier.
         UUID templateId = intel.getConvertedTemplateId() != null
                 ? intel.getConvertedTemplateId()
                 : UUID.randomUUID();
         UUID coachingPageId = UUID.randomUUID();
         intel.setConvertedTemplateId(templateId);
         threatIntelRepository.save(intel);
+
+        String contentRef = "threat-intel:" + (intel.getSource() != null ? intel.getSource() : intel.getId());
+        eventPublisher.publish(new ThreatIntelConvertedEvent(tenantId, coachingPageId, templateId, contentRef));
 
         return new ThreatIntelConvertResultDto(templateId, coachingPageId);
     }
