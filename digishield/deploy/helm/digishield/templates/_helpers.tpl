@@ -35,6 +35,18 @@ so an aggregator can index fields; blank keeps Boot's human-readable format. */}
 {{- end }}
 {{- end -}}
 
+{{/* RLS env — shared by api/worker/scheduler. The app connects as the database
+superuser, and PostgreSQL lets superusers bypass RLS even with FORCE enabled, so
+every workload must drop to the NOBYPASSRLS role per transaction. Carried as env
+rather than in a profile file: worker and scheduler run their own profiles and
+would otherwise silently run with tenant isolation off. */}}
+{{- define "digishield.rlsEnv" -}}
+{{- with .Values.rls.appRole }}
+- name: DIGISHIELD_RLS_APP_ROLE
+  value: {{ . | quote }}
+{{- end }}
+{{- end -}}
+
 {{- define "digishield.aiEnv" -}}
 {{- if .Values.ai.claude.enabled }}
 - name: AI_CLAUDE_ENABLED

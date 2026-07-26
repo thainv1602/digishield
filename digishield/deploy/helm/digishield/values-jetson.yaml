@@ -19,13 +19,17 @@ api:
   replicaCount: 2
   # Real-auth mode: `pgdemo` = real Postgres + Flyway; NO `dev`, so the JWT
   # resource server (SecurityConfig) and RLS TenantFilter are active — Cognito
-  # tokens are validated and @PreAuthorize/RLS enforced. `seed` re-runs the demo
-  # seeders (now @Profile("dev | seed")) so the demo tenant + data exist. The app
-  # connects as the superuser `digishield`; RlsTenantAspect drops to the
-  # non-superuser role `digishield_app` (migration V2026.07.24.001) per request so
-  # RLS actually isolates tenants. Requires auth.issuerUri below + a frontend
-  # image built with the VITE_COGNITO_* vars.
-  profile: pgdemo,seed
+  # tokens are validated and @PreAuthorize/RLS enforced. The app connects as the
+  # superuser `digishield`; RlsTenantAspect drops to the non-superuser role
+  # `digishield_app` (migration V2026.07.24.001) per request so RLS actually
+  # isolates tenants. Requires auth.issuerUri below + a frontend image built with
+  # the VITE_COGNITO_* vars.
+  #
+  # `seed` is deliberately absent. This cluster is production: the demo seeders
+  # wrote fixture users, courses and templates straight into the live database on
+  # every boot, and they run inside SeedingContext, which switches RLS off while
+  # they do it. The seeders are @Profile("dev") now, so this is belt and braces.
+  profile: pgdemo
   resources:
     requests:
       cpu: 250m
@@ -125,3 +129,11 @@ ingress:
   path: /
   host: ""
   annotations: {}
+
+# The in-cluster Postgres creates `digishield` via POSTGRES_USER, which initdb
+# makes a SUPERUSER — and superusers bypass RLS regardless of FORCE. Every
+# workload therefore drops to digishield_app (migration V2026.07.24.001) per
+# transaction. Previously this only reached the api pods, because it lived in
+# application-pgdemo.yml and worker/scheduler run their own profiles.
+rls:
+  appRole: "digishield_app"

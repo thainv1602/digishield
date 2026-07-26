@@ -24,7 +24,7 @@ import java.util.UUID;
  * {@link DemoTenants#DEMO_TENANT_ID}.
  */
 @Component
-@Profile("dev | seed")
+@Profile("dev")
 @Order(20)
 public class InterceptionDevSeeder implements CommandLineRunner {
 

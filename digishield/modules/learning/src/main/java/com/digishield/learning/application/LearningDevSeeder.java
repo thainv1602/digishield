@@ -43,7 +43,7 @@ import java.util.UUID;
  * All rows are scoped to the fixed demo tenant {@link DemoTenants#DEMO_TENANT_ID}.
  */
 @Component
-@Profile("dev | seed")
+@Profile("dev")
 @Order(20)
 class LearningDevSeeder implements CommandLineRunner {
 
