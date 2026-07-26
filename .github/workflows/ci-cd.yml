@@ -610,21 +610,26 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Trivy scan (SARIF)
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          scan-type: image
-          image-ref: ${{ needs.build-push.outputs.image }}
-          format: sarif
-          output: trivy-image.sarif
-          ignore-unfixed: true
-          severity: CRITICAL,HIGH
-      - name: Upload SARIF
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: trivy-image.sarif
-          category: trivy-image
+      # No SARIF upload here, deliberately.
+      #
+      # This job needs build-push, which only runs on the CD path, so a pull
+      # request never uploads the `trivy-image` category. Code scanning then
+      # compares the PR against main, finds that configuration missing, and
+      # fails the Trivy check — on every pull request that does not build an
+      # image, regardless of its contents. Both #141 and #142 were red for this
+      # reason and nothing else.
+      #
+      # A check that is always red is worse than no check: people learn to merge
+      # past it, and the day it means something nobody looks. Uploading an empty
+      # SARIF on pull requests would clear it, but that asserts "scanned, found
+      # nothing" about an image that was never built — a lie the Security tab
+      # would then repeat.
+      #
+      # Enforcement stays: the gate below still fails CD on any fixable
+      # CRITICAL or HIGH, so a vulnerable image cannot ship. What is lost is the
+      # Security-tab view of image CVEs; the findings still appear in this job's
+      # log when it trips. Dependency and IaC scanning are unaffected — they run
+      # on pull requests and keep uploading trivy-deps and trivy-iac.
       - name: Trivy scan (gate)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
