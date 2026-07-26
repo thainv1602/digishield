@@ -139,6 +139,17 @@ class TenantFilterTest {
         assertThat(filter.resolveTenantId(requestWithActingTenant("   "))).isEqualTo(OWN_TENANT);
     }
 
+    @Test
+    void returnsTheCanonicalUuidRatherThanTheCallersBytes() {
+        authenticateWithTid(OWN_TENANT, "ROLE_SUPER_ADMIN");
+
+        // Rebuilt from the parsed fields, so nothing the caller wrote survives
+        // into the log line or the RLS GUC — this is what closes the CodeQL
+        // log-injection path, not merely validating and passing the string on.
+        assertThat(filter.resolveTenantId(requestWithActingTenant(OTHER_TENANT.toUpperCase())))
+                .isEqualTo(OTHER_TENANT);
+    }
+
     // ---- platform scope ----
 
     @Test

@@ -102,17 +102,22 @@ public class TenantFilter extends OncePerRequestFilter {
             LOG.warn("Ignoring {} from a caller without {}", ACTING_TENANT_HEADER, SUPER_ADMIN);
             return own;
         }
-        String normalized = acting.trim();
-        if (!isUuid(normalized)) {
+        // Parse rather than merely validate: everything downstream — the log line
+        // below, the RLS GUC — then carries the canonical form UUID rebuilt from
+        // the parsed fields, never the caller's own bytes. That rules out log
+        // injection (no newlines can survive) as well as junk reaching Postgres.
+        UUID parsed = parseUuid(acting.trim());
+        if (parsed == null) {
             LOG.warn("Ignoring malformed {} header", ACTING_TENANT_HEADER);
             return own;
         }
-        if (!normalized.equals(own)) {
+        String canonical = parsed.toString();
+        if (!canonical.equals(own)) {
             // Every cross-tenant request is visible in the logs, not just the
             // moment the console entered the tenant.
-            LOG.info("Super admin acting inside tenant {} (own tenant {})", normalized, own);
+            LOG.info("Super admin acting inside tenant {}", parsed);
         }
-        return normalized;
+        return canonical;
     }
 
     private static boolean isSuperAdmin(Authentication authentication) {
@@ -124,12 +129,12 @@ public class TenantFilter extends OncePerRequestFilter {
         return false;
     }
 
-    private static boolean isUuid(String value) {
+    /** Parsed UUID, or {@code null} when {@code value} is not one. */
+    private static UUID parseUuid(String value) {
         try {
-            UUID.fromString(value);
-            return true;
+            return UUID.fromString(value);
         } catch (IllegalArgumentException e) {
-            return false;
+            return null;
         }
     }
 }
