@@ -67,6 +67,13 @@ export const EN: Record<string, string> = {
   'Xem': 'View',
   'Chứng chỉ {id}': 'Certificate {id}',
   'Content Studio · Soạn mẫu': 'Content Studio · Compose templates',
+  'Tạo mã QR': 'Generate QR code',
+  'Dán URL hoặc nội dung để tạo mã QR thật (dùng cho poster quishing, tài liệu in…).':
+    'Paste a URL or text to generate a real QR code (for quishing posters, printed materials…).',
+  'Tải PNG': 'Download PNG',
+  'Tải SVG': 'Download SVG',
+  'Xem trước mã QR': 'QR preview',
+  'Xem trước': 'Preview',
   'Cài đặt tổ chức · Org Settings': 'Org Settings',
   'Cơ quan nhà nước (gov)': 'Government agency (gov)',
   'Cấp cho:': 'Issued to:',
