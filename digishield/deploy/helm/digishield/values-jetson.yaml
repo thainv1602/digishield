@@ -102,7 +102,17 @@ ai:
 # region + existingSecret are pre-set, so only step 2 and the flags remain.
 notifications:
   email:
-    from: "no-reply@digishield.duckdns.org" # must be a verified SES identity
+    # A single SES-verified *address*, not a verified domain. digishield.duckdns.org
+    # cannot be a sending domain: DuckDNS only serves A/AAAA plus one TXT (which
+    # acme.sh uses for the cert), and SES DKIM needs three CNAMEs — so mail from it
+    # would carry no DKIM signature at all. Its A record also still points at the
+    # retired AWS cluster.
+    #
+    # utc2.edu.vn publishes neither SPF nor DMARC, so nothing will hard-reject this,
+    # but there is no alignment either: expect Gmail to file it under Spam. If the
+    # university ever publishes SPF/DMARC with enforcement, this stops working —
+    # SES is not authorised to send for their domain.
+    from: "nvthai@utc2.edu.vn" # verify this address in SES (it gets a confirmation link)
     ses:
       enabled: false # set true once SES + the Secret are ready
   sms:
