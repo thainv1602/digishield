@@ -75,11 +75,17 @@ public class SecurityConfig {
             @Value("${digishield.auth.jwt.issuer-uri:}") String issuerUri,
             @Value("${digishield.auth.jwt.audience:}") String audience,
             @Value("${digishield.auth.jwt.roles-claim:cognito:groups}") String rolesClaim,
-            @Value("${management.server.port:-1}") int managementPort) {
+            @Value("${management.server.port:}") String managementPort) {
         this.issuerUri = issuerUri;
         this.audience = audience;
         this.rolesClaim = rolesClaim;
-        this.managementPort = managementPort;
+        // Parsed rather than bound directly to an int. application.yml sets this
+        // from ${MANAGEMENT_PORT:}, so with no env var the property is present
+        // and *empty* — which is not the same as absent, so the :-1 default never
+        // applied and Spring failed to convert "" to an int. That took down every
+        // context without the variable, local runs included; the integration
+        // tests caught it before it reached a cluster.
+        this.managementPort = parsePort(managementPort);
     }
 
     @Bean
@@ -168,6 +174,18 @@ public class SecurityConfig {
                     .anyRequest().denyAll());
         }
         return http.build();
+    }
+
+    /** Port number, or -1 when unset, empty or unparseable — meaning "shared port". */
+    private static int parsePort(String value) {
+        if (value == null || value.isBlank()) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     /**
