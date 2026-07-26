@@ -39,6 +39,12 @@ export const EN: Record<string, string> = {
   'Chưa có lần chạy nào. Bấm “Chạy AIDA ngay”.': 'No runs yet. Click “Run AIDA now”.',
   'Chưa có mẫu nào trong thư viện.': 'No templates in the library yet.',
   'Chưa có mẫu nào — tạo bằng AI bên dưới.': 'No templates yet — generate with AI below.',
+  'Chưa có mẫu nào cho kênh này — tạo bằng AI bên dưới.':
+    'No templates for this channel yet — generate with AI below.',
+  'Kênh này chưa có kênh gửi thật': 'This channel has no real delivery transport yet',
+  'Sắp có': 'Coming soon',
+  'Đặt {{link}} ở nơi muốn chèn link theo dõi của từng người nhận. Không có thì link được nối vào cuối nội dung.':
+    "Put {{link}} where each recipient's tracking link should go. Without it, the link is appended to the end.",
   'Chưa có nhóm nào.': 'No groups yet.',
   'Chưa có nhóm đối tượng nào.': 'No audience groups yet.',
   'Chưa có quy tắc điểm nào.': 'No point rules yet.',

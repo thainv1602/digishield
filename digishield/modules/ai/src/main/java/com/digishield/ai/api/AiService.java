@@ -7,6 +7,7 @@ import com.digishield.ai.api.dto.SimTemplateView;
 import com.digishield.ai.domain.TemplateChannel;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -51,6 +52,13 @@ public interface AiService {
      * Deletes a template from the current tenant's library.
      */
     void deleteTemplate(UUID id);
+
+    /**
+     * Looks up a single template in the current tenant's library. Returns empty
+     * rather than throwing when the id is unknown or belongs to another tenant,
+     * so callers on the delivery path can fall back instead of failing a send.
+     */
+    Optional<SimTemplateView> findTemplate(UUID id);
 
     /**
      * Classifies a reported email payload and returns a label, confidence and
