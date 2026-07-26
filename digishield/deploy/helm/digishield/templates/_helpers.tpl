@@ -26,6 +26,15 @@
      When enabled, ANTHROPIC_API_KEY is injected from a Secret (never values). All
      app instances load the AI beans, so every workload that enables Claude needs
      the key. */}}
+{{/* Logging env — shared by api/worker/scheduler. Structured (ECS) console output
+so an aggregator can index fields; blank keeps Boot's human-readable format. */}}
+{{- define "digishield.loggingEnv" -}}
+{{- with .Values.logging.format }}
+- name: LOG_FORMAT
+  value: {{ . | quote }}
+{{- end }}
+{{- end -}}
+
 {{- define "digishield.aiEnv" -}}
 {{- if .Values.ai.claude.enabled }}
 - name: AI_CLAUDE_ENABLED

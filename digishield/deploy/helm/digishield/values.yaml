@@ -177,3 +177,9 @@ ingress:
   host: ""
   # ALB Controller annotations (set per env in values-<env>.yaml).
   annotations: {}
+
+# Log output format. "ecs" emits structured JSON (Elastic Common Schema) so an
+# aggregator can index fields — including the requestId that RequestIdFilter puts
+# on every line. Blank keeps Spring Boot's human-readable console format.
+logging:
+  format: "ecs"
