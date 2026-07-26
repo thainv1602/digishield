@@ -175,3 +175,10 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    # Parallel feature branches can merge in an order that leaves a lower
+    # version number behind an already-applied higher one (e.g. #116's
+    # V2026.07.25.001 merged after #117's V2026.07.25.002). Without this,
+    # `validate` fails and the migration job blocks every later rollout.
+    # Migrations here are additive and order-independent, so applying a
+    # straggler late is safe.
+    out-of-order: true
