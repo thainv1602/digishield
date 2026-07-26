@@ -34,6 +34,15 @@ public interface TenancyService {
     void recordImpersonation(UUID tenantId, String actor, String ip);
 
     /**
+     * Appends an audit entry. Backs the {@code AuditRecorder} SPI, so every module
+     * writes here without depending on this one.
+     *
+     * @param severity one of {@code standard|sensitive|critical}
+     */
+    void recordAudit(UUID tenantId, String actor, String action, String target,
+                     String ip, String severity);
+
+    /**
      * Gets the SCIM / SSO configuration of a tenant ({@code null} if none).
      */
     ScimConfigView getScimConfig(UUID tenantId);

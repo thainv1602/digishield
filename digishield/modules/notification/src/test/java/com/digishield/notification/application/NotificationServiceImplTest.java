@@ -1,5 +1,6 @@
 package com.digishield.notification.application;
 
+import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.notification.api.NotificationGateway;
 import com.digishield.notification.api.NotificationView;
 import com.digishield.notification.api.RealtimeNotifier;
@@ -20,6 +21,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -61,6 +63,13 @@ class NotificationServiceImplTest {
 
     @Mock
     private com.digishield.shared.tenantcontext.Messages messages;
+
+    /** The audit sink is optional; a mock provider yields none, so calls are no-ops. */
+
+    @Mock
+
+    private ObjectProvider<AuditRecorder> auditRecorder;
+
 
     @InjectMocks
     private NotificationServiceImpl notificationService;

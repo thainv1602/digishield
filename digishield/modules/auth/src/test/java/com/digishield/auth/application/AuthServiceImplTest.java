@@ -1,5 +1,7 @@
 package com.digishield.auth.application;
 
+import com.digishield.auth.api.UserUpsert;
+import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.auth.api.CurrentUser;
 import com.digishield.auth.domain.AppUser;
 import com.digishield.auth.domain.Role;
@@ -13,13 +15,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -35,6 +41,16 @@ class AuthServiceImplTest {
 
     @Mock
     private AppUserRepository userRepository;
+
+    @Mock
+
+    private ObjectProvider<AuditRecorder> auditRecorderProvider;
+
+
+    @Mock
+
+    private AuditRecorder auditRecorder;
+
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -142,5 +158,48 @@ class AuthServiceImplTest {
 
         // Act + Assert
         assertThat(authService.hasRole("ANY")).isFalse();
+    }
+
+    // ---- audit trail -------------------------------------------------------
+
+    @Test
+    void changingSomeonesRoleIsAuditedAsCritical() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.updateUser(userId, new UserUpsert(null, "analyst", null, null));
+
+        // Who can do what changed — this is the entry an investigation looks for.
+        verify(auditRecorder).record(eq("user.role_change"), eq("user:" + userId),
+                eq(AuditRecorder.Severity.CRITICAL));
+    }
+
+    @Test
+    void anEditThatLeavesTheRoleAloneIsAuditedAsSensitive() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.updateUser(userId, new UserUpsert(null, "learner", null, null));
+
+        verify(auditRecorder).record(eq("user.update"), eq("user:" + userId),
+                eq(AuditRecorder.Severity.SENSITIVE));
+    }
+
+    @Test
+    void auditingIsSkippedWhenNoSinkIsWired() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(null);
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(java.util.Optional.of(user));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // A slice without the application shell must still be able to edit a user.
+        authService.updateUser(userId, new UserUpsert(null, "analyst", null, null));
     }
 }

@@ -1,5 +1,6 @@
 package com.digishield.reporting.application;
 
+import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.contracts.events.PhishingReportConfirmedEvent;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.PhishingReport;
@@ -18,6 +19,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -51,6 +53,13 @@ class ReportingServiceImplTest {
 
     @Mock
     private EventPublisher eventPublisher;
+
+    /** The audit sink is optional; a mock provider yields none, so calls are no-ops. */
+
+    @Mock
+
+    private ObjectProvider<AuditRecorder> auditRecorder;
+
 
     @InjectMocks
     private ReportingServiceImpl reportingService;

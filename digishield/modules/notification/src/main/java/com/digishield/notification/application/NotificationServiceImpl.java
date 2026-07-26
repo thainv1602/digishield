@@ -11,6 +11,7 @@ import com.digishield.notification.domain.NotificationChannel;
 import com.digishield.notification.domain.NotificationStatus;
 import com.digishield.notification.domain.NotificationType;
 import com.digishield.notification.infrastructure.NotificationRepository;
+import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,6 +48,8 @@ public class NotificationServiceImpl implements NotificationService {
     private final RecipientResolver recipients;
     private final UserDirectory userDirectory;
     private final RealtimeNotifier realtime;
+    /** Optional: absent in slices that do not wire the application shell. */
+    private final ObjectProvider<AuditRecorder> auditRecorder;
     private final Messages messages;
 
     public NotificationServiceImpl(NotificationRepository repository,
@@ -53,14 +57,25 @@ public class NotificationServiceImpl implements NotificationService {
                                    RecipientResolver recipients,
                                    UserDirectory userDirectory,
                                    RealtimeNotifier realtime,
-                                   Messages messages) {
+                                   Messages messages,
+                                   ObjectProvider<AuditRecorder> auditRecorder) {
         this.repository = repository;
         this.gateway = gateway;
         this.recipients = recipients;
         this.userDirectory = userDirectory;
         this.realtime = realtime;
+        this.auditRecorder = auditRecorder;
         this.messages = messages;
     }
+
+    /** Records an auditable action, if an audit sink is wired (absent in slices). */
+    private void audit(String action, String target, AuditRecorder.Severity severity) {
+        AuditRecorder recorder = auditRecorder.getIfAvailable();
+        if (recorder != null) {
+            recorder.record(action, target, severity);
+        }
+    }
+
 
     @Override
     public Notification send(UUID userId, NotificationType type, NotificationChannel channel, String title, String body) {
@@ -130,6 +145,8 @@ public class NotificationServiceImpl implements NotificationService {
                     NotificationStatus.SENT, title, body, now)));
         }
         LOG.info("Broadcast alert to {} users in tenant {}", created.size(), tenantId);
+        // Reaches every person in the tenant, so it belongs in the audit trail.
+        audit("broadcast_alert", "reach:" + created.size(), AuditRecorder.Severity.SENSITIVE);
         pushAlert(tenantId, title, body, now);
         return created;
     }

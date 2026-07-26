@@ -137,13 +137,25 @@ public class TenancyServiceImpl implements TenancyService {
 
     @Override
     public void recordImpersonation(UUID tenantId, String actor, String ip) {
+        recordAudit(tenantId, actor, "tenant.impersonate.start",
+                "tenant:" + tenantId, ip, "critical");
+    }
+
+    /** Authenticated principal, for audit entries written inside this module. */
+    private static String currentActor() {
+        var authentication = org.springframework.security.core.context.SecurityContextHolder
+                .getContext().getAuthentication();
+        return authentication == null ? null : authentication.getName();
+    }
+
+    @Override
+    public void recordAudit(UUID tenantId, String actor, String action, String target,
+                            String ip, String severity) {
         auditLogRepository.save(new AuditLog(
                 UUID.randomUUID(), tenantId, Instant.now(),
                 actor == null || actor.isBlank() ? "unknown" : actor,
-                "tenant.impersonate.start",
-                "tenant:" + tenantId,
-                ip,
-                "critical"));
+                action, target, ip,
+                severity == null || severity.isBlank() ? "standard" : severity));
     }
 
     @Override
@@ -204,6 +216,7 @@ public class TenancyServiceImpl implements TenancyService {
     private TenantView applyTenantUpdate(UUID id, UpdateTenantCommand command) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + id));
+        TenantStatus statusBefore = tenant.getStatus();
         if (command.name() != null && !command.name().isBlank()) {
             tenant.setName(command.name().trim());
         }
@@ -215,6 +228,13 @@ public class TenancyServiceImpl implements TenancyService {
         }
         if (command.dataRegion() != null && !command.dataRegion().isBlank()) {
             tenant.setDataRegion(command.dataRegion().trim());
+        }
+        // Suspending or reactivating a tenant decides whether an entire
+        // organisation can use the product; it is filed in that tenant's log.
+        if (statusBefore != tenant.getStatus()) {
+            recordAudit(id, currentActor(), "tenant.status_change",
+                    "tenant:" + id + " " + statusBefore + "->" + tenant.getStatus(),
+                    null, "critical");
         }
         return toView(tenantRepository.save(tenant));
     }
