@@ -118,7 +118,11 @@ digishield:
     public-base-url: ${PUBLIC_BASE_URL:}
   notifications:
     email:
-      from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}
+      # No default on purpose. The address has to be one verified in SES, which is
+      # deployment-specific; a plausible-looking fallback would quietly produce mail
+      # that SES rejects or the recipient's provider junks, and nobody would notice.
+      # Empty makes the first send fail loudly instead (status FAILED).
+      from: ${NOTIFICATIONS_EMAIL_FROM:}
       ses:
         enabled: ${NOTIFICATIONS_SES_ENABLED:false}
     sms:
