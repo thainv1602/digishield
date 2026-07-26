@@ -52,9 +52,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Implementation of {@link LearningService}.
@@ -488,22 +493,24 @@ public class LearningServiceImpl implements LearningService {
     @Override
     @Transactional(readOnly = true)
     public List<CompliancePolicyView> listCompliancePolicies(UUID tenantId) {
-        return compliancePolicyRepository.findByTenantId(tenantId).stream()
-                .map(this::toCompliancePolicyView)
+        List<CompliancePolicy> policies = compliancePolicyRepository.findByTenantId(tenantId);
+        CompletionIndex index = completionIndex(tenantId);
+        return policies.stream()
+                .map(p -> toCompliancePolicyView(p, index.pctFor(p.getCourseId())))
                 .toList();
     }
 
     @Override
     public CompliancePolicyView createCompliancePolicy(UUID tenantId, String name, String framework,
                                                        String dueRule, boolean mandatory,
-                                                       int completionPct) {
+                                                       UUID courseId) {
         String resolvedName = name != null && !name.isBlank()
                 ? name
                 : (framework != null && !framework.isBlank() ? framework : "Chính sách tuân thủ");
-        int clamped = Math.max(0, Math.min(100, completionPct));
         CompliancePolicy policy = new CompliancePolicy(
-                UUID.randomUUID(), tenantId, resolvedName, framework, dueRule, mandatory, clamped);
-        return toCompliancePolicyView(compliancePolicyRepository.save(policy));
+                UUID.randomUUID(), tenantId, resolvedName, framework, dueRule, mandatory, courseId);
+        CompliancePolicy saved = compliancePolicyRepository.save(policy);
+        return toCompliancePolicyView(saved, completionIndex(tenantId).pctFor(saved.getCourseId()));
     }
 
     @Override
@@ -513,16 +520,92 @@ public class LearningServiceImpl implements LearningService {
         if (policies.isEmpty()) {
             return new ComplianceStatusView(0d, 0, 0, 0, 0, 0, 0);
         }
-        double avg = policies.stream().mapToInt(CompliancePolicy::getCompletionPct).average().orElse(0d);
-        int completed = (int) policies.stream().filter(p -> p.getCompletionPct() >= 90).count();
-        int dueSoon = (int) policies.stream()
-                .filter(p -> p.getCompletionPct() >= 50 && p.getCompletionPct() < 90).count();
-        int total = (int) enrollmentRepository.countDistinctUsers(tenantId); // real headcount for the KPI tiles
-        int compliantCount = (int) Math.round(avg / 100d * total);
-        int overdue = total - compliantCount;
+        CompletionIndex index = completionIndex(tenantId);
+        List<Integer> pcts = policies.stream()
+                .map(p -> index.pctFor(p.getCourseId()))
+                .toList();
+
+        double avg = pcts.stream().mapToInt(Integer::intValue).average().orElse(0d);
+        int completed = (int) pcts.stream().filter(pct -> pct >= 90).count();
+        int dueSoon = (int) pcts.stream().filter(pct -> pct >= 50 && pct < 90).count();
+
+        int total = (int) enrollmentRepository.countDistinctUsers(tenantId);
+        // A person counts as compliant when they have nothing outstanding in any
+        // course a policy points at — derived per person, not inferred from the
+        // average, which used to spread a policy-level number over head count.
+        int compliantCount = index.compliantUsers(policies);
+        int overdue = Math.max(0, total - compliantCount);
+
         return new ComplianceStatusView(
                 Math.round(avg * 10d) / 10d, compliantCount, total, overdue,
                 policies.size(), completed, dueSoon);
+    }
+
+    /**
+     * Enrollment facts for a tenant, loaded once so a page of N policies costs one
+     * query rather than N.
+     */
+    private CompletionIndex completionIndex(UUID tenantId) {
+        return new CompletionIndex(enrollmentRepository.findByTenantId(tenantId));
+    }
+
+    /** Completion percentages derived from a tenant's enrollments. */
+    private static final class CompletionIndex {
+
+        private final List<Enrollment> enrollments;
+        private final Map<UUID, int[]> byCourse = new HashMap<>();
+        private final int overallPct;
+
+        private CompletionIndex(List<Enrollment> enrollments) {
+            this.enrollments = enrollments;
+            int done = 0;
+            for (Enrollment e : enrollments) {
+                int[] counts = byCourse.computeIfAbsent(e.getCourseId(), k -> new int[2]);
+                counts[1]++;
+                if (e.getStatus() == EnrollmentStatus.COMPLETED) {
+                    counts[0]++;
+                    done++;
+                }
+            }
+            this.overallPct = enrollments.isEmpty()
+                    ? 0
+                    : (int) Math.round(done * 100d / enrollments.size());
+        }
+
+        /**
+         * Completion of the course a policy points at. A policy with no course
+         * (a broad framework) reports the tenant's overall training completion
+         * rather than dropping out of the report.
+         */
+        int pctFor(UUID courseId) {
+            if (courseId == null) {
+                return overallPct;
+            }
+            int[] counts = byCourse.get(courseId);
+            if (counts == null || counts[1] == 0) {
+                return 0;
+            }
+            return (int) Math.round(counts[0] * 100d / counts[1]);
+        }
+
+        /** People with no unfinished enrollment in any policy-covered course. */
+        int compliantUsers(List<CompliancePolicy> policies) {
+            Set<UUID> covered = policies.stream()
+                    .map(CompliancePolicy::getCourseId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+            Set<UUID> everyone = new HashSet<>();
+            Set<UUID> outstanding = new HashSet<>();
+            for (Enrollment e : enrollments) {
+                everyone.add(e.getUserId());
+                boolean relevant = covered.isEmpty() || covered.contains(e.getCourseId());
+                if (relevant && e.getStatus() != EnrollmentStatus.COMPLETED) {
+                    outstanding.add(e.getUserId());
+                }
+            }
+            everyone.removeAll(outstanding);
+            return everyone.size();
+        }
     }
 
     // ---- mappers -----------------------------------------------------------
@@ -559,9 +642,9 @@ public class LearningServiceImpl implements LearningService {
                 b.getIconRef(), b.isEarned(), b.getAwardedAt());
     }
 
-    private CompliancePolicyView toCompliancePolicyView(CompliancePolicy p) {
+    private CompliancePolicyView toCompliancePolicyView(CompliancePolicy p, int completionPct) {
         return new CompliancePolicyView(p.getId(), p.getName(), p.getFramework(),
-                p.getDueRule(), p.isMandatory(), p.getCompletionPct());
+                p.getDueRule(), p.isMandatory(), completionPct);
     }
 
     private UserCertificateView toUserCertificateView(Certificate c) {

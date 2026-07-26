@@ -170,19 +170,22 @@ class LearningDevSeeder implements CommandLineRunner {
         gamificationProfileRepository.save(new GamificationProfile(UUID.randomUUID(), TENANT,
                 UUID.randomUUID(), "Văn Bảo", "Kế toán", 1105));
 
-        // 4 compliance policies.
+        // 4 compliance policies. Completion is derived from the linked course's
+        // enrollments, so these numbers move with the demo data instead of being
+        // typed in. The PDPA one is deliberately unlinked to exercise the
+        // "no single course" fallback.
         compliancePolicyRepository.save(new CompliancePolicy(UUID.randomUUID(), TENANT,
                 "Đào tạo nhận thức an ninh cơ bản", "ISO27001",
-                "Hạn: 31/12/2026 · Bắt buộc mọi nhân viên", true, 94));
+                "Hạn: 31/12/2026 · Bắt buộc mọi nhân viên", true, basic.getId()));
         compliancePolicyRepository.save(new CompliancePolicy(UUID.randomUUID(), TENANT,
                 "Chống phishing nâng cao", "ISO27001",
-                "Hạn: 30/06/2026 · Phòng Kế toán, Kinh doanh", true, 71));
+                "Hạn: 30/06/2026 · Phòng Kế toán, Kinh doanh", true, phishing.getId()));
         compliancePolicyRepository.save(new CompliancePolicy(UUID.randomUUID(), TENANT,
                 "Bảo vệ dữ liệu cá nhân (PDPA)", "PDPA",
-                "Hạn: 30/09/2026 · Mọi nhân viên", true, 88));
+                "Hạn: 30/09/2026 · Mọi nhân viên", true, null));
         compliancePolicyRepository.save(new CompliancePolicy(UUID.randomUUID(), TENANT,
                 "An toàn thiết bị di động", "NIST",
-                "Hạn: 31/10/2026 · Khuyến nghị", false, 62));
+                "Hạn: 31/10/2026 · Khuyến nghị", false, deepfake.getId()));
 
         // A second certificate (completed "An toàn cơ bản" course) for the demo learner.
         certificateRepository.save(new Certificate(
