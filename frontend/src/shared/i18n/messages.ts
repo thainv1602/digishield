@@ -39,6 +39,12 @@ export const EN: Record<string, string> = {
   'Chưa có lần chạy nào. Bấm “Chạy AIDA ngay”.': 'No runs yet. Click “Run AIDA now”.',
   'Chưa có mẫu nào trong thư viện.': 'No templates in the library yet.',
   'Chưa có mẫu nào — tạo bằng AI bên dưới.': 'No templates yet — generate with AI below.',
+  'Vào tenant': 'Enter tenant',
+  'Xem hệ thống với dữ liệu của tenant này': "View the system with this tenant's data",
+  'Đang xem dữ liệu của tenant ': 'Viewing data of tenant ',
+  '. Mọi thao tác được ghi vào nhật ký kiểm toán của tenant đó.':
+    '. Every action is recorded in that tenant\u2019s audit log.',
+  'Thoát khỏi tenant': 'Exit tenant',
   'Chưa có mẫu nào cho kênh này — tạo bằng AI bên dưới.':
     'No templates for this channel yet — generate with AI below.',
   'Kênh này chưa có kênh gửi thật': 'This channel has no real delivery transport yet',

@@ -1,5 +1,6 @@
 package com.digishield.tenancy.application;
 
+import com.digishield.shared.tenantcontext.PlatformScope;
 import com.digishield.tenancy.api.AuditLogView;
 import com.digishield.tenancy.api.BusinessThresholdsView;
 import com.digishield.tenancy.api.CreateTenantCommand;
@@ -47,6 +48,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -115,16 +117,33 @@ public class TenancyServiceImpl implements TenancyService {
                 command.dataRegion(),
                 TenantStatus.PROVISIONING
         );
-        Tenant saved = tenantRepository.save(tenant);
-        return toView(saved);
+        // A new tenant's tenant_id is by definition not the caller's, so the
+        // tenant_isolation WITH CHECK would reject the insert under RLS.
+        return PlatformScope.call(() -> toView(tenantRepository.save(tenant)));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<TenantView> listTenants() {
-        return tenantRepository.findAll().stream()
+        // The tenant registry is platform data, not tenant data: the `tenant`
+        // table carries its own tenant_isolation policy, so under RLS a super
+        // admin scoped to their own tid would see exactly one row — their own —
+        // and the console could never list the tenants it exists to manage.
+        // PlatformScope opens only for an authenticated SUPER_ADMIN.
+        return PlatformScope.call(() -> tenantRepository.findAll().stream()
                 .map(this::toView)
-                .toList();
+                .toList());
+    }
+
+    @Override
+    public void recordImpersonation(UUID tenantId, String actor, String ip) {
+        auditLogRepository.save(new AuditLog(
+                UUID.randomUUID(), tenantId, Instant.now(),
+                actor == null || actor.isBlank() ? "unknown" : actor,
+                "tenant.impersonate.start",
+                "tenant:" + tenantId,
+                ip,
+                "critical"));
     }
 
     @Override
@@ -162,6 +181,15 @@ public class TenancyServiceImpl implements TenancyService {
     @Override
     @Transactional(readOnly = true)
     public TenantView getTenant(UUID id) {
+        // Super admins read any tenant's row; an org admin is limited to their own
+        // by RLS (and by @PreAuthorize on the controller), so only widen for the
+        // former rather than failing the latter.
+        return PlatformScope.isAvailable()
+                ? PlatformScope.call(() -> fetchTenant(id))
+                : fetchTenant(id);
+    }
+
+    private TenantView fetchTenant(UUID id) {
         return tenantRepository.findById(id)
                 .map(this::toView)
                 .orElse(null);
@@ -169,6 +197,11 @@ public class TenancyServiceImpl implements TenancyService {
 
     @Override
     public TenantView updateTenant(UUID id, UpdateTenantCommand command) {
+        return PlatformScope.call(() -> applyTenantUpdate(id, command));
+    }
+
+    /** Console edits target other tenants' rows, invisible under tenant isolation. */
+    private TenantView applyTenantUpdate(UUID id, UpdateTenantCommand command) {
         Tenant tenant = tenantRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Tenant not found: " + id));
         if (command.name() != null && !command.name().isBlank()) {

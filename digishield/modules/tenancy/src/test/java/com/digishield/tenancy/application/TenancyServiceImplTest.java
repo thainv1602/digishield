@@ -12,6 +12,7 @@ import com.digishield.tenancy.domain.TenantTier;
 import com.digishield.tenancy.infrastructure.BusinessThresholdsRepository;
 import com.digishield.tenancy.infrastructure.FeatureFlagRepository;
 import com.digishield.tenancy.infrastructure.TenantRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +20,9 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,9 +58,27 @@ class TenancyServiceImplTest {
     @Captor
     private ArgumentCaptor<Tenant> tenantCaptor;
 
+    /**
+     * Creating a tenant writes a row whose tenant_id is not the caller's, so it
+     * runs in {@code PlatformScope} — which only opens for a SUPER_ADMIN. The
+     * endpoint is SUPER_ADMIN-only anyway; the context makes that explicit here.
+     */
+    private static void authenticateAsSuperAdmin() {
+        TestingAuthenticationToken auth = new TestingAuthenticationToken(
+                "super", null, List.of(new SimpleGrantedAuthority("ROLE_SUPER_ADMIN")));
+        auth.setAuthenticated(true);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
+
     @Test
     void createTenant_persistsTenantInProvisioningStatus() {
         // Arrange
+        authenticateAsSuperAdmin();
         CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1");
         // save() returns the entity it was given
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));

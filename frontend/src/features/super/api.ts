@@ -101,6 +101,15 @@ export function useUpdateTenant() {
   });
 }
 
+/**
+ * POST /tenants/{id}/impersonate — records in the target tenant's audit log that
+ * a platform super admin stepped in. The switch itself is the `X-Acting-Tenant`
+ * header; this call is what makes it visible to the tenant afterwards.
+ */
+export function recordImpersonation(id: string): Promise<void> {
+  return apiRequest<void>({ url: `/tenants/${id}/impersonate`, method: 'POST' });
+}
+
 // ---------------------------------------------------------------------------
 // SCIM & SSO Config — GET /super/scim
 // ---------------------------------------------------------------------------

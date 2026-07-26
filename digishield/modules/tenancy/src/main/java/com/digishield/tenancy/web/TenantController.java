@@ -31,7 +31,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 /**
  * REST controller for the Tenancy module: tenants (Super Admin), tenant SCIM/SSO
@@ -53,6 +55,26 @@ class TenantController {
     @GetMapping("/api/v1/tenants")
     ResponseEntity<List<TenantView>> tenants() {
         return ResponseEntity.ok(tenancyService.listTenants());
+    }
+
+    /**
+     * Records that the caller entered {@code tenantId} to act on its behalf.
+     *
+     * <p>The switch itself is enforced by {@code TenantFilter}, which honours the
+     * {@code X-Acting-Tenant} header only for a validated {@code SUPER_ADMIN}.
+     * This endpoint exists so entering a tenant leaves a durable trace in that
+     * tenant's own audit log, not only in the server logs.
+     */
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PostMapping("/api/v1/tenants/{tenantId}/impersonate")
+    ResponseEntity<Void> impersonate(@PathVariable UUID tenantId,
+                                     Authentication authentication,
+                                     HttpServletRequest request) {
+        tenancyService.recordImpersonation(
+                tenantId,
+                authentication == null ? null : authentication.getName(),
+                request.getRemoteAddr());
+        return ResponseEntity.noContent().build();
     }
 
     /**

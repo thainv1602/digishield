@@ -108,7 +108,15 @@ export function canOrgAdmin(role: Role | undefined | null): boolean {
 
 /** Nav items visible to a role — hides org-admin-only pages from lower admins. */
 export function navForRole(role: Role): NavItem[] {
-  const items = NAV_BY_PERSONA[roleToPersona(role)] ?? [];
+  const persona = roleToPersona(role);
+  // A super admin's own three pages are only the platform console. Once they
+  // step into a tenant (X-Acting-Tenant) every admin page shows that tenant's
+  // data, and the route guards already admit SUPER_ADMIN — without these links
+  // the pages are reachable only by typing the URL.
+  const items =
+    persona === 'super'
+      ? [...NAV_BY_PERSONA.super, ...NAV_BY_PERSONA.admin]
+      : (NAV_BY_PERSONA[persona] ?? []);
   return canOrgAdmin(role) ? items : items.filter((i) => !i.orgAdminOnly);
 }
 

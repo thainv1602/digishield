@@ -1,5 +1,6 @@
 package com.digishield.shared.persistence;
 
+import com.digishield.shared.tenantcontext.PlatformScope;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -70,6 +71,13 @@ public class RlsTenantAspect
         if (SeedingContext.isSeeding()) {
             return;
         }
+        // Platform-scoped reads (the tenant registry itself, for the Super Admin
+        // console) are about the platform, not about one tenant, so they run
+        // outside tenant isolation. PlatformScope only opens for an authenticated
+        // SUPER_ADMIN, so this cannot be used to widen a normal caller's reach.
+        if (PlatformScope.isActive()) {
+            return;
+        }
         String tenantId = TenantContext.get();
         if (tenantId == null || tenantId.isBlank()) {
             if (contextRefreshed) {
@@ -77,10 +85,21 @@ public class RlsTenantAspect
             }
             return;
         }
-        LOGGER.debug("Setting tenant_id GUC to: {}", tenantId);
+        // The tenant_isolation policies cast the GUC to uuid, so a non-UUID would
+        // surface as an opaque cast error on the first query instead of here.
+        // Parsing also means the canonical UUID — rebuilt from parsed fields, not
+        // the request's own bytes — is what reaches the log line and Postgres.
+        java.util.UUID tenant;
+        try {
+            tenant = java.util.UUID.fromString(tenantId);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Tenant context is not a UUID", e);
+        }
+        LOGGER.debug("Setting tenant_id GUC to: {}", tenant);
         // Use set_config to avoid parameterization issues with SET LOCAL.
         // The 3rd parameter = true => local scope (only within the current transaction).
-        jdbcTemplate.queryForObject("SELECT set_config('app.tenant_id', ?, true)", String.class, tenantId);
+        jdbcTemplate.queryForObject(
+                "SELECT set_config('app.tenant_id', ?, true)", String.class, tenant.toString());
         // Drop superuser privileges for the rest of this transaction so RLS is
         // actually enforced. Role name is validated in the constructor (SET ROLE
         // cannot be parameterised). Blank -> skip (app already non-superuser).
