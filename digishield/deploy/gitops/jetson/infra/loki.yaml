@@ -103,6 +103,8 @@ spec:
       securityContext:
         # The image runs as 10001; the mounted volume must be writable by it.
         fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
         runAsUser: 10001
         runAsGroup: 10001
       containers:

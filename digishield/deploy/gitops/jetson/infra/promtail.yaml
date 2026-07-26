@@ -90,6 +90,8 @@ spec:
         # flags a container that simply inherits the default context; this is the
         # narrowest context that can still do the job.
         runAsUser: 0
+        seccompProfile:
+          type: RuntimeDefault
       tolerations:
         # Ship logs from control-plane nodes too — k3s servers run workloads.
         - operator: Exists

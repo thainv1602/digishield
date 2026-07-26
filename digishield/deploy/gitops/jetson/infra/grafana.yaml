@@ -83,6 +83,8 @@ spec:
     spec:
       securityContext:
         fsGroup: 472
+        seccompProfile:
+          type: RuntimeDefault
         runAsUser: 472
         runAsGroup: 472
       containers:
@@ -93,6 +95,9 @@ spec:
             runAsNonRoot: true
             capabilities:
               drop: ["ALL"]
+            # State lives on the mounted volume; nothing legitimately writes to
+            # the image layers. /tmp is mounted separately below.
+            readOnlyRootFilesystem: true
           env:
             - name: GF_SECURITY_ADMIN_USER
               value: admin
@@ -126,6 +131,8 @@ spec:
           volumeMounts:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources
+            - name: tmp
+              mountPath: /tmp
             - name: data
               mountPath: /var/lib/grafana
       volumes:
