@@ -106,10 +106,14 @@ mkdir -p /tmp/pretoken && cat > /tmp/pretoken/index.js <<'JS'
 // access tokens so the backend's TenantFilter can resolve the tenant.
 exports.handler = async (event) => {
   const tid = process.env.FIXED_TENANT_ID;
+  // The backend only sees the access token, and Cognito puts no email on it by
+  // default — without this every audit entry is attributed to the `sub` UUID.
+  const email = (event.request.userAttributes || {}).email;
+  const accessClaims = email ? { tid, email } : { tid };
   event.response = {
     claimsAndScopeOverrideDetails: {
       idTokenGeneration:     { claimsToAddOrOverride: { tid } },
-      accessTokenGeneration: { claimsToAddOrOverride: { tid } },
+      accessTokenGeneration: { claimsToAddOrOverride: accessClaims },
     },
   };
   return event;
