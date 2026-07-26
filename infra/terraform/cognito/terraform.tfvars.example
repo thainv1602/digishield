@@ -1,5 +1,5 @@
 # Copy to terraform.tfvars and adjust, then: terraform init && terraform apply
-aws_region = "ap-southeast-1"
+aws_region = "us-east-1" # where the Jetson pool actually lives
 
 # Public HTTPS URL of the frontend on the Jetson ingress (exact origin, no wildcard).
 app_urls = ["https://ubuntu.tail761165.ts.net", "https://digishield.duckdns.org"]

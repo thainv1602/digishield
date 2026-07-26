@@ -1,7 +1,13 @@
 variable "aws_region" {
-  description = "AWS region for the Cognito user pool."
+  # The Jetson pool lives in us-east-1. The default used to say ap-southeast-1,
+  # which is where the rest of the stack was meant to go — so a plain
+  # `terraform apply` here proposed building a second pool in a region the
+  # production one does not live in, and quietly dropped the real one from state
+  # ("AWS resource not found during refresh... Automatically removing"). The
+  # default now matches what is deployed, and terraform.tfvars pins it besides.
+  description = "AWS region for the Cognito user pool. Must match where the pool actually exists."
   type        = string
-  default     = "ap-southeast-1"
+  default     = "us-east-1"
 }
 
 variable "name" {
