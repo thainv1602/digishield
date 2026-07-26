@@ -1,5 +1,6 @@
 package com.digishield.simulation.application;
 
+import com.digishield.contracts.events.SimulationDeliveryRequestedEvent;
 import com.digishield.contracts.events.UserClickedSimulationEvent;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
@@ -100,8 +101,12 @@ public class SimulationServiceImpl implements SimulationService {
             // A "delivered" event so the funnel reflects the send immediately.
             eventRepository.save(new SimEvent(
                     UUID.randomUUID(), tenantId, campaignId, userId, SimAction.DELIVERED, now));
-            links.add(new SendResultDto.Recipient(
-                    userId, token, base + "/api/v1/sim/track/" + token));
+            String trackPath = "/api/v1/sim/track/" + token;
+            // Ask the notification module to actually deliver this link over the
+            // campaign channel (email/SMS). Decoupled via a domain event.
+            eventPublisher.publish(new SimulationDeliveryRequestedEvent(
+                    tenantId, userId, campaignId, campaign.getChannel().name(), trackPath));
+            links.add(new SendResultDto.Recipient(userId, token, base + trackPath));
         }
 
         campaign.setStatus(CampaignStatus.RUNNING);

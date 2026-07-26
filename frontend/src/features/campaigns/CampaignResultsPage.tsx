@@ -23,6 +23,11 @@ function trackOrigin(): string {
   return window.location.origin;
 }
 
+/** QR image URL (backend `/api/v1/qr`) encoding an absolute tracking link. */
+function qrSrc(absoluteUrl: string, size = 120): string {
+  return `${trackOrigin()}/api/v1/qr?size=${size}&data=${encodeURIComponent(absoluteUrl)}`;
+}
+
 /**
  * CampaignResultsPage — completed simulation campaign results.
  * Pixel-matched to the design handoff "CAMPAIGN RESULTS" screen.
@@ -229,30 +234,59 @@ export default function CampaignResultsPage() {
               {t('Đã gửi tới {n} người nhận', { n: sendResult.recipientCount })}
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--color-muted)', marginBottom: 12 }}>
-              {t('Chưa nối máy chủ email thật — mở liên kết bên dưới để mô phỏng người nhận bấm vào (ghi nhận sự kiện Bấm).')}
+              {t('Đã gửi link qua kênh của chiến dịch (email/SMS) tới người nhận. Nếu chưa cấu hình nhà cung cấp, hệ thống chạy mô phỏng — mở link/QR dưới đây để thử ghi nhận sự kiện Bấm.')}
             </div>
             {sendResult.recipients.length === 0 ? (
               <div style={{ fontSize: 13, color: 'var(--color-muted)' }}>
                 {t('Nhóm mục tiêu chưa có thành viên nào.')}
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {sendResult.recipients.map((r) => (
-                  <a
-                    key={r.token}
-                    href={`${trackOrigin()}${r.trackUrl}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      fontSize: 12.5,
-                      color: 'var(--color-blue)',
-                      fontFamily: "'JetBrains Mono', monospace",
-                      wordBreak: 'break-all',
-                    }}
-                  >
-                    {r.userId} → {t('Mở liên kết mô phỏng')}
-                  </a>
-                ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {sendResult.recipients.map((r) => {
+                  const absoluteUrl = `${trackOrigin()}${r.trackUrl}`;
+                  const isQr = (detail?.channel ?? '').toLowerCase() === 'qr';
+                  return (
+                    <div
+                      key={r.token}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: 10,
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 8,
+                      }}
+                    >
+                      <a href={absoluteUrl} target="_blank" rel="noopener noreferrer" aria-label={t('Mở liên kết mô phỏng')}>
+                        <img
+                          src={qrSrc(absoluteUrl, isQr ? 132 : 96)}
+                          width={isQr ? 88 : 56}
+                          height={isQr ? 88 : 56}
+                          alt={t('Mã QR mô phỏng')}
+                          style={{ display: 'block', border: '1px solid var(--color-border)', borderRadius: 4 }}
+                        />
+                      </a>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12.5, color: 'var(--color-text)', fontWeight: 600, marginBottom: 2 }}>
+                          {r.userId}
+                        </div>
+                        <a
+                          href={absoluteUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 12,
+                            color: 'var(--color-blue)',
+                            fontFamily: "'JetBrains Mono', monospace",
+                            wordBreak: 'break-all',
+                          }}
+                        >
+                          {isQr ? t('Quét QR hoặc mở liên kết mô phỏng') : t('Mở liên kết mô phỏng')}
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
