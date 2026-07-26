@@ -133,6 +133,34 @@ ai:
 cors:
   origins: ""
 
+# Notification delivery. Off by default → notifications are persisted but not
+# sent (LoggingNotificationGateway). Enable a transport to send for real:
+#   email.ses.enabled → AWS SES (the `from` must be a verified SES identity)
+#   sms.sns.enabled   → AWS SNS SMS (senderId optional/region-dependent)
+# A Jetson k3s cluster has no IRSA, so AWS credentials come from a Secret (see
+# aws.existingSecret) when a transport is enabled. publicBaseUrl makes the
+# simulation tracking links inside delivered messages absolute.
+notifications:
+  email:
+    from: "no-reply@digishield.duckdns.org"
+    ses:
+      enabled: false
+  sms:
+    senderId: ""
+    sns:
+      enabled: false
+  publicBaseUrl: ""
+  aws:
+    region: ""
+    # k8s Secret holding static AWS credentials (only needed off-EKS / no IRSA).
+    # Create it e.g.:
+    #   kubectl -n digishield create secret generic digishield-aws \
+    #     --from-literal=access-key-id=AKIA... \
+    #     --from-literal=secret-access-key=...
+    existingSecret: ""
+    accessKeyIdKey: access-key-id
+    secretAccessKeyKey: secret-access-key
+
 service:
   type: ClusterIP
   port: 80

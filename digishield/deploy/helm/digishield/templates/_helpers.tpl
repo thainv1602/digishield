@@ -40,6 +40,53 @@
 {{- end }}
 {{- end -}}
 
+{{/* Notification delivery env — shared by api/worker/scheduler. Turns on real
+     email (AWS SES) / SMS (AWS SNS) delivery and supplies the AWS credentials.
+     Off by default → LoggingNotificationGateway (persisted, not sent). Since a
+     Jetson k3s cluster has no IRSA, credentials come from a Secret when a real
+     transport is enabled. PUBLIC_BASE_URL makes simulation tracking links in
+     delivered messages absolute. */}}
+{{- define "digishield.notificationsEnv" -}}
+{{- if .Values.notifications.email.ses.enabled }}
+- name: NOTIFICATIONS_SES_ENABLED
+  value: "true"
+{{- end }}
+{{- if .Values.notifications.email.from }}
+- name: NOTIFICATIONS_EMAIL_FROM
+  value: {{ .Values.notifications.email.from | quote }}
+{{- end }}
+{{- if .Values.notifications.sms.sns.enabled }}
+- name: NOTIFICATIONS_SNS_ENABLED
+  value: "true"
+{{- end }}
+{{- if .Values.notifications.sms.senderId }}
+- name: NOTIFICATIONS_SMS_SENDER_ID
+  value: {{ .Values.notifications.sms.senderId | quote }}
+{{- end }}
+{{- if .Values.notifications.publicBaseUrl }}
+- name: PUBLIC_BASE_URL
+  value: {{ .Values.notifications.publicBaseUrl | quote }}
+{{- end }}
+{{- if or .Values.notifications.email.ses.enabled .Values.notifications.sms.sns.enabled }}
+{{- if .Values.notifications.aws.region }}
+- name: AWS_REGION
+  value: {{ .Values.notifications.aws.region | quote }}
+{{- end }}
+{{- if .Values.notifications.aws.existingSecret }}
+- name: AWS_ACCESS_KEY_ID
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.notifications.aws.existingSecret }}
+      key: {{ .Values.notifications.aws.accessKeyIdKey }}
+- name: AWS_SECRET_ACCESS_KEY
+  valueFrom:
+    secretKeyRef:
+      name: {{ .Values.notifications.aws.existingSecret }}
+      key: {{ .Values.notifications.aws.secretAccessKeyKey }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
 {{/* RabbitMQ env — shared by api/worker/scheduler. Only rendered when a host is
      configured (in-cluster broker on k3s/on-prem); credentials come from a
      Secret when one is set. */}}
