@@ -14,3 +14,9 @@ spec:
     - name: http
       port: {{ .Values.service.port }}
       targetPort: http
+    {{- if .Values.api.managementPort }}
+    # Cluster-internal only: the Ingress routes to `http` above, never here.
+    - name: management
+      port: {{ .Values.api.managementPort }}
+      targetPort: management
+    {{- end }}

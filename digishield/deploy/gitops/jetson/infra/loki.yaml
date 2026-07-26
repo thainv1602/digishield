@@ -108,6 +108,11 @@ spec:
       containers:
         - name: loki
           image: grafana/loki:3.3.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
           args: ["-config.file=/etc/loki/loki.yaml"]
           ports:
             - containerPort: 3100

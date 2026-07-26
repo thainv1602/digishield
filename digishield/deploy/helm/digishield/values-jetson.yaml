@@ -30,6 +30,11 @@ api:
   # every boot, and they run inside SeedingContext, which switches RLS off while
   # they do it. The seeders are @Profile("dev") now, so this is belt and braces.
   profile: pgdemo
+  # Actuator on its own port. #132 shut the public metrics endpoint behind
+  # SUPER_ADMIN, which is right for the internet and impossible for a scraper —
+  # Prometheus holds no token. Moving it here lets the scraper reach it inside
+  # the cluster while the Ingress keeps publishing only 8080.
+  managementPort: 8081
   resources:
     requests:
       cpu: 250m

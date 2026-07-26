@@ -84,12 +84,23 @@ spec:
       labels:
         app.kubernetes.io/name: promtail
     spec:
+      securityContext:
+        # Reads the kubelet's root-owned log tree, so it stays uid 0 — but with
+        # every capability dropped and no path to gaining more. Trivy KSV-0118
+        # flags a container that simply inherits the default context; this is the
+        # narrowest context that can still do the job.
+        runAsUser: 0
       tolerations:
         # Ship logs from control-plane nodes too — k3s servers run workloads.
         - operator: Exists
       containers:
         - name: promtail
           image: grafana/promtail:3.3.2
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
           args:
             - -config.file=/etc/promtail/promtail.yaml
           ports:

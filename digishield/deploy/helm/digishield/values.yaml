@@ -10,6 +10,10 @@ imagePullSecrets: []
 api:
   replicaCount: 2
   profile: api
+  # Empty keeps actuator on the main port (what a local run wants). Set to a
+  # port number to move it, so metrics are scrapable in-cluster without a token
+  # and unreachable through the ingress.
+  managementPort: ""
   port: 8080
   resources:
     requests:
