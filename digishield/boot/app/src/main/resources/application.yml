@@ -72,6 +72,15 @@ management:
       probes:
         enabled: true
 
+logging:
+  structured:
+    format:
+      # Machine-readable logs, so an aggregator can index fields (including the
+      # requestId from RequestIdFilter) instead of regex-ing a text line. Empty
+      # by default: local runs keep the readable console format, deployments set
+      # LOG_FORMAT=ecs.
+      console: ${LOG_FORMAT:}
+
 server:
   port: ${SERVER_PORT:8080}
 
