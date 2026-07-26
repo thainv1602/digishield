@@ -403,3 +403,58 @@ export function useRunOrchestration() {
     },
   });
 }
+
+// ---------------------------------------------------------------------------
+// Delivery channel checks — mail domain (DNS) + SMS test
+// ---------------------------------------------------------------------------
+
+/** One DNS record-type result (`MailDomainCheckDto.RecordCheck`). */
+export interface RecordCheck {
+  ok: boolean;
+  records: string[];
+  note: string | null;
+}
+
+/** Mirrors `MailDomainCheckDto` (`GET /settings/mail-domain/verify`). */
+export interface MailDomainCheck {
+  domain: string;
+  mx: RecordCheck;
+  spf: RecordCheck;
+  dmarc: RecordCheck;
+}
+
+/** GET /settings/mail-domain/verify?domain= — live DNS check (MX/SPF/DMARC). */
+export function verifyMailDomain(domain: string): Promise<MailDomainCheck> {
+  return apiRequest<MailDomainCheck>({
+    url: '/settings/mail-domain/verify',
+    method: 'GET',
+    params: { domain },
+  });
+}
+
+/** Mutation hook powering the "verify domain" button in Org Settings. */
+export function useVerifyMailDomain() {
+  return useMutation({ mutationFn: (domain: string) => verifyMailDomain(domain) });
+}
+
+/** Mirrors `SmsTestController.SmsTestResult`. */
+export interface SmsTestResult {
+  delivered: boolean;
+  detail: string | null;
+}
+
+/** POST /settings/sms/test — send a test SMS via the configured gateway. */
+export function sendTestSms(phone: string, message?: string): Promise<SmsTestResult> {
+  return apiRequest<SmsTestResult>({
+    url: '/settings/sms/test',
+    method: 'POST',
+    data: { phone, message: message ?? null },
+  });
+}
+
+/** Mutation hook powering the "send test SMS" button in Org Settings. */
+export function useSendTestSms() {
+  return useMutation({
+    mutationFn: ({ phone, message }: { phone: string; message?: string }) => sendTestSms(phone, message),
+  });
+}

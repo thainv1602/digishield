@@ -8,7 +8,11 @@ import {
   useTenantSettings,
   useBusinessThresholds,
   useUpdateThresholds,
+  useVerifyMailDomain,
+  useSendTestSms,
   type BusinessThresholds,
+  type MailDomainCheck,
+  type RecordCheck,
 } from './api';
 
 const REGION_OPTIONS = ['in-country', 'on-prem', 'cloud'];
@@ -86,6 +90,40 @@ export default function OrgSettingsPage() {
   const updateTenant = useUpdateTenant();
   const [orgName, setOrgName] = useState('');
   const [region, setRegion] = useState('in-country');
+
+  // Delivery-channel checks (email domain DNS + test SMS).
+  const [domain, setDomain] = useState('');
+  const [domainResult, setDomainResult] = useState<MailDomainCheck | null>(null);
+  const verifyDomain = useVerifyMailDomain();
+  const [phone, setPhone] = useState('');
+  const smsTest = useSendTestSms();
+
+  function runVerifyDomain() {
+    const d = domain.trim();
+    if (!d) {
+      toast(t('Nhập tên miền cần kiểm tra'));
+      return;
+    }
+    verifyDomain.mutate(d, {
+      onSuccess: (res) => setDomainResult(res),
+      onError: () => toast(t('Không kiểm tra được tên miền, thử lại')),
+    });
+  }
+
+  function runTestSms() {
+    const p = phone.trim();
+    if (!p) {
+      toast(t('Nhập số điện thoại nhận thử'));
+      return;
+    }
+    smsTest.mutate(
+      { phone: p },
+      {
+        onSuccess: (res) => toast(res.detail ?? (res.delivered ? t('Đã gửi') : t('Gửi thất bại'))),
+        onError: () => toast(t('Gửi SMS thử thất bại, thử lại')),
+      },
+    );
+  }
   useEffect(() => {
     const tn = tenantQuery.data;
     if (!tn) return;
@@ -204,6 +242,64 @@ export default function OrgSettingsPage() {
               }}
             >
               {t('Dữ liệu được lưu trữ tại datacenter trong lãnh thổ Việt Nam, tuân thủ Nghị định 13/2023/NĐ-CP.')}
+            </div>
+          </div>
+
+          {/* Delivery channels: email domain DNS check + test SMS */}
+          <div style={cardStyle}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
+              {t('Kênh gửi thông báo')}
+            </div>
+            <div style={{ fontSize: 12.5, color: 'var(--color-muted)', marginBottom: 16 }}>
+              {t('Kiểm tra tên miền email và thử gửi SMS trước khi chạy chiến dịch.')}
+            </div>
+
+            {/* Email domain DNS check */}
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--color-text)', marginBottom: 8 }}>
+              {t('Tên miền email (kiểm tra DNS)')}
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', marginBottom: 12 }}>
+              <div style={{ flex: 1 }}>
+                <Input
+                  value={domain}
+                  onChange={(e) => setDomain(e.target.value)}
+                  placeholder="vd: congty.vn"
+                  aria-label={t('Tên miền email (kiểm tra DNS)')}
+                />
+              </div>
+              <Button variant="secondary" disabled={verifyDomain.isPending} onClick={runVerifyDomain}>
+                {verifyDomain.isPending ? t('Đang kiểm tra…') : t('Kiểm tra')}
+              </Button>
+            </div>
+            {domainResult && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+                <DnsRow label="MX" hint={t('Nhận email')} check={domainResult.mx} />
+                <DnsRow label="SPF" hint={t('Chống giả mạo người gửi')} check={domainResult.spf} />
+                <DnsRow label="DMARC" hint={t('Chính sách xác thực')} check={domainResult.dmarc} />
+              </div>
+            )}
+
+            <div style={{ height: 1, background: 'var(--color-border)', margin: '4px 0 16px' }} />
+
+            {/* Test SMS */}
+            <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--color-text)', marginBottom: 8 }}>
+              {t('Gửi SMS thử')}
+            </div>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="+8490xxxxxxx"
+                  aria-label={t('Gửi SMS thử')}
+                />
+              </div>
+              <Button variant="secondary" disabled={smsTest.isPending} onClick={runTestSms}>
+                {smsTest.isPending ? t('Đang gửi…') : t('Gửi thử')}
+              </Button>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 8 }}>
+              {t('Nếu chưa cấu hình nhà cung cấp SMS, hệ thống chạy ở chế độ mô phỏng (không gửi thật).')}
             </div>
           </div>
 
@@ -385,6 +481,66 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
         {label}
       </label>
       {children}
+    </div>
+  );
+}
+
+/** A single DNS-check result row (MX / SPF / DMARC) with an OK/missing badge. */
+function DnsRow({ label, hint, check }: { label: string; hint: string; check: RecordCheck }) {
+  const ok = check.ok;
+  const first = check.records && check.records.length > 0 ? check.records[0] : null;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+        padding: '10px 12px',
+        background: 'var(--color-bg)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 8,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: 'var(--color-muted)',
+          width: 54,
+        }}
+      >
+        {label}
+      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 12.5, color: 'var(--color-text)' }}>{hint}</div>
+        <div
+          style={{
+            fontSize: 11.5,
+            color: 'var(--color-muted)',
+            fontFamily: "'JetBrains Mono', monospace",
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}
+          title={first ?? check.note ?? ''}
+        >
+          {first ?? check.note ?? '—'}
+        </div>
+      </div>
+      <span
+        style={{
+          fontSize: 11.5,
+          fontWeight: 700,
+          padding: '3px 10px',
+          borderRadius: 999,
+          background: ok ? '#DDF3E6' : '#FBE0DF',
+          color: ok ? '#0F7A4A' : '#BE2A2F',
+          flexShrink: 0,
+        }}
+      >
+        {ok ? '✓ OK' : '✕'}
+      </span>
     </div>
   );
 }
