@@ -17,6 +17,9 @@ import com.digishield.auth.domain.UserStatus;
 import com.digishield.auth.infrastructure.AppUserRepository;
 import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.shared.tenantcontext.AuditRecorder;
+import java.util.Locale;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
@@ -232,6 +235,7 @@ public class AuthServiceImpl implements AuthService {
         UUID tenantId = TenantContext.requireUuid();
         AppUser user = userRepository.findByTenantIdAndId(tenantId, userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
+        assertMayAdminister(user, changes);
         Role before = user.getRole();
         applyChanges(user, changes);
         UserView saved = toUserView(userRepository.save(user));
@@ -318,9 +322,75 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean hasRole(String role) {
-        return currentUser()
-                .map(u -> u.role() != null && u.role().equalsIgnoreCase(role))
-                .orElse(false);
+        // Deliberately the token, not app_user.role. Reading the database made this
+        // a privilege-escalation path waiting for its first caller: an org admin can
+        // edit that column, so anyone writing hasRole("super_admin") would have been
+        // trusting a value the attacker controls. Authorisation lives in the signed
+        // token, the same source @PreAuthorize uses.
+        if (role == null || role.isBlank()) {
+            return false;
+        }
+        String wanted = "ROLE_" + role.trim().toUpperCase(Locale.ROOT);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return false;
+        }
+        return authentication.getAuthorities().stream()
+                .anyMatch(a -> wanted.equals(a.getAuthority()));
+    }
+
+    /**
+     * The caller's authority level, taken from the signed token.
+     *
+     * <p>Empty when there is no authenticated role at all — the {@code dev} profile
+     * permits everything and sets no authentication, and the guards below stay out
+     * of the way there rather than breaking local work.
+     */
+    private Optional<Role> callerRole() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            return Optional.empty();
+        }
+        return authentication.getAuthorities().stream()
+                .map(a -> a.getAuthority())
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> {
+                    try {
+                        return Role.valueOf(a.substring("ROLE_".length()));
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(r -> r != null)
+                .max(Comparator.comparingInt(Role::rank));
+    }
+
+    /**
+     * Refuses edits that reach above the caller.
+     *
+     * <p>Two separate things: you may not administer an account that outranks you,
+     * and you may not hand out authority you do not hold. Without the first, an org
+     * admin could rewrite the platform operator's record — including the email that
+     * simulation mail is delivered to. Without the second, the Users screen could be
+     * made to disagree with the tokens that actually grant access.
+     */
+    private void assertMayAdminister(AppUser target, UserUpsert changes) {
+        Optional<Role> caller = callerRole();
+        if (caller.isEmpty()) {
+            return;
+        }
+        Role actor = caller.get();
+        if (!actor.outranksOrEquals(target.getRole())) {
+            throw new AccessDeniedException(
+                    "Cannot modify a user whose role outranks yours");
+        }
+        if (changes != null && changes.role() != null && !changes.role().isBlank()) {
+            Role wanted = Role.fromWireName(changes.role());
+            if (!actor.outranksOrEquals(wanted)) {
+                throw new AccessDeniedException(
+                        "Cannot grant a role above your own");
+            }
+        }
     }
 
     private CurrentUser toView(AppUser user) {
