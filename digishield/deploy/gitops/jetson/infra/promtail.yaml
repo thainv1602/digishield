@@ -25,6 +25,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: promtail-config
+  namespace: digishield
   labels:
     app.kubernetes.io/name: promtail
 data:
@@ -73,6 +74,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: promtail
+  namespace: digishield
   labels:
     app.kubernetes.io/name: promtail
 spec:

@@ -34,6 +34,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana-datasources
+  namespace: digishield
   labels:
     app.kubernetes.io/name: grafana
 data:
@@ -54,6 +55,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: grafana
+  namespace: digishield
   labels:
     app.kubernetes.io/name: grafana
 spec:
@@ -67,6 +69,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: grafana
+  namespace: digishield
   labels:
     app.kubernetes.io/name: grafana
 spec:
@@ -82,11 +85,15 @@ spec:
         app.kubernetes.io/name: grafana
     spec:
       securityContext:
-        fsGroup: 472
+        # Above Trivy's 10000 threshold. The image ships as uid 472, but Grafana
+        # only needs to write /var/lib/grafana, and fsGroup makes the volume
+        # writable for whatever uid we pick — verified on the cluster rather
+        # than assumed.
+        fsGroup: 10001
         seccompProfile:
           type: RuntimeDefault
-        runAsUser: 472
-        runAsGroup: 472
+        runAsUser: 10001
+        runAsGroup: 10001
       containers:
         - name: grafana
           image: grafana/grafana:11.4.0
@@ -136,6 +143,8 @@ spec:
             - name: data
               mountPath: /var/lib/grafana
       volumes:
+        - name: tmp
+          emptyDir: {}
         - name: datasources
           configMap:
             name: grafana-datasources
@@ -147,6 +156,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: grafana-data
+  namespace: digishield
   labels:
     app.kubernetes.io/name: grafana
 spec:
