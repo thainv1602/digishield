@@ -27,6 +27,29 @@ public enum Role {
     LEARNER;
 
     /**
+     * How much authority the role carries, for deciding who may edit whom.
+     *
+     * <p>Mirrors the hierarchy in {@code MethodSecurityConfig}. Manager, content
+     * editor and analyst are peers rather than a chain, so they share a rank —
+     * the ordering only has to answer "does this outrank that", not sort every
+     * pair. {@code TENANT_ADMIN} is the legacy spelling of {@code ORG_ADMIN} and
+     * ranks with it.
+     */
+    public int rank() {
+        return switch (this) {
+            case SUPER_ADMIN -> 40;
+            case ORG_ADMIN, TENANT_ADMIN -> 30;
+            case MANAGER, CONTENT_EDITOR, ANALYST -> 20;
+            case LEARNER -> 10;
+        };
+    }
+
+    /** True when this role may administer an account holding {@code other}. */
+    public boolean outranksOrEquals(Role other) {
+        return other == null || rank() >= other.rank();
+    }
+
+    /**
      * The snake_case identifier used by the OpenAPI schema and the frontend.
      */
     public String wireName() {

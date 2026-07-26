@@ -10,6 +10,10 @@ import com.digishield.auth.infrastructure.AppUserRepository;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,9 +26,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,6 +69,9 @@ class AuthServiceImplTest {
     @AfterEach
     void tearDown() {
         TenantContext.clear();
+        // Authorities are thread-local; a leaked one would silently authorise the
+        // next test in the same worker.
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -128,35 +137,39 @@ class AuthServiceImplTest {
         assertThat(result.get().role()).isEqualTo("MANAGER");
     }
 
-    @Test
-    void hasRole_whenCurrentUserHasMatchingRole_returnsTrueCaseInsensitive() {
-        // Arrange
-        AppUser admin = new AppUser(
-                UUID.randomUUID(), TENANT_ID, "admin@x.com", Role.TENANT_ADMIN, UserStatus.ACTIVE);
-        when(userRepository.findAll()).thenReturn(List.of(admin));
+    // hasRole() used to read app_user.role. A tenant admin can edit that column,
+    // so the answer was only as trustworthy as the least-privileged person able to
+    // change it. These now pin the token as the source.
 
-        // Act + Assert (case-insensitive comparison in service)
-        assertThat(authService.hasRole("tenant_admin")).isTrue();
+    @Test
+    void hasRole_matchesAGrantedAuthorityCaseInsensitively() {
+        actingAs("ROLE_ORG_ADMIN");
+
+        assertThat(authService.hasRole("org_admin")).isTrue();
+        assertThat(authService.hasRole("ORG_ADMIN")).isTrue();
     }
 
     @Test
-    void hasRole_whenCurrentUserHasDifferentRole_returnsFalse() {
-        // Arrange
-        AppUser learner = new AppUser(
-                UUID.randomUUID(), TENANT_ID, "learner@x.com", Role.LEARNER, UserStatus.ACTIVE);
-        when(userRepository.findAll()).thenReturn(List.of(learner));
+    void hasRole_isFalseForARoleTheTokenDoesNotCarry() {
+        actingAs("ROLE_LEARNER");
 
-        // Act + Assert
-        assertThat(authService.hasRole("TENANT_ADMIN")).isFalse();
+        assertThat(authService.hasRole("ORG_ADMIN")).isFalse();
     }
 
     @Test
-    void hasRole_whenNoCurrentUser_returnsFalse() {
-        // Arrange: no tenant -> currentUser() short-circuits to empty, repo never queried
-        lenient().when(userRepository.findAll()).thenReturn(List.of());
-        TenantContext.clear();
+    void hasRole_ignoresTheDatabaseRowEntirely() {
+        // The row says super admin; the token says learner. The token wins.
+        lenient().when(userRepository.findAll()).thenReturn(List.of(
+                new AppUser(UUID.randomUUID(), TENANT_ID, "x@x.com", Role.SUPER_ADMIN, UserStatus.ACTIVE)));
+        actingAs("ROLE_LEARNER");
 
-        // Act + Assert
+        assertThat(authService.hasRole("super_admin")).isFalse();
+    }
+
+    @Test
+    void hasRole_whenUnauthenticated_returnsFalse() {
+        SecurityContextHolder.clearContext();
+
         assertThat(authService.hasRole("ANY")).isFalse();
     }
 
@@ -201,5 +214,78 @@ class AuthServiceImplTest {
 
         // A slice without the application shell must still be able to edit a user.
         authService.updateUser(userId, new UserUpsert(null, "analyst", null, null));
+    }
+
+    // ---- privilege guards on user administration -------------------------
+
+    private void actingAs(String... authorities) {
+        var token = new TestingAuthenticationToken("actor", null,
+                java.util.Arrays.stream(authorities).map(SimpleGrantedAuthority::new).toList());
+        token.setAuthenticated(true);
+        SecurityContextHolder.getContext().setAuthentication(token);
+    }
+
+    private void existingUser(UUID id, Role role) {
+        AppUser user = new AppUser(id, TENANT_ID, "u@x.com", role, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, id)).thenReturn(java.util.Optional.of(user));
+        lenient().when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+    }
+
+    @Test
+    void anOrgAdminCannotEditASuperAdminsAccount() {
+        actingAs("ROLE_ORG_ADMIN");
+        UUID victim = UUID.randomUUID();
+        existingUser(victim, Role.SUPER_ADMIN);
+
+        // Without this the platform operator's record — including the email that
+        // simulation mail is delivered to — is editable by any tenant admin.
+        assertThatThrownBy(() -> authService.updateUser(victim, new UserUpsert(null, "learner", null, null)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("outranks");
+        verify(userRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void anOrgAdminCannotPromoteAnyoneToSuperAdmin() {
+        actingAs("ROLE_ORG_ADMIN");
+        UUID target = UUID.randomUUID();
+        existingUser(target, Role.LEARNER);
+
+        assertThatThrownBy(() -> authService.updateUser(target, new UserUpsert(null, "super_admin", null, null)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("above your own");
+        verify(userRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void anOrgAdminMayStillAdministerOrdinaryUsers() {
+        actingAs("ROLE_ORG_ADMIN");
+        UUID target = UUID.randomUUID();
+        existingUser(target, Role.LEARNER);
+
+        authService.updateUser(target, new UserUpsert(null, "analyst", null, null));
+
+        verify(userRepository).save(any(AppUser.class));
+    }
+
+    @Test
+    void aSuperAdminMayAdministerAnyone() {
+        actingAs("ROLE_SUPER_ADMIN");
+        UUID target = UUID.randomUUID();
+        existingUser(target, Role.SUPER_ADMIN);
+
+        authService.updateUser(target, new UserUpsert(null, "org_admin", null, null));
+
+        verify(userRepository).save(any(AppUser.class));
+    }
+
+    @Test
+    void hasRoleReadsTheTokenNotTheDatabaseRow() {
+        // The database column is editable by a tenant admin; the token is not.
+        // Anyone reaching for hasRole() must get the trustworthy answer.
+        actingAs("ROLE_ANALYST");
+
+        assertThat(authService.hasRole("analyst")).isTrue();
+        assertThat(authService.hasRole("super_admin")).isFalse();
     }
 }
