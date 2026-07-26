@@ -116,25 +116,11 @@ class TenancyDevSeeder implements CommandLineRunner {
         if (!auditLogRepository.findByTenantIdOrderByTsDesc(TENANT).isEmpty()) {
             return;
         }
-        Instant now = Instant.now();
-        auditLogRepository.save(new AuditLog(UUID.randomUUID(), TENANT,
-                now.minus(5, ChronoUnit.MINUTES), "admin@abc.gov.vn", "broadcast_alert",
-                "org:abc", "10.0.0.1", "critical"));
-        auditLogRepository.save(new AuditLog(UUID.randomUUID(), TENANT,
-                now.minus(22, ChronoUnit.MINUTES), "analyst1@abc.vn", "triage:confirm",
-                "report:#4821", "10.0.0.5", "sensitive"));
-        auditLogRepository.save(new AuditLog(UUID.randomUUID(), TENANT,
-                now.minus(37, ChronoUnit.MINUTES), "admin@abc.gov.vn", "user.role_change",
-                "user:#88", "10.0.0.1", "standard"));
-        auditLogRepository.save(new AuditLog(UUID.randomUUID(), TENANT,
-                now.minus(65, ChronoUnit.MINUTES), "superadmin@ds.vn", "tenant.suspend",
-                "tenant:def", "1.2.3.4", "critical"));
-        auditLogRepository.save(new AuditLog(UUID.randomUUID(), TENANT,
-                now.minus(2, ChronoUnit.HOURS), "analyst1@abc.vn", "blacklist.add",
-                "url:bit.ly/vbc-xacminh", "10.0.0.5", "sensitive"));
-        auditLogRepository.save(new AuditLog(UUID.randomUUID(), TENANT,
-                now.minus(3, ChronoUnit.HOURS), "admin@abc.gov.vn", "user.login",
-                "user:#12", "10.0.0.1", "standard"));
+        // Audit entries are no longer seeded. They used to advertise actions the
+        // system performs but never recorded — broadcast_alert, triage:confirm,
+        // user.role_change, tenant.suspend, blacklist.add, user.login — which made
+        // an empty audit trail look like a populated one. Those actions now write
+        // their own entries as they happen, so the demo log fills from real use.
     }
 
     private void seedScim() {

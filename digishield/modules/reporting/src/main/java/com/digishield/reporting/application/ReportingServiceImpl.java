@@ -18,7 +18,9 @@ import com.digishield.reporting.infrastructure.BlacklistEntryRepository;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
 import com.digishield.reporting.infrastructure.ThreatIntelRepository;
 import com.digishield.shared.messaging.EventPublisher;
+import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.shared.tenantcontext.TenantContext;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,16 +40,29 @@ public class ReportingServiceImpl implements ReportingService {
     private final BlacklistEntryRepository blacklistRepository;
     private final ThreatIntelRepository threatIntelRepository;
     private final EventPublisher eventPublisher;
+    /** Optional: absent in slices that do not wire the application shell. */
+    private final ObjectProvider<AuditRecorder> auditRecorder;
 
     public ReportingServiceImpl(PhishingReportRepository reportRepository,
                                 BlacklistEntryRepository blacklistRepository,
                                 ThreatIntelRepository threatIntelRepository,
-                                EventPublisher eventPublisher) {
+                                EventPublisher eventPublisher,
+                                ObjectProvider<AuditRecorder> auditRecorder) {
         this.reportRepository = reportRepository;
         this.blacklistRepository = blacklistRepository;
         this.threatIntelRepository = threatIntelRepository;
         this.eventPublisher = eventPublisher;
+        this.auditRecorder = auditRecorder;
     }
+
+    /** Records an auditable action, if an audit sink is wired (absent in slices). */
+    private void audit(String action, String target, AuditRecorder.Severity severity) {
+        AuditRecorder recorder = auditRecorder.getIfAvailable();
+        if (recorder != null) {
+            recorder.record(action, target, severity);
+        }
+    }
+
 
     @Override
     public PhishingReport submit(UUID userId, String payload, String channel) {
@@ -96,6 +111,8 @@ public class ReportingServiceImpl implements ReportingService {
 
         report.setAiLabel(AiLabel.CLEAN);
         report.setStatus(ReportStatus.DISMISSED);
+        audit(confirmThreat ? "triage.confirm" : "triage.dismiss",
+                "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
         return reportRepository.save(report);
     }
 
@@ -124,6 +141,8 @@ public class ReportingServiceImpl implements ReportingService {
         UUID tenantId = TenantContext.requireUuid();
         BlacklistEntry entry = new BlacklistEntry(
                 UUID.randomUUID(), tenantId, type, value, source);
+        audit("blacklist.add", type.name().toLowerCase() + ":" + value,
+                AuditRecorder.Severity.SENSITIVE);
         return toBlacklistDto(blacklistRepository.save(entry));
     }
 

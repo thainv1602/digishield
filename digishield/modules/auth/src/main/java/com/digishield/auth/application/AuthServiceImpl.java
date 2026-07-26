@@ -16,8 +16,10 @@ import com.digishield.auth.domain.Role;
 import com.digishield.auth.domain.UserStatus;
 import com.digishield.auth.infrastructure.AppUserRepository;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.digishield.shared.tenantcontext.AuditRecorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,14 +40,28 @@ import java.util.UUID;
 @Transactional(readOnly = true)
 public class AuthServiceImpl implements AuthService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(AuthServiceImpl.class);
+
     private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final AppUserRepository userRepository;
+    /** Optional: absent in slices that do not wire the application shell. */
+    private final ObjectProvider<AuditRecorder> auditRecorder;
     private final AuthProvider authProvider;
 
-    public AuthServiceImpl(AppUserRepository userRepository, AuthProvider authProvider) {
+    public AuthServiceImpl(AppUserRepository userRepository, AuthProvider authProvider,
+                           ObjectProvider<AuditRecorder> auditRecorder) {
         this.userRepository = userRepository;
         this.authProvider = authProvider;
+        this.auditRecorder = auditRecorder;
+    }
+
+    /** Records an auditable action, if an audit sink is wired (absent in slices). */
+    private void audit(String action, String target, AuditRecorder.Severity severity) {
+        AuditRecorder recorder = auditRecorder.getIfAvailable();
+        if (recorder != null) {
+            recorder.record(action, target, severity);
+        }
     }
 
     @Override
@@ -216,8 +232,17 @@ public class AuthServiceImpl implements AuthService {
         UUID tenantId = TenantContext.requireUuid();
         AppUser user = userRepository.findByTenantIdAndId(tenantId, userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
+        Role before = user.getRole();
         applyChanges(user, changes);
-        return toUserView(userRepository.save(user));
+        UserView saved = toUserView(userRepository.save(user));
+        // A role change decides what someone may do; it is the entry an
+        // investigation looks for, so it is called out from a plain edit.
+        if (before != user.getRole()) {
+            audit("user.role_change", "user:" + userId, AuditRecorder.Severity.CRITICAL);
+        } else {
+            audit("user.update", "user:" + userId, AuditRecorder.Severity.SENSITIVE);
+        }
+        return saved;
     }
 
     @Override
@@ -240,7 +265,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public TokenPair login(String email, String password, String roleHint) {
-        return authProvider.login(email, password);
+        try {
+            TokenPair tokens = authProvider.login(email, password);
+            audit("user.login", "user:" + email, AuditRecorder.Severity.STANDARD);
+            return tokens;
+        } catch (RuntimeException e) {
+            // No tenant is knowable here: the credential check happens in the IdP,
+            // which tells us nothing on failure, and resolving email -> tenant would
+            // mean querying app_user across tenants for unauthenticated input. The
+            // attempt is recorded in the application log instead — structured, with
+            // the request id — rather than not at all.
+            LOG.warn("Failed login for {}: {}", email, e.toString());
+            throw e;
+        }
     }
 
     @Override
