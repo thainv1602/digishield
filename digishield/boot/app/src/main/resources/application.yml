@@ -102,6 +102,11 @@ digishield:
       issuer-uri: ${AUTH_JWT_ISSUER_URI:}
       audience: ${AUTH_JWT_AUDIENCE:}
       roles-claim: ${AUTH_JWT_ROLES_CLAIM:cognito:groups}
+  app:
+    # Absolute public base URL of the app (used to build simulation tracking
+    # links inside delivered emails/SMS). Blank → relative links (fine for the
+    # logging/simulation gateway; set to the real origin for live delivery).
+    public-base-url: ${PUBLIC_BASE_URL:}
   notifications:
     email:
       from: ${NOTIFICATIONS_EMAIL_FROM:no-reply@digishield.duckdns.org}
