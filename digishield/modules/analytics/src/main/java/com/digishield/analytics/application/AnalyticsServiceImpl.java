@@ -1,6 +1,7 @@
 package com.digishield.analytics.application;
 
 import com.digishield.analytics.api.AnalyticsService;
+import com.digishield.analytics.api.DashboardMetricsProvider;
 import com.digishield.analytics.api.RecentReportsProvider;
 import com.digishield.analytics.api.dto.BenchmarkDto;
 import com.digishield.analytics.api.dto.DashboardDto;
@@ -53,19 +54,22 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final EventPublisher eventPublisher;
     private final Messages messages;
     private final RecentReportsProvider recentReportsProvider;
+    private final DashboardMetricsProvider dashboardMetricsProvider;
 
     public AnalyticsServiceImpl(RiskScoreRepository riskScoreRepository,
                                 DepartmentRiskRepository departmentRiskRepository,
                                 RiskSignalRepository riskSignalRepository,
                                 EventPublisher eventPublisher,
                                 Messages messages,
-                                RecentReportsProvider recentReportsProvider) {
+                                RecentReportsProvider recentReportsProvider,
+                                DashboardMetricsProvider dashboardMetricsProvider) {
         this.riskScoreRepository = riskScoreRepository;
         this.departmentRiskRepository = departmentRiskRepository;
         this.riskSignalRepository = riskSignalRepository;
         this.eventPublisher = eventPublisher;
         this.messages = messages;
         this.recentReportsProvider = recentReportsProvider;
+        this.dashboardMetricsProvider = dashboardMetricsProvider;
     }
 
     @Override
@@ -169,18 +173,35 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         List<DashboardDto.TrendPoint> trend = orgRiskTrend(tenantId);
 
+        // Deltas from the org-risk history (latest vs previous); 0 with <2 points.
+        List<RiskScore> orgScores = riskScoreRepository.findByTenantIdAndScope(tenantId, RiskScope.ORG).stream()
+                .sorted(Comparator.comparing(RiskScore::getComputedAt))
+                .toList();
+        int riskDelta = 0;
+        double phishPronePctDelta = 0.0;
+        if (orgScores.size() >= 2) {
+            int latest = orgScores.get(orgScores.size() - 1).getValue();
+            int prev = orgScores.get(orgScores.size() - 2).getValue();
+            riskDelta = latest - prev;
+            // Consistent with orgPhishPronePct's risk→rate mapping (× 0.135).
+            phishPronePctDelta = Math.round((latest - prev) * 0.135 * 10.0) / 10.0;
+        }
+
+        int trainingCompletion = dashboardMetricsProvider.trainingCompletionPct();
+        DashboardMetricsProvider.OpenAlertCounts alerts = dashboardMetricsProvider.openAlerts();
+
         List<DashboardDto.RecentReport> recent = recentReportsProvider.recentReports(RECENT_REPORTS_LIMIT).stream()
                 .map(r -> new DashboardDto.RecentReport(r.id(), r.title(), r.who(), r.age(), r.aiLabel()))
                 .toList();
 
         return new DashboardDto(
                 orgRisk,
-                3,
+                riskDelta,
                 orgPhishProne,
-                2.1,
+                phishPronePctDelta,
                 INDUSTRY_AVG_PHISH_PRONE_PCT,
-                91,
-                new DashboardDto.OpenAlerts(3, 1, 2),
+                trainingCompletion,
+                new DashboardDto.OpenAlerts(alerts.total(), alerts.critical(), alerts.warning()),
                 trend,
                 benchmarks,
                 deptViews,

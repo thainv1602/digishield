@@ -61,6 +61,9 @@ class AnalyticsServiceImplTest {
     @Mock
     private RecentReportsProvider recentReportsProvider;
 
+    @Mock
+    private com.digishield.analytics.api.DashboardMetricsProvider dashboardMetricsProvider;
+
     @InjectMocks
     private AnalyticsServiceImpl analyticsService;
 
@@ -246,6 +249,8 @@ class AnalyticsServiceImplTest {
                 orgScore(60, Instant.parse("2026-05-01T00:00:00Z")));
         when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(orgScores);
         when(departmentRiskRepository.findByTenantIdOrderByRiskScoreDesc(TENANT_ID)).thenReturn(List.of());
+        when(dashboardMetricsProvider.openAlerts())
+                .thenReturn(new com.digishield.analytics.api.DashboardMetricsProvider.OpenAlertCounts(0, 0, 0));
 
         // Act
         DashboardDto dto = analyticsService.dashboard();
@@ -266,6 +271,8 @@ class AnalyticsServiceImplTest {
         // Arrange: no risk/dept history; the recent-reports provider returns one report
         when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(List.of());
         when(departmentRiskRepository.findByTenantIdOrderByRiskScoreDesc(TENANT_ID)).thenReturn(List.of());
+        when(dashboardMetricsProvider.openAlerts())
+                .thenReturn(new com.digishield.analytics.api.DashboardMetricsProvider.OpenAlertCounts(0, 0, 0));
         when(recentReportsProvider.recentReports(anyInt())).thenReturn(List.of(
                 new RecentReportsProvider.RecentReportView("id-1", "Khoa tai khoan", "Nguyen A", "2p", "threat")));
 
