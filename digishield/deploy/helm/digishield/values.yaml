@@ -183,3 +183,10 @@ ingress:
 # on every line. Blank keeps Spring Boot's human-readable console format.
 logging:
   format: "ecs"
+
+# Row-Level Security. When the app connects as a superuser (or the table owner),
+# RlsTenantAspect must SET LOCAL ROLE to a NOBYPASSRLS role per transaction or the
+# tenant_isolation policies do nothing. Blank = the connection role is already
+# unprivileged and enforces RLS by itself.
+rls:
+  appRole: ""

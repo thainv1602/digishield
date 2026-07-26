@@ -42,6 +42,7 @@ spec:
             {{- include "digishield.authEnv" . | nindent 12 }}
             {{- include "digishield.aiEnv" . | nindent 12 }}
             {{- include "digishield.loggingEnv" . | nindent 12 }}
+            {{- include "digishield.rlsEnv" . | nindent 12 }}
             {{- include "digishield.notificationsEnv" . | nindent 12 }}
             {{- with .Values.cors.origins }}
             # Browser origins (patterns allowed) the API accepts — needed when
