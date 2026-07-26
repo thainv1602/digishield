@@ -68,14 +68,24 @@ public class SecurityConfig {
     private final String issuerUri;
     private final String audience;
     private final String rolesClaim;
+    /** -1 when actuator shares the application port. */
+    private final int managementPort;
 
     public SecurityConfig(
             @Value("${digishield.auth.jwt.issuer-uri:}") String issuerUri,
             @Value("${digishield.auth.jwt.audience:}") String audience,
-            @Value("${digishield.auth.jwt.roles-claim:cognito:groups}") String rolesClaim) {
+            @Value("${digishield.auth.jwt.roles-claim:cognito:groups}") String rolesClaim,
+            @Value("${management.server.port:}") String managementPort) {
         this.issuerUri = issuerUri;
         this.audience = audience;
         this.rolesClaim = rolesClaim;
+        // Parsed rather than bound directly to an int. application.yml sets this
+        // from ${MANAGEMENT_PORT:}, so with no env var the property is present
+        // and *empty* — which is not the same as absent, so the :-1 default never
+        // applied and Spring failed to convert "" to an int. That took down every
+        // context without the variable, local runs included; the integration
+        // tests caught it before it reached a cluster.
+        this.managementPort = parsePort(managementPort);
     }
 
     @Bean
@@ -111,6 +121,18 @@ public class SecurityConfig {
                             // Only the health probes are anonymous — kubelet cannot
                             // present a token, and liveness/readiness expose nothing
                             // beyond up/down.
+                            // Actuator on its own port, which the Ingress does not
+                            // publish, is reachable only from inside the cluster —
+                            // so an in-cluster scraper may read it without a token.
+                            // Matching on the port the request arrived on, not the
+                            // path, is what keeps the published port unaffected:
+                            // /actuator/prometheus on 8080 is still admin-only.
+                            //
+                            // Separating the port alone does NOT do this. Spring
+                            // applies this filter chain to the management context
+                            // too, so 8081 answered 401 exactly like 8080 — which
+                            // is how the metrics stack shipped broken in #142.
+                            .requestMatchers(this::onManagementPort).permitAll()
                             .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                             // The rest of actuator (metrics, prometheus, info) is
                             // operational telemetry: JVM internals, DB pool state,
@@ -147,10 +169,34 @@ public class SecurityConfig {
                     // No issuer means no way to authenticate anyone, so only the
                     // health probes stay open — enough to keep the pod schedulable
                     // while the misconfiguration is visible. Telemetry stays shut.
+                    .requestMatchers(this::onManagementPort).permitAll()
                     .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .anyRequest().denyAll());
         }
         return http.build();
+    }
+
+    /** Port number, or -1 when unset, empty or unparseable — meaning "shared port". */
+    private static int parsePort(String value) {
+        if (value == null || value.isBlank()) {
+            return -1;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * True when the request arrived on the dedicated management port.
+     *
+     * <p>{@code -1} means actuator shares the application port, so this never
+     * matches and the admin-only rules stand — a deployment that has not
+     * separated the port keeps the stricter behaviour.
+     */
+    private boolean onManagementPort(jakarta.servlet.http.HttpServletRequest request) {
+        return managementPort > 0 && request.getLocalPort() == managementPort;
     }
 
     /**

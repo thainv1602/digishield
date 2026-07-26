@@ -31,6 +31,11 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
             - "--spring.profiles.active={{ .Values.scheduler.profile }}"
+          {{- with .Values.api.managementPort }}
+          ports:
+            - name: management
+              containerPort: {{ . }}
+          {{- end }}
           env:
             {{- include "digishield.dbEnv" . | nindent 12 }}
             {{- include "digishield.redisEnv" . | nindent 12 }}
@@ -39,6 +44,13 @@ spec:
             {{- include "digishield.aiEnv" . | nindent 12 }}
             {{- include "digishield.loggingEnv" . | nindent 12 }}
             {{- include "digishield.rlsEnv" . | nindent 12 }}
+            {{- with $.Values.api.managementPort }}
+            # Same management port as the api. #142 wired it there only, so these
+            # two exposed nothing to scrape and Prometheus reported dial-refused
+            # against a port that was never opened.
+            - name: MANAGEMENT_PORT
+              value: {{ . | quote }}
+            {{- end }}
             {{- include "digishield.notificationsEnv" . | nindent 12 }}
           resources:
             {{- toYaml .Values.scheduler.resources | nindent 12 }}
