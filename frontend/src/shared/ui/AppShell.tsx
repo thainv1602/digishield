@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react';
 import { useAlertStream } from '@/features/notifications/useAlertStream';
+import { ActingTenantBanner } from './ActingTenantBanner';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import styles from './AppShell.module.css';
@@ -21,6 +22,7 @@ export function AppShell({ children }: AppShellProps) {
       <Sidebar />
       <div className={styles.main}>
         <Topbar />
+        <ActingTenantBanner />
         <main className={styles.content} id="main-content" tabIndex={-1}>
           <div className={styles.contentInner}>{children}</div>
         </main>

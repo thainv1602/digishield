@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { Button, DataTable, StatusPill } from '@/shared/ui';
 import type { ColumnDef, StatusVariant } from '@/shared/ui';
-import { useTenants, type Tenant as TenantDto } from './api';
+import { useNavigate } from 'react-router-dom';
+import { setActingTenant } from '@/shared/api/actingTenant';
+import { recordImpersonation, useTenants, type Tenant as TenantDto } from './api';
 import { TenantFormDrawer } from './TenantFormDrawer';
 
 /**
@@ -57,6 +59,7 @@ const cardStyle: React.CSSProperties = {
 
 export default function TenantConsolePage() {
   const t = useT();
+  const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useTenants();
 
   const tenants = useMemo<TenantRow[]>(() => (data ?? []).map(toRow), [data]);
@@ -71,6 +74,22 @@ export default function TenantConsolePage() {
   const openManage = (id: string) => {
     setFormTenant(byId.get(id) ?? null);
     setFormOpen(true);
+  };
+
+  /**
+   * Steps into a tenant: every later request carries `X-Acting-Tenant`, so the
+   * admin console shows that tenant's data. The audit call is best-effort — it
+   * records the entry for the tenant, but failing it should not strand the
+   * operator half-switched, so the switch happens either way.
+   */
+  const enterTenant = async (id: string, name: string) => {
+    try {
+      await recordImpersonation(id);
+    } catch {
+      // Logged server-side regardless; see TenantFilter.
+    }
+    setActingTenant({ id, name });
+    navigate('/dashboard');
   };
 
   const kpis = useMemo(() => {
@@ -127,15 +146,25 @@ export default function TenantConsolePage() {
       id: 'manage',
       header: '',
       cell: (row) => (
-        <button
-          type="button"
-          onClick={() => openManage(row.id)}
-          style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
-        >
-          {t('Quản lý')}
-        </button>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={() => enterTenant(row.id, row.org)}
+            title={t('Xem hệ thống với dữ liệu của tenant này')}
+            style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            {t('Vào tenant')}
+          </button>
+          <button
+            type="button"
+            onClick={() => openManage(row.id)}
+            style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            {t('Quản lý')}
+          </button>
+        </div>
       ),
-      width: '80px',
+      width: '170px',
       align: 'right',
     },
   ];

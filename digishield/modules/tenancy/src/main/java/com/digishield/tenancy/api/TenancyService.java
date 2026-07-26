@@ -27,6 +27,13 @@ public interface TenancyService {
     List<AuditLogView> listAuditLogs(UUID tenantId);
 
     /**
+     * Records that a platform super admin entered {@code tenantId} to act on its
+     * behalf. Written into the <em>target</em> tenant's audit log, so the tenant
+     * can see that the platform operator was inside their data.
+     */
+    void recordImpersonation(UUID tenantId, String actor, String ip);
+
+    /**
      * Gets the SCIM / SSO configuration of a tenant ({@code null} if none).
      */
     ScimConfigView getScimConfig(UUID tenantId);

@@ -1,5 +1,6 @@
 package com.digishield.shared.persistence;
 
+import com.digishield.shared.tenantcontext.PlatformScope;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -68,6 +69,13 @@ public class RlsTenantAspect
         // Demo seeders create cross-tenant data as the superuser — leave RLS
         // bypassed (no GUC, no SET ROLE) while seeding is in progress.
         if (SeedingContext.isSeeding()) {
+            return;
+        }
+        // Platform-scoped reads (the tenant registry itself, for the Super Admin
+        // console) are about the platform, not about one tenant, so they run
+        // outside tenant isolation. PlatformScope only opens for an authenticated
+        // SUPER_ADMIN, so this cannot be used to widen a normal caller's reach.
+        if (PlatformScope.isActive()) {
             return;
         }
         String tenantId = TenantContext.get();

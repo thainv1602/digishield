@@ -3,6 +3,7 @@ import axios, {
   type AxiosRequestConfig,
   type AxiosResponse,
 } from 'axios';
+import { getActingTenant } from './actingTenant';
 import { getAuth, handleUnauthorized } from './authBridge';
 import { DEMO_TENANT_ID } from './tenant';
 
@@ -29,6 +30,13 @@ axiosInstance.interceptors.request.use((config) => {
   const effectiveTenantId = tenantId ?? (import.meta.env.DEV ? DEMO_TENANT_ID : null);
   if (effectiveTenantId) {
     config.headers.set('X-Tenant-Id', effectiveTenantId);
+  }
+  // A super admin who stepped into a tenant acts inside it for every request.
+  // The backend accepts this only for a validated SUPER_ADMIN, so sending it
+  // as anyone else is a no-op rather than a privilege escalation.
+  const acting = getActingTenant();
+  if (acting) {
+    config.headers.set('X-Acting-Tenant', acting.id);
   }
   // Tell the backend which language to render its own text in (notifications,
   // AIDA summaries, intervention messages…). Mirrors the app's language switch,
