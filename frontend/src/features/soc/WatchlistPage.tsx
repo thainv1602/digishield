@@ -158,15 +158,6 @@ export default function WatchlistPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() =>
-                toast({ msg: t('Đồng bộ NCSC cần tích hợp nguồn dữ liệu NCSC (chưa khả dụng).'), variant: 'info' })
-              }
-            >
-              {t('Đồng bộ NCSC')}
-            </Button>
             <Button type="button" variant="primary" onClick={() => setAddOpen(true)}>
               {t('+ Thêm thủ công')}
             </Button>

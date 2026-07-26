@@ -162,10 +162,13 @@ export default function ScimConfigPage() {
               </div>
             </div>
 
-            {/* Attribute mapping grid (static — no BE endpoint) */}
+            {/* Attribute mapping grid (illustrative example — no BE endpoint yet) */}
             <div style={cardStyle}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 16 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)', marginBottom: 4 }}>
                 {t('Ánh xạ thuộc tính · Attribute Mapping')}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--color-muted)', marginBottom: 16 }}>
+                {t('Ví dụ minh hoạ ánh xạ mặc định — cấu hình theo IdP thực tế khi tích hợp SCIM.')}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {attributeMapping.map((m) => (

@@ -155,13 +155,9 @@ export default function ThreatIntelPage() {
                 <div style={{ fontSize: 12, color: 'var(--muted)' }}>{r.detectedAt}</div>
                 <div>
                   {r.status === 'flipped' ? (
-                    <button
-                      type="button"
-                      onClick={() => toast(t('Mở bài học'))}
-                      style={{ all: 'unset', fontSize: 12, color: 'var(--blue)', cursor: 'pointer' }}
-                    >
-                      {t('Xem bài')}
-                    </button>
+                    <span style={{ fontSize: 12, color: 'var(--teal)', fontWeight: 600 }}>
+                      {t('✓ Đã tạo bài học')}
+                    </span>
                   ) : (
                     <Button
                       type="button"
