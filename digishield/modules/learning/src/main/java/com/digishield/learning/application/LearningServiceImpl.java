@@ -13,6 +13,7 @@ import com.digishield.learning.api.CompliancePolicyView;
 import com.digishield.learning.api.ComplianceStatusView;
 import com.digishield.learning.api.CourseView;
 import com.digishield.learning.api.EnrollmentView;
+import com.digishield.learning.api.PassMarkProvider;
 import com.digishield.learning.api.LeaderboardRowView;
 import com.digishield.learning.api.LearningService;
 import com.digishield.learning.api.LessonSummaryView;
@@ -24,6 +25,7 @@ import com.digishield.learning.domain.Assessment;
 import com.digishield.learning.domain.AssessmentType;
 import com.digishield.learning.domain.Badge;
 import com.digishield.learning.domain.BadgeCatalog;
+import com.digishield.learning.domain.PointAction;
 import com.digishield.learning.domain.PointRule;
 import com.digishield.learning.domain.Certificate;
 import com.digishield.learning.domain.CoachingPage;
@@ -49,6 +51,7 @@ import com.digishield.learning.infrastructure.PointRuleRepository;
 import com.digishield.learning.infrastructure.QuizQuestionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -77,6 +80,11 @@ public class LearningServiceImpl implements LearningService {
     private final BadgeRepository badgeRepository;
     private final BadgeCatalogRepository badgeCatalogRepository;
     private final GamificationProfileRepository gamificationProfileRepository;
+    /** Matches business_thresholds' own default, used when tenancy is absent. */
+    private static final int DEFAULT_PASS_SCORE_PCT = 70;
+
+    private final PointsAwarder pointsAwarder;
+    private final ObjectProvider<PassMarkProvider> passMarkProvider;
     private final CompliancePolicyRepository compliancePolicyRepository;
     private final AssessmentRepository assessmentRepository;
     private final CoachingPageRepository coachingPageRepository;
@@ -92,6 +100,8 @@ public class LearningServiceImpl implements LearningService {
                                BadgeRepository badgeRepository,
                                BadgeCatalogRepository badgeCatalogRepository,
                                GamificationProfileRepository gamificationProfileRepository,
+                               PointsAwarder pointsAwarder,
+                               ObjectProvider<PassMarkProvider> passMarkProvider,
                                CompliancePolicyRepository compliancePolicyRepository,
                                AssessmentRepository assessmentRepository,
                                CoachingPageRepository coachingPageRepository,
@@ -106,6 +116,8 @@ public class LearningServiceImpl implements LearningService {
         this.badgeRepository = badgeRepository;
         this.badgeCatalogRepository = badgeCatalogRepository;
         this.gamificationProfileRepository = gamificationProfileRepository;
+        this.pointsAwarder = pointsAwarder;
+        this.passMarkProvider = passMarkProvider;
         this.compliancePolicyRepository = compliancePolicyRepository;
         this.assessmentRepository = assessmentRepository;
         this.coachingPageRepository = coachingPageRepository;
@@ -178,9 +190,15 @@ public class LearningServiceImpl implements LearningService {
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Không tìm thấy lượt ghi danh: " + enrollmentId));
         int clamped = Math.max(0, Math.min(100, progress));
+        boolean alreadyDone = enrollment.getStatus() == EnrollmentStatus.COMPLETED;
         enrollment.setProgress(clamped);
         if (clamped >= 100) {
             enrollment.setStatus(EnrollmentStatus.COMPLETED);
+            // Reporting 100% repeatedly is normal client behaviour; paying for
+            // it every time is not.
+            if (!alreadyDone) {
+                pointsAwarder.award(tenantId, enrollment.getUserId(), PointAction.LESSON_COMPLETED);
+            }
         } else if (clamped > 0) {
             enrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
         }
@@ -221,9 +239,29 @@ public class LearningServiceImpl implements LearningService {
                 .filter(e -> tenantId.equals(e.getTenantId()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Không tìm thấy lượt ghi danh: " + enrollmentId));
+        boolean alreadyDone = enrollment.getStatus() == EnrollmentStatus.COMPLETED;
         enrollment.setScore(score);
+
+        if (score < passMark(tenantId)) {
+            // Failing is not finishing. This used to mark the course COMPLETED
+            // whatever the score, so someone who scored 10 was recorded as
+            // trained, counted as fully compliant, and — once points existed —
+            // paid for it. They keep their place and sit it again.
+            if (!alreadyDone) {
+                enrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
+            }
+            return toEnrollmentView(enrollment, null);
+        }
+
         enrollment.setProgress(100);
         enrollment.setStatus(EnrollmentStatus.COMPLETED);
+
+        // Only on the transition: re-sitting a course already passed must not
+        // pay again.
+        if (!alreadyDone) {
+            pointsAwarder.award(tenantId, enrollment.getUserId(), PointAction.LESSON_COMPLETED);
+            pointsAwarder.award(tenantId, enrollment.getUserId(), PointAction.QUIZ_PASSED);
+        }
         return toEnrollmentView(enrollment, null);
     }
 
@@ -490,8 +528,19 @@ public class LearningServiceImpl implements LearningService {
     @Override
     @Transactional(readOnly = true)
     public List<PointRuleView> listPointRules(UUID tenantId) {
-        return pointRuleRepository.findByTenantIdOrderByPointsDesc(tenantId).stream()
+        List<PointRuleView> configured = pointRuleRepository.findByTenantIdOrderByPointsDesc(tenantId)
+                .stream()
                 .map(r -> new PointRuleView(r.getAction(), r.getLabel(), r.getPoints()))
+                .toList();
+        if (!configured.isEmpty()) {
+            return configured;
+        }
+        // A tenant with no rules of its own still earns points, on the built-in
+        // defaults — so this has to show those, or the screen explaining how
+        // scoring works would contradict the scoring.
+        return java.util.Arrays.stream(PointAction.values())
+                .sorted(java.util.Comparator.comparingInt(PointAction::defaultPoints).reversed())
+                .map(a -> new PointRuleView(a.wireName(), a.label(), a.defaultPoints()))
                 .toList();
     }
 
@@ -858,6 +907,16 @@ public class LearningServiceImpl implements LearningService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Cấp độ không hợp lệ: " + wire);
         }
+    }
+
+
+    /**
+     * The tenant's configured pass score, or the platform default when no
+     * provider is wired.
+     */
+    private int passMark(UUID tenantId) {
+        PassMarkProvider provider = passMarkProvider.getIfAvailable();
+        return provider != null ? provider.passScorePct(tenantId) : DEFAULT_PASS_SCORE_PCT;
     }
 
     private String writeJson(Object value) {

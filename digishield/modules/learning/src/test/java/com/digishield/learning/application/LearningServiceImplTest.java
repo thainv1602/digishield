@@ -51,6 +51,15 @@ class LearningServiceImplTest {
     private com.digishield.learning.infrastructure.LessonRepository lessonRepository;
 
     @Mock
+    private PointsAwarder pointsAwarder;
+
+    @Mock
+    private org.springframework.beans.factory.ObjectProvider<com.digishield.learning.api.PassMarkProvider> passMarkProvider;
+
+    @Mock
+    private com.digishield.learning.api.PassMarkProvider passMark;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -65,6 +74,110 @@ class LearningServiceImplTest {
     @Captor
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
 
+
+    @Test
+    void completeQuiz_paysOnceForCompletionAndOnceForPassing() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+
+        givenPassMark(70);
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 80);
+
+        verify(pointsAwarder).award(TENANT_ID, userId,
+                com.digishield.learning.domain.PointAction.LESSON_COMPLETED);
+        verify(pointsAwarder).award(TENANT_ID, userId,
+                com.digishield.learning.domain.PointAction.QUIZ_PASSED);
+    }
+
+    @Test
+    void completeQuiz_paysNothingForARetakeOfAFinishedCourse() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.COMPLETED, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+
+        givenPassMark(70);
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 100);
+
+        // Otherwise anyone could resubmit a finished course to farm points.
+        verify(pointsAwarder, never()).award(any(), any(), any());
+    }
+
+    @Test
+    void completeQuiz_belowThePassMarkIsNotFinishing() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+        givenPassMark(80);
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 79);
+
+        // This used to mark the course COMPLETED whatever the score, so a
+        // failing learner counted as trained, counted as compliant, and would
+        // have been paid for it.
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+        verify(pointsAwarder, never()).award(any(), any(), any());
+    }
+
+    @Test
+    void completeQuiz_usesTheTenantsConfiguredPassMarkNotAFixedOne() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+        // business_thresholds.pass_score_pct was settable and read by nobody, so
+        // raising it in settings changed nothing. 75 must now fail at 80.
+        givenPassMark(80);
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 75);
+
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void completeQuiz_failingAResitDoesNotUndoAnEarlierPass() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.COMPLETED, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+        givenPassMark(80);
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 40);
+
+        // Sitting it again out of interest must not strip a completion already
+        // earned, nor the compliance that rests on it.
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.COMPLETED);
+        verify(pointsAwarder, never()).award(any(), any(), any());
+    }
+
+    private void givenPassMark(int pct) {
+        when(passMarkProvider.getIfAvailable()).thenReturn(passMark);
+        when(passMark.passScorePct(TENANT_ID)).thenReturn(pct);
+    }
+
+    @Test
+    void updateProgress_paysOnlyOnTheTransitionToComplete() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.COMPLETED, null);
+        when(enrollmentRepository.findByTenantIdAndId(TENANT_ID, enrollmentId))
+                .thenReturn(Optional.of(enrollment));
+
+        learningService.updateProgress(TENANT_ID, enrollmentId, 100);
+
+        // Clients report 100% repeatedly; paying each time would inflate every
+        // score on the leaderboard.
+        verify(pointsAwarder, never()).award(any(), any(), any());
+    }
 
     @Test
     void createCourse_derivesLessonCountRatherThanTrustingTheRequest() {

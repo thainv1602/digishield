@@ -24,6 +24,9 @@ class SimulationClickListenerTest {
     @Mock
     private LearningService learningService;
 
+    @Mock
+    private PointsAwarder pointsAwarder;
+
     @InjectMocks
     private SimulationClickListener listener;
 
@@ -59,5 +62,9 @@ class SimulationClickListenerTest {
         // retried — so calling it anyway would fail on every redelivery rather
         // than once.
         verify(learningService, org.mockito.Mockito.never()).autoEnroll(tenantId, userId);
+        // The click still costs points: the score records what the person did,
+        // and an empty catalogue is the tenant's gap, not theirs.
+        verify(pointsAwarder).award(tenantId, userId,
+                com.digishield.learning.domain.PointAction.SIMULATION_CLICKED);
     }
 }

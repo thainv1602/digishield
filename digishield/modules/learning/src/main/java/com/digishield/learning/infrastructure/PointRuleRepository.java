@@ -12,4 +12,7 @@ import java.util.UUID;
 public interface PointRuleRepository extends JpaRepository<PointRule, UUID> {
 
     List<PointRule> findByTenantIdOrderByPointsDesc(UUID tenantId);
+
+    /** A tenant's own value for one action, overriding the built-in default. */
+    java.util.Optional<PointRule> findByTenantIdAndAction(UUID tenantId, String action);
 }
