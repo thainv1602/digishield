@@ -17,4 +17,10 @@ public interface RiskSignalRepository extends JpaRepository<RiskSignal, UUID> {
      * {@code since}).
      */
     List<RiskSignal> findByTenantIdAndUserIdAndOccurredAtAfter(UUID tenantId, UUID userId, Instant since);
+
+    /**
+     * Every signal for the tenant inside the scoring window, for the rollup to
+     * group by user itself — one query beats one per member.
+     */
+    List<RiskSignal> findByTenantIdAndOccurredAtAfter(UUID tenantId, Instant since);
 }

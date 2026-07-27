@@ -9,6 +9,7 @@ import com.digishield.analytics.api.dto.RiskScoreDto;
 import com.digishield.analytics.domain.DepartmentRisk;
 import com.digishield.analytics.domain.RiskScope;
 import com.digishield.analytics.domain.RiskScore;
+import com.digishield.analytics.domain.RiskScoring;
 import com.digishield.analytics.domain.RiskSignal;
 import com.digishield.analytics.domain.RiskSignalType;
 import com.digishield.analytics.infrastructure.DepartmentRiskRepository;
@@ -21,11 +22,11 @@ import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -37,14 +38,6 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     private static final double INDUSTRY_AVG_PHISH_PRONE_PCT = 11.2;
 
-    /** Baseline risk for a user with no recent negative signals. */
-    private static final int BASE_RISK = 5;
-    /** Lower bound for a risk score. */
-    private static final int MIN_RISK = 0;
-    /** Upper bound for a risk score. */
-    private static final int MAX_RISK = 100;
-    /** Only signals from the last {@code SCORING_WINDOW} count toward the score. */
-    private static final Duration SCORING_WINDOW = Duration.ofDays(90);
     /** How many recent phishing reports the dashboard panel shows. */
     private static final int RECENT_REPORTS_LIMIT = 6;
 
@@ -173,18 +166,21 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
         List<DashboardDto.TrendPoint> trend = orgRiskTrend(tenantId);
 
-        // Deltas from the org-risk history (latest vs previous); 0 with <2 points.
-        List<RiskScore> orgScores = riskScoreRepository.findByTenantIdAndScope(tenantId, RiskScope.ORG).stream()
-                .sorted(Comparator.comparing(RiskScore::getComputedAt))
-                .toList();
+        // Deltas from the org-score history (latest vs previous); 0 with <2 points.
+        List<RiskScore> orgScores = orgScoresOldestFirst(tenantId);
         int riskDelta = 0;
         double phishPronePctDelta = 0.0;
         if (orgScores.size() >= 2) {
-            int latest = orgScores.get(orgScores.size() - 1).getValue();
-            int prev = orgScores.get(orgScores.size() - 2).getValue();
-            riskDelta = latest - prev;
-            // Consistent with orgPhishPronePct's risk→rate mapping (× 0.135).
-            phishPronePctDelta = Math.round((latest - prev) * 0.135 * 10.0) / 10.0;
+            RiskScore latest = orgScores.get(orgScores.size() - 1);
+            RiskScore prev = orgScores.get(orgScores.size() - 2);
+            riskDelta = latest.getValue() - prev.getValue();
+            // Both rates are measured, so this is a real change rather than the
+            // risk delta restated. Rows predating the rollup carry no rate; a
+            // delta against a missing measurement would be meaningless.
+            if (latest.getPhishPronePct() != null && prev.getPhishPronePct() != null) {
+                phishPronePctDelta =
+                        Math.round((latest.getPhishPronePct() - prev.getPhishPronePct()) * 10.0) / 10.0;
+            }
         }
 
         int trainingCompletion = dashboardMetricsProvider.trainingCompletionPct();
@@ -230,32 +226,40 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     /**
-     * Demo phish-prone rate derived from the org risk score; falls back to the
-     * seeded reference value when no org score is present.
+     * The organisation's measured phish-prone rate: the share of its people who
+     * clicked a simulation, as recorded by the nightly rollup.
+     * <p>
+     * Was previously invented — the org risk score times a fixed 0.135, or a
+     * constant 8.4 when there was no score — which produced a plausible number
+     * for a tenant that had never run a simulation. Zero until the first rollup,
+     * consistent with the org risk score beside it, so an untouched dashboard
+     * reads as empty rather than as a measurement.
      */
     private double orgPhishPronePct(UUID tenantId) {
-        int orgRisk = latestOrgRisk(tenantId);
-        if (orgRisk <= 0) {
-            return 8.4;
-        }
-        // Smooth mapping so the demo number tracks risk but stays realistic.
-        return Math.round(orgRisk * 0.135 * 10.0) / 10.0;
+        return orgScoresOldestFirst(tenantId).stream()
+                .map(RiskScore::getPhishPronePct)
+                .filter(Objects::nonNull)
+                .reduce((first, second) -> second)
+                .orElse(0.0);
+    }
+
+    /** The tenant's org-scope score history, oldest first. */
+    private List<RiskScore> orgScoresOldestFirst(UUID tenantId) {
+        return riskScoreRepository.findByTenantIdAndScope(tenantId, RiskScope.ORG).stream()
+                .sorted(Comparator.comparing(RiskScore::getComputedAt))
+                .toList();
     }
 
     /**
      * Risk score for a user: a baseline plus the summed weight of their recent
-     * behavioural signals, clamped to {@link #MIN_RISK}..{@link #MAX_RISK}.
+     * behavioural signals, clamped.
      * Risky actions (e.g. simulation clicks) carry positive weight; vigilant
      * ones (e.g. confirmed phishing reports) carry negative weight. Higher means
      * more phish-prone.
      */
     private int computeScore(UUID tenantId, UUID userId) {
-        Instant since = Instant.now().minus(SCORING_WINDOW);
-        int signalWeight = riskSignalRepository
-                .findByTenantIdAndUserIdAndOccurredAtAfter(tenantId, userId, since)
-                .stream()
-                .mapToInt(RiskSignal::getWeight)
-                .sum();
-        return Math.max(MIN_RISK, Math.min(MAX_RISK, BASE_RISK + signalWeight));
+        Instant since = RiskScoring.windowStart(Instant.now());
+        return RiskScoring.score(riskSignalRepository
+                .findByTenantIdAndUserIdAndOccurredAtAfter(tenantId, userId, since));
     }
 }

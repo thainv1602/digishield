@@ -1,6 +1,7 @@
 package com.digishield.shared.persistence;
 
 import com.digishield.shared.tenantcontext.PlatformScope;
+import com.digishield.shared.tenantcontext.SystemScope;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
@@ -76,6 +77,12 @@ public class RlsTenantAspect
         // outside tenant isolation. PlatformScope only opens for an authenticated
         // SUPER_ADMIN, so this cannot be used to widen a normal caller's reach.
         if (PlatformScope.isActive()) {
+            return;
+        }
+        // Scheduled work enumerating the tenants it must process. Opens only off
+        // a request thread, and only around that enumeration — the per-tenant
+        // work that follows runs with TenantContext set and RLS enforced.
+        if (SystemScope.isActive()) {
             return;
         }
         String tenantId = TenantContext.get();

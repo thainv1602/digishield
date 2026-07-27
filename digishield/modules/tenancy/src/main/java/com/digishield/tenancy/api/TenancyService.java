@@ -22,6 +22,19 @@ public interface TenancyService {
     List<TenantView> listTenants();
 
     /**
+     * Tenant ids of every active tenant, for scheduled work that must visit each
+     * one in turn.
+     * <p>
+     * Deliberately separate from {@link #listTenants()}: that one serves the
+     * super-admin console and is authorised against the caller, while a
+     * scheduled job has no caller at all. Guarded instead by
+     * {@code SystemScope}, which refuses to open on a request-handling thread —
+     * so exposing this here does not give a logged-in user a way to enumerate
+     * other tenants.
+     */
+    List<UUID> systemActiveTenantIds();
+
+    /**
      * Lists the audit-log entries of a tenant, newest first.
      */
     List<AuditLogView> listAuditLogs(UUID tenantId);

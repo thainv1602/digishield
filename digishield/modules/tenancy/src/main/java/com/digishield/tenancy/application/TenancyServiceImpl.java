@@ -2,6 +2,7 @@ package com.digishield.tenancy.application;
 
 import com.digishield.shared.tenantcontext.CurrentActor;
 import com.digishield.shared.tenantcontext.PlatformScope;
+import com.digishield.shared.tenantcontext.SystemScope;
 import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.tenancy.api.AuditLogView;
 import com.digishield.tenancy.api.BusinessThresholdsView;
@@ -134,6 +135,19 @@ public class TenancyServiceImpl implements TenancyService {
         // PlatformScope opens only for an authenticated SUPER_ADMIN.
         return PlatformScope.call(() -> tenantRepository.findAll().stream()
                 .map(this::toView)
+                .toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UUID> systemActiveTenantIds() {
+        // Same reason listTenants() needs PlatformScope: the tenant registry is
+        // platform data behind its own RLS policy. A job has no principal to
+        // authorise, so SystemScope guards on context instead — background
+        // thread only.
+        return SystemScope.call(() -> tenantRepository.findAll().stream()
+                .filter(t -> TenantStatus.ACTIVE == t.getStatus())
+                .map(Tenant::getTenantId)
                 .toList());
     }
 

@@ -12,4 +12,10 @@ import java.util.UUID;
 public interface DepartmentRiskRepository extends JpaRepository<DepartmentRisk, UUID> {
 
     List<DepartmentRisk> findByTenantIdOrderByRiskScoreDesc(UUID tenantId);
+
+    /**
+     * Clears the tenant's snapshot so a rollup can replace it wholesale. These
+     * rows describe how things stand now, not a history.
+     */
+    void deleteByTenantId(UUID tenantId);
 }
