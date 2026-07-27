@@ -278,4 +278,19 @@ public class NotificationServiceImpl implements NotificationService {
                 NotificationStatus.SCHEDULED, title, body, Instant.now());
         return repository.save(notification);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public long countSent(java.util.UUID tenantId, String channel,
+                          java.time.Instant from, java.time.Instant to) {
+        NotificationChannel parsed;
+        try {
+            parsed = NotificationChannel.valueOf(channel.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Kênh không hợp lệ: " + channel, e);
+        }
+        return repository
+                .countByTenantIdAndChannelAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        tenantId, parsed, NotificationStatus.SENT, from, to);
+    }
 }

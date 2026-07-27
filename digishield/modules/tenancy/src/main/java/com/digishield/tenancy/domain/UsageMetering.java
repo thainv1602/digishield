@@ -45,6 +45,11 @@ public class UsageMetering {
         this.period = period;
     }
 
+    /** Running total for the period, rewritten as the month goes on. */
+    public void setValue(long value) {
+        this.value = value;
+    }
+
     public UUID getId() {
         return id;
     }
