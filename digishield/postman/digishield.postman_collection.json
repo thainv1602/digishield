@@ -31,7 +31,6 @@
         "method": "POST",
         "header": [
           { "key": "Content-Type", "value": "application/json" },
-          { "key": "X-Demo-Role", "value": "ANALYST" },
           { "key": "X-Tenant-Id", "value": "{{tenant}}" }
         ],
         "body": {
@@ -60,7 +59,6 @@
         "method": "POST",
         "header": [
           { "key": "Content-Type", "value": "application/json" },
-          { "key": "X-Demo-Role", "value": "ANALYST" },
           { "key": "X-Tenant-Id", "value": "{{tenant}}" }
         ],
         "body": { "mode": "raw", "raw": "{ \"amount\": }" },
@@ -83,7 +81,6 @@
       "request": {
         "method": "GET",
         "header": [
-          { "key": "X-Demo-Role", "value": "ANALYST" },
           { "key": "X-Tenant-Id", "value": "{{tenant}}" }
         ],
         "url": { "raw": "{{baseUrl}}/api/v1/no-such-endpoint", "host": ["{{baseUrl}}"], "path": ["api", "v1", "no-such-endpoint"] }

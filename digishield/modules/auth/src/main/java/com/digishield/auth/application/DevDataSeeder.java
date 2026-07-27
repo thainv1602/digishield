@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Dev-only seeder: creates one demo {@link AppUser} per role under the fixed
  * {@link DemoTenants#DEMO_TENANT_ID} so the frontend can exercise login,
- * {@code /auth/me} (persona switching via {@code X-Demo-Role}) and the Users screen.
+ * {@code /auth/me} and the Users screen.
  *
  * <p>Runs early ({@link Order}) so other modules' seeders can rely on the demo
  * users existing. Only active under the {@code dev} profile.

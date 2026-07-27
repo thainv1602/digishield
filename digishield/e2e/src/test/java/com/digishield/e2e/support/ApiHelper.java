@@ -9,8 +9,8 @@ import java.net.http.HttpResponse;
  * API cross-check via the JDK HttpClient: fast data setup plus backend-side
  * state assertions, in parallel with observing the UI through Selenium.
  *
- * <p>Uses the dev headers {@code X-Demo-Role} + {@code X-Tenant-Id} like the rest
- * of DigiShield under the dev profile.
+ * <p>Identifies the tenant with {@code X-Tenant-Id}, as the rest of DigiShield
+ * does under the dev profile.
  */
 public final class ApiHelper {
 
@@ -25,7 +25,6 @@ public final class ApiHelper {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(API + path))
                 .header("Content-Type", "application/json")
-                .header("X-Demo-Role", "ANALYST")
                 .header("X-Tenant-Id", TENANT)
                 .POST(HttpRequest.BodyPublishers.ofString(json))
                 .build();
@@ -44,7 +43,6 @@ public final class ApiHelper {
     public static boolean isInWatchlist(String value) throws Exception {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(API + "/account-watchlist/check?value=" + value))
-                .header("X-Demo-Role", "ANALYST")
                 .header("X-Tenant-Id", TENANT)
                 .GET().build();
         String body = HTTP.send(req, HttpResponse.BodyHandlers.ofString()).body();
