@@ -30,6 +30,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import com.digishield.simulation.api.ParticipantDirectory;
+import com.digishield.simulation.api.RemediationStatusProvider;
+import com.digishield.simulation.domain.LearningStatus;
+import java.util.HashMap;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +53,8 @@ public class SimulationServiceImpl implements SimulationService {
     private final SimEventRepository eventRepository;
     private final SimResultRepository resultRepository;
     private final SimCampaignFunnelRepository funnelRepository;
+    private final ParticipantDirectory participants;
+    private final RemediationStatusProvider remediation;
     private final SimRecipientRepository recipientRepository;
     private final EventPublisher eventPublisher;
     private final JdbcTemplate jdbcTemplate;
@@ -61,6 +68,8 @@ public class SimulationServiceImpl implements SimulationService {
                                  SimEventRepository eventRepository,
                                  SimResultRepository resultRepository,
                                  SimCampaignFunnelRepository funnelRepository,
+                                 ParticipantDirectory participants,
+                                 RemediationStatusProvider remediation,
                                  SimRecipientRepository recipientRepository,
                                  EventPublisher eventPublisher,
                                  JdbcTemplate jdbcTemplate,
@@ -71,6 +80,8 @@ public class SimulationServiceImpl implements SimulationService {
         this.resultRepository = resultRepository;
         this.funnelRepository = funnelRepository;
         this.recipientRepository = recipientRepository;
+        this.participants = participants;
+        this.remediation = remediation;
         this.eventPublisher = eventPublisher;
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -213,10 +224,7 @@ public class SimulationServiceImpl implements SimulationService {
 
         SimCampaignDetailDto.Funnel funnel = funnel(tenantId, campaignId);
 
-        List<SimCampaignDetailDto.ResultRow> rows =
-                resultRepository.findByTenantIdAndCampaignId(tenantId, campaignId).stream()
-                        .map(this::toResultRow)
-                        .toList();
+        List<SimCampaignDetailDto.ResultRow> rows = results(tenantId, campaignId);
 
         return new SimCampaignDetailDto(
                 campaign.getId(),
@@ -239,6 +247,83 @@ public class SimulationServiceImpl implements SimulationService {
                         f.getDelivered(), f.getOpened(), f.getClicked(),
                         f.getSubmitted(), f.getReported()))
                 .orElseGet(() -> computeFunnel(tenantId, campaignId));
+    }
+
+    /**
+     * Per-recipient rows from the stored aggregate when present, otherwise built
+     * from the raw record of the campaign — mirroring {@link #funnel}.
+     * <p>
+     * Nothing has ever written {@code sim_result} outside the dev seeder, so in
+     * production this table was always empty and the results panel always blank,
+     * even though every delivery and click was being recorded. The underlying
+     * facts were there the whole time; only the summary was missing.
+     */
+    private List<SimCampaignDetailDto.ResultRow> results(UUID tenantId, UUID campaignId) {
+        List<SimResult> stored = resultRepository.findByTenantIdAndCampaignId(tenantId, campaignId);
+        if (!stored.isEmpty()) {
+            return stored.stream().map(this::toResultRow).toList();
+        }
+        return computeResults(tenantId, campaignId);
+    }
+
+    private List<SimCampaignDetailDto.ResultRow> computeResults(UUID tenantId, UUID campaignId) {
+        List<SimRecipient> recipients =
+                recipientRepository.findByTenantIdAndCampaignId(tenantId, campaignId);
+        if (recipients.isEmpty()) {
+            return List.of();
+        }
+
+        Map<UUID, SimAction> furthest = new HashMap<>();
+        for (SimEvent event : eventRepository.findByTenantIdAndCampaignId(tenantId, campaignId)) {
+            furthest.merge(event.getUserId(), event.getAction(),
+                    (a, b) -> outcomeRank(b) > outcomeRank(a) ? b : a);
+        }
+
+        Map<UUID, ParticipantDirectory.Participant> directory = participants.participants().stream()
+                .collect(Collectors.toMap(ParticipantDirectory.Participant::userId, p -> p, (a, b) -> a));
+        Map<UUID, RemediationStatusProvider.Remediation> training = remediation.statusByUser();
+
+        List<SimCampaignDetailDto.ResultRow> rows = new ArrayList<>();
+        for (SimRecipient recipient : recipients) {
+            UUID userId = recipient.getUserId();
+            ParticipantDirectory.Participant person = directory.get(userId);
+            // Everyone the campaign was sent to appears, including people who
+            // did nothing — a results table that only lists people who reacted
+            // hides the ones who never opened it.
+            SimAction action = furthest.getOrDefault(userId, SimAction.DELIVERED);
+            rows.add(new SimCampaignDetailDto.ResultRow(
+                    person != null && person.name() != null ? person.name() : "—",
+                    person != null && person.department() != null ? person.department() : "—",
+                    action.name().toLowerCase(),
+                    learningStatus(training.get(userId)).name().toLowerCase()));
+        }
+        return rows;
+    }
+
+    /**
+     * Orders the actions so one row can report what a person did.
+     * <p>
+     * Reporting the message outranks everything: it is the outcome the whole
+     * exercise is for, and someone who clicks and then reports should not be
+     * filed under "clicked". The rest follow how far into the trap they got.
+     */
+    private static int outcomeRank(SimAction action) {
+        return switch (action) {
+            case REPORT -> 5;
+            case SUBMIT -> 4;
+            case CLICK -> 3;
+            case OPEN -> 2;
+            case DELIVERED -> 1;
+        };
+    }
+
+    private static LearningStatus learningStatus(RemediationStatusProvider.Remediation remediation) {
+        if (remediation == null) {
+            return LearningStatus.NONE;
+        }
+        return remediation == RemediationStatusProvider.Remediation.COMPLETED
+                ? LearningStatus.COMPLETED
+                : LearningStatus.IN_PROGRESS;
     }
 
     private SimCampaignDetailDto.Funnel computeFunnel(UUID tenantId, UUID campaignId) {
