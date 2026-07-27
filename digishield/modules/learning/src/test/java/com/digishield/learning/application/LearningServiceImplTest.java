@@ -54,6 +54,12 @@ class LearningServiceImplTest {
     private PointsAwarder pointsAwarder;
 
     @Mock
+    private com.digishield.learning.infrastructure.CertificateRepository certificateRepository;
+
+    @Mock
+    private com.digishield.learning.api.LearnerDirectory learnerDirectory;
+
+    @Mock
     private com.digishield.learning.api.OffenceHistory offenceHistory;
 
     @Mock
@@ -74,6 +80,71 @@ class LearningServiceImplTest {
     @Captor
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
 
+
+    @Test
+    void completeQuiz_issuesACertificateOnPassing() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID courseId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, courseId,
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+        when(certificateRepository.findByTenantIdAndUserId(TENANT_ID, userId))
+                .thenReturn(java.util.List.of());
+        when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId))
+                .thenReturn(Optional.of(new Course(courseId, TENANT_ID, "An toàn thông tin",
+                        CourseLevel.BASIC, "vi")));
+        when(learnerDirectory.find(userId)).thenReturn(Optional.of(
+                new com.digishield.learning.api.LearnerDirectory.Learner("Nguyễn Văn A", "IT")));
+        givenPassMark(70);
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 85);
+
+        ArgumentCaptor<com.digishield.learning.domain.Certificate> saved =
+                ArgumentCaptor.forClass(com.digishield.learning.domain.Certificate.class);
+        verify(certificateRepository).save(saved.capture());
+        // The table had one writer, a dev seeder, so people who had earned a
+        // certificate saw an empty screen.
+        assertThat(saved.getValue().getRecipient()).isEqualTo("Nguyễn Văn A");
+        assertThat(saved.getValue().getCourseTitle()).isEqualTo("An toàn thông tin");
+        assertThat(saved.getValue().getScore()).isEqualTo(85);
+        assertThat(saved.getValue().getSerial()).startsWith("DS-");
+    }
+
+    @Test
+    void completeQuiz_issuesNoCertificateOnFailing() {
+        UUID enrollmentId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, UUID.randomUUID(),
+                UUID.randomUUID(), EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+        givenPassMark(80);
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 79);
+
+        verify(certificateRepository, never()).save(any());
+    }
+
+    @Test
+    void completeQuiz_doesNotMintASecondCertificateForTheSameCourse() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID courseId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, courseId,
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+        when(certificateRepository.findByTenantIdAndUserId(TENANT_ID, userId))
+                .thenReturn(java.util.List.of(new com.digishield.learning.domain.Certificate(
+                        UUID.randomUUID(), TENANT_ID, userId, courseId, "DS-2026-AAAA-BBBB",
+                        "An toàn thông tin", "Nguyễn Văn A", 90,
+                        java.time.Instant.now(), java.time.Instant.now(), null)));
+        givenPassMark(70);
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 95);
+
+        // A course reopened by a repeat offence is passed again; that is one
+        // certificate re-earned, not two held.
+        verify(certificateRepository, never()).save(any());
+    }
 
     @Test
     void autoEnroll_sendsARepeatClickerUpALevel() {
