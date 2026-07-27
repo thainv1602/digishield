@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import com.digishield.shared.security.CspStyleSource;
 import com.digishield.shared.security.SecurityHeaders;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -31,6 +32,7 @@ public class DevSecurityConfig {
 
     @Bean
     public SecurityFilterChain devSecurityFilterChain(HttpSecurity http,
+            org.springframework.beans.factory.ObjectProvider<com.digishield.shared.security.CspStyleSource> styleSources,
                                                       CorsConfigurationSource corsConfigurationSource)
             throws Exception {
         http
@@ -42,7 +44,7 @@ public class DevSecurityConfig {
         // Same headers as production so the two cannot drift, but framing is
         // allowed from the same origin: the H2 console this profile exists to
         // serve renders inside a frameset.
-        SecurityHeaders.apply(http, "'self'");
+        SecurityHeaders.apply(http, "'self'", styleSources.stream().toList());
         return http.build();
     }
 }
