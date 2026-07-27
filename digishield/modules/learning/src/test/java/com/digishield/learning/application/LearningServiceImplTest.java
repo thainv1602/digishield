@@ -51,6 +51,9 @@ class LearningServiceImplTest {
     private com.digishield.learning.infrastructure.LessonRepository lessonRepository;
 
     @Mock
+    private PointsAwarder pointsAwarder;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -65,6 +68,68 @@ class LearningServiceImplTest {
     @Captor
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
 
+
+    @Test
+    void completeQuiz_paysOnceForCompletionAndOnceForPassing() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 80);
+
+        verify(pointsAwarder).award(TENANT_ID, userId,
+                com.digishield.learning.domain.PointAction.LESSON_COMPLETED);
+        verify(pointsAwarder).award(TENANT_ID, userId,
+                com.digishield.learning.domain.PointAction.QUIZ_PASSED);
+    }
+
+    @Test
+    void completeQuiz_paysNothingForARetakeOfAFinishedCourse() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.COMPLETED, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 100);
+
+        // Otherwise anyone could resubmit a finished course to farm points.
+        verify(pointsAwarder, never()).award(any(), any(), any());
+    }
+
+    @Test
+    void completeQuiz_paysForFinishingButNotForPassingWhenTheScoreIsLow() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.IN_PROGRESS, null);
+        when(enrollmentRepository.findById(enrollmentId)).thenReturn(Optional.of(enrollment));
+
+        learningService.completeQuiz(TENANT_ID, enrollmentId, 69);
+
+        verify(pointsAwarder).award(TENANT_ID, userId,
+                com.digishield.learning.domain.PointAction.LESSON_COMPLETED);
+        verify(pointsAwarder, never()).award(TENANT_ID, userId,
+                com.digishield.learning.domain.PointAction.QUIZ_PASSED);
+    }
+
+    @Test
+    void updateProgress_paysOnlyOnTheTransitionToComplete() {
+        UUID enrollmentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
+                EnrollmentStatus.COMPLETED, null);
+        when(enrollmentRepository.findByTenantIdAndId(TENANT_ID, enrollmentId))
+                .thenReturn(Optional.of(enrollment));
+
+        learningService.updateProgress(TENANT_ID, enrollmentId, 100);
+
+        // Clients report 100% repeatedly; paying each time would inflate every
+        // score on the leaderboard.
+        verify(pointsAwarder, never()).award(any(), any(), any());
+    }
 
     @Test
     void createCourse_derivesLessonCountRatherThanTrustingTheRequest() {

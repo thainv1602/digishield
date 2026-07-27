@@ -2,6 +2,7 @@ package com.digishield.learning.application;
 
 import com.digishield.contracts.events.UserClickedSimulationEvent;
 import com.digishield.learning.api.LearningService;
+import com.digishield.learning.domain.PointAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -22,13 +23,20 @@ class SimulationClickListener {
     private static final Logger log = LoggerFactory.getLogger(SimulationClickListener.class);
 
     private final LearningService learningService;
+    private final PointsAwarder pointsAwarder;
 
-    SimulationClickListener(LearningService learningService) {
+    SimulationClickListener(LearningService learningService, PointsAwarder pointsAwarder) {
         this.learningService = learningService;
+        this.pointsAwarder = pointsAwarder;
     }
 
     @ApplicationModuleListener
     void on(UserClickedSimulationEvent event) {
+        // The click costs points whether or not there is a course to assign:
+        // the score records what happened, and an empty catalogue is the
+        // tenant's gap, not the user's.
+        pointsAwarder.award(event.tenantId(), event.userId(), PointAction.SIMULATION_CLICKED);
+
         // A tenant with an empty catalogue has nothing to assign. Calling
         // autoEnroll anyway throws, and because these events are persistent and
         // retried, one click would fail forever rather than once — noisily, and
