@@ -148,6 +148,17 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     @Transactional(readOnly = true)
+    public int simulationClicks(UUID tenantId, UUID userId) {
+        return (int) riskSignalRepository
+                .findByTenantIdAndUserIdAndOccurredAtAfter(
+                        tenantId, userId, RiskScoring.windowStart(Instant.now()))
+                .stream()
+                .filter(s -> s.getType() == RiskSignalType.SIMULATION_CLICK)
+                .count();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public DashboardDto dashboard() {
         UUID tenantId = TenantContext.requireUuid();
 

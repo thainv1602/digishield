@@ -52,12 +52,15 @@ import com.digishield.learning.infrastructure.QuizQuestionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import com.digishield.learning.api.OffenceHistory;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,11 +83,14 @@ public class LearningServiceImpl implements LearningService {
     private final BadgeRepository badgeRepository;
     private final BadgeCatalogRepository badgeCatalogRepository;
     private final GamificationProfileRepository gamificationProfileRepository;
-    /** Matches business_thresholds' own default, used when tenancy is absent. */
-    private static final int DEFAULT_PASS_SCORE_PCT = 70;
-
     private final PointsAwarder pointsAwarder;
-    private final ObjectProvider<PassMarkProvider> passMarkProvider;
+    /**
+     * Both are required, so a missing one stops start-up rather than quietly
+     * falling back — a pass mark or an offence count that silently reverts to a
+     * default is the kind of fault this module has already shipped once.
+     */
+    private final PassMarkProvider passMarkProvider;
+    private final OffenceHistory offenceHistory;
     private final CompliancePolicyRepository compliancePolicyRepository;
     private final AssessmentRepository assessmentRepository;
     private final CoachingPageRepository coachingPageRepository;
@@ -101,7 +107,11 @@ public class LearningServiceImpl implements LearningService {
                                BadgeCatalogRepository badgeCatalogRepository,
                                GamificationProfileRepository gamificationProfileRepository,
                                PointsAwarder pointsAwarder,
-                               ObjectProvider<PassMarkProvider> passMarkProvider,
+                               PassMarkProvider passMarkProvider,
+                               // Resolved lazily to break a start-up cycle:
+                               // this reaches analytics, whose dashboard metrics
+                               // reach back into learning.
+                               @Lazy OffenceHistory offenceHistory,
                                CompliancePolicyRepository compliancePolicyRepository,
                                AssessmentRepository assessmentRepository,
                                CoachingPageRepository coachingPageRepository,
@@ -118,6 +128,7 @@ public class LearningServiceImpl implements LearningService {
         this.gamificationProfileRepository = gamificationProfileRepository;
         this.pointsAwarder = pointsAwarder;
         this.passMarkProvider = passMarkProvider;
+        this.offenceHistory = offenceHistory;
         this.compliancePolicyRepository = compliancePolicyRepository;
         this.assessmentRepository = assessmentRepository;
         this.coachingPageRepository = coachingPageRepository;
@@ -220,6 +231,17 @@ public class LearningServiceImpl implements LearningService {
                         null
                 )));
 
+        // Being assigned a course already finished means it is being assigned
+        // again — a repeat offence. This used to return the old completed record
+        // untouched, so a second click produced no training at all and the
+        // person stayed marked compliant on the strength of the first time.
+        if (enrollment.getStatus() == EnrollmentStatus.COMPLETED) {
+            enrollment.setStatus(EnrollmentStatus.ASSIGNED);
+            enrollment.setProgress(0);
+            enrollment.setScore(null);
+            enrollment = enrollmentRepository.save(enrollment);
+        }
+
         eventPublisher.publishEvent(new EnrollmentAssignedEvent(tenantId, userId, courseId));
 
         return toEnrollmentView(enrollment, null);
@@ -227,10 +249,55 @@ public class LearningServiceImpl implements LearningService {
 
     @Override
     public EnrollmentView autoEnroll(UUID tenantId, UUID userId) {
-        Course course = courseRepository.findFirstByTenantId(tenantId)
-                .orElseThrow(() -> new IllegalStateException(
-                        "Không tìm thấy khoá học nào cho tenant: " + tenantId));
+        List<Course> catalogue = courseRepository.findByTenantIdOrderBySortOrderAsc(tenantId);
+        if (catalogue.isEmpty()) {
+            catalogue = courseRepository.findByTenantId(tenantId);
+        }
+        if (catalogue.isEmpty()) {
+            throw new IllegalStateException("Không tìm thấy khoá học nào cho tenant: " + tenantId);
+        }
+        Course course = remediationFor(tenantId, userId, catalogue);
         return assign(tenantId, userId, course.getId());
+    }
+
+    /**
+     * Picks remediation to match how often this has happened before.
+     * <p>
+     * Previously this took whatever course came back first, so someone on their
+     * fifth click was sent the same introduction as someone on their first. Each
+     * repeat now moves one step up the catalogue's levels, stopping at the
+     * hardest the tenant has — the ladder cannot go further than the courses
+     * that exist.
+     */
+    private Course remediationFor(UUID tenantId, UUID userId, List<Course> catalogue) {
+        List<Course> byLevel = catalogue.stream()
+                .sorted(Comparator
+                        .comparingInt((Course c) -> c.getLevel() == null ? 0 : c.getLevel().rank())
+                        .thenComparing(c -> c.getSortOrder() == null ? 0 : c.getSortOrder()))
+                .toList();
+
+        // The click that triggered this is already recorded, so one click means
+        // a first offence and step 0 of the ladder.
+        int clicks = clickCount(tenantId, userId);
+        int step = Math.max(0, clicks - 1);
+
+        List<Integer> levels = byLevel.stream()
+                .map(c -> c.getLevel() == null ? 0 : c.getLevel().rank())
+                .distinct()
+                .toList();
+        int targetLevel = levels.get(Math.min(step, levels.size() - 1));
+
+        return byLevel.stream()
+                .filter(c -> (c.getLevel() == null ? 0 : c.getLevel().rank()) == targetLevel)
+                .findFirst()
+                .orElse(byLevel.get(0));
+    }
+
+    private int clickCount(UUID tenantId, UUID userId) {
+        // The click that triggered this is already recorded, so the count is at
+        // least one; a zero would read as "never happened" and pick the gentlest
+        // course for someone who just failed.
+        return Math.max(1, offenceHistory.simulationClicks(tenantId, userId));
     }
 
     @Override
@@ -915,8 +982,7 @@ public class LearningServiceImpl implements LearningService {
      * provider is wired.
      */
     private int passMark(UUID tenantId) {
-        PassMarkProvider provider = passMarkProvider.getIfAvailable();
-        return provider != null ? provider.passScorePct(tenantId) : DEFAULT_PASS_SCORE_PCT;
+        return passMarkProvider.passScorePct(tenantId);
     }
 
     private String writeJson(Object value) {
