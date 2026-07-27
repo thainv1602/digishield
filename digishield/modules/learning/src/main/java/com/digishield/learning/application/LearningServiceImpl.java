@@ -61,6 +61,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import com.digishield.learning.api.OffenceHistory;
 import java.util.Comparator;
+import com.digishield.learning.api.LearnerDirectory;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -84,6 +86,8 @@ public class LearningServiceImpl implements LearningService {
     private final BadgeCatalogRepository badgeCatalogRepository;
     private final GamificationProfileRepository gamificationProfileRepository;
     private final PointsAwarder pointsAwarder;
+    private final LearnerDirectory learnerDirectory;
+    private final String verifyUrl;
     /**
      * Both are required, so a missing one stops start-up rather than quietly
      * falling back — a pass mark or an offence count that silently reverts to a
@@ -107,6 +111,8 @@ public class LearningServiceImpl implements LearningService {
                                BadgeCatalogRepository badgeCatalogRepository,
                                GamificationProfileRepository gamificationProfileRepository,
                                PointsAwarder pointsAwarder,
+                               LearnerDirectory learnerDirectory,
+                               @org.springframework.beans.factory.annotation.Value("${digishield.learning.certificate-verify-url:}") String verifyUrl,
                                PassMarkProvider passMarkProvider,
                                // Resolved lazily to break a start-up cycle:
                                // this reaches analytics, whose dashboard metrics
@@ -127,6 +133,8 @@ public class LearningServiceImpl implements LearningService {
         this.badgeCatalogRepository = badgeCatalogRepository;
         this.gamificationProfileRepository = gamificationProfileRepository;
         this.pointsAwarder = pointsAwarder;
+        this.learnerDirectory = learnerDirectory;
+        this.verifyUrl = verifyUrl == null || verifyUrl.isBlank() ? null : verifyUrl;
         this.passMarkProvider = passMarkProvider;
         this.offenceHistory = offenceHistory;
         this.compliancePolicyRepository = compliancePolicyRepository;
@@ -328,6 +336,7 @@ public class LearningServiceImpl implements LearningService {
         if (!alreadyDone) {
             pointsAwarder.award(tenantId, enrollment.getUserId(), PointAction.LESSON_COMPLETED);
             pointsAwarder.award(tenantId, enrollment.getUserId(), PointAction.QUIZ_PASSED);
+            issueCertificate(tenantId, enrollment, score);
         }
         return toEnrollmentView(enrollment, null);
     }
@@ -983,6 +992,56 @@ public class LearningServiceImpl implements LearningService {
      */
     private int passMark(UUID tenantId) {
         return passMarkProvider.passScorePct(tenantId);
+    }
+
+
+    /**
+     * Issues the certificate for a course just passed.
+     * <p>
+     * Nothing created these before: the table had one writer, a dev seeder, so
+     * the certificates screen was empty for everyone who had actually earned
+     * one. Issued only on the transition, so re-sitting a passed course does not
+     * mint a second.
+     */
+    private void issueCertificate(UUID tenantId, Enrollment enrollment, int score) {
+        UUID userId = enrollment.getUserId();
+        if (certificateRepository.findByTenantIdAndUserId(tenantId, userId).stream()
+                .anyMatch(c -> enrollment.getCourseId().equals(c.getCourseId()))) {
+            return;
+        }
+        String courseTitle = courseRepository.findByTenantIdAndId(tenantId, enrollment.getCourseId())
+                .map(Course::getTitle)
+                .orElse(null);
+        Instant issuedAt = Instant.now();
+        certificateRepository.save(new Certificate(
+                UUID.randomUUID(),
+                tenantId,
+                userId,
+                enrollment.getCourseId(),
+                serial(issuedAt),
+                courseTitle,
+                learnerName(userId),
+                score,
+                issuedAt,
+                // Awareness training goes stale; a certificate that never
+                // expires would let a tenant report someone as trained on a
+                // course they took years ago.
+                issuedAt.plus(java.time.Duration.ofDays(365)),
+                verifyUrl));
+    }
+
+    /** Human-quotable, unique enough to look up, no personal data in it. */
+    private static String serial(Instant issuedAt) {
+        String year = issuedAt.toString().substring(0, 4);
+        String random = UUID.randomUUID().toString().toUpperCase(java.util.Locale.ROOT)
+                .replace("-", "");
+        return "DS-" + year + "-" + random.substring(0, 4) + "-" + random.substring(4, 8);
+    }
+
+    private String learnerName(UUID userId) {
+        return learnerDirectory.find(userId)
+                .map(LearnerDirectory.Learner::displayName)
+                .orElse(null);
     }
 
     private String writeJson(Object value) {
