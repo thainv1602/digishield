@@ -29,10 +29,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * which is the part being tested; proving headers on scaffolding built for the
  * test proves nothing about what ships.
  *
- * <p>The subject is the simulation landing page: the one HTML response the API
- * produces, so the only place a content policy has anything to constrain. An
- * unknown token is used deliberately — the 404 branch carries the same headers
- * and needs no fixture.
+ * <p>No issuer is configured here, so this exercises the locked-down branch of
+ * {@code SecurityConfig} and the request comes back 403 with no body. That is
+ * the point being made: the headers are written on every response whichever
+ * branch runs. Rendering the landing page needs a reachable endpoint, so the
+ * policy's stylesheet hash is checked in {@code SimTrackingPageCspIT} instead —
+ * against the dev chain, which is also the one the weekly scan exercises.
  *
  * <p>Requires Docker.
  */
@@ -75,21 +77,23 @@ class SecurityHeadersIT {
     }
 
     @Test
-    void theLandingPageCarriesAContentSecurityPolicy() throws Exception {
+    void everyResponseCarriesAContentSecurityPolicy() throws Exception {
         mockMvc.perform(get("/api/v1/sim/track/{token}", UUID.randomUUID()))
                 // Scripts are blocked outright; this page runs none.
                 .andExpect(header().string("Content-Security-Policy",
                         Matchers.containsString("default-src 'none'")))
-                // ...but every element is styled with an inline style attribute,
-                // so the page would arrive unformatted without this exception.
+                // The page names its own stylesheet by hash, so nothing here
+                // has to allow inline styles.
                 .andExpect(header().string("Content-Security-Policy",
-                        Matchers.containsString("style-src 'unsafe-inline'")))
+                        Matchers.containsString("style-src 'sha256-")))
+                .andExpect(header().string("Content-Security-Policy",
+                        Matchers.not(Matchers.containsString("unsafe-inline"))))
                 .andExpect(header().string("Content-Security-Policy",
                         Matchers.containsString("frame-ancestors 'none'")));
     }
 
     @Test
-    void theLandingPageCarriesAPermissionsPolicy() throws Exception {
+    void everyResponseCarriesAPermissionsPolicy() throws Exception {
         mockMvc.perform(get("/api/v1/sim/track/{token}", UUID.randomUUID()))
                 .andExpect(header().string("Permissions-Policy",
                         Matchers.containsString("camera=()")));

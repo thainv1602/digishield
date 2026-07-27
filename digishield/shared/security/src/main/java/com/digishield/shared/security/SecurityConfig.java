@@ -90,7 +90,8 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                                   ObjectProvider<CorsConfigurationSource> corsSource)
+                                                   ObjectProvider<CorsConfigurationSource> corsSource,
+                                                   ObjectProvider<CspStyleSource> styleSources)
             throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -173,7 +174,7 @@ public class SecurityConfig {
                     .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .anyRequest().denyAll());
         }
-        SecurityHeaders.apply(http);
+        SecurityHeaders.apply(http, styleSources.stream().toList());
         return http.build();
     }
 
