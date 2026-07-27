@@ -383,6 +383,12 @@ jobs:
       # so the job failed at the upload step every week even when the scan itself
       # passed — a weekly security scan that could never deliver its report.
       # v0.14.0 dropped the deprecated dependency; v0.15.0 is the current release.
+      # Coverage is narrow and worth knowing: the prod-like stack has no
+      # frontend, so `/` 404s and the spider reached 5 URLs on the last run. It
+      # also boots with the `dev` profile, whose permissive chain is not what
+      # ships. What this does check on every response — the security headers —
+      # is real, and is what it caught. Widening it means giving the scan a
+      # frontend and credentials, which is a bigger change than a fix.
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@v0.15.0
         with:

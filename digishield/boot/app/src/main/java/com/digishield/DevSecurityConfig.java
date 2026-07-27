@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import com.digishield.shared.security.SecurityHeaders;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
@@ -38,6 +39,10 @@ public class DevSecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+        // Same headers as production so the two cannot drift, but framing is
+        // allowed from the same origin: the H2 console this profile exists to
+        // serve renders inside a frameset.
+        SecurityHeaders.apply(http, "'self'");
         return http.build();
     }
 }

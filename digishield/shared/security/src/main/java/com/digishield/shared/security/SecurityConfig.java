@@ -173,6 +173,7 @@ public class SecurityConfig {
                     .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                     .anyRequest().denyAll());
         }
+        SecurityHeaders.apply(http);
         return http.build();
     }
 
