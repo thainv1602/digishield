@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -284,5 +285,57 @@ class LearningController {
             @JsonProperty("mandatory") Boolean mandatory,
             @JsonProperty("mapping_json") Object mappingJson,
             @JsonProperty("course_id") UUID courseId) {
+    }
+
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
+    @PostMapping("/api/v1/courses")
+    ResponseEntity<CourseView> createCourse(@RequestBody CourseView request) {
+        UUID tenantId = TenantContext.requireUuid();
+        CourseView created = learningService.createCourse(tenantId, request);
+        return ResponseEntity
+                .created(URI.create("/api/v1/courses/" + created.id()))
+                .body(created);
+    }
+
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
+    @PutMapping("/api/v1/courses/{courseId}")
+    ResponseEntity<CourseView> updateCourse(@PathVariable UUID courseId,
+                                            @RequestBody CourseView request) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(learningService.updateCourse(tenantId, courseId, request));
+    }
+
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
+    @DeleteMapping("/api/v1/courses/{courseId}")
+    ResponseEntity<Void> deleteCourse(@PathVariable UUID courseId) {
+        UUID tenantId = TenantContext.requireUuid();
+        learningService.deleteCourse(tenantId, courseId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
+    @PostMapping("/api/v1/lessons")
+    ResponseEntity<LessonView> createLesson(@RequestBody LessonView request) {
+        UUID tenantId = TenantContext.requireUuid();
+        LessonView created = learningService.createLesson(tenantId, request);
+        return ResponseEntity
+                .created(URI.create("/api/v1/lessons/" + created.id()))
+                .body(created);
+    }
+
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
+    @PutMapping("/api/v1/lessons/{lessonId}")
+    ResponseEntity<LessonView> updateLesson(@PathVariable UUID lessonId,
+                                            @RequestBody LessonView request) {
+        UUID tenantId = TenantContext.requireUuid();
+        return ResponseEntity.ok(learningService.updateLesson(tenantId, lessonId, request));
+    }
+
+    @PreAuthorize("hasAnyRole('CONTENT_EDITOR','MANAGER')")
+    @DeleteMapping("/api/v1/lessons/{lessonId}")
+    ResponseEntity<Void> deleteLesson(@PathVariable UUID lessonId) {
+        UUID tenantId = TenantContext.requireUuid();
+        learningService.deleteLesson(tenantId, lessonId);
+        return ResponseEntity.noContent().build();
     }
 }

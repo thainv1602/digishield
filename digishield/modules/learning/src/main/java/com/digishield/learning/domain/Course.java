@@ -112,6 +112,15 @@ public class Course {
         this.level = level;
     }
 
+    public void setDurationMin(Integer durationMin) {
+        this.durationMin = durationMin;
+    }
+
+    /** Derived from the lessons that exist; not set from a request body. */
+    public void setLessonCount(Integer lessonCount) {
+        this.lessonCount = lessonCount;
+    }
+
     public void setLang(String lang) {
         this.lang = lang;
     }
