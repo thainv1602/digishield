@@ -40,10 +40,12 @@ class PointsAwarderTest {
     @Mock
     private ObjectProvider<LearnerDirectory> directory;
     @Mock
+    private BadgeAwarder badgeAwarder;
+    @Mock
     private LearnerDirectory learnerDirectory;
 
     private PointsAwarder awarder() {
-        return new PointsAwarder(profileRepository, pointRuleRepository, directory);
+        return new PointsAwarder(profileRepository, pointRuleRepository, directory, badgeAwarder);
     }
 
     @Test
@@ -117,6 +119,20 @@ class PointsAwarderTest {
 
         // A missing name is worth less than a missing score.
         assertThat(awarder().award(TENANT_ID, USER_ID, PointAction.QUIZ_PASSED)).isEqualTo(24);
+    }
+
+    @Test
+    void reChecksBadgesAfterEveryScoringEvent() {
+        when(pointRuleRepository.findByTenantIdAndAction(any(), any())).thenReturn(Optional.empty());
+        when(profileRepository.findByTenantIdAndUserId(TENANT_ID, USER_ID))
+                .thenReturn(Optional.of(profile(0)));
+        when(profileRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        awarder().award(TENANT_ID, USER_ID, PointAction.LESSON_COMPLETED);
+
+        // Every earning event flows through here, so this is the single place
+        // badges can be re-evaluated from without missing one.
+        verify(badgeAwarder).evaluate(TENANT_ID, USER_ID);
     }
 
     private static GamificationProfile profile(int points) {

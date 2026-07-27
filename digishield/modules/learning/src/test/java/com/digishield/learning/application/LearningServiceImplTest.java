@@ -60,7 +60,7 @@ class LearningServiceImplTest {
     private com.digishield.learning.api.LearnerDirectory learnerDirectory;
 
     @Mock
-    private com.digishield.learning.api.OffenceHistory offenceHistory;
+    private com.digishield.learning.api.BehaviourHistory behaviourHistory;
 
     @Mock
     private com.digishield.learning.api.PassMarkProvider passMarkProvider;
@@ -207,7 +207,7 @@ class LearningServiceImplTest {
     }
 
     private void givenClicks(int clicks) {
-        when(offenceHistory.simulationClicks(any(), any())).thenReturn(clicks);
+        when(behaviourHistory.simulationClicks(any(), any())).thenReturn(clicks);
     }
 
     @Test

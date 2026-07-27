@@ -149,11 +149,21 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     @Override
     @Transactional(readOnly = true)
     public int simulationClicks(UUID tenantId, UUID userId) {
+        return countSignals(tenantId, userId, RiskSignalType.SIMULATION_CLICK);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int confirmedReports(UUID tenantId, UUID userId) {
+        return countSignals(tenantId, userId, RiskSignalType.PHISHING_REPORT_CONFIRMED);
+    }
+
+    private int countSignals(UUID tenantId, UUID userId, RiskSignalType type) {
         return (int) riskSignalRepository
                 .findByTenantIdAndUserIdAndOccurredAtAfter(
                         tenantId, userId, RiskScoring.windowStart(Instant.now()))
                 .stream()
-                .filter(s -> s.getType() == RiskSignalType.SIMULATION_CLICK)
+                .filter(s -> s.getType() == type)
                 .count();
     }
 

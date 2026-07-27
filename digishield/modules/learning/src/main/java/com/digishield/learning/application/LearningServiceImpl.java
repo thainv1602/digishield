@@ -25,6 +25,7 @@ import com.digishield.learning.domain.Assessment;
 import com.digishield.learning.domain.AssessmentType;
 import com.digishield.learning.domain.Badge;
 import com.digishield.learning.domain.BadgeCatalog;
+import com.digishield.learning.domain.BadgeCriteriaType;
 import com.digishield.learning.domain.PointAction;
 import com.digishield.learning.domain.PointRule;
 import com.digishield.learning.domain.Certificate;
@@ -59,7 +60,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import com.digishield.learning.api.OffenceHistory;
+import com.digishield.learning.api.BehaviourHistory;
 import java.util.Comparator;
 import com.digishield.learning.api.LearnerDirectory;
 import java.time.Instant;
@@ -94,7 +95,7 @@ public class LearningServiceImpl implements LearningService {
      * default is the kind of fault this module has already shipped once.
      */
     private final PassMarkProvider passMarkProvider;
-    private final OffenceHistory offenceHistory;
+    private final BehaviourHistory behaviourHistory;
     private final CompliancePolicyRepository compliancePolicyRepository;
     private final AssessmentRepository assessmentRepository;
     private final CoachingPageRepository coachingPageRepository;
@@ -117,7 +118,7 @@ public class LearningServiceImpl implements LearningService {
                                // Resolved lazily to break a start-up cycle:
                                // this reaches analytics, whose dashboard metrics
                                // reach back into learning.
-                               @Lazy OffenceHistory offenceHistory,
+                               @Lazy BehaviourHistory behaviourHistory,
                                CompliancePolicyRepository compliancePolicyRepository,
                                AssessmentRepository assessmentRepository,
                                CoachingPageRepository coachingPageRepository,
@@ -136,7 +137,7 @@ public class LearningServiceImpl implements LearningService {
         this.learnerDirectory = learnerDirectory;
         this.verifyUrl = verifyUrl == null || verifyUrl.isBlank() ? null : verifyUrl;
         this.passMarkProvider = passMarkProvider;
-        this.offenceHistory = offenceHistory;
+        this.behaviourHistory = behaviourHistory;
         this.compliancePolicyRepository = compliancePolicyRepository;
         this.assessmentRepository = assessmentRepository;
         this.coachingPageRepository = coachingPageRepository;
@@ -305,7 +306,7 @@ public class LearningServiceImpl implements LearningService {
         // The click that triggered this is already recorded, so the count is at
         // least one; a zero would read as "never happened" and pick the gentlest
         // course for someone who just failed.
-        return Math.max(1, offenceHistory.simulationClicks(tenantId, userId));
+        return Math.max(1, behaviourHistory.simulationClicks(tenantId, userId));
     }
 
     @Override
@@ -573,16 +574,16 @@ public class LearningServiceImpl implements LearningService {
     @Transactional(readOnly = true)
     public List<BadgeCatalogView> listBadgeCatalog(UUID tenantId) {
         return badgeCatalogRepository.findByTenantIdOrderByName(tenantId).stream()
-                .map(b -> new BadgeCatalogView(b.getId(), b.getName(), b.getDescription(), b.getIconRef()))
+                .map(LearningServiceImpl::toBadgeCatalogView)
                 .toList();
     }
 
     @Override
     public BadgeCatalogView createBadge(UUID tenantId, BadgeCatalogView command) {
         BadgeCatalog badge = new BadgeCatalog(
-                UUID.randomUUID(), tenantId, command.name(), command.description(), command.iconRef());
-        BadgeCatalog saved = badgeCatalogRepository.save(badge);
-        return new BadgeCatalogView(saved.getId(), saved.getName(), saved.getDescription(), saved.getIconRef());
+                UUID.randomUUID(), tenantId, command.name(), command.description(), command.iconRef(),
+                criteriaType(command.criteriaType()), command.criteriaThreshold());
+        return toBadgeCatalogView(badgeCatalogRepository.save(badge));
     }
 
     @Override
@@ -1042,6 +1043,25 @@ public class LearningServiceImpl implements LearningService {
         return learnerDirectory.find(userId)
                 .map(LearnerDirectory.Learner::displayName)
                 .orElse(null);
+    }
+
+
+    private static BadgeCatalogView toBadgeCatalogView(BadgeCatalog b) {
+        return new BadgeCatalogView(b.getId(), b.getName(), b.getDescription(), b.getIconRef(),
+                b.getCriteriaType() == null ? null : b.getCriteriaType().name(),
+                b.getCriteriaThreshold());
+    }
+
+    /** Rejected at entry, so a badge cannot be defined against a measure nothing reads. */
+    private static BadgeCriteriaType criteriaType(String wire) {
+        if (wire == null || wire.isBlank()) {
+            return null;
+        }
+        try {
+            return BadgeCriteriaType.valueOf(wire.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Tiêu chí không hợp lệ: " + wire, e);
+        }
     }
 
     private String writeJson(Object value) {
