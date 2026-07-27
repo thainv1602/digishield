@@ -19,14 +19,11 @@ public enum PointAction {
     /** Reported a genuine phishing message, confirmed by triage. */
     REPORT_CONFIRMED("report_confirmed", "Báo cáo email lừa đảo đúng", 50),
     /** Passed a course quiz. */
-    QUIZ_PASSED("quiz_passed", "Đạt bài kiểm tra (>=70%)", 24),
+    QUIZ_PASSED("quiz_passed", "Đạt bài kiểm tra", 24),
     /** Finished an assigned course. */
     LESSON_COMPLETED("lesson_completed", "Hoàn thành bài học", 10),
     /** Clicked a simulated phishing link. */
     SIMULATION_CLICKED("simulation_clicked", "Bấm link mô phỏng", -5);
-
-    /** Score at or above which a quiz counts as passed. */
-    public static final int QUIZ_PASS_SCORE = 70;
 
     private final String wireName;
     private final String label;
