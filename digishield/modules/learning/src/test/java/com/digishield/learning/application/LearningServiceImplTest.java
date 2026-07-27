@@ -48,6 +48,9 @@ class LearningServiceImplTest {
     private PointRuleRepository pointRuleRepository;
 
     @Mock
+    private com.digishield.learning.infrastructure.LessonRepository lessonRepository;
+
+    @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
@@ -61,6 +64,79 @@ class LearningServiceImplTest {
 
     @Captor
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
+
+
+    @Test
+    void createCourse_derivesLessonCountRatherThanTrustingTheRequest() {
+        when(courseRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of());
+        when(courseRepository.save(any(Course.class))).thenAnswer(i -> i.getArgument(0));
+
+        // A caller claiming 99 lessons must not be believed: the count is a fact
+        // about the lessons, and a new course has none.
+        learningService.createCourse(TENANT_ID, new com.digishield.learning.api.CourseView(
+                null, null, "An toàn thông tin", "basic", "vi", 30, 99, null, null));
+
+        ArgumentCaptor<Course> saved = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(saved.capture());
+        assertThat(saved.getValue().getLessonCount()).isZero();
+        assertThat(saved.getValue().getTitle()).isEqualTo("An toàn thông tin");
+    }
+
+    @Test
+    void createCourse_rejectsABlankTitle() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        learningService.createCourse(TENANT_ID, new com.digishield.learning.api.CourseView(
+                                null, null, "   ", "basic", "vi", 30, null, null, null)))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(courseRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteCourse_refusesWhileAnyoneIsEnrolled() {
+        UUID courseId = UUID.randomUUID();
+        Course course = new Course(courseId, TENANT_ID, "Khoá cũ", CourseLevel.BASIC, "vi");
+        when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId)).thenReturn(Optional.of(course));
+        when(enrollmentRepository.existsByTenantIdAndCourseId(TENANT_ID, courseId)).thenReturn(true);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        learningService.deleteCourse(TENANT_ID, courseId))
+                .isInstanceOf(IllegalStateException.class);
+
+        // Learner progress points at this course; deleting it would leave those
+        // records referring to nothing.
+        verify(courseRepository, never()).delete(any());
+        verify(lessonRepository, never()).deleteByTenantIdAndCourseId(any(), any());
+    }
+
+    @Test
+    void deleteCourse_removesItsLessonsWhenNobodyIsEnrolled() {
+        UUID courseId = UUID.randomUUID();
+        Course course = new Course(courseId, TENANT_ID, "Khoá rỗng", CourseLevel.BASIC, "vi");
+        when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId)).thenReturn(Optional.of(course));
+        when(enrollmentRepository.existsByTenantIdAndCourseId(TENANT_ID, courseId)).thenReturn(false);
+
+        learningService.deleteCourse(TENANT_ID, courseId);
+
+        verify(lessonRepository).deleteByTenantIdAndCourseId(TENANT_ID, courseId);
+        verify(courseRepository).delete(course);
+    }
+
+    @Test
+    void createLesson_recountsTheCourseFromTheLessonsThatExist() {
+        UUID courseId = UUID.randomUUID();
+        Course course = new Course(courseId, TENANT_ID, "Khoá", CourseLevel.BASIC, "vi", 30, 0, 1);
+        when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId)).thenReturn(Optional.of(course));
+        when(lessonRepository.countByTenantIdAndCourseId(TENANT_ID, courseId)).thenReturn(0, 1);
+        when(lessonRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+        when(courseRepository.save(any(Course.class))).thenAnswer(i -> i.getArgument(0));
+
+        learningService.createLesson(TENANT_ID, new com.digishield.learning.api.LessonView(
+                null, courseId, "Bài 1", "nội dung", null, null, null, 10, 0, java.util.List.of()));
+
+        // The stored count is rewritten from the lessons, so it cannot drift
+        // away from them the way lesson_count would if it were set by hand.
+        assertThat(course.getLessonCount()).isEqualTo(1);
+    }
 
     @Test
     void assign_whenNotYetEnrolled_persistsEnrollmentAndPublishesEvent() {

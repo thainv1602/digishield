@@ -43,4 +43,7 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     Optional<Enrollment> findByTenantIdAndUserIdAndCourseId(UUID tenantId, UUID userId, UUID courseId);
 
     Optional<Enrollment> findByTenantIdAndId(UUID tenantId, UUID id);
+
+    /** Whether anyone is enrolled on a course, so deleting one cannot orphan progress. */
+    boolean existsByTenantIdAndCourseId(UUID tenantId, UUID courseId);
 }

@@ -36,10 +36,28 @@ class SimulationClickListenerTest {
         UserClickedSimulationEvent event =
                 new UserClickedSimulationEvent(tenantId, userId, campaignId);
 
+        org.mockito.Mockito.when(learningService.listCourses(tenantId))
+                .thenReturn(java.util.List.of(new com.digishield.learning.api.CourseView(java.util.UUID.randomUUID(), null, "Khoá", "basic", "vi", 30, 1, null, null)));
+
         // Act
         listener.on(event);
 
         // Assert: the listener delegates to the learning service for auto-enrollment
         verify(learningService).autoEnroll(tenantId, userId);
+    }
+
+    @Test
+    void on_whenCatalogueIsEmpty_skipsInsteadOfFailingForever() {
+        UUID tenantId = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        UUID userId = UUID.randomUUID();
+        org.mockito.Mockito.when(learningService.listCourses(tenantId))
+                .thenReturn(java.util.List.of());
+
+        listener.on(new UserClickedSimulationEvent(tenantId, userId, UUID.randomUUID()));
+
+        // autoEnroll throws with no course, and these events are persistent and
+        // retried — so calling it anyway would fail on every redelivery rather
+        // than once.
+        verify(learningService, org.mockito.Mockito.never()).autoEnroll(tenantId, userId);
     }
 }

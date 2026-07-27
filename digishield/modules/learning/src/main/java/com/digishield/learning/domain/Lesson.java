@@ -73,6 +73,34 @@ public class Lesson {
         this.sortOrder = sortOrder;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    public void setExampleTitle(String exampleTitle) {
+        this.exampleTitle = exampleTitle;
+    }
+
+    public void setExampleBody(String exampleBody) {
+        this.exampleBody = exampleBody;
+    }
+
+    public void setClosing(String closing) {
+        this.closing = closing;
+    }
+
+    public void setCheckpoints(String checkpoints) {
+        this.checkpoints = checkpoints;
+    }
+
+    public void setDurationMin(Integer durationMin) {
+        this.durationMin = durationMin;
+    }
+
     public UUID getId() {
         return id;
     }

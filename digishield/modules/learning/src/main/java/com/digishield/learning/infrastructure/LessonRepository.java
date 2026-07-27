@@ -17,4 +17,10 @@ public interface LessonRepository extends JpaRepository<Lesson, UUID> {
     List<Lesson> findByTenantIdOrderBySortOrderAsc(UUID tenantId);
 
     Optional<Lesson> findByTenantIdAndId(UUID tenantId, UUID id);
+
+    /** Keeps {@code course.lesson_count} honest as lessons come and go. */
+    int countByTenantIdAndCourseId(UUID tenantId, UUID courseId);
+
+    /** Lessons belong to their course and are meaningless once it is gone. */
+    void deleteByTenantIdAndCourseId(UUID tenantId, UUID courseId);
 }

@@ -14,6 +14,33 @@ public interface LearningService {
     List<CourseView> listCourses(UUID tenantId);
 
     /**
+     * Creates a course. Until this existed the catalogue could only be filled by
+     * the dev seeder, so a real tenant had none and {@code autoEnroll} failed.
+     */
+    CourseView createCourse(UUID tenantId, CourseView request);
+
+    /** Updates a course's own fields; lesson count stays derived from lessons. */
+    CourseView updateCourse(UUID tenantId, UUID courseId, CourseView request);
+
+    /**
+     * Deletes a course and its lessons.
+     *
+     * @throws IllegalStateException when anyone is enrolled — their progress
+     *         refers to this course, and removing it would leave records
+     *         pointing at nothing
+     */
+    void deleteCourse(UUID tenantId, UUID courseId);
+
+    /** Adds a lesson to a course, appended after the existing ones. */
+    LessonView createLesson(UUID tenantId, LessonView request);
+
+    /** Updates a lesson in place. */
+    LessonView updateLesson(UUID tenantId, UUID lessonId, LessonView request);
+
+    /** Removes a lesson and corrects its course's lesson count. */
+    void deleteLesson(UUID tenantId, UUID lessonId);
+
+    /**
      * Gets the enrollments of a tenant, optionally filtered by status.
      *
      * @param tenantId tenant

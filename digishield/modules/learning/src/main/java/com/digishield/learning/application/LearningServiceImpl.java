@@ -29,6 +29,7 @@ import com.digishield.learning.domain.Certificate;
 import com.digishield.learning.domain.CoachingPage;
 import com.digishield.learning.domain.CompliancePolicy;
 import com.digishield.learning.domain.Course;
+import com.digishield.learning.domain.CourseLevel;
 import com.digishield.learning.domain.Enrollment;
 import com.digishield.learning.domain.EnrollmentStatus;
 import com.digishield.learning.domain.GamificationProfile;
@@ -254,6 +255,10 @@ public class LearningServiceImpl implements LearningService {
     public LessonView getLesson(UUID tenantId, UUID lessonId) {
         Lesson lesson = lessonRepository.findByTenantIdAndId(tenantId, lessonId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học: " + lessonId));
+        return toLessonView(lesson);
+    }
+
+    private LessonView toLessonView(Lesson lesson) {
         List<LessonView.CheckpointView> checkpoints = new ArrayList<>();
         if (lesson.getCheckpoints() != null && !lesson.getCheckpoints().isBlank()) {
             String[] labels = lesson.getCheckpoints().split("\\s*,\\s*");
@@ -693,6 +698,168 @@ public class LearningServiceImpl implements LearningService {
     }
 
     /** Serializes a generic object into a JSON document (null when empty). */
+
+    @Override
+    @Transactional
+    public CourseView createCourse(UUID tenantId, CourseView request) {
+        Course course = new Course(
+                request.id() != null ? request.id() : UUID.randomUUID(),
+                tenantId,
+                requireTitle(request.title()),
+                level(request.level()),
+                request.lang() != null ? request.lang() : "vi",
+                request.durationMin(),
+                // Derived, never taken from the caller: a course starts with no
+                // lessons, and the count is maintained as they are added.
+                0,
+                nextCourseSortOrder(tenantId));
+        return toCourseView(courseRepository.save(course), null, null);
+    }
+
+    @Override
+    @Transactional
+    public CourseView updateCourse(UUID tenantId, UUID courseId, CourseView request) {
+        Course course = courseRepository.findByTenantIdAndId(tenantId, courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khoá học: " + courseId));
+        if (request.title() != null && !request.title().isBlank()) {
+            course.setTitle(request.title().trim());
+        }
+        if (request.level() != null) {
+            course.setLevel(level(request.level()));
+        }
+        if (request.lang() != null) {
+            course.setLang(request.lang());
+        }
+        if (request.durationMin() != null) {
+            course.setDurationMin(request.durationMin());
+        }
+        // lessonCount is deliberately not writable: it is a fact about the
+        // lessons, and letting it be set by hand is how it starts disagreeing
+        // with them.
+        return toCourseView(courseRepository.save(course), null, null);
+    }
+
+    @Override
+    @Transactional
+    public void deleteCourse(UUID tenantId, UUID courseId) {
+        Course course = courseRepository.findByTenantIdAndId(tenantId, courseId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khoá học: " + courseId));
+        if (enrollmentRepository.existsByTenantIdAndCourseId(tenantId, courseId)) {
+            throw new IllegalStateException(
+                    "Không thể xoá khoá học đang có người học: " + courseId);
+        }
+        lessonRepository.deleteByTenantIdAndCourseId(tenantId, courseId);
+        courseRepository.delete(course);
+    }
+
+    @Override
+    @Transactional
+    public LessonView createLesson(UUID tenantId, LessonView request) {
+        UUID courseId = request.courseId();
+        Course course = courseRepository.findByTenantIdAndId(tenantId, courseId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy khoá học cho bài học: " + courseId));
+        Lesson lesson = new Lesson(
+                request.id() != null ? request.id() : UUID.randomUUID(),
+                tenantId,
+                courseId,
+                requireTitle(request.title()),
+                request.body(),
+                request.exampleTitle(),
+                request.example(),
+                request.closing(),
+                checkpointLabels(request.checkpoints()),
+                request.durationMin(),
+                lessonRepository.countByTenantIdAndCourseId(tenantId, courseId) + 1);
+        Lesson saved = lessonRepository.save(lesson);
+        refreshLessonCount(tenantId, course);
+        return toLessonView(saved);
+    }
+
+    @Override
+    @Transactional
+    public LessonView updateLesson(UUID tenantId, UUID lessonId, LessonView request) {
+        Lesson lesson = lessonRepository.findByTenantIdAndId(tenantId, lessonId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học: " + lessonId));
+        if (request.title() != null && !request.title().isBlank()) {
+            lesson.setTitle(request.title().trim());
+        }
+        if (request.body() != null) {
+            lesson.setBody(request.body());
+        }
+        if (request.exampleTitle() != null) {
+            lesson.setExampleTitle(request.exampleTitle());
+        }
+        if (request.example() != null) {
+            lesson.setExampleBody(request.example());
+        }
+        if (request.closing() != null) {
+            lesson.setClosing(request.closing());
+        }
+        if (request.durationMin() != null) {
+            lesson.setDurationMin(request.durationMin());
+        }
+        if (request.checkpoints() != null && !request.checkpoints().isEmpty()) {
+            lesson.setCheckpoints(checkpointLabels(request.checkpoints()));
+        }
+        return toLessonView(lessonRepository.save(lesson));
+    }
+
+    @Override
+    @Transactional
+    public void deleteLesson(UUID tenantId, UUID lessonId) {
+        Lesson lesson = lessonRepository.findByTenantIdAndId(tenantId, lessonId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy bài học: " + lessonId));
+        UUID courseId = lesson.getCourseId();
+        lessonRepository.delete(lesson);
+        courseRepository.findByTenantIdAndId(tenantId, courseId)
+                .ifPresent(course -> refreshLessonCount(tenantId, course));
+    }
+
+    /** Rewrites the stored count from the lessons that actually exist. */
+    private void refreshLessonCount(UUID tenantId, Course course) {
+        course.setLessonCount(lessonRepository.countByTenantIdAndCourseId(tenantId, course.getId()));
+        courseRepository.save(course);
+    }
+
+    private int nextCourseSortOrder(UUID tenantId) {
+        return courseRepository.findByTenantId(tenantId).stream()
+                .map(Course::getSortOrder)
+                .filter(java.util.Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .max()
+                .orElse(0) + 1;
+    }
+
+    private static String requireTitle(String title) {
+        if (title == null || title.isBlank()) {
+            throw new IllegalArgumentException("Tiêu đề không được để trống");
+        }
+        return title.trim();
+    }
+
+    /** Checkpoints are stored as a comma-separated list of labels. */
+    private static String checkpointLabels(List<LessonView.CheckpointView> checkpoints) {
+        if (checkpoints == null || checkpoints.isEmpty()) {
+            return null;
+        }
+        return checkpoints.stream()
+                .map(LessonView.CheckpointView::label)
+                .filter(l -> l != null && !l.isBlank())
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private static CourseLevel level(String wire) {
+        if (wire == null || wire.isBlank()) {
+            return CourseLevel.BASIC;
+        }
+        try {
+            return CourseLevel.valueOf(wire.trim().toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Cấp độ không hợp lệ: " + wire);
+        }
+    }
+
     private String writeJson(Object value) {
         if (value == null) {
             return null;

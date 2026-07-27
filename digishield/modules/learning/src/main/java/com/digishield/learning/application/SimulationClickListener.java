@@ -2,6 +2,8 @@ package com.digishield.learning.application;
 
 import com.digishield.contracts.events.UserClickedSimulationEvent;
 import com.digishield.learning.api.LearningService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Component;
 @Component
 class SimulationClickListener {
 
+    private static final Logger log = LoggerFactory.getLogger(SimulationClickListener.class);
+
     private final LearningService learningService;
 
     SimulationClickListener(LearningService learningService) {
@@ -25,6 +29,15 @@ class SimulationClickListener {
 
     @ApplicationModuleListener
     void on(UserClickedSimulationEvent event) {
+        // A tenant with an empty catalogue has nothing to assign. Calling
+        // autoEnroll anyway throws, and because these events are persistent and
+        // retried, one click would fail forever rather than once — noisily, and
+        // with nothing anybody can do about it until a course exists.
+        if (learningService.listCourses(event.tenantId()).isEmpty()) {
+            log.warn("No course in the catalogue for tenant {}; remediation not assigned to user {}",
+                    event.tenantId(), event.userId());
+            return;
+        }
         learningService.autoEnroll(event.tenantId(), event.userId());
     }
 }
