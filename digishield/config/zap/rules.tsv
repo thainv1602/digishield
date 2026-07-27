@@ -2,3 +2,4 @@
 10027	IGNORE	(Information Disclosure - Suspicious Comments in dev builds)
 10015	WARN	(Re-examine Cache-control Directives)
 90005	IGNORE	(Sec-Fetch headers - not enforced on the permissive dev profile)
+10049	IGNORE	(Non-Storable Content - Spring sends Cache-Control: no-store, which is what an authenticated API should do)
