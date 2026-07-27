@@ -54,10 +54,10 @@ class LearningServiceImplTest {
     private PointsAwarder pointsAwarder;
 
     @Mock
-    private org.springframework.beans.factory.ObjectProvider<com.digishield.learning.api.PassMarkProvider> passMarkProvider;
+    private com.digishield.learning.api.OffenceHistory offenceHistory;
 
     @Mock
-    private com.digishield.learning.api.PassMarkProvider passMark;
+    private com.digishield.learning.api.PassMarkProvider passMarkProvider;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -74,6 +74,70 @@ class LearningServiceImplTest {
     @Captor
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
 
+
+    @Test
+    void autoEnroll_sendsARepeatClickerUpALevel() {
+        UUID userId = UUID.randomUUID();
+        Course basic = new Course(UUID.randomUUID(), TENANT_ID, "Nhập môn", CourseLevel.BASIC, "vi");
+        Course harder = new Course(UUID.randomUUID(), TENANT_ID, "Nâng cao", CourseLevel.INTERMEDIATE, "vi");
+        when(courseRepository.findByTenantIdOrderBySortOrderAsc(TENANT_ID))
+                .thenReturn(java.util.List.of(basic, harder));
+        givenClicks(2);
+        when(enrollmentRepository.findByTenantIdAndUserIdAndCourseId(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(enrollmentRepository.save(any(Enrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        learningService.autoEnroll(TENANT_ID, userId);
+
+        // A second click used to be answered with the same introduction as the
+        // first, because autoEnroll took whatever course came back first.
+        verify(enrollmentRepository).save(enrollmentCaptor.capture());
+        assertThat(enrollmentCaptor.getValue().getCourseId()).isEqualTo(harder.getId());
+    }
+
+    @Test
+    void autoEnroll_stopsAtTheHardestCourseTheTenantHas() {
+        UUID userId = UUID.randomUUID();
+        Course basic = new Course(UUID.randomUUID(), TENANT_ID, "Nhập môn", CourseLevel.BASIC, "vi");
+        Course harder = new Course(UUID.randomUUID(), TENANT_ID, "Nâng cao", CourseLevel.INTERMEDIATE, "vi");
+        when(courseRepository.findByTenantIdOrderBySortOrderAsc(TENANT_ID))
+                .thenReturn(java.util.List.of(basic, harder));
+        givenClicks(9);
+        when(enrollmentRepository.findByTenantIdAndUserIdAndCourseId(any(), any(), any()))
+                .thenReturn(Optional.empty());
+        when(enrollmentRepository.save(any(Enrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        learningService.autoEnroll(TENANT_ID, userId);
+
+        // The ladder cannot climb past the courses that exist.
+        verify(enrollmentRepository).save(enrollmentCaptor.capture());
+        assertThat(enrollmentCaptor.getValue().getCourseId()).isEqualTo(harder.getId());
+    }
+
+    @Test
+    void assign_reopensACourseTheyHadAlreadyFinished() {
+        UUID userId = UUID.randomUUID();
+        UUID courseId = UUID.randomUUID();
+        Enrollment finished = new Enrollment(UUID.randomUUID(), TENANT_ID, userId, courseId,
+                EnrollmentStatus.COMPLETED, 100);
+        finished.setProgress(100);
+        when(enrollmentRepository.findByTenantIdAndUserIdAndCourseId(TENANT_ID, userId, courseId))
+                .thenReturn(Optional.of(finished));
+        when(enrollmentRepository.save(any(Enrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        learningService.assign(TENANT_ID, userId, courseId);
+
+        // Being assigned it again means it is needed again. This used to return
+        // the completed record untouched, so a repeat offence produced no
+        // training and the person stayed compliant on the first attempt.
+        assertThat(finished.getStatus()).isEqualTo(EnrollmentStatus.ASSIGNED);
+        assertThat(finished.getProgress()).isZero();
+        assertThat(finished.getScore()).isNull();
+    }
+
+    private void givenClicks(int clicks) {
+        when(offenceHistory.simulationClicks(any(), any())).thenReturn(clicks);
+    }
 
     @Test
     void completeQuiz_paysOnceForCompletionAndOnceForPassing() {
@@ -159,8 +223,7 @@ class LearningServiceImplTest {
     }
 
     private void givenPassMark(int pct) {
-        when(passMarkProvider.getIfAvailable()).thenReturn(passMark);
-        when(passMark.passScorePct(TENANT_ID)).thenReturn(pct);
+        when(passMarkProvider.passScorePct(TENANT_ID)).thenReturn(pct);
     }
 
     @Test
@@ -312,7 +375,9 @@ class LearningServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
         Course course = new Course(courseId, TENANT_ID, "Phishing 101", CourseLevel.BEGINNER, "en");
-        when(courseRepository.findFirstByTenantId(TENANT_ID)).thenReturn(Optional.of(course));
+        when(courseRepository.findByTenantIdOrderBySortOrderAsc(TENANT_ID))
+                .thenReturn(java.util.List.of(course));
+        givenClicks(1);
         when(enrollmentRepository.findByTenantIdAndUserIdAndCourseId(TENANT_ID, userId, courseId))
                 .thenReturn(Optional.empty());
         when(enrollmentRepository.save(any(Enrollment.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -334,7 +399,9 @@ class LearningServiceImplTest {
     void autoEnroll_whenNoCourseForTenant_throwsIllegalState() {
         // Arrange
         UUID userId = UUID.randomUUID();
-        when(courseRepository.findFirstByTenantId(TENANT_ID)).thenReturn(Optional.empty());
+        when(courseRepository.findByTenantIdOrderBySortOrderAsc(TENANT_ID))
+                .thenReturn(java.util.List.of());
+        when(courseRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of());
 
         // Act + Assert
         org.assertj.core.api.Assertions.assertThatThrownBy(

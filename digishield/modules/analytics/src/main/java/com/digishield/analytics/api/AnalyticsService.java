@@ -46,6 +46,15 @@ public interface AnalyticsService {
     RiskScore recordConfirmedReport(UUID tenantId, UUID userId);
 
     /**
+     * How many simulations this user has clicked inside the scoring window.
+     * <p>
+     * Analytics already records each click as a risk signal; this counts them so
+     * remediation can be pitched at someone's actual history rather than
+     * treating a fifth click like a first.
+     */
+    int simulationClicks(UUID tenantId, UUID userId);
+
+    /**
      * Gets the average benchmark score for a scope.
      *
      * @param scope the scope to benchmark
