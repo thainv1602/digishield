@@ -37,17 +37,32 @@ public class RiskScore {
     @Column(name = "computed_at", nullable = false)
     private Instant computedAt;
 
+    /**
+     * Measured share (%) of this scope's people who clicked a simulation in the
+     * scoring window. Null on rows written before the rollup job existed, and on
+     * any score recorded from a single user's signals — a share needs a group.
+     */
+    @Column(name = "phish_prone_pct")
+    private Double phishPronePct;
+
     protected RiskScore() {
         // Required by JPA.
     }
 
+    /** A score with no measured rate — a single user's, or a pre-rollup row. */
     public RiskScore(UUID id, UUID tenantId, RiskScope scope, UUID scopeId, int value, Instant computedAt) {
+        this(id, tenantId, scope, scopeId, value, computedAt, null);
+    }
+
+    public RiskScore(UUID id, UUID tenantId, RiskScope scope, UUID scopeId, int value,
+                     Instant computedAt, Double phishPronePct) {
         this.id = id;
         this.tenantId = tenantId;
         this.scope = scope;
         this.scopeId = scopeId;
         this.value = value;
         this.computedAt = computedAt;
+        this.phishPronePct = phishPronePct;
     }
 
     public UUID getId() {
@@ -64,6 +79,10 @@ public class RiskScore {
 
     public UUID getScopeId() {
         return scopeId;
+    }
+
+    public Double getPhishPronePct() {
+        return phishPronePct;
     }
 
     public int getValue() {
