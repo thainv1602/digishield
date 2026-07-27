@@ -57,4 +57,18 @@ public interface NotificationService {
      * @return the scheduled reminder notifications
      */
     List<Notification> scheduleReminders(Map<String, Object> targetFilter, String dueRule, NotificationChannel channel);
+
+    /**
+     * How many messages the tenant successfully sent on a channel in the
+     * window, for usage metering.
+     * <p>
+     * Only {@code SENT} counts. An attempt that failed delivered nothing and
+     * cost nothing, so metering it would overstate both.
+     *
+     * @param channel channel name — {@code EMAIL}, {@code SMS} or {@code IN_APP}
+     * @param from    inclusive start of the window
+     * @param to      exclusive end
+     */
+    long countSent(java.util.UUID tenantId, String channel,
+                   java.time.Instant from, java.time.Instant to);
 }
