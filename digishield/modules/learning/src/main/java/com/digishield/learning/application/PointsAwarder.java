@@ -27,13 +27,16 @@ public class PointsAwarder {
     private final GamificationProfileRepository profileRepository;
     private final PointRuleRepository pointRuleRepository;
     private final ObjectProvider<LearnerDirectory> directory;
+    private final BadgeAwarder badgeAwarder;
 
     PointsAwarder(GamificationProfileRepository profileRepository,
                   PointRuleRepository pointRuleRepository,
-                  ObjectProvider<LearnerDirectory> directory) {
+                  ObjectProvider<LearnerDirectory> directory,
+                  BadgeAwarder badgeAwarder) {
         this.profileRepository = profileRepository;
         this.pointRuleRepository = pointRuleRepository;
         this.directory = directory;
+        this.badgeAwarder = badgeAwarder;
     }
 
     /**
@@ -52,6 +55,11 @@ public class PointsAwarder {
 
         log.info("Points {}{} to user {} for {} (tenant {}), now {}",
                 points >= 0 ? "+" : "", points, userId, action.wireName(), tenantId, saved.getPoints());
+
+        // Every scoring event runs through here — a report confirmed, a course
+        // finished, a quiz passed — so this is the one place badges have to be
+        // re-checked from.
+        badgeAwarder.evaluate(tenantId, userId);
         return saved.getPoints();
     }
 

@@ -1,5 +1,7 @@
 package com.digishield.learning.domain;
 
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.EnumType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -36,11 +38,27 @@ public class BadgeCatalog {
     @Column(name = "created_at", insertable = false, updatable = false)
     private Instant createdAt;
 
+    /** What earns this badge; null when nothing awards it automatically. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "criteria_type")
+    private BadgeCriteriaType criteriaType;
+
+    /** Value the measure must reach. */
+    @Column(name = "criteria_threshold")
+    private Integer criteriaThreshold;
+
     /** Default constructor required by JPA. */
     protected BadgeCatalog() {
     }
 
     public BadgeCatalog(UUID id, UUID tenantId, String name, String description, String iconRef) {
+        this(id, tenantId, name, description, iconRef, null, null);
+    }
+
+    public BadgeCatalog(UUID id, UUID tenantId, String name, String description, String iconRef,
+                        BadgeCriteriaType criteriaType, Integer criteriaThreshold) {
+        this.criteriaType = criteriaType;
+        this.criteriaThreshold = criteriaThreshold;
         this.id = id;
         this.tenantId = tenantId;
         this.name = name;
@@ -82,5 +100,13 @@ public class BadgeCatalog {
 
     public void setIconRef(String iconRef) {
         this.iconRef = iconRef;
+    }
+
+    public BadgeCriteriaType getCriteriaType() {
+        return criteriaType;
+    }
+
+    public Integer getCriteriaThreshold() {
+        return criteriaThreshold;
     }
 }

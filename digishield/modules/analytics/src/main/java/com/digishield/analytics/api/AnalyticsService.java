@@ -55,6 +55,13 @@ public interface AnalyticsService {
     int simulationClicks(UUID tenantId, UUID userId);
 
     /**
+     * How many of this user's phishing reports triage confirmed as genuine,
+     * inside the scoring window. Recorded already as a risk signal; counted here
+     * so badges can be earned on evidence rather than on prose.
+     */
+    int confirmedReports(UUID tenantId, UUID userId);
+
+    /**
      * Gets the average benchmark score for a scope.
      *
      * @param scope the scope to benchmark
