@@ -26,16 +26,17 @@ spec:
     - http:
         paths:
           {{- if .Values.frontend.enabled }}
-          # With the in-cluster frontend, the API keeps /api + /actuator and
-          # everything else serves the SPA (longest prefix wins).
+          # With the in-cluster frontend, the API keeps /api and everything else
+          # serves the SPA (longest prefix wins).
+          #
+          # /actuator is deliberately not routed. Once actuator moved to the
+          # management port it served nothing here but 401 and 404, so the route
+          # only invited people to probe it — and publishing it is how metrics
+          # ended up readable from the internet in the first place. Health and
+          # metrics are reached inside the cluster; kubelet probes go straight to
+          # the pod. To check the app is alive from outside, GET /api/v1/qr?data=ok
+          # — 200, and it discloses nothing.
           - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ .Release.Name }}-api
-                port:
-                  number: {{ .Values.service.port }}
-          - path: /actuator
             pathType: Prefix
             backend:
               service:
