@@ -379,8 +379,12 @@ jobs:
           echo "::error::API did not become healthy in time."
           docker compose -f deploy/compose/docker-compose.prodlike.yml logs --tail=200
           exit 1
+      # v0.12.0 uploaded its reports through the retired upload-artifact v3 API,
+      # so the job failed at the upload step every week even when the scan itself
+      # passed — a weekly security scan that could never deliver its report.
+      # v0.14.0 dropped the deprecated dependency; v0.15.0 is the current release.
       - name: ZAP baseline scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: "http://localhost:8080"
           rules_file_name: digishield/config/zap/rules.tsv
