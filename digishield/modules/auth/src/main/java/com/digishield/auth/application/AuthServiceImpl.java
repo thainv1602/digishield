@@ -69,31 +69,42 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public Optional<CurrentUser> currentUser() {
-        return currentUser(null);
-    }
-
-    @Override
-    public Optional<CurrentUser> currentUser(String roleHint) {
         String rawTenantId = TenantContext.get();
         if (rawTenantId == null || rawTenantId.isBlank()) {
             return Optional.empty();
         }
         UUID tenantId = TenantContext.requireUuid();
-        List<AppUser> tenantUsers = userRepository.findAll().stream()
-                .filter(u -> tenantId.equals(u.getTenantId()))
-                .toList();
 
-        // If a demo role is requested (dev: X-Demo-Role), prefer that persona.
-        if (roleHint != null && !roleHint.isBlank()) {
-            Role wanted = Role.fromWireName(roleHint);
-            Optional<AppUser> match = tenantUsers.stream()
-                    .filter(u -> u.getRole() == wanted)
-                    .findFirst();
-            if (match.isPresent()) {
-                return match.map(this::toView);
+        Optional<Jwt> jwt = currentJwt();
+        if (jwt.isEmpty()) {
+            // No token at all: the dev stub provider issues static tokens and
+            // carries no identity, so there is nobody to resolve. The first
+            // tenant user stands in, which is only meaningful because a dev
+            // database has one.
+            return userRepository.findAll().stream()
+                    .filter(u -> tenantId.equals(u.getTenantId()))
+                    .findFirst()
+                    .map(this::toView);
+        }
+
+        // Identify the caller, rather than returning whoever happens to be
+        // first. Two identifiers are tried because directory rows are not all
+        // created the same way: SCIM and self-service rows carry the token's
+        // subject as their id, while rows inserted when a tenant is bootstrapped
+        // get a generated id and are only recognisable by email.
+        UUID sub = subjectUuid(jwt.get());
+        if (sub != null) {
+            Optional<CurrentUser> bySubject =
+                    userRepository.findByTenantIdAndId(tenantId, sub).map(this::toView);
+            if (bySubject.isPresent()) {
+                return bySubject;
             }
         }
-        return tenantUsers.stream().findFirst().map(this::toView);
+        String email = jwt.get().getClaimAsString("email");
+        if (email != null && !email.isBlank()) {
+            return userRepository.findByTenantIdAndEmail(tenantId, email).map(this::toView);
+        }
+        return Optional.empty();
     }
 
     @Override
@@ -268,7 +279,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public TokenPair login(String email, String password, String roleHint) {
+    public TokenPair login(String email, String password) {
         try {
             TokenPair tokens = authProvider.login(email, password);
             audit("user.login", "user:" + email, AuditRecorder.Severity.STANDARD);

@@ -113,12 +113,12 @@ Optional H2 web console: `http://localhost:8080/h2-console`
 
 ### Dev auth & users endpoints
 
-- `POST /api/v1/auth/login` — body `{ "email", "password", "role"? }` → `TokenPair`
-  `{ access_token, refresh_token, expires_in }` (dev returns static tokens; the
-  optional `role` picks the demo persona).
+- `POST /api/v1/auth/login` — body `{ "email", "password" }` → `TokenPair`
+  `{ access_token, refresh_token, expires_in }` (dev returns static tokens).
 - `POST /api/v1/auth/refresh` — body `{ "refresh_token" }` → `TokenPair`.
-- `GET /api/v1/auth/me` — current user `{ id, tenantId, email, role, name }`.
-  Send `X-Demo-Role: <role>` (e.g. `analyst`) to switch persona.
+- `GET /api/v1/auth/me` — the signed-in user `{ id, tenantId, email, role, name }`,
+  resolved from the token. Without a token (dev stub provider) it falls back to
+  the tenant's first user, since there is no identity to resolve.
 - `GET /api/v1/users` — users for the Users screen
   (`id, org_id, email, name, role, status, department, riskScore / risk_score`).
 

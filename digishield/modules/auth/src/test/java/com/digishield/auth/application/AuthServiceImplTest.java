@@ -45,6 +45,20 @@ class AuthServiceImplTest {
     private static final UUID TENANT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID OTHER_TENANT_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
 
+    /** Puts a JWT in the security context the way the resource server would. */
+    private static void authenticateAs(UUID subject, String email) {
+        var builder = org.springframework.security.oauth2.jwt.Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .subject(subject.toString());
+        if (email != null) {
+            builder = builder.claim("email", email);
+        }
+        var jwt = builder.build();
+        SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.oauth2.server.resource.authentication
+                        .JwtAuthenticationToken(jwt, List.of()));
+    }
+
     @Mock
     private AppUserRepository userRepository;
 
@@ -75,7 +89,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenTenantHasUser_returnsFirstUserOfTenant() {
+    void currentUser_whenNoToken_fallsBackToFirstUserOfTenant() {
         // Arrange
         AppUser otherTenantUser = new AppUser(
                 UUID.randomUUID(), OTHER_TENANT_ID, "other@x.com", Role.LEARNER, UserStatus.ACTIVE);
@@ -93,6 +107,57 @@ class AuthServiceImplTest {
         assertThat(result.get().tenantId()).isEqualTo(TENANT_ID);
         assertThat(result.get().email()).isEqualTo("admin@x.com");
         assertThat(result.get().role()).isEqualTo("TENANT_ADMIN");
+    }
+
+    @Test
+    void currentUser_whenTokenPresent_resolvesTheCallerNotWhoeverIsFirst() {
+        UUID callerId = UUID.randomUUID();
+        AppUser caller = new AppUser(
+                callerId, TENANT_ID, "learner@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, callerId)).thenReturn(Optional.of(caller));
+        authenticateAs(callerId, null);
+
+        Optional<CurrentUser> result = authService.currentUser();
+
+        // /me used to return the tenant's first row regardless of who asked, so
+        // an admin listed ahead of the caller would be reported as the caller.
+        assertThat(result).isPresent();
+        assertThat(result.get().id()).isEqualTo(callerId);
+        assertThat(result.get().role()).isEqualTo("LEARNER");
+        verify(userRepository, never()).findAll();
+    }
+
+    @Test
+    void currentUser_whenSubjectIsNotADirectoryId_fallsBackToTheEmailClaim() {
+        UUID subject = UUID.randomUUID();
+        UUID rowId = UUID.randomUUID();
+        AppUser caller = new AppUser(
+                rowId, TENANT_ID, "boss@x.com", Role.SUPER_ADMIN, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, subject)).thenReturn(Optional.empty());
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "boss@x.com"))
+                .thenReturn(Optional.of(caller));
+        authenticateAs(subject, "boss@x.com");
+
+        Optional<CurrentUser> result = authService.currentUser();
+
+        // Rows created when a tenant is bootstrapped get a generated id rather
+        // than the token's subject, so email is the only thing linking them.
+        assertThat(result).isPresent();
+        assertThat(result.get().id()).isEqualTo(rowId);
+    }
+
+    @Test
+    void currentUser_whenTokenIdentifiesNobody_returnsEmpty() {
+        UUID subject = UUID.randomUUID();
+        when(userRepository.findByTenantIdAndId(TENANT_ID, subject)).thenReturn(Optional.empty());
+        authenticateAs(subject, "stranger@x.com");
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "stranger@x.com"))
+                .thenReturn(Optional.empty());
+
+        Optional<CurrentUser> result = authService.currentUser();
+
+        // Better to say nothing than to hand back an arbitrary tenant member.
+        assertThat(result).isEmpty();
     }
 
     @Test

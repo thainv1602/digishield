@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,15 +32,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
  *   <li>{@code GET /api/v1/auth/me} -> the current user</li>
  * </ul>
  *
- * <p>In the dev profile credentials are not validated; an optional {@code role}
- * (login body) or {@code X-Demo-Role} header selects the demo persona.
+ * <p>In the dev profile credentials are not validated by the stub provider.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
 class AuthController {
-
-    /** Header used in dev to switch the demo persona returned by {@code /me}. */
-    static final String DEMO_ROLE_HEADER = "X-Demo-Role";
 
     private final AuthService authService;
 
@@ -55,7 +50,7 @@ class AuthController {
     @PostMapping("/login")
     ResponseEntity<TokenPair> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(
-                authService.login(request.email(), request.password(), request.role()));
+                authService.login(request.email(), request.password()));
     }
 
     /**
@@ -124,9 +119,8 @@ class AuthController {
      */
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/me")
-    ResponseEntity<MeResponse> me(
-            @RequestHeader(name = DEMO_ROLE_HEADER, required = false) String demoRole) {
-        return authService.currentUser(demoRole)
+    ResponseEntity<MeResponse> me() {
+        return authService.currentUser()
                 .map(MeResponse::from)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(401).build());
@@ -167,8 +161,8 @@ class AuthController {
                 "mfa_token", ex.getMfaToken()));
     }
 
-    /** Login request body. {@code role} is an optional dev demo-persona hint. */
-    record LoginRequest(String email, String password, String role) {
+    /** Login request body. */
+    record LoginRequest(String email, String password) {
     }
 
     /** Refresh request body (snake_case to match the OpenAPI contract). */

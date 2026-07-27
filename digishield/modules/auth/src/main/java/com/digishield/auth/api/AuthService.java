@@ -17,15 +17,6 @@ public interface AuthService {
     Optional<CurrentUser> currentUser();
 
     /**
-     * Gets the current user, optionally selecting a demo persona by role
-     * (used in the dev profile via the {@code X-Demo-Role} header). In prod the
-     * {@code roleHint} is ignored.
-     *
-     * @param roleHint snake_case role to pick a demo persona, may be {@code null}
-     */
-    Optional<CurrentUser> currentUser(String roleHint);
-
-    /**
      * Finds a user by identifier within the scope of the current tenant.
      */
     Optional<CurrentUser> findById(UUID userId);
@@ -87,7 +78,7 @@ public interface AuthService {
      * @param password the password (ignored in dev)
      * @param roleHint optional snake_case role to pick a demo persona
      */
-    TokenPair login(String email, String password, String roleHint);
+    TokenPair login(String email, String password);
 
     /**
      * Issues a fresh token pair from a refresh token.
