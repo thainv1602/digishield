@@ -105,18 +105,18 @@ class RiskRollupIT {
             s.execute("DELETE FROM app_user");
             s.execute("DELETE FROM tenant");
 
-            insertTenant(s, TENANT_A, "Alpha");
-            insertTenant(s, TENANT_B, "Beta");
+            insertTenant(c, TENANT_A, "Alpha");
+            insertTenant(c, TENANT_B, "Beta");
 
             // Tenant A: two people in Kế toán, one of whom clicked; one in IT.
             UUID clicker = UUID.randomUUID();
-            insertUser(s, TENANT_A, clicker, "clicker@a.test", "Kế toán");
-            insertUser(s, TENANT_A, UUID.randomUUID(), "quiet@a.test", "Kế toán");
-            insertUser(s, TENANT_A, UUID.randomUUID(), "it@a.test", "IT");
-            insertSignal(s, TENANT_A, clicker);
+            insertUser(c, TENANT_A, clicker, "clicker@a.test", "Kế toán");
+            insertUser(c, TENANT_A, UUID.randomUUID(), "quiet@a.test", "Kế toán");
+            insertUser(c, TENANT_A, UUID.randomUUID(), "it@a.test", "IT");
+            insertSignal(c, TENANT_A, clicker);
 
             // Tenant B exists only to be left alone.
-            insertUser(s, TENANT_B, UUID.randomUUID(), "someone@b.test", "Kế toán");
+            insertUser(c, TENANT_B, UUID.randomUUID(), "someone@b.test", "Kế toán");
         }
     }
 
@@ -215,22 +215,40 @@ class RiskRollupIT {
         }
     }
 
-    private static void insertTenant(java.sql.Statement s, UUID tenantId, String name)
+    private static void insertTenant(java.sql.Connection c, UUID tenantId, String name)
             throws java.sql.SQLException {
-        s.execute("INSERT INTO tenant (id, tenant_id, name, tier, data_region, status) VALUES ('"
-                + tenantId + "', '" + tenantId + "', '" + name + "', 'SILO', 'in-country', 'ACTIVE')");
+        try (var ps = c.prepareStatement(
+                "INSERT INTO tenant (id, tenant_id, name, tier, data_region, status) "
+                        + "VALUES (?, ?, ?, 'SILO', 'in-country', 'ACTIVE')")) {
+            ps.setObject(1, tenantId);
+            ps.setObject(2, tenantId);
+            ps.setString(3, name);
+            ps.executeUpdate();
+        }
     }
 
-    private static void insertUser(java.sql.Statement s, UUID tenantId, UUID id, String email,
+    private static void insertUser(java.sql.Connection c, UUID tenantId, UUID id, String email,
                                    String department) throws java.sql.SQLException {
-        s.execute("INSERT INTO app_user (id, tenant_id, email, role, status, department) VALUES ('"
-                + id + "', '" + tenantId + "', '" + email + "', 'LEARNER', 'ACTIVE', '" + department + "')");
+        try (var ps = c.prepareStatement(
+                "INSERT INTO app_user (id, tenant_id, email, role, status, department) "
+                        + "VALUES (?, ?, ?, 'LEARNER', 'ACTIVE', ?)")) {
+            ps.setObject(1, id);
+            ps.setObject(2, tenantId);
+            ps.setString(3, email);
+            ps.setString(4, department);
+            ps.executeUpdate();
+        }
     }
 
-    private static void insertSignal(java.sql.Statement s, UUID tenantId, UUID userId)
+    private static void insertSignal(java.sql.Connection c, UUID tenantId, UUID userId)
             throws java.sql.SQLException {
-        s.execute("INSERT INTO risk_signal (id, tenant_id, user_id, type, weight, occurred_at) VALUES ('"
-                + UUID.randomUUID() + "', '" + tenantId + "', '" + userId
-                + "', 'SIMULATION_CLICK', 25, now() - interval '1 day')");
+        try (var ps = c.prepareStatement(
+                "INSERT INTO risk_signal (id, tenant_id, user_id, type, weight, occurred_at) "
+                        + "VALUES (?, ?, ?, 'SIMULATION_CLICK', 25, now() - interval '1 day')")) {
+            ps.setObject(1, UUID.randomUUID());
+            ps.setObject(2, tenantId);
+            ps.setObject(3, userId);
+            ps.executeUpdate();
+        }
     }
 }
