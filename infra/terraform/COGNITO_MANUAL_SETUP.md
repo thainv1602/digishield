@@ -177,16 +177,34 @@ aws cognito-idp update-user-pool --user-pool-id "$POOL_ID" \
 
 ## 7. Create a user and assign a role
 
+The password is generated, never chosen and never written down here. A password
+in a guide is a password in everyone's git history: this file used to set
+`ChangeMe#2026`, and the accounts created from it stayed reachable long after
+the file was read by people who had no business signing in. Deleting the
+accounts fixed those; nothing removes the string from the history, so the guide
+must stop handing one out.
+
 ```bash
+EMAIL=admin@coquan.gov.vn          # the real person's address
+PASSWORD="$(head -c 18 /dev/urandom | base64 | tr -d /+=)Aa1!"
+
 aws cognito-idp admin-create-user --user-pool-id "$POOL_ID" \
-  --username admin@coquan.gov.vn \
-  --user-attributes Name=email,Value=admin@coquan.gov.vn Name=email_verified,Value=true \
+  --username "$EMAIL" \
+  --user-attributes Name=email,Value="$EMAIL" Name=email_verified,Value=true \
   --message-action SUPPRESS
 aws cognito-idp admin-set-user-password --user-pool-id "$POOL_ID" \
-  --username admin@coquan.gov.vn --password 'ChangeMe#2026' --permanent
+  --username "$EMAIL" --password "$PASSWORD" --permanent
 aws cognito-idp admin-add-user-to-group --user-pool-id "$POOL_ID" \
-  --username admin@coquan.gov.vn --group-name org_admin
+  --username "$EMAIL" --group-name org_admin
+
+# Hand it over out of band, then clear it from the shell.
+echo "$EMAIL / $PASSWORD"
+unset PASSWORD
 ```
+
+Create one account per real person. Shared or role-named logins (`admin@`,
+`analyst@`) make the audit log answer "which account" instead of "who", which
+is the question it exists to answer.
 
 ## 8. Wire into the app
 
