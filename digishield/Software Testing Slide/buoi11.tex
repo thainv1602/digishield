@@ -1,0 +1,1717 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+%---------------------------------------------------------------------
+% Font & encoding
+%---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+%---------------------------------------------------------------------
+% Theme
+%---------------------------------------------------------------------
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+% Màu chủ đạo: xanh #428BCA
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+% Loại bỏ navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footline tùy chỉnh
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 11
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}
+      \insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Itemize
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact vertical spacing (buổi 11 nhiều nội dung/code)
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+
+%---------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage{array}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=none,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+}
+
+%---------------------------------------------------------------------
+% Metadata
+%---------------------------------------------------------------------
+\title{Selenium nâng cao: Waits, POM, kịch bản E2E}
+\subtitle{Buổi 11 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+\date{Năm học 2025--2026}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 1 - Title
+%---------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 2 - Nội dung
+%---------------------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{enumerate}
+    \item Vị trí trong đề cương --- ôn tập buổi 10 và vấn đề mở
+    \item Ba loại wait: implicit, explicit, fluent --- tránh \texttt{Thread.sleep}
+    \item \texttt{ExpectedConditions} hay dùng và stale element trong SPA React
+    \item Page Object Model (POM) --- trọng tâm của buổi học
+    \item \texttt{PageFactory} và \texttt{@FindBy}
+    \item Phân tích một ca kiểm thử E2E: Analyst chặn tài khoản lừa đảo
+    \item Kịch bản phân quyền UI và data-driven E2E với nhiều persona
+    \item Chụp screenshot khi test fail --- \texttt{TestWatcher}
+    \item Chạy headless và chuẩn bị cho CI (buổi 12)
+    \item Flaky test E2E: nguyên nhân và chiến lược cô lập dữ liệu
+    \item Thực hành --- Bài nộp --- Tài liệu tham khảo
+  \end{enumerate}
+\end{frame}
+
+%=====================================================================
+\section{Vị trí trong đề cương và vấn đề mở}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương (1/2)}
+  \begin{block}{Chương 6 --- Kiểm thử tự động giao diện với Selenium}
+    \begin{itemize}
+      \item \textbf{Buổi 10}: Selenium WebDriver, chiến lược locator,
+            thao tác form, test đăng nhập DigiShield
+      \item \textbf{Buổi 11 (hôm nay)}: waits, Page Object Model,
+            \textbf{phân tích một ca kiểm thử hoàn chỉnh với Selenium},
+            chạy headless
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương (2/2)}
+  \begin{exampleblock}{Mục tiêu buổi học}
+    \begin{itemize}
+      \item Viết test \textbf{ổn định} trên SPA React render bất đồng bộ
+      \item Tổ chức mã test theo POM để \textbf{bảo trì được}
+      \item Xây dựng \textbf{kịch bản E2E} nghiệp vụ thật trên DigiShield,
+            kết hợp kiểm chéo API
+    \end{itemize}
+  \end{exampleblock}
+
+  \begin{alertblock}{Gắn với BTL (30\%)}
+    Sản phẩm buổi này là phần ``Selenium E2E'' trong báo cáo BTL,
+    demo ở buổi 12.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Ôn tập buổi 10 (1/2)}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \begin{block}{Đã học}
+      \begin{itemize}
+        \item Kiến trúc WebDriver: test $\to$ driver $\to$ trình duyệt
+        \item Locator: \texttt{By.id}, \texttt{By.cssSelector},
+              \texttt{By.xpath}
+        \item Thao tác: \texttt{click()}, \texttt{sendKeys()},
+              \texttt{clear()}, \texttt{getText()}
+        \item Test đăng nhập trang \texttt{/login} của DigiShield
+      \end{itemize}
+    \end{block}
+
+    \column{0.48\textwidth}
+    \begin{block}{Trang login DigiShield (bản demo-login)}
+      \begin{itemize}
+        \item Input email: \texttt{\#login-email}
+        \item Input mật khẩu: \texttt{\#login-pw}
+        \item 4 nút persona: Admin / Learner / Analyst / Super
+        \item Nút submit \texttt{type="submit"}
+        \item Prefill: \texttt{admin@coquan.gov.vn} / \texttt{demo1234}
+      \end{itemize}
+    \end{block}
+
+    {\scriptsize Bản demo-login = revision \texttt{b403e67\textasciitilde1}
+    (như buổi 10); \texttt{main} hiện dùng Cognito.}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Ôn tập buổi 10 (2/2)}
+  \begin{alertblock}{Vấn đề còn treo từ buổi 10}
+    Test đăng nhập \textbf{lúc pass lúc fail} dù thao tác đúng.
+    Hôm nay ta mổ xẻ nguyên nhân.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Vấn đề mở: vì sao test login fail?}
+  Nhìn vào code thật của \texttt{LoginPage.tsx} (frontend DigiShield):
+
+\begin{lstlisting}
+// src/features/auth/LoginPage.tsx (rut gon)
+function doLogin(e) {
+  e.preventDefault();
+  setSubmitting(true);
+  setTimeout(() => {              // <-- cho 600ms!
+    const role = personaToRole(persona);
+    login({ id: 'me', role, email, ... },
+          'demo-token');
+    navigate(defaultRouteForPersona(persona));
+  }, 600);
+}
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Dev login xử lý phía client, \textbf{cố tình trễ 600ms}
+          rồi mới \texttt{navigate}
+    \item SPA React: sau khi \texttt{navigate}, trang mới còn phải
+          \textbf{render bất đồng bộ} (lazy import, \texttt{Suspense})
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Dòng thời gian: assertion chạy trước khi UI kịp đổi}
+  \begin{center}
+  \begin{tikzpicture}[
+    ev/.style={rectangle,draw=darkgray,fill=lightgray,
+               rounded corners=2pt,minimum height=0.7cm,
+               font=\small,align=center},
+    bad/.style={rectangle,draw=darkgray,fill=darkgray,text=white,
+               rounded corners=2pt,minimum height=0.7cm,
+               font=\small,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \draw[arr] (0,0) -- (12.3,0) node[below left,font=\scriptsize]{thời gian};
+    \foreach \x/\t in {0.5/0ms, 4.0/50ms, 8.0/600ms, 11.0/700ms}{
+      \draw[darkgray] (\x,-0.08) -- (\x,0.08);
+      \node[font=\scriptsize,below] at (\x,-0.1) {\t};
+    }
+    \node[ev,above] at (0.5,0.35) {click\\Đăng nhập};
+    \node[bad,above] at (4.0,0.35) {assert URL\\\textbf{FAIL!}};
+    \node[ev,above] at (8.0,0.35) {\texttt{navigate()}\\sau 600ms};
+    \node[ev,above] at (11.0,0.35) {trang mới\\render xong};
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{alertblock}{Bản chất vấn đề}
+    Selenium thao tác \textbf{nhanh hơn} ứng dụng phản hồi. Test đúng
+    logic nhưng \textbf{sai thời điểm quan sát} $\Rightarrow$ kết quả
+    không ổn định (flaky).
+  \end{alertblock}
+
+  \begin{block}{Lời giải của buổi hôm nay}
+    Cơ chế \textbf{chờ đợi (waits)}: bảo Selenium ``đợi đến khi điều kiện
+    X đúng, tối đa N giây'' thay vì quan sát ngay lập tức.
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Ba loại wait trong Selenium}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cách làm sai: \texttt{Thread.sleep}}
+\begin{lstlisting}[language=Java]
+loginButton.click();
+Thread.sleep(3000);   // TUYET DOI TRANH!
+assertTrue(driver.getCurrentUrl()
+                 .contains("/dashboard"));
+\end{lstlisting}
+
+  \begin{alertblock}{Vì sao TUYỆT ĐỐI tránh \texttt{Thread.sleep}?}
+    \begin{itemize}
+      \item \textbf{Chậm}: luôn đợi đủ 3s dù trang xong sau 0.7s
+            --- 100 test $\times$ 3s = 5 phút lãng phí
+      \item \textbf{Vẫn flaky}: máy CI chậm, trang mất 3.5s
+            $\Rightarrow$ vẫn fail
+      \item Không diễn đạt \textbf{ý định}: đợi cái gì? vì sao 3s?
+      \item Cộng dồn: mỗi lần fail lại tăng số giây $\Rightarrow$
+            suite E2E phình to vô hạn
+    \end{itemize}
+  \end{alertblock}
+
+  \vspace{-0.45em}
+  \begin{block}{Nguyên tắc}
+    Chờ theo \textbf{điều kiện} (condition-based), không chờ theo
+    \textbf{thời gian cố định} (time-based).
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Loại 1: Implicit wait --- đặt một lần cho toàn driver (1/2)}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+WebDriver driver = new ChromeDriver();
+// Dat MOT lan, ap dung cho MOI findElement
+driver.manage().timeouts()
+      .implicitlyWait(Duration.ofSeconds(5));
+// Tu day: findElement se poll toi da 5s
+// truoc khi nem NoSuchElementException
+WebElement email =
+    driver.findElement(By.id("login-email"));
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Loại 1: Implicit wait --- đặt một lần cho toàn driver (2/2)}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{exampleblock}{Ưu điểm}
+      \begin{itemize}
+        \item Cấu hình 1 dòng duy nhất
+        \item Giảm fail do element chưa xuất hiện
+      \end{itemize}
+    \end{exampleblock}
+    \column{0.52\textwidth}
+    \begin{alertblock}{Nhược điểm}
+      \begin{itemize}
+        \item Chỉ chờ element \textbf{tồn tại trong DOM},
+              không chờ visible/clickable/URL đổi
+        \item Áp dụng mù quáng cho mọi lệnh tìm
+        \item Làm test tiêu cực (element phải biến mất) chậm hẳn
+      \end{itemize}
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Loại 2: Explicit wait --- \texttt{WebDriverWait} (khuyến nghị)}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+
+// Cho DEN KHI dieu kien dung, toi da 5 giay
+WebDriverWait wait =
+    new WebDriverWait(driver, Duration.ofSeconds(5));
+
+wait.until(ExpectedConditions
+    .urlContains("/dashboard"));
+
+WebElement input = wait.until(ExpectedConditions
+    .visibilityOfElementLocated(
+        By.id("login-email")));
+\end{lstlisting}
+
+  \begin{block}{Đặc điểm}
+    \begin{itemize}
+      \item Chờ \textbf{đúng điều kiện cần} tại \textbf{đúng chỗ cần}
+      \item Poll mỗi 500ms (mặc định); điều kiện đúng là đi tiếp ngay
+      \item Hết timeout $\Rightarrow$ \texttt{TimeoutException} với
+            thông điệp rõ ràng
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Demo: sửa test login buổi 10 bằng explicit wait (1/2)}
+  \begin{alertblock}{Trước (buổi 10) --- fail vì \texttt{setTimeout} 600ms}
+\begin{lstlisting}[language=Java]
+driver.findElement(By.cssSelector(
+    "button[type='submit']")).click();
+// Assertion chay ngay lap tuc -> URL van /login
+assertTrue(driver.getCurrentUrl()
+                 .contains("/dashboard")); // FAIL
+\end{lstlisting}
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Demo: sửa test login buổi 10 bằng explicit wait (2/2)}
+  \begin{exampleblock}{Sau (buổi 11) --- chờ điều kiện URL đổi}
+\begin{lstlisting}[language=Java]
+driver.findElement(By.cssSelector(
+    "button[type='submit']")).click();
+// Cho toi da 5s cho den khi URL chua /dashboard
+new WebDriverWait(driver, Duration.ofSeconds(5))
+    .until(ExpectedConditions
+        .urlContains("/dashboard"));   // PASS on dinh
+\end{lstlisting}
+  \end{exampleblock}
+
+  \begin{itemize}
+    \item 600ms trễ + thời gian render $<$ 5s timeout $\Rightarrow$
+          test pass, và chỉ chờ \textbf{đúng bằng thời gian thực tế}
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Loại 3: Fluent wait --- tùy biến polling và ngoại lệ}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+Wait<WebDriver> wait =
+  new FluentWait<>(driver)
+    .withTimeout(Duration.ofSeconds(10))
+    .pollingEvery(Duration.ofMillis(200))
+    .ignoring(NoSuchElementException.class)
+    .withMessage("Watchlist row not visible");
+WebElement row = wait.until(d ->
+    d.findElement(By.xpath(
+        "//div[text()='0909123456']")));
+\end{lstlisting}
+
+  \begin{block}{Khi nào dùng fluent wait?}
+    \begin{itemize}
+      \item Cần chu kỳ poll khác 500ms (UI cập nhật rất nhanh/chậm)
+      \item Cần \texttt{ignoring} thêm ngoại lệ
+            (vd \texttt{StaleElementReferenceException})
+      \item Điều kiện lambda tùy biến không có trong
+            \texttt{ExpectedConditions}
+    \end{itemize}
+  \end{block}
+  \begin{itemize}
+    \item \texttt{WebDriverWait} chính là \texttt{FluentWait} cấu hình sẵn
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{So sánh các cơ chế chờ}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{3.4cm}p{3.1cm}p{3.0cm}p{2.6cm}}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{Thread.sleep} & \textbf{Implicit}
+      & \textbf{Explicit/Fluent} \\
+    \midrule
+    Chờ theo        & thời gian cố định & element có trong DOM
+      & \textbf{điều kiện bất kỳ} \\
+    Phạm vi         & tại chỗ           & toàn driver
+      & tại chỗ, có chủ đích \\
+    Tốc độ          & luôn chờ đủ       & dừng sớm khi thấy
+      & dừng sớm khi đúng \\
+    URL/visible/clickable & không       & không
+      & \textbf{có} \\
+    Độ ổn định      & kém               & trung bình
+      & \textbf{cao} \\
+    Khuyến nghị     & \textbf{cấm}      & hạn chế
+      & \textbf{mặc định dùng} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{alertblock}{Không trộn implicit và explicit wait}
+    Trộn hai loại làm thời gian chờ thực tế \textbf{khó dự đoán}
+    (có thể cộng dồn bất thường). Quy ước của lớp: implicit = 0,
+    mọi chỗ cần chờ dùng \texttt{WebDriverWait}.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{ExpectedConditions và stale element}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}{Danh mục \texttt{ExpectedConditions} hay dùng}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{7.5cm}p{5.6cm}}
+    \toprule
+    \textbf{Điều kiện} & \textbf{Chờ đến khi\ldots} \\
+    \midrule
+    \texttt{visibilityOfElementLocated(by)}
+      & có trong DOM \textbf{và} hiển thị \\
+    \texttt{elementToBeClickable(by)}
+      & hiển thị \textbf{và} enabled --- sắp \texttt{click()} \\
+    \texttt{urlContains(text)}
+      & URL chứa chuỗi con --- điều hướng SPA \\
+    \texttt{textToBePresentInElementLocated(by, s)}
+      & văn bản \texttt{s} xuất hiện trong element \\
+    \texttt{presenceOfElementLocated(by)}
+      & có trong DOM (chưa chắc hiển thị) \\
+    \texttt{invisibilityOfElementLocated(by)}
+      & element biến mất --- spinner tắt \\
+    \texttt{numberOfElementsToBeMoreThan(by, n)}
+      & số element $>$ n --- bảng đổ dữ liệu \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{block}{Chọn điều kiện theo ý định kiểm chứng}
+    \textbf{đọc} nội dung $\to$ visibility; \textbf{bấm} $\to$
+    clickable; xác nhận \textbf{chuyển trang} $\to$ urlContains.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ví dụ trên DigiShield: chờ bảng watchlist đổ dữ liệu}
+  Trang \texttt{/soc/watchlist} tải dữ liệu qua TanStack Query
+  (hiển thị ``Đang tải watchlist\ldots'' trước khi có hàng):
+
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+WebDriverWait wait =
+    new WebDriverWait(driver, Duration.ofSeconds(5));
+
+// 1. Cho o tim kiem Quick Check hien thi
+WebElement search = wait.until(
+  ExpectedConditions.visibilityOfElementLocated(
+    By.cssSelector("form input[type='text']")));
+
+// 2. Cho nut "Kiem tra" bam duoc roi moi click
+wait.until(ExpectedConditions.elementToBeClickable(
+    By.cssSelector("form button[type='submit']")))
+  .click();
+
+// 3. Cho hang du lieu cu the xuat hien trong bang
+wait.until(ExpectedConditions
+  .visibilityOfElementLocated(By.xpath(
+    "//div[normalize-space()='0909123456']")));
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{StaleElementReferenceException} trong SPA React}
+  \begin{block}{Hiện tượng}
+    Đã \texttt{findElement} thành công, lát sau gọi
+    \texttt{getText()}/\texttt{click()} thì nổ
+    \texttt{StaleElementReferenceException}.
+  \end{block}
+
+\begin{lstlisting}[language=Java]
+WebElement row = driver.findElement(rowLocator);
+// ... React re-render bang (data moi ve) ...
+row.getText();   // StaleElementReferenceException!
+\end{lstlisting}
+
+  \begin{alertblock}{Nguyên nhân --- đặc thù SPA React}
+    \begin{itemize}
+      \item \texttt{WebElement} là \textbf{con trỏ tới node DOM cụ thể}
+      \item React re-render (state đổi, query refetch) $\Rightarrow$
+            node cũ bị \textbf{gỡ khỏi DOM}, thay bằng node mới
+            trông y hệt
+      \item Con trỏ cũ thành ``mồ côi'' $\Rightarrow$ stale
+    \end{itemize}
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Xử lý stale element}
+  \begin{exampleblock}{Chiến lược 1 --- Tìm lại element ngay trước khi dùng}
+\begin{lstlisting}[language=Java]
+// KHONG cache WebElement lau dai;
+// luu By roi findElement lai khi can
+private final By firstRow =
+    By.cssSelector("div[role='button']");
+public String firstRowText() {
+    return driver.findElement(firstRow).getText();
+}
+\end{lstlisting}
+  \end{exampleblock}
+
+  \begin{exampleblock}{Chiến lược 2 --- Chờ phiên bản mới của element}
+\begin{lstlisting}[language=Java]
+wait.until(ExpectedConditions.refreshed(
+    ExpectedConditions
+        .visibilityOfElementLocated(firstRow)));
+\end{lstlisting}
+  \end{exampleblock}
+
+  \begin{itemize}
+    \item Chiến lược 3: gói việc tìm + thao tác vào \textbf{method của
+          Page Object} $\Rightarrow$ mỗi lần gọi là một lần tìm mới
+          --- dẫn ta đến chủ đề trọng tâm: \textbf{POM}
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Page Object Model (POM)}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Vấn đề: selector rải rác khắp các test}
+\begin{lstlisting}[language=Java]
+@Test void testLogin() {
+  driver.findElement(By.id("login-email")).clear();
+  driver.findElement(By.id("login-email"))
+        .sendKeys("analyst@coquan.gov.vn");
+  driver.findElement(By.id("login-pw"))
+        .sendKeys("demo1234");
+  driver.findElement(By.xpath(
+      "//button[text()='Analyst']")).click();
+  driver.findElement(By.cssSelector(
+      "button[type='submit']")).click();
+  // ... lap lai o testWatchlist, testInbox, ...
+}
+\end{lstlisting}
+
+  \begin{alertblock}{Hệ quả khi UI đổi}
+    Frontend đổi \texttt{\#login-pw} thành \texttt{\#login-password}
+    $\Rightarrow$ sửa \textbf{hàng chục} test. Selector trùng lặp,
+    test dài, khó đọc, không diễn đạt nghiệp vụ.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Page Object Model --- nguyên tắc}
+  \vspace*{-0.4em}
+  \begin{block}{Ba nguyên tắc cốt lõi}
+    \begin{enumerate}
+      \item \textbf{Mỗi trang (hoặc thành phần) một class}:
+            \texttt{LoginPage}, \texttt{WatchlistPage},
+            \texttt{SocInboxPage}\ldots{} --- nơi \textbf{duy nhất}
+            biết locator của trang đó
+      \item \textbf{Method mô tả hành vi nghiệp vụ} và
+            \textbf{trả về page object} kế tiếp:
+            \texttt{loginAsAnalyst(\ldots)} trả về
+            \texttt{SocInboxPage} $\Rightarrow$ chuỗi thao tác
+            đọc như kịch bản
+      \item \textbf{Test không chứa \texttt{By}}: test chỉ gọi method
+            nghiệp vụ + assert; mọi \texttt{By}, wait, thao tác DOM
+            nằm trong page object
+    \end{enumerate}
+  \end{block}
+
+  \begin{exampleblock}{Lợi ích}
+    \begin{itemize}
+      \item UI đổi selector $\Rightarrow$ sửa \textbf{một chỗ}
+      \item Test ngắn, đọc được bởi cả người không biết Selenium
+      \item Wait được chuẩn hóa bên trong page object
+            $\Rightarrow$ giảm flaky
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Kiến trúc POM cho DigiShield}
+  \begin{center}
+  \begin{tikzpicture}[
+    bx/.style={rectangle,draw=darkgray,fill=lightgray,
+               rounded corners=2pt,minimum width=2.9cm,
+               minimum height=0.72cm,font=\small,align=center},
+    dark/.style={rectangle,draw=darkgray,fill=darkgray,text=white,
+               rounded corners=2pt,minimum width=2.9cm,
+               minimum height=0.72cm,font=\small,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray}
+  ]
+    \node[dark] (t1) at (0,4.6) {E2E Test:\\chặn tài khoản};
+    \node[dark] (t2) at (4.2,4.6) {E2E Test:\\phân quyền UI};
+    \node[dark] (t3) at (8.4,4.6) {E2E Test:\\đa persona};
+
+    \node[bx] (p1) at (0,3.0) {LoginPage};
+    \node[bx] (p2) at (4.2,3.0) {WatchlistPage};
+    \node[bx] (p3) at (8.4,3.0) {SocInboxPage};
+
+    \node[bx,minimum width=6cm] (wd) at (4.2,1.6)
+      {Selenium WebDriver + WebDriverWait};
+    \node[bx,minimum width=6cm] (app) at (4.2,0.5)
+      {DigiShield frontend (React, :5173) + backend (:8080)};
+
+    \draw[arr] (t1) -- (p1);
+    \draw[arr] (t2) -- (p1);
+    \draw[arr] (t2) -- (p2);
+    \draw[arr] (t3) -- (p1);
+    \draw[arr] (t1) -- (p2);
+    \draw[arr] (t3) -- (p3);
+    \draw[arr] (p1) -- (wd);
+    \draw[arr] (p2) -- (wd);
+    \draw[arr] (p3) -- (wd);
+    \draw[arr] (wd) -- (app);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{itemize}
+    \item Tầng test chỉ nói \textbf{nghiệp vụ}; tầng page object
+          nói \textbf{DOM}; không tầng nào ``nói leo'' tầng kia
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cấu trúc thư mục đề xuất}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+src/test/java/com/digishield/e2e/
+ |-- pages/
+ |    |-- LoginPage.java
+ |    |-- DashboardPage.java
+ |    |-- WatchlistPage.java
+ |    |-- SocInboxPage.java
+ |-- support/
+ |    |-- DriverFactory.java      // ChromeOptions
+ |    |-- ApiHelper.java          // kiem cheo API
+ |    |-- ScreenshotOnFailure.java
+ |-- scenarios/
+      |-- AnalystBlocksAccountE2E.java
+      |-- RoleBasedAccessE2E.java
+      |-- PersonaLandingE2E.java
+\end{lstlisting}
+
+  \begin{block}{Quy ước đặt tên}
+    \begin{itemize}
+      \item Page object: \texttt{<Tên trang>Page}
+      \item Kịch bản: \texttt{<Nghiệp vụ>E2E} --- mỗi file một
+            luồng nghiệp vụ
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Khảo sát DOM thật trước khi viết POM}
+  \vspace*{-0.5em}
+  \begin{alertblock}{Quy tắc vàng: POM mô tả UI thật, không mô tả UI ta tưởng}
+    Mở DevTools trên từng trang, ghi lại selector \textbf{thật}
+    trước khi viết code.
+  \end{alertblock}
+
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}p{4.0cm}}
+    \toprule
+    \textbf{Trang} & \textbf{Element} & \textbf{Locator thật} \\
+    \midrule
+    \texttt{/login} & email / mật khẩu
+      & \texttt{\#login-email}, \texttt{\#login-pw} \\
+    \texttt{/login} & nút persona (Analyst\ldots)
+      & XPath theo text nút \\
+    \texttt{/soc/watchlist} & ô Quick Check (input tra cứu)
+      & \texttt{form input[type='text']} \\
+    \texttt{/soc/watchlist} & giá trị trong bảng
+      & XPath theo text giá trị \\
+    \texttt{/soc/inbox} & tab lọc THREAT/SPAM
+      & \texttt{button[role='tab']} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{itemize}
+    \item Chỉ trang login có \texttt{id} ổn định; các trang SOC dùng
+          style inline, \textbf{không có id} $\Rightarrow$ phải dùng
+          CSS cấu trúc / XPath theo text
+    \item Bài học cho dev: nên bổ sung \texttt{data-testid} ---
+          nhóm BTL ghi nhận vào báo cáo như một
+          \textbf{khuyến nghị testability}
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{LoginPage} (1/2) --- locator và khởi tạo}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class LoginPage {
+  private static final String URL =
+      "http://localhost:5173/login";
+
+  private final WebDriver driver;
+  private final WebDriverWait wait;
+
+  // Locator that cua LoginPage.tsx
+  private final By email = By.id("login-email");
+  private final By password = By.id("login-pw");
+  private final By submit =
+      By.cssSelector("button[type='submit']");
+
+  public LoginPage(WebDriver driver) {
+    this.driver = driver;
+    this.wait = new WebDriverWait(
+        driver, Duration.ofSeconds(5));
+  }
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{LoginPage} (2/2) --- hành vi nghiệp vụ}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+  public LoginPage open() {
+    driver.get(URL);
+    wait.until(ExpectedConditions
+        .visibilityOfElementLocated(email));
+    return this;
+  }
+
+  // Persona: "Admin"|"Learner"|"Analyst"|"Super"
+  public void loginAs(String persona,
+                      String user, String pw) {
+    driver.findElement(By.xpath(
+      "//button[normalize-space()='"
+      + persona + "']")).click();
+    WebElement e = driver.findElement(email);
+    e.clear(); e.sendKeys(user);
+    WebElement p = driver.findElement(password);
+    p.clear(); p.sendKeys(pw);
+    wait.until(ExpectedConditions
+        .elementToBeClickable(submit)).click();
+  }
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{LoginPage} --- method trả về page object kế tiếp}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+  // Persona Analyst -> mac dinh ve /soc/inbox
+  public SocInboxPage loginAsAnalyst(
+      String user, String pw) {
+    loginAs("Analyst", user, pw);
+    wait.until(ExpectedConditions
+        .urlContains("/soc/inbox"));  // cho 600ms
+    return new SocInboxPage(driver);
+  }
+
+  // Persona Admin -> mac dinh ve /dashboard
+  public DashboardPage loginAsAdmin(
+      String user, String pw) {
+    loginAs("Admin", user, pw);
+    wait.until(ExpectedConditions
+        .urlContains("/dashboard"));
+    return new DashboardPage(driver);
+  }
+}
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Wait \texttt{urlContains} \textbf{nằm trong} page object:
+          mọi test dùng login đều được ``miễn dịch'' với
+          \texttt{setTimeout} 600ms
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{WatchlistPage} (1/2) --- trang \texttt{/soc/watchlist}}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class WatchlistPage {
+  private static final String URL =
+      "http://localhost:5173/soc/watchlist";
+
+  private final WebDriver driver;
+  private final WebDriverWait wait;
+
+  // O Quick Check: input text duy nhat trong form
+  // (placeholder: "Nhap so tai khoan, SDT, ...")
+  private final By quickCheckInput =
+      By.cssSelector("form input[type='text']");
+  private final By quickCheckSubmit =
+      By.cssSelector("form button[type='submit']");
+
+  // Hang du lieu: gia tri hien thi dang monospace
+  private By rowValue(String value) {
+    return By.xpath(
+      "//div[normalize-space()='" + value + "']");
+  }
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{WatchlistPage} (2/2) --- mở trang, tra cứu, xác nhận}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+  public WatchlistPage open() {
+    driver.get(URL);
+    wait.until(ExpectedConditions.visibilityOfElementLocated(quickCheckInput));
+    return this;
+  }
+  public WatchlistPage quickCheck(String value) {
+    WebElement in = wait.until(ExpectedConditions
+      .visibilityOfElementLocated(quickCheckInput));
+    in.clear(); in.sendKeys(value);
+    wait.until(ExpectedConditions
+      .elementToBeClickable(quickCheckSubmit)).click();
+    return this;
+  }
+  // Cho hang xuat hien; het timeout -> false
+  public boolean hasEntry(String value) {
+    try {
+      return wait.until(ExpectedConditions
+        .visibilityOfElementLocated(rowValue(value))).isDisplayed();
+    } catch (TimeoutException e) { return false; }
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{SocInboxPage} --- trang \texttt{/soc/inbox}}
+  \vspace*{-0.5em}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class SocInboxPage {
+  private final WebDriver driver;
+  private final WebDriverWait wait;
+  // Tab loc: "THREAT (n)" / "SPAM (n)" / ...
+  private By tab(String label) {
+    return By.xpath("//button[@role='tab']"
+        + "[contains(., '" + label + "')]");
+  }
+  private final By rows = By.cssSelector("div[role='button']");
+  public SocInboxPage filterBy(String label) {
+    wait.until(ExpectedConditions.elementToBeClickable(tab(label))).click();
+    return this;
+  }
+  public int reportCount() {
+    // Cho bang render lai sau khi loc (chong flaky)
+    return wait.until(ExpectedConditions.numberOfElementsToBeMoreThan(rows, 0)).size();
+  }
+  public WatchlistPage gotoWatchlist() {
+    return new WatchlistPage(driver).open();
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Test viết lại bằng POM --- sạch và diễn đạt nghiệp vụ}
+  \begin{alertblock}{Trước: 10+ dòng \texttt{findElement} lặp lại}
+    Selector trộn lẫn logic kiểm chứng, không tái sử dụng.
+  \end{alertblock}
+
+  \begin{exampleblock}{Sau: test đọc như kịch bản nghiệp vụ}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+@Test
+void analystSeesThreatReports() {
+  SocInboxPage inbox = new LoginPage(driver)
+      .open()
+      .loginAsAnalyst("analyst@coquan.gov.vn",
+                      "demo1234");
+
+  inbox.filterBy("THREAT");
+
+  assertTrue(inbox.reportCount() > 0,
+      "Phai co it nhat 1 bao cao THREAT");
+}
+\end{lstlisting}
+  \end{exampleblock}
+
+  \begin{itemize}
+    \item Không một \texttt{By} nào lọt vào test --- đạt nguyên tắc 3
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{PageFactory và @FindBy}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{PageFactory} và \texttt{@FindBy} --- giới thiệu nhanh}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class LoginPageF {
+  @FindBy(id = "login-email")
+  private WebElement email;
+
+  @FindBy(id = "login-pw")
+  private WebElement password;
+
+  @FindBy(css = "button[type='submit']")
+  private WebElement submit;
+
+  public LoginPageF(WebDriver driver) {
+    // Tao proxy: element duoc tim LAI moi lan dung
+    PageFactory.initElements(driver, this);
+  }
+
+  public void login(String user, String pw) {
+    email.clear();    email.sendKeys(user);
+    password.clear(); password.sendKeys(pw);
+    submit.click();
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{\texttt{@FindBy} so với \texttt{By} thủ công}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{3.4cm}p{4.0cm}p{4.2cm}}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{@FindBy + PageFactory}
+      & \textbf{By + WebDriverWait} \\
+    \midrule
+    Cú pháp          & gọn, khai báo & dài hơn một chút \\
+    Lazy lookup      & có (proxy tìm lại mỗi lần)
+      & tự viết: tìm trong method \\
+    Chống stale      & một phần (tìm lại)
+      & chủ động, rõ ràng \\
+    Kết hợp wait     & \textbf{khó} --- proxy không tự chờ
+      điều kiện & tự nhiên: \texttt{wait.until(...)} nhận
+      \texttt{By} \\
+    Locator động     & không (annotation tĩnh)
+      & có (\texttt{rowValue(value)}) \\
+    Debug            & khó nhìn thấy locator lúc chạy
+      & dễ log, dễ lần vết \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{block}{Khuyến nghị của môn học}
+    Dùng \texttt{By} thủ công + explicit wait cho SPA React như
+    DigiShield: cần locator động (giá trị watchlist) và cần wait
+    theo điều kiện --- hai thứ \texttt{PageFactory} hỗ trợ kém.
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Kịch bản E2E: Analyst chặn tài khoản lừa đảo}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}{Phân tích một ca kiểm thử E2E (theo đề cương C6)}
+  \begin{block}{Kịch bản nghiệp vụ ``vàng'' của DigiShield}
+    SOC Analyst nhận tin một số điện thoại/tài khoản đang nhận tiền
+    lừa đảo $\Rightarrow$ đưa vào watchlist để hệ thống
+    \textbf{cảnh báo/chặn giao dịch} tới đích đó.
+  \end{block}
+
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{2.6cm}p{8.8cm}}
+    \toprule
+    \textbf{Mã ca} & E2E-WL-01 --- Analyst chặn tài khoản lừa đảo \\
+    \midrule
+    Mục tiêu & Luồng chặn hoạt động xuyên suốt UI $\to$ API $\to$ DB \\
+    Tiền điều kiện & Backend dev (H2 seed) + frontend :5173 đang chạy;
+      chưa có giá trị \texttt{0909123456} trong watchlist \\
+    Dữ liệu & persona Analyst; \texttt{analyst@coquan.gov.vn} /
+      \texttt{demo1234}; giá trị chặn \texttt{0909123456} \\
+    Các bước & (1) đăng nhập Analyst; (2) thêm entry watchlist;
+      (3) mở \texttt{/soc/watchlist}; (4) tra cứu Quick Check;
+      (5) kiểm chéo API \texttt{check} \\
+    Kết quả mong đợi & Hàng \texttt{0909123456} hiển thị trong bảng;
+      API trả \texttt{inWatchlist=true} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Thiết kế kỹ thuật: Selenium + kiểm chéo API}
+  \begin{center}
+  \begin{tikzpicture}[
+    bx/.style={rectangle,draw=darkgray,fill=lightgray,
+               rounded corners=2pt,minimum width=3.0cm,
+               minimum height=0.75cm,font=\small,align=center},
+    dark/.style={rectangle,draw=darkgray,fill=darkgray,text=white,
+               rounded corners=2pt,minimum width=3.0cm,
+               minimum height=0.75cm,font=\small,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \node[dark] (test) at (0,2.9) {JUnit 5 test\\(JVM)};
+    \node[bx] (chrome) at (5.0,4.0) {Chrome\\(headless)};
+    \node[bx] (fe) at (9.6,4.0) {Frontend React\\:5173};
+    \node[bx] (api) at (9.6,1.7) {Backend Spring\\:8080 (H2 seed)};
+
+    \draw[arr] (test) -- node[above,font=\scriptsize,sloped]
+      {Selenium WebDriver} (chrome);
+    \draw[arr] (chrome) -- node[above,font=\scriptsize]{HTTP} (fe);
+    \draw[arr] (fe) -- node[right,font=\scriptsize]
+      {\texttt{/api/v1}} (api);
+    \draw[arr] (test) -- node[below,font=\scriptsize,sloped]
+      {Java HttpClient (kiểm chéo)} (api);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{block}{Vì sao bước ``thêm entry'' đi qua API?}
+    Trên UI thật, nút ``+ Thêm thủ công'' của \texttt{WatchlistPage.tsx}
+    hiện mới là stub (chỉ hiện toast) $\Rightarrow$ test \textbf{chèn dữ
+    liệu qua API} rồi \textbf{kiểm chứng qua UI}. Đây là kỹ thuật chuẩn:
+    \emph{setup bằng API --- nhanh, ổn định; quan sát bằng UI --- đúng
+    trải nghiệm người dùng.} (Ghi nhận stub này vào báo cáo BTL!)
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Hai endpoint watchlist thật của DigiShield}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{4.5cm}p{2.3cm}p{4.5cm}}
+    \toprule
+    \textbf{Endpoint} & \textbf{Module} & \textbf{Vai trò} \\
+    \midrule
+    \texttt{GET/POST /blacklist} & reporting
+      & nguồn dữ liệu \textbf{bảng} \texttt{/soc/watchlist} \\
+    \texttt{POST /account-watchlist} & interception
+      & kho tài khoản khả nghi cho \textbf{engine chặn giao dịch} \\
+    \texttt{GET .../check?value=} & interception
+      & trả \texttt{\{inWatchlist, riskLevel\}} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{alertblock}{Phát hiện khi khảo sát backend}
+    \texttt{BlacklistType} \textbf{không có} \texttt{BANK} (chỉ
+    DOMAIN/URL/EMAIL/IP/PHONE/HASH) trong khi UI có nhóm ``Tài khoản
+    ngân hàng'' --- \texttt{type="bank"} gây lỗi server. Khoảng hở FE/BE
+    đáng ghi vào báo cáo; demo dùng \texttt{type="phone"}.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{ApiHelper} (1/2) --- gọi API với vai ANALYST}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class ApiHelper {
+  static final String API =
+      "http://localhost:8080/api/v1";
+  static final String TENANT =
+      "11111111-1111-1111-1111-111111111111";
+  static final HttpClient http =
+      HttpClient.newHttpClient();
+
+  static HttpResponse<String> post(
+      String path, String json) throws Exception {
+    HttpRequest req = HttpRequest.newBuilder()
+      .uri(URI.create(API + path))
+      .header("Content-Type", "application/json")
+      // dev: DevSecurityConfig permitAll
+      .header("X-Tenant-Id", TENANT)
+      .POST(HttpRequest.BodyPublishers
+            .ofString(json))
+      .build();
+    return http.send(req,
+        HttpResponse.BodyHandlers.ofString());
+  }
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{ApiHelper} (2/2) --- chặn tài khoản và kiểm chéo}
+  \vspace*{-0.7em}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+  // Mot hanh dong: ghi vao CA HAI kho (-> 201)
+  static void blockAccount(String value)
+      throws Exception {
+    post("/blacklist",
+      "{\"type\":\"phone\",\"value\":\"" + value
+      + "\",\"source\":\"E2E-BTL\"}");
+    post("/account-watchlist", "{\"type\":\"phone\","
+      + "\"value\":\"" + value + "\",\"risk_level\""
+      + ":\"high\",\"source\":\"E2E-BTL\"}");
+  }
+  static boolean isInWatchlist(String value)
+      throws Exception {
+    HttpRequest req = HttpRequest.newBuilder()
+      .uri(URI.create(API
+        + "/account-watchlist/check?value=" + value))
+      .header("X-Tenant-Id", TENANT).GET().build();
+    String body = http.send(req, HttpResponse
+        .BodyHandlers.ofString()).body();
+    return body.contains("\"inWatchlist\":true");
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Test E2E-WL-01 (1/2) --- khởi tạo driver}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+class AnalystBlocksAccountE2E {
+
+  static WebDriver driver;
+  static final String VALUE = "0909123456";
+
+  @BeforeAll
+  static void startBrowser() {
+    ChromeOptions opts = new ChromeOptions();
+    opts.addArguments("--headless=new",
+                      "--window-size=1920,1080");
+    driver = new ChromeDriver(opts);
+  }
+
+  @AfterAll
+  static void quitBrowser() {
+    if (driver != null) driver.quit();
+  }
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Test E2E-WL-01 (2/2) --- kịch bản đầy đủ dùng POM}
+  \vspace*{-0.7em}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+  @Test
+  void analystBlocksScamAccountEndToEnd()
+      throws Exception {
+    // (1) Dang nhap persona Analyst (cho 600ms
+    //     duoc dong goi trong LoginPage)
+    SocInboxPage inbox = new LoginPage(driver)
+        .open()
+        .loginAsAnalyst("analyst@coquan.gov.vn",
+                        "demo1234");
+    // (2) Chan tai khoan qua API (UI add la stub)
+    ApiHelper.blockAccount(VALUE);
+    // (3) UI: entry moi hien thi trong bang
+    WatchlistPage wl = inbox.gotoWatchlist();
+    assertTrue(wl.hasEntry(VALUE),
+        "Watchlist phai hien thi " + VALUE);
+    // (4) UI: tra cuu nhanh Quick Check
+    wl.quickCheck(VALUE);
+    // (5) Kiem cheo API tang can thiep
+    assertTrue(ApiHelper.isInWatchlist(VALUE),
+        "check?value= phai tra inWatchlist=true");
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Đọc lại ca kiểm thử: mỗi bước kiểm chứng điều gì?}
+  \vspace*{-0.8em}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{0.9cm}p{4.6cm}p{5.6cm}}
+    \toprule
+    \textbf{Bước} & \textbf{Hành động} & \textbf{Kiểm chứng} \\
+    \midrule
+    (1) & login persona Analyst & auth flow + điều hướng
+      \texttt{/soc/inbox} (vượt \texttt{setTimeout} 600ms) \\
+    (2) & \texttt{POST /blacklist} +
+      \texttt{POST /account-watchlist} & API nhận dữ liệu, trả 201 \\
+    (3) & mở \texttt{/soc/watchlist} & UI đọc \texttt{GET /blacklist}
+      và render đúng hàng mới \\
+    (4) & Quick Check trên UI & form tra cứu thao tác được \\
+    (5) & \texttt{GET .../check} & engine can thiệp ``nhìn thấy''
+      tài khoản: \texttt{inWatchlist=true} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{exampleblock}{Giá trị của kiểm chéo UI + API}
+    Nếu chỉ assert UI: không biết engine can thiệp có nhận dữ liệu.
+    Nếu chỉ assert API: không biết Analyst có \emph{nhìn thấy} kết quả.
+    E2E tốt kiểm chứng \textbf{cả hai mặt} của một hành động nghiệp vụ.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Kịch bản phân quyền UI và data-driven E2E}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Kịch bản 2: LEARNER bị chặn khỏi trang SOC}
+  Route guard thật trong \texttt{router.tsx} + \texttt{RequireRole.tsx}:
+
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+// router.tsx: /soc/inbox chi cho ANALYST
+// <Route path="/soc/inbox"
+//   element={guarded(ANALYST, SocInboxPage)} />
+
+// RequireRole.tsx:
+// - chua dang nhap  -> Navigate("/login")
+// - sai role        -> Navigate("/403")
+\end{lstlisting}
+
+  \begin{block}{Ca kiểm thử E2E-RBAC-01 (tiêu cực)}
+    \begin{itemize}
+      \item \textbf{Arrange}: đăng nhập persona \textbf{Learner}
+            (role \texttt{learner}) $\to$ về \texttt{/learn}
+      \item \textbf{Act}: gõ thẳng URL \texttt{/soc/inbox}
+      \item \textbf{Assert}: bị redirect sang \texttt{/403},
+            tiêu đề trang (\texttt{h1}) hiển thị ``403''
+    \end{itemize}
+  \end{block}
+
+  \begin{itemize}
+    \item Song song ở tầng API (buổi 9): gọi endpoint ANALYST bằng
+          role LEARNER $\to$ \texttt{403 Forbidden} --- phân quyền
+          phải đúng ở \textbf{cả UI lẫn API}
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Code kịch bản phân quyền UI}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+@Test
+void learnerCannotOpenSocInbox() {
+  LoginPage login = new LoginPage(driver).open();
+  login.loginAs("Learner",
+      "learner@coquan.gov.vn", "demo1234");
+  WebDriverWait wait = new WebDriverWait(
+      driver, Duration.ofSeconds(5));
+  wait.until(ExpectedConditions
+      .urlContains("/learn"));  // ve trang learner
+  // Co tinh truy cap trang cua ANALYST
+  driver.get("http://localhost:5173/soc/inbox");
+  // RequireRole redirect ve /403
+  wait.until(ExpectedConditions
+      .urlContains("/403"));
+  assertTrue(driver.findElement(By.tagName("h1"))
+      .getText().contains("403"));
+}
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Test tiêu cực phân quyền là ca \textbf{bắt buộc} trong BTL:
+          lỗi phân quyền UI là lỗ hổng bảo mật thường gặp ở SPA
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Data-driven E2E: một test --- bốn persona}
+  Bảng định tuyến thật \texttt{defaultRouteForPersona}
+  (\texttt{roles.ts}) --- mỗi persona có trang chủ riêng:
+
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+@ParameterizedTest(name = "{0} -> {2}")
+@CsvSource({
+  "Admin,   admin@coquan.gov.vn,   /dashboard",
+  "Learner, learner@coquan.gov.vn, /learn",
+  "Analyst, analyst@coquan.gov.vn, /soc/inbox",
+  "Super,   super@coquan.gov.vn,   /super/tenants"
+})
+void loginLandsOnPersonaHome(String persona,
+    String email, String route) {
+  new LoginPage(driver).open()
+      .loginAs(persona, email, "demo1234");
+  new WebDriverWait(driver, Duration.ofSeconds(5))
+      .until(ExpectedConditions
+          .urlContains(route));
+}
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Kỹ thuật \texttt{@ParameterizedTest} của buổi 5 tái xuất ở
+          tầng E2E: 4 ca kiểm thử, một thân test duy nhất
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Screenshot khi fail và báo cáo kết quả}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Chụp màn hình bằng \texttt{TakesScreenshot}}
+  \vspace*{-0.4em}
+\begin{lstlisting}[language=Java]
+// Moi ChromeDriver deu la TakesScreenshot
+File shot = ((TakesScreenshot) driver)
+    .getScreenshotAs(OutputType.FILE);
+
+Files.createDirectories(
+    Path.of("build", "screenshots"));
+Files.copy(shot.toPath(),
+    Path.of("build", "screenshots",
+            "watchlist-fail.png"),
+    StandardCopyOption.REPLACE_EXISTING);
+\end{lstlisting}
+
+  \begin{block}{Vì sao screenshot quan trọng với E2E?}
+    \begin{itemize}
+      \item Test E2E fail trên CI headless: \textbf{không ai nhìn thấy}
+            trình duyệt lúc đó
+      \item Ảnh chụp tại thời điểm fail = bằng chứng số 1 để chẩn đoán
+            (trang trắng? toast lỗi? còn ở /login?)
+      \item Đính kèm vào báo cáo BTL làm minh chứng thực thi
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Tự động chụp khi fail: JUnit 5 \texttt{TestWatcher}}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class ScreenshotOnFailure implements TestWatcher {
+  @Override
+  public void testFailed(ExtensionContext ctx, Throwable cause) {
+    WebDriver driver = DriverFactory.current();
+    if (driver == null) return;
+    try {
+      File shot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
+      Path dir = Path.of("build", "screenshots");
+      Files.createDirectories(dir);
+      String name = ctx.getDisplayName()
+          .replaceAll("[^a-zA-Z0-9_-]", "_");
+      Files.copy(shot.toPath(), dir.resolve(name + ".png"),
+          StandardCopyOption.REPLACE_EXISTING);
+    } catch (IOException e) {
+      System.err.println("No screenshot: " + e);
+    }
+  }
+}
+// Trong test class:
+@ExtendWith(ScreenshotOnFailure.class)
+class AnalystBlocksAccountE2E { ... }
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Báo cáo kết quả suite E2E}
+  \vspace*{-0.6em}
+  \begin{block}{Nguồn báo cáo có sẵn từ Gradle}
+    \begin{itemize}
+      \item \texttt{./gradlew test} $\Rightarrow$ HTML report:
+            \texttt{build/reports/tests/test/index.html}
+      \item XML JUnit (\texttt{build/test-results/}) --- đầu vào cho
+            CI (buổi 12) hiển thị pass/fail từng ca
+      \item Thư mục \texttt{build/screenshots/} --- ảnh các ca fail
+    \end{itemize}
+  \end{block}
+
+  \begin{exampleblock}{Nội dung phần E2E trong báo cáo BTL}
+    \begin{enumerate}
+      \item Bảng đặc tả kịch bản (mã ca, bước, dữ liệu, kết quả
+            mong đợi --- khuôn mẫu buổi 9)
+      \item Sơ đồ POM: trang nào, class nào, method nào
+      \item Kết quả chạy: ảnh HTML report + screenshot minh chứng
+      \item Lỗi/khoảng hở phát hiện được (vd nút ``+ Thêm thủ công''
+            là stub; thiếu \texttt{data-testid};
+            \texttt{BlacklistType} thiếu \texttt{BANK})
+    \end{enumerate}
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Headless và chuẩn bị cho CI}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Chạy headless: \texttt{--headless=new}}
+  \vspace*{-0.3em}
+\begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
+public class DriverFactory {
+  public static WebDriver createHeadless() {
+    ChromeOptions opts = new ChromeOptions();
+    opts.addArguments(
+      "--headless=new",         // headless che do moi
+      "--window-size=1920,1080",// co dinh viewport!
+      "--disable-gpu",
+      "--no-sandbox");          // can cho CI container
+    return new ChromeDriver(opts);
+  }
+}
+\end{lstlisting}
+
+  \begin{block}{Ghi chú}
+    \begin{itemize}
+      \item \texttt{--headless=new}: chế độ headless hợp nhất của
+            Chrome 109+, gần Chrome thật hơn chế độ cũ
+      \item \texttt{--window-size} \textbf{bắt buộc}: viewport headless
+            mặc định nhỏ $\Rightarrow$ layout đổi, element bị ẩn
+            $\Rightarrow$ test fail khó hiểu
+      \item Debug: bỏ 2 dòng đầu là thành chế độ có giao diện
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Headless và CI: tốc độ, ổn định (chuẩn bị buổi 12)}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Vì sao headless cho CI?}
+      \begin{itemize}
+        \item Máy CI \textbf{không có màn hình}
+        \item Nhanh hơn 20--40\% (không vẽ UI)
+        \item Chạy song song nhiều instance
+        \item Ảnh chụp vẫn hoạt động bình thường
+      \end{itemize}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{Trình tự pipeline (buổi 12)}
+      \begin{enumerate}
+        \item Khởi động backend dev (H2 seed)
+        \item Build + serve frontend
+        \item Chạy suite E2E headless
+        \item Thu HTML report + screenshots
+      \end{enumerate}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Quy tắc chọn số lượng ca E2E}
+    E2E \textbf{đắt} (chậm, dễ flaky, khó bảo trì) --- theo Testing
+    Pyramid chỉ giữ \textbf{5--10\%} tổng số test. Chỉ tự động hóa
+    \textbf{luồng nghiệp vụ vàng}: đăng nhập, chặn tài khoản, làm quiz,
+    báo cáo phishing. Biến thể và nhánh lỗi $\Rightarrow$ đẩy xuống
+    unit/integration/API test (buổi 5--9).
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Flaky test E2E}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}{Flaky test: nguyên nhân thường gặp}
+  \vspace*{-0.5em}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{3.6cm}p{4.6cm}p{3.4cm}}
+    \toprule
+    \textbf{Nguyên nhân} & \textbf{Biểu hiện trên DigiShield}
+      & \textbf{Khắc phục} \\
+    \midrule
+    Wait sai / thiếu & login 600ms; bảng đổ dữ liệu chậm
+      & explicit wait đúng điều kiện \\
+    Dữ liệu phụ thuộc & test A thêm \texttt{0909123456},
+      test B đếm số hàng $\Rightarrow$ lệch
+      & giá trị ngẫu nhiên/tiền tố riêng, reset seed \\
+    Animation CSS & các trang có \texttt{fadeUp .3s}
+      --- element ``đang bay'' khi click
+      & chờ clickable; tắt animation khi test \\
+    Phụ thuộc thứ tự test & pass khi chạy lẻ, fail khi chạy suite
+      & mỗi test tự chuẩn bị dữ liệu \\
+    Môi trường CI chậm & pass local, fail CI
+      & timeout hợp lý (5--10s), headless cố định viewport \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  {\small \textbf{Flaky = mất niềm tin}: một suite E2E flaky sẽ bị cả đội
+  \textbf{bỏ qua kết quả} --- tệ hơn là không có test. Ổn định quan trọng
+  hơn số lượng.}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Chiến lược cô lập dữ liệu cho E2E}
+  \vspace*{-0.4em}
+  \begin{block}{Tận dụng H2 in-memory của profile dev}
+\begin{lstlisting}
+./gradlew :boot:app:bootRun \
+    --args='--spring.profiles.active=dev'
+\end{lstlisting}
+    \begin{itemize}
+      \item H2 \textbf{in-memory}: khởi động backend là có ngay bộ
+            dữ liệu demo seed sạch --- restart = reset toàn bộ
+      \item Trước mỗi \textbf{phiên} chạy suite E2E: khởi động lại
+            backend $\Rightarrow$ trạng thái đầu luôn như nhau
+    \end{itemize}
+  \end{block}
+
+  \begin{exampleblock}{Trong từng test}
+\begin{lstlisting}[language=Java]
+// Gia tri rieng cho moi lan chay -> khong dung
+// do cac lan chay truoc / test khac
+String value = "0909" + System.currentTimeMillis()
+                              % 1_000_000;
+\end{lstlisting}
+    \begin{itemize}
+      \item Assert theo \textbf{giá trị cụ thể vừa thêm}, tránh assert
+            theo \textbf{tổng số hàng} (phụ thuộc seed)
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Thực hành 1: hoàn thiện POM cho 3 trang}
+  \vspace*{-0.5em}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \begin{block}{Chuẩn bị môi trường (như buổi 10)}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+git switch --detach b403e67~1  # ban demo-login
+# Terminal 1 - backend dev (H2 seed)
+./gradlew :boot:app:bootRun \
+    --args='--spring.profiles.active=dev'
+# Terminal 2 - frontend
+cd frontend && npm run dev     # :5173
+\end{lstlisting}
+  \end{block}
+
+  \begin{exampleblock}{Yêu cầu (45 phút)}
+    \begin{enumerate}
+      \item Tạo package \texttt{pages/}: \texttt{LoginPage},
+            \texttt{WatchlistPage}, \texttt{SocInboxPage} theo slide;
+            thêm \texttt{DashboardPage} (\texttt{urlContains("/dashboard")})
+      \item Mọi wait dùng \texttt{WebDriverWait} --- cấm
+            \texttt{Thread.sleep} (GV sẽ grep!)
+      \item Viết test \texttt{analystSeesThreatReports} (slide POM),
+            chạy pass ở chế độ có giao diện
+      \item Đổi thử một locator thành sai $\to$ quan sát
+            \texttt{TimeoutException}
+    \end{enumerate}
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Thực hành 2: watchlist E2E, chạy headless}
+  \vspace*{-0.3em}
+  \begin{exampleblock}{Yêu cầu (45 phút)}
+    \begin{enumerate}
+      \item Viết \texttt{ApiHelper} (POST \texttt{/blacklist};
+            POST + GET \texttt{/account-watchlist/check})
+      \item Cài đặt ca \textbf{E2E-WL-01} ``Analyst chặn tài khoản''
+            theo 5 bước đã phân tích, dùng POM
+      \item Cài đặt ca \textbf{E2E-RBAC-01}: Learner truy cập
+            \texttt{/soc/inbox} $\to$ redirect \texttt{/403}
+      \item Chuyển cả hai ca sang \textbf{headless} và chạy lại ---
+            so sánh thời gian
+      \item Gắn \texttt{@ExtendWith(ScreenshotOnFailure.class)};
+            cố tình làm 1 assert sai để kiểm tra ảnh được chụp
+    \end{enumerate}
+  \end{exampleblock}
+
+  \begin{alertblock}{Câu hỏi thảo luận}
+    Giá trị test dùng \texttt{System.currentTimeMillis()} --- vì sao?
+    Điều gì xảy ra nếu 2 sinh viên chạy cùng lúc trên \textbf{cùng một}
+    backend?
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}{Bài nộp (về nhà --- gắn với BTL, hạn: trước buổi 12)}
+  \begin{block}{Yêu cầu bắt buộc}
+    \begin{enumerate}
+      \item \textbf{$\geq$ 2 kịch bản E2E theo POM} cho module BTL của
+            nhóm: ít nhất 1 \textbf{luồng nghiệp vụ vàng} +
+            1 \textbf{tiêu cực} (phân quyền / dữ liệu sai)
+      \item Toàn bộ chạy \textbf{headless}; không có
+            \texttt{Thread.sleep} trong code
+      \item \textbf{Screenshot tự động khi fail} + ảnh HTML report
+      \item Bảng đặc tả từng ca (khuôn mẫu buổi 9): mã ca, bước,
+            dữ liệu, kết quả mong đợi/thực tế
+      \item Mục ``Phát hiện'': lỗi/khuyến nghị testability tìm được
+            (thiếu \texttt{data-testid}, nút stub, khoảng hở FE/BE)
+    \end{enumerate}
+  \end{block}
+
+  \begin{alertblock}{Nộp}
+    Push vào repo nhóm, thư mục \texttt{e2e/}; báo cáo PDF cập nhật
+    chương Selenium. Demo trực tiếp trong buổi bảo vệ BTL (buổi 12).
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+\begin{frame}{Tóm tắt buổi 11 và hẹn buổi 12}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \begin{block}{Đã học hôm nay}
+      \begin{itemize}
+        \item 3 loại wait; \texttt{WebDriverWait} +
+              \texttt{ExpectedConditions} là mặc định;
+              cấm \texttt{Thread.sleep}
+        \item Stale element trong SPA React và cách xử lý
+        \item POM: mỗi trang một class, method trả page object,
+              test không chứa \texttt{By}
+        \item Kịch bản E2E kết hợp Selenium + kiểm chéo API
+        \item Screenshot khi fail, headless, chống flaky
+      \end{itemize}
+    \end{block}
+
+    \column{0.45\textwidth}
+    \begin{block}{Buổi 12 --- buổi cuối}
+      \textbf{Chương 7: Kiểm thử trong thực tiễn}
+      \begin{itemize}
+        \item Smoke / regression / security / performance
+        \item Kiểm thử hệ thống AI (module \texttt{ai})
+        \item CI/CD: chạy toàn bộ test tự động
+        \item Tổng kết + \textbf{bảo vệ BTL}
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Tài liệu tham khảo}
+%=====================================================================
+
+%---------------------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slides} Bộ môn Công nghệ Phần mềm,
+      \textit{Slide bài giảng điện tử môn Kiểm thử Phần mềm}.
+    \bibitem{ammann} Paul Ammann \& Jeff Offutt,
+      \textit{Introduction to Software Testing},
+      Cambridge University Press, 2008.
+    \bibitem{myers} Glenford J. Myers,
+      \textit{The Art of Software Testing}, 2nd ed., Wiley, 2004.
+    \bibitem{istqb} ISTQB Foundation Level Syllabus, version 4.0, 2023.
+      \texttt{https://istqb.org/}
+    \bibitem{seleniumwaits} Selenium Project,
+      \textit{Selenium WebDriver Documentation: Waits},
+      \texttt{https://www.selenium.dev/documentation/webdriver/waits/}.
+    \bibitem{seleniumpom} Selenium Project,
+      \textit{Test Practices: Page Object Models},
+      \texttt{https://www.selenium.dev/documentation/test\_practices/}.
+    \bibitem{junit} JUnit Team, \textit{JUnit 5 User Guide}
+      (Extensions, TestWatcher, ParameterizedTest),
+      \texttt{https://junit.org/junit5/docs/current/user-guide/}.
+  \end{thebibliography}
+\end{frame}
+
+\end{document}

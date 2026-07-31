@@ -1,0 +1,1706 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+%---------------------------------------------------------------------
+% Font & encoding
+%---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+%---------------------------------------------------------------------
+% Theme
+%---------------------------------------------------------------------
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+% Màu chủ đạo: xanh #428BCA
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+% Loại bỏ navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footline tùy chỉnh
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 7
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}
+      \insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Itemize
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact spacing + auto slide-break for long frames
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{frametitle continuation}{\normalfont\small~(tiếp)}
+
+%---------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage{array}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=none,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+}
+
+% Style bổ sung cho các listing dài (buổi 7)
+\lstdefinestyle{code}{basicstyle=\ttfamily\footnotesize}
+\lstdefinestyle{codesm}{basicstyle=\ttfamily\scriptsize}
+\lstdefinestyle{bash}{language={},basicstyle=\ttfamily\footnotesize}
+
+%---------------------------------------------------------------------
+% Metadata
+%---------------------------------------------------------------------
+\title{Kiểm thử tích hợp --- \texttt{@SpringBootTest} và Testcontainers}
+\subtitle{Buổi 7 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+\date{Năm học 2025--2026}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 1 - Title
+%---------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 2 - Nội dung
+%---------------------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{columns}[t]
+    \column{0.52\textwidth}
+    \begin{enumerate}\small
+      \item Ôn tập buổi 6 --- unit test với mock \emph{chưa} kiểm chứng gì?
+      \item Ranh giới unit test / integration test; taxonomy test trong DigiShield
+      \item \texttt{@SpringBootTest}: webEnvironment, chi phí context, context caching
+      \item MockMvc: kiểm thử lớp HTTP và phân quyền
+      \item Testcontainers: vì sao H2 không đủ
+    \end{enumerate}
+    \column{0.48\textwidth}
+    \begin{enumerate}\small
+      \setcounter{enumi}{5}
+      \item Case study: \texttt{TenantIsolationIT} --- Row-Level Security
+      \item Kiểm thử hệ event-driven (Spring Modulith) và kiểm thử kiến trúc
+      \item So sánh chiến lược kiểm thử; flaky test
+      \item Thực hành
+      \item Bài nộp \& tài liệu tham khảo
+    \end{enumerate}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 3 - Vị trí trong đề cương
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương môn học}
+  \begin{block}{Chương 4 --- Công cụ kiểm thử JUnit (phần mở rộng)}
+    \begin{itemize}
+      \item Buổi 5: JUnit 5 cơ bản --- lifecycle, assertions, AssertJ, parameterized
+      \item Buổi 6: Mockito --- mock / stub / verify / captor, \texttt{@Nested}
+      \item \textbf{Buổi 7 (hôm nay)}: từ unit test lên \textbf{kiểm thử tích hợp}:
+        \texttt{@SpringBootTest}, MockMvc, Testcontainers, test sự kiện
+    \end{itemize}
+  \end{block}
+  \begin{exampleblock}{Kết nối với các buổi sau}
+    \begin{itemize}
+      \item Buổi 9: API testing với Postman/Newman --- kiểm thử qua HTTP \emph{từ bên ngoài}
+      \item Buổi 10--11: Selenium E2E --- tầng cao nhất của kim tự tháp kiểm thử
+      \item BTL: mỗi nhóm phải nộp integration test cho module của mình
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 4 - Ôn buổi 6
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ôn buổi 6 --- unit test với Mockito (đã làm)}
+  Test thật trong \texttt{modules/interception}: mock repository, cô lập logic quyết định.
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize,aboveskip=0pt]
+@ExtendWith(MockitoExtension.class)
+class InterceptionServiceImplTest {
+    @Mock AccountWatchEntryRepository watchRepo;
+    @Mock InterventionEventRepository eventRepo;
+    @Mock Messages messages;
+    @InjectMocks InterceptionServiceImpl service;
+
+    @Test
+    void pausesWhenOnCallNewPayeeAndWatchlistHit() {
+        // Stub: tai khoan dich nam trong watchlist
+        when(watchRepo.findByTenantIdAndValue(any(), eq("9999")))
+            .thenReturn(Optional.of(entry("9999")));
+        InterventionDecision d = service.evaluate(
+            req(/*onCall*/ true, /*newPayee*/ true));
+        assertThat(d.decision()).isEqualTo("PAUSE");
+    }
+}
+\end{lstlisting}
+  Nhanh ($<$10ms), ổn định, chạy không cần hạ tầng --- nhưng\ldots
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 5 - Unit test chưa kiểm chứng gì
+%---------------------------------------------------------------------
+\begin{frame}{Unit test với mock \emph{chưa} kiểm chứng được gì?}
+  \begin{alertblock}{Mock trả lời đúng vì\ldots ta bảo nó trả lời như vậy}
+    Mọi tương tác với hạ tầng đều bị thay bằng ``diễn viên đóng thế''.
+  \end{alertblock}
+  \begin{itemize}
+    \item \textbf{SQL / JPA mapping}: câu query sinh ra có đúng không? Cột
+      \texttt{tenant\_id} kiểu \texttt{uuid} có map được sang \texttt{UUID}?
+    \item \textbf{Cấu hình database}: policy Row-Level Security của PostgreSQL
+      có thực sự chặn tenant khác đọc dữ liệu? (mock không biết RLS là gì!)
+    \item \textbf{Security}: \texttt{@PreAuthorize("hasRole('ANALYST')")} có
+      chạy? Người chưa đăng nhập có bị chặn 401?
+    \item \textbf{Wiring}: các bean có được Spring lắp ráp đúng? JSON
+      serialize/deserialize qua HTTP có khớp DTO?
+    \item \textbf{Sự kiện bất đồng bộ}: listener module khác có nhận được event?
+  \end{itemize}
+  \begin{exampleblock}{Kết luận}
+    Cần một tầng test \textbf{tích hợp}: chạy nhiều thành phần thật cùng nhau.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Ranh giới unit test và integration test}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 6 - Ranh giới (tikz)
+%---------------------------------------------------------------------
+\begin{frame}{Ranh giới unit test vs integration test}
+  \begin{center}
+  \begin{tikzpicture}[
+    bx/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+               minimum width=3.1cm,minimum height=0.68cm,font=\small,align=center},
+    mock/.style={rectangle,draw=darkgray,fill=darkgray,text=white,rounded corners=2pt,
+               minimum width=3.1cm,minimum height=0.68cm,font=\small,align=center},
+    real/.style={rectangle,draw=darkgray,fill=white,rounded corners=2pt,
+               minimum width=3.1cm,minimum height=0.68cm,font=\small,align=center,densely dashed},
+    arr/.style={-{Stealth[length=4pt]},darkgray}
+  ]
+    \node[font=\small\bfseries] at (1.2,4.35) {Unit test (buổi 5--6)};
+    \node[bx]   (s1) at (1.2,3.6) {Service};
+    \node[mock] (r1) at (1.2,2.7) {Mock Repository};
+    \node[mock] (d1) at (1.2,1.8) {Mock DB};
+    \draw[arr] (s1)--(r1); \draw[arr] (r1)--(d1);
+    \draw[darkgray,dashed,rounded corners=4pt] (-0.7,3.2) rectangle (3.1,4.05);
+    \node[font=\scriptsize,darkgray] at (1.2,1.25) {hạ tầng: ngoài phạm vi};
+
+    \draw[midgray,very thick] (4.6,1.1)--(4.6,4.5);
+    \node[font=\scriptsize,midgray,align=center] at (4.6,0.7) {ranh giới};
+
+    \node[font=\small\bfseries] at (8.6,4.35) {Integration test (hôm nay)};
+    \node[bx]   (c2) at (8.6,3.6) {Controller + Security};
+    \node[bx]   (s2) at (8.6,2.7) {Service + Repository};
+    \node[real] (d2) at (8.6,1.8) {PostgreSQL container};
+    \draw[arr] (c2)--(s2); \draw[arr] (s2)--(d2);
+    \draw[darkgray,dashed,rounded corners=4pt] (6.7,1.35) rectangle (10.5,4.05);
+    \node[font=\scriptsize,darkgray] at (8.6,1.05) {Testcontainers (Docker)};
+  \end{tikzpicture}
+  \end{center}
+  \small Integration test kiểm chứng \textbf{sự cộng tác thật} giữa các tầng ---
+  đúng những chỗ unit test phải mock đi.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 7 - Bảng so sánh
+%---------------------------------------------------------------------
+\begin{frame}{So sánh unit test và integration test}
+  \begin{center}
+  \small
+  \begin{tabular}{p{3.1cm}p{4.1cm}p{5.4cm}}
+    \toprule
+    \textbf{Thuộc tính} & \textbf{Unit test} & \textbf{Integration test} \\
+    \midrule
+    Phạm vi        & Một class/method       & Nhiều tầng cộng tác \\
+    Dependency     & Mock toàn bộ           & DB thật, Spring context thật \\
+    Tốc độ         & $<$ 10ms               & Vài giây đến vài chục giây \\
+    Cô lập         & Hoàn toàn              & Phụ thuộc Docker, môi trường \\
+    Phát hiện lỗi  & Logic nội tại          & Mapping ORM, SQL, security, wiring \\
+    Khi fail       & Nguồn gốc rõ            & Có thể khó khoanh vùng \\
+    Chi phí CI     & Thấp                   & Cao hơn (cần Docker daemon) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{-6pt}
+  \begin{exampleblock}{Khi nào \emph{bắt buộc} cần integration test?}
+    \begin{itemize}\small
+      \item Tính năng nằm ở \textbf{database} (RLS, constraint, native query)
+      \item Cấu hình \textbf{security} (401/403), filter, serialization JSON
+      \item Pipeline \textbf{sự kiện} xuyên module (Spring Modulith)
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 8 - Taxonomy DigiShield
+%---------------------------------------------------------------------
+\begin{frame}{Taxonomy test trong DigiShield: hai tầng tách bạch (1/2)}
+  \begin{columns}[t]
+    \column{0.5\textwidth}
+    \begin{block}{Tầng 1 --- unit test}
+      \begin{itemize}\small
+        \item Thư mục: \texttt{src/test}
+        \item Đặt tên: \texttt{*Test.java}
+        \item Không cần Docker, chạy mọi nơi
+        \item Lệnh: \texttt{./gradlew test}
+        \item Ví dụ: \texttt{Interception\allowbreak Service\allowbreak
+          Impl\allowbreak Test},
+          \texttt{StubAiClientTest}, \texttt{ModularityTests}
+      \end{itemize}
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{Tầng 2 --- integration test}
+      \begin{itemize}\footnotesize
+        \item Thư mục: \url{boot/app/src/integrationTest}
+        \item Đặt tên: \texttt{*IT.java}
+        \item Cần Docker (trừ slice test \texttt{@WebMvcTest})
+        \item Lệnh: \texttt{./gradlew integrationTest}
+        \item 7 file / 19 test: \texttt{TenantIsolationIT},
+          \texttt{SimulationModuleIT}, \texttt{RlsCoverageIT},
+          \texttt{RiskRollupIT}, \texttt{InterceptionControllerIT},
+          \texttt{SecurityHeadersIT}, \texttt{SimTrackingPageCspIT}
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 8b - Taxonomy DigiShield (2/2)
+%---------------------------------------------------------------------
+\begin{frame}{Taxonomy test trong DigiShield: hai tầng tách bạch (2/2)}
+  \begin{alertblock}{Vì sao tách?}
+    Vòng lặp phát triển cần phản hồi \textbf{nhanh} (unit); kiểm chứng
+    \textbf{sâu} (IT) chạy sau, ít thường xuyên hơn --- và không chặn máy
+    thiếu Docker.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 9 - JVM Test Suites 1
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cấu hình thật: JVM Test Suites (\texttt{boot/app/build.gradle.kts})}
+  \vspace*{-0.6em}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize,aboveskip=1pt,belowskip=0pt]
+testing {
+  suites {
+    // Suite mac dinh (unit) va suite rieng cho IT
+    getByName<JvmTestSuite>("test") { useJUnitJupiter() }
+    register<JvmTestSuite>("integrationTest") {
+      useJUnitJupiter()
+      dependencies {
+        implementation(project())   // dung class san pham cua boot app
+        implementation("org.springframework.boot:spring-boot-starter-test")
+        implementation("org.springframework.modulith:spring-modulith-starter-test")
+        implementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+        implementation("org.springframework.boot:spring-boot-testcontainers")
+        implementation("org.testcontainers:junit-jupiter")
+        implementation("org.testcontainers:postgresql")
+      }
+    }
+  }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 10 - JVM Test Suites 2
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cấu hình thật: thứ tự chạy và tích hợp vào \texttt{check}}
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize]
+targets {
+  all {
+    // IT cham (can Docker) chi chay SAU unit test nhanh
+    testTask.configure {
+      shouldRunAfter(tasks.named("test"))
+    }
+  }
+}
+
+// `check` phai chay CA unit test lan integration test
+tasks.named("check") {
+  dependsOn(testing.suites.named("integrationTest"))
+}
+\end{lstlisting}
+  \begin{block}{Lệnh sử dụng hằng ngày}
+    \begin{itemize}\small
+      \item \texttt{./gradlew test} --- vòng lặp nhanh khi code
+      \item \texttt{./gradlew integrationTest} --- trước khi mở PR (cần Docker)
+      \item \texttt{./gradlew check} --- CI: cả hai + checkstyle + JaCoCo
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{@SpringBootTest}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 11 - @SpringBootTest là gì
+%---------------------------------------------------------------------
+\begin{frame}{\texttt{@SpringBootTest} --- khởi động ứng dụng thật để test}
+  \begin{block}{Ý tưởng}
+    Annotation của Spring Boot: khởi động \textbf{toàn bộ ApplicationContext}
+    (bean, cấu hình, filter, listener\ldots) y như khi chạy thật, rồi cho phép
+    \texttt{@Autowired} bất kỳ bean nào vào test.
+  \end{block}
+  \begin{itemize}
+    \item Test chạy \emph{bên trong} JVM của ứng dụng --- khác Postman
+      (buổi 9) gọi từ bên ngoài.
+    \item Có thể ghi đè cấu hình ngay trên annotation:
+      \texttt{@SpringBootTest(properties = \{\ldots\})}.
+    \item Kết hợp \texttt{@MockitoBean} / \texttt{@TestConfiguration} để thay
+      \emph{một vài} bean khó dựng (vd \texttt{JwtDecoder} gọi IdP ngoài).
+  \end{itemize}
+  \begin{alertblock}{Trade-off}
+    Độ tin cậy cao nhất trong JVM --- nhưng khởi động context tốn
+    \textbf{vài giây}; dùng có chọn lọc.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 12 - webEnvironment
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{webEnvironment}: MOCK và RANDOM\_PORT}
+  \begin{block}{MOCK (mặc định) --- không mở port thật}
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize,aboveskip=0pt]
+@SpringBootTest              // webEnvironment = MOCK
+@AutoConfigureMockMvc
+class InterventionApiIT {
+    @Autowired MockMvc mockMvc;
+    // Goi qua MockMvc, khong co HTTP that
+}
+\end{lstlisting}
+  \end{block}
+  \begin{block}{RANDOM\_PORT --- server thật, port ngẫu nhiên}
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize,aboveskip=0pt]
+@SpringBootTest(webEnvironment =
+    SpringBootTest.WebEnvironment.RANDOM_PORT)
+class InterventionHttpIT {
+    @Autowired TestRestTemplate rest;
+    @LocalServerPort int port;
+    // Goi HTTP that toi localhost:port
+}
+\end{lstlisting}
+  \end{block}
+  \small \texttt{DEFINED\_PORT} (dùng port khai báo trong properties, mặc định
+  8080): chỉ khi công cụ ngoài bắt buộc;
+  dễ xung đột port trong CI.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 13 - chi phí context + caching
+%---------------------------------------------------------------------
+\begin{frame}{Chi phí khởi động context và context caching}
+  \begin{columns}[t]
+    \column{0.52\textwidth}
+    \textbf{Chi phí một lần khởi động:}
+    \begin{itemize}\small
+      \item Quét \& khởi tạo hàng trăm bean (DigiShield: 9 module nghiệp vụ)
+      \item Kết nối datasource, chạy migration/DDL
+      \item Dựng security filter chain, listener
+      \item Thực tế: \textbf{5--20 giây} mỗi context
+    \end{itemize}
+    \column{0.48\textwidth}
+    \textbf{Spring \emph{cache} context theo cấu hình:}
+    \begin{itemize}\small
+      \item Hai test class có \emph{cùng} cấu hình (properties, profiles,
+        MockitoBean\ldots) $\Rightarrow$ dùng lại context, chỉ trả giá 1 lần
+      \item Khác nhau 1 property thôi $\Rightarrow$ context \textbf{mới}
+    \end{itemize}
+  \end{columns}
+  \vspace{0.3em}
+  \begin{alertblock}{Hệ quả thiết kế}
+    Chuẩn hóa cấu hình IT (dùng chung bộ \texttt{properties}, base class) để
+    tối đa cache hit. Tránh \texttt{@DirtiesContext} nếu không thật cần ---
+    nó vứt bỏ cache.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 14 - Slice test
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Slice test: chỉ nạp một ``lát cắt'' context}
+  \begin{block}{\texttt{@WebMvcTest} --- chỉ tầng web}
+\begin{lstlisting}[language=Java,style=code]
+@WebMvcTest(InterceptionController.class)
+class InterceptionControllerIT {
+    @Autowired MockMvc mockMvc;
+    @MockitoBean InterceptionService service;
+    // Chi load controller + JSON + MVC infrastructure
+    // Service la mock -> khong can DB, rat nhanh
+}
+\end{lstlisting}
+  \end{block}
+  \begin{itemize}\small
+    \item Các slice khác: \texttt{@DataJpaTest} (chỉ JPA),
+      \texttt{@JsonTest} (chỉ serialization)\ldots
+    \item Nhanh hơn full context nhiều vì chỉ dựng vài chục bean.
+  \end{itemize}
+  \begin{exampleblock}{Trong DigiShield}
+    \texttt{InterceptionControllerIT} (file thật) chính là một
+    \texttt{@WebMvcTest} --- ta mổ xẻ ngay sau đây.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{MockMvc --- kiểm thử lớp HTTP}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 15 - MockMvc khái niệm
+%---------------------------------------------------------------------
+\begin{frame}{MockMvc: gọi ``HTTP'' mà không cần server}
+  \begin{block}{Cơ chế}
+    MockMvc đưa request đi qua \textbf{đúng} DispatcherServlet, converter JSON,
+    validator, (tuỳ chọn) security filter --- nhưng trong bộ nhớ, không mở
+    socket. Kết quả: kiểm chứng được toàn bộ hành vi lớp HTTP với tốc độ cao.
+  \end{block}
+  \begin{itemize}
+    \item \texttt{mockMvc.perform(post("/api/v1/...")\ldots)} --- dựng request
+    \item \texttt{.andExpect(status().isOk())} --- assert mã trạng thái
+    \item \texttt{.andExpect(jsonPath("\$.decision").value("PAUSE"))} ---
+      assert nội dung JSON trả về
+  \end{itemize}
+  \begin{exampleblock}{Kiểm chứng được gì mà unit test không thể?}
+    Routing (URL đúng method?), binding \texttt{@RequestBody}/
+    \texttt{@RequestParam}, mã trạng thái, cấu trúc JSON, header,
+    và (khi bật filter) \textbf{phân quyền}.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 16 - InterceptionControllerIT setup
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{File thật: \texttt{InterceptionControllerIT} --- setup (1/2)}
+  \small\url{boot/app/src/integrationTest/java/com/digishield/interception/it/}
+\begin{lstlisting}[language=Java,style=code]
+/** Web slice test cho InterceptionController. */
+@WebMvcTest(InterceptionController.class)
+@AutoConfigureMockMvc(addFilters = false)
+class InterceptionControllerIT {
+
+    @Autowired MockMvc mockMvc;
+    @Autowired ObjectMapper objectMapper;
+
+    @MockitoBean
+    InterceptionService interceptionService;
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 16b - InterceptionControllerIT setup (2/2)
+%---------------------------------------------------------------------
+\begin{frame}{File thật: \texttt{InterceptionControllerIT} --- setup (2/2)}
+  \begin{itemize}\small
+    \item Chỉ nạp tầng web; \texttt{InterceptionService} là mock $\Rightarrow$
+      test tập trung vào wiring request/response và (de)serialize JSON.
+    \item \texttt{addFilters = false}: tắt security filter để chạm được
+      controller mà không cần cấu hình OAuth2/JWT --- \textbf{đổi lại} test này
+      \emph{không} kiểm chứng phân quyền (xem slide sau).
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 17 - evaluateReturnsPauseDecision
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{File thật: POST \texttt{/interventions/evaluate} trả về PAUSE}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@Test
+void evaluateReturnsPauseDecision() throws Exception {
+    InterventionDecision pause = new InterventionDecision(
+        "PAUSE",
+        List.of("ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT"),
+        "Giao dich dang duoc tam dung de bao ve ban.");
+    given(interceptionService.evaluate(any(EvaluateRequest.class)))
+        .willReturn(pause);
+    EvaluateRequest request = new EvaluateRequest(
+        UUID.randomUUID(), new BigDecimal("50000000"),
+        "9999-fraud-account", true, true);
+    mockMvc.perform(post("/api/v1/interventions/evaluate")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.decision").value("PAUSE"))
+        .andExpect(jsonPath("$.signals.length()").value(3))
+        .andExpect(jsonPath("$.signals[0]").value("ON_CALL"));
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 18 - jsonPath
+%---------------------------------------------------------------------
+\begin{frame}{Đọc kỹ: test này kiểm chứng điều gì?}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{6.6cm}}
+    \toprule
+    \textbf{Dòng lệnh} & \textbf{Điều được kiểm chứng} \\
+    \midrule
+    \texttt{post("/api/v1/\allowbreak interventions/\allowbreak evaluate")} & URL + method map đúng handler \\
+    \texttt{.content(\allowbreak objectMapper.write\ldots)} & JSON body deserialize được vào record \texttt{EvaluateRequest} \\
+    \texttt{status().isOk()} & Controller trả 200, không nổ exception \\
+    \texttt{jsonPath("\$.decision")} & Field của \texttt{InterventionDecision} serialize đúng tên \\
+    \texttt{jsonPath("\$.signals.\allowbreak length()")} & Mảng \texttt{signals} giữ nguyên 3 phần tử \\
+    \texttt{jsonPath("\$.\allowbreak signals[0]")} & Phần tử đầu là \texttt{ON\_CALL} --- thứ tự được giữ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  {\small \textbf{Lưu ý}: logic PAUSE/WARN/ALLOW \emph{không} được kiểm chứng
+  ở đây (service là mock) --- việc đó thuộc về unit test buổi 6. Mỗi tầng test
+  một trách nhiệm.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 19 - Phân quyền: đặc tả
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Kiểm thử phân quyền: đặc tả của DigiShield}
+  \begin{block}{Quy tắc trên \texttt{InterceptionController} (code thật)}
+\begin{lstlisting}[language=Java,style=code]
+@PreAuthorize("isAuthenticated()")
+@PostMapping("/api/v1/interventions/evaluate") ...
+
+@PreAuthorize("hasRole('ANALYST')")
+@GetMapping("/api/v1/interventions") ...
+\end{lstlisting}
+  \end{block}
+  \begin{center}
+  \small
+  \begin{tabular}{p{4.6cm}p{3.2cm}p{2.6cm}}
+    \toprule
+    \textbf{Ai gọi GET /interventions} & \textbf{Kỳ vọng} & \textbf{Loại test} \\
+    \midrule
+    Chưa đăng nhập      & \textbf{401} Unauthorized & tiêu cực \\
+    Đăng nhập, role LEARNER & \textbf{403} Forbidden & tiêu cực \\
+    Đăng nhập, role ANALYST & \textbf{200} OK        & tích cực \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \small Test phân quyền \textbf{tiêu cực} là bắt buộc: lỗi ``quên
+  \texttt{@PreAuthorize}'' không bao giờ lộ ra ở happy path.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 20 - Phân quyền: code
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Kiểm thử phân quyền với MockMvc (bật security filter)}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@SpringBootTest        // khong dung profile dev!
+@AutoConfigureMockMvc  // giu nguyen security filter chain
+class InterventionAuthzIT {
+    @Autowired MockMvc mockMvc;
+    @MockitoBean JwtDecoder jwtDecoder; // chan goi IdP that
+    @Test
+    void anonymousGets401() throws Exception {
+        mockMvc.perform(get("/api/v1/interventions"))
+            .andExpect(status().isUnauthorized());
+    }
+    @Test
+    void learnerGets403() throws Exception {
+        mockMvc.perform(get("/api/v1/interventions")
+                .with(jwt().authorities(
+                    new SimpleGrantedAuthority("ROLE_LEARNER"))))
+            .andExpect(status().isForbidden());
+    }
+}
+\end{lstlisting}
+  \small \texttt{jwt()} (spring-security-test) giả lập một JWT đã xác thực với
+  authority tùy chọn --- không cần IdP thật.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 21 - Cảnh báo profile dev
+%---------------------------------------------------------------------
+\begin{frame}{Cảnh báo: đừng test phân quyền trên profile \texttt{dev}}
+  \begin{alertblock}{Cấu hình thật của DigiShield}
+    \begin{itemize}\small
+      \item Profile \texttt{dev} dùng \texttt{DevSecurityConfig}:
+        \texttt{permitAll()} mọi request, còn \texttt{@PreAuthorize} bị
+        \textbf{vô hiệu} (method security chỉ bật ở \texttt{@Profile("!dev")}).
+      \item \texttt{DevTenantFilter} lấy tenant từ header
+        \texttt{X-Tenant-Id}, thiếu thì fallback tenant demo --- dev
+        \textbf{không} bao giờ tạo ra 401/403.
+    \end{itemize}
+  \end{alertblock}
+  \begin{itemize}
+    \item Test phân quyền trên dev sẽ \textbf{pass ảo}: ai gọi gì cũng 200.
+    \item Muốn 401/403 thật: chạy chuỗi security \emph{production}
+      (\texttt{@Profile("!dev")}) và stub \texttt{JwtDecoder} như slide trước
+      --- đúng cách \texttt{TenantIsolationIT} đã làm.
+  \end{itemize}
+  \begin{exampleblock}{Bài học tổng quát}
+    Integration test chỉ có giá trị khi chạy trên \textbf{cấu hình giống
+    production}. Test trên cấu hình ``dễ dãi'' là kiểm chứng một hệ thống
+    không tồn tại.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Testcontainers}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 22 - Vì sao H2 không đủ
+%---------------------------------------------------------------------
+\begin{frame}{Vì sao H2 in-memory không đủ?}
+  \begin{block}{H2 tiện --- nhưng không phải PostgreSQL}
+    Profile \texttt{dev} của DigiShield chạy H2 để khởi động nhanh, không cần
+    Docker. Với \emph{integration test} thì H2 tạo ra khoảng mù nguy hiểm.
+  \end{block}
+  \begin{itemize}\small
+    \item \textbf{Row-Level Security là tính năng của PostgreSQL} --- H2 không
+      có \texttt{CREATE POLICY}, không có \texttt{current\_setting()}. Cơ chế
+      cách ly tenant --- xương sống bảo mật của DigiShield --- \textbf{không
+      thể} kiểm chứng trên H2.
+    \item Khác dialect: kiểu dữ liệu (\texttt{uuid}, \texttt{timestamptz},
+      \texttt{jsonb}), hàm, ngữ nghĩa transaction, native query.
+    \item Flyway migration viết cho PostgreSQL có thể chạy khác (hoặc fail)
+      trên H2.
+  \end{itemize}
+  \begin{alertblock}{Nguyên tắc}
+    Test với hạ tầng \textbf{cùng loại, cùng phiên bản} với production.
+    Câu trả lời hiện đại: \textbf{Testcontainers}.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 23 - Testcontainers là gì
+%---------------------------------------------------------------------
+\begin{frame}{Testcontainers: hạ tầng thật, vòng đời do test quản lý}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[
+      bx/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+                 minimum width=3.5cm,minimum height=0.66cm,font=\small,align=center},
+      cnt/.style={rectangle,draw=darkgray,fill=white,rounded corners=2pt,
+                 minimum width=3.5cm,minimum height=0.66cm,font=\small,align=center,densely dashed},
+      arr/.style={-{Stealth[length=4pt]},darkgray}
+    ]
+      \node[bx,fill=darkgray,text=white] (jvm) at (0,3.9) {JVM chạy JUnit};
+      \node[bx]  (tc)     at (0,2.9) {Thư viện Testcontainers};
+      \node[bx]  (docker) at (0,1.9) {Docker daemon};
+      \node[cnt] (pg)     at (0,0.9) {postgres:16-alpine};
+      \draw[arr] (jvm)--(tc);
+      \draw[arr] (tc)--node[right,font=\scriptsize]{start/stop}(docker);
+      \draw[arr] (docker)--(pg);
+    \end{tikzpicture}
+    \end{center}
+    \column{0.5\textwidth}
+    \textbf{Vòng đời:}
+    \begin{enumerate}\small
+      \item Test class khởi động
+      \item Pull image (lần đầu) rồi start container, gán \textbf{port ngẫu nhiên}
+      \item Test chạy trên PostgreSQL thật
+      \item JVM kết thúc: container bị dừng và dọn sạch (container phụ
+        \emph{Ryuk} bảo đảm cả khi test crash)
+    \end{enumerate}
+    \begin{alertblock}{Yêu cầu}
+      \small Docker daemon phải đang chạy; nếu không:
+      \texttt{ContainerLaunchException}.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 24 - @Testcontainers @Container
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{@Testcontainers} và \texttt{@Container}}
+\begin{lstlisting}[language=Java,style=code]
+@Testcontainers               // JUnit 5 extension
+class RlsCoverageIT {         // file that cua DigiShield
+
+    @Container                // TC quan ly vong doi field nay
+    static final PostgreSQLContainer<?> POSTGRES =
+        new PostgreSQLContainer<>("postgres:16-alpine");
+    ...
+}
+\end{lstlisting}
+  \begin{itemize}\small
+    \item Field \texttt{static}: \textbf{một container cho cả class} (khởi động
+      1 lần, các \texttt{@Test} dùng chung --- nhanh, nhưng nhớ dọn dữ liệu).
+    \item Field không static: container mới cho \emph{mỗi} test --- sạch
+      nhưng chậm.
+    \item \texttt{TenantIsolationIT} chọn cách thứ ba: tự
+      \texttt{POSTGRES.start()} trong khối \texttt{static \{\}} để container
+      sẵn sàng \emph{trước khi} Spring context được dựng.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 25 - DynamicPropertySource
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{@DynamicPropertySource}: nối Spring vào container}
+  \begin{block}{Vấn đề}
+    \small Port của container là \textbf{ngẫu nhiên} mỗi lần chạy --- không thể
+    hardcode \texttt{spring.datasource.url} trong \texttt{application.yml}.
+  \end{block}
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize,aboveskip=0pt]
+@DynamicPropertySource   // chay TRUOC khi context duoc tao
+static void datasourceProperties(
+        DynamicPropertyRegistry registry) {
+    registry.add("spring.datasource.url",
+                 POSTGRES::getJdbcUrl);       // lay port that
+    registry.add("spring.datasource.username",
+                 POSTGRES::getUsername);
+    registry.add("spring.datasource.password",
+                 POSTGRES::getPassword);
+}
+\end{lstlisting}
+  \begin{exampleblock}{Cách gọn hơn: \texttt{@ServiceConnection}}
+    \small Với \texttt{spring-boot-testcontainers}, đặt
+    \texttt{@ServiceConnection} lên container là Spring tự suy ra
+    url/username/password --- khi không cần tùy biến gì thêm.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Case study: TenantIsolationIT --- Row-Level Security}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 26 - Bối cảnh multi-tenant
+%---------------------------------------------------------------------
+\begin{frame}[shrink]{Bối cảnh: DigiShield là hệ multi-tenant}
+  \begin{columns}
+    \column{0.55\textwidth}
+    \begin{itemize}\small
+      \item Nhiều tổ chức (tenant) --- cơ quan A, ngân hàng B\ldots --- dùng
+        \textbf{chung một database}, chung bảng \texttt{phishing\_report}.
+      \item Yêu cầu an ninh tuyệt đối: tenant A \textbf{không bao giờ} được
+        thấy báo cáo lừa đảo của tenant B.
+      \item Lọc \texttt{WHERE tenant\_id = ?} trong code là chưa đủ: một
+        repository method ``quên'' filter, một native query --- và dữ liệu
+        lộ chéo.
+    \end{itemize}
+    \column{0.45\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[
+      row/.style={rectangle,draw=darkgray,minimum width=4.2cm,minimum height=0.52cm,font=\scriptsize,align=center},
+      arr/.style={-{Stealth[length=4pt]},darkgray}
+    ]
+      \node[font=\small\bfseries] at (0,3.2) {phishing\_report};
+      \node[row,fill=lightgray] (r1) at (0,2.6) {id=\ldots~~tenant\_id=\textbf{A}};
+      \node[row,fill=white]     (r2) at (0,2.05) {id=\ldots~~tenant\_id=\textbf{B}};
+      \node[row,fill=lightgray] (r3) at (0,1.5) {id=\ldots~~tenant\_id=\textbf{A}};
+      \node[font=\scriptsize,darkgray,align=center] at (0,0.75)
+        {RLS policy: phiên của tenant A\\chỉ ``nhìn thấy'' các dòng của A};
+    \end{tikzpicture}
+    \end{center}
+  \end{columns}
+  \vspace{0.2em}
+  \begin{block}{Giải pháp của DigiShield}
+    Đẩy việc cách ly xuống \textbf{database}: PostgreSQL
+    \textbf{Row-Level Security (RLS)} --- database tự lọc dòng theo tenant
+    của phiên, bất kể ứng dụng viết query thế nào.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 27 - RLS policy SQL
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{RLS hoạt động thế nào? (file thật \texttt{it/rls-setup.sql})}
+\begin{lstlisting}[language=SQL,style=code,aboveskip=0pt]
+ALTER TABLE phishing_report ENABLE ROW LEVEL SECURITY;
+-- Ap dung ca voi table owner (superuser/BYPASSRLS van bo qua):
+ALTER TABLE phishing_report FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON phishing_report
+  USING (tenant_id = NULLIF(
+         current_setting('app.tenant_id', true), '')::uuid)
+  WITH CHECK (tenant_id = NULLIF(
+         current_setting('app.tenant_id', true), '')::uuid);
+\end{lstlisting}
+  \begin{itemize}\small
+    \item \texttt{app.tenant\_id} là một \textbf{GUC} (biến cấu hình của phiên
+      PostgreSQL). Production: aspect \texttt{RlsTenantAspect} gọi
+      \texttt{set\_config('app.tenant\_id', ?, true)} đầu mỗi transaction.
+    \item \texttt{USING}: lọc dòng khi SELECT/UPDATE/DELETE;
+      \texttt{WITH CHECK}: chặn INSERT ``gắn nhãn'' tenant khác.
+    \item Mọi query --- kể cả query quên filter --- đều bị policy áp lên
+      \textbf{trước} mệnh đề WHERE của ứng dụng.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 28 - FORCE RLS + fail-closed
+%---------------------------------------------------------------------
+\begin{frame}{Hai chi tiết quyết định chất lượng của test}
+  \begin{alertblock}{1. Vì sao phải \texttt{FORCE ROW LEVEL SECURITY}?}
+    \small Mặc định PostgreSQL \emph{bỏ qua} RLS cho \textbf{table owner};
+    \texttt{FORCE} buộc policy áp cả lên owner --- nhưng \emph{không} chạm
+    được superuser hay role có \texttt{BYPASSRLS}. User mặc định của
+    Testcontainers lại là \textbf{chủ bảng kiêm superuser}, nên một mình
+    \texttt{FORCE} chưa đủ: test còn phải kết nối bằng \texttt{normal\_user}
+    \texttt{NOSUPERUSER NOBYPASSRLS} (slide sau). Thiếu hai lớp này, mọi dòng
+    đều hiện ra, test cách ly \textbf{pass một cách vô nghĩa} --- lỗi kinh
+    điển của test RLS.
+  \end{alertblock}
+  \begin{block}{2. Fail-closed: thiếu tenant thì thấy \textbf{0 dòng}}
+    \small Khi \texttt{app.tenant\_id} chưa được set:
+    \texttt{current\_setting(\ldots, true)} trả về NULL
+    $\Rightarrow$ vị từ \texttt{tenant\_id = NULL} không bao giờ đúng
+    $\Rightarrow$ \textbf{không dòng nào} hiển thị. Quên set tenant $\ne$ lộ
+    toàn bộ dữ liệu --- hệ thống ``đóng an toàn''.
+  \end{block}
+  \small Một test tốt phải kiểm chứng \textbf{cả hai} hành vi này --- và
+  \texttt{TenantIsolationIT} làm đúng như vậy.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 29 - IT setup: annotation
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{TenantIsolationIT} (1/6): cấu hình context}
+  \vspace*{-0.6em}
+\begin{lstlisting}[language=Java,style=codesm]
+@SpringBootTest(properties = {
+    // Test tu quan ly schema bang script SQL rieng
+    "spring.jpa.hibernate.ddl-auto=none",
+    "spring.flyway.enabled=false",
+    "spring.jpa.properties.hibernate.dialect=" +
+        "org.hibernate.dialect.PostgreSQLDialect",
+    "spring.datasource.driver-class-name=org.postgresql.Driver",
+    // IT nay khong can Redis: cache no-op, tat health check
+    "spring.cache.type=none",
+    "management.health.redis.enabled=false" })
+class TenantIsolationIT {
+
+  @TestConfiguration
+  @EnableAspectJAutoProxy
+  static class TestConfig {
+    @Bean JwtDecoder jwtDecoder() {       // stub, khong goi IdP
+      return Mockito.mock(JwtDecoder.class);
+    }
+  }
+  ...
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 30 - IT setup: container + normal_user
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{TenantIsolationIT} (2/6): container và user thường}
+  \vspace*{-0.4em}
+\begin{lstlisting}[language=Java,style=codesm]
+static final PostgreSQLContainer<?> POSTGRES =
+    new PostgreSQLContainer<>("postgres:16-alpine");
+static { POSTGRES.start(); }  // truoc khi context duoc dung
+
+@DynamicPropertySource
+static void datasourceProperties(DynamicPropertyRegistry reg) {
+  try (var conn = DriverManager.getConnection(
+      POSTGRES.getJdbcUrl(), POSTGRES.getUsername(),
+      POSTGRES.getPassword());
+      var stmt = conn.createStatement()) {
+    // Tao role KHONG superuser, KHONG bypass RLS
+    stmt.execute("CREATE ROLE normal_user WITH LOGIN "
+        + "PASSWORD 'normal_pass' NOSUPERUSER NOBYPASSRLS");
+    stmt.execute("GRANT ALL ON SCHEMA public TO normal_user");
+  }
+  reg.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+  reg.add("spring.datasource.username", () -> "normal_user");
+  reg.add("spring.datasource.password", () -> "normal_pass");
+}
+\end{lstlisting}
+  \small Ứng dụng kết nối bằng \texttt{normal\_user} --- đúng như production
+  không bao giờ chạy bằng superuser.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 31 - IT setup: BeforeEach
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{TenantIsolationIT} (3/6): schema sạch trước mỗi test}
+  \vspace*{-0.4em}
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize]
+@Autowired PhishingReportRepository reportRepository;
+@Autowired TransactionTemplate transactionTemplate;
+@Autowired DataSource dataSource;
+@BeforeEach
+void setUpSchema() throws Exception {
+  // Tao lai bang + policy: du lieu sach, RLS chac chan bat
+  try (var connection = dataSource.getConnection()) {
+    ScriptUtils.executeSqlScript(connection,
+        new ClassPathResource("it/rls-setup.sql"));
+  }
+}
+@AfterEach
+void clearTenant() {
+  TenantContext.clear();   // khong ro ri tenant sang test khac
+}
+\end{lstlisting}
+  \begin{itemize}\small
+    \item Tái tạo bảng mỗi test $\Rightarrow$ \textbf{test độc lập}, không phụ
+      thuộc thứ tự --- vũ khí chống flaky số một.
+    \item DDL của script được giữ \emph{đồng bộ} với migration Flyway thật.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 32 - Helper runAsTenant
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{TenantIsolationIT} (4/6): helper đóng vai tenant}
+  \vspace*{-0.8em}
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize]
+// Chay `work` trong 1 transaction voi tenant cho truoc:
+private <T> T runAsTenant(UUID tenantId, Supplier<T> work) {
+  TenantContext.set(tenantId.toString());
+  try {
+    return transactionTemplate.execute(status -> work.get());
+  } finally {
+    TenantContext.clear();
+  }
+}
+private UUID saveReportForTenant(UUID tenantId) {
+  return runAsTenant(tenantId, () -> {
+    PhishingReport report = new PhishingReport(
+        UUID.randomUUID(), tenantId, UUID.randomUUID(),
+        "suspicious-email-payload", AiLabel.THREAT,
+        0.97, ReportStatus.SUBMITTED);
+    return reportRepository.save(report).getId();
+  });
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 33 - Test 1
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{TenantIsolationIT} (5/6): tenant A không đọc được của B}
+  \vspace*{-0.4em}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+private static final UUID TENANT_A =
+    UUID.fromString("11111111-1111-1111-1111-111111111111");
+private static final UUID TENANT_B =
+    UUID.fromString("22222222-2222-2222-2222-222222222222");
+@Test
+void rlsIsolatesReportsBetweenTenants() {
+  UUID reportA = saveReportForTenant(TENANT_A);
+  UUID reportB = saveReportForTenant(TENANT_B);
+  // Tenant A chi thay cua minh; B cung vay
+  List<PhishingReport> seenByA =
+      runAsTenant(TENANT_A, () -> reportRepository.findAll());
+  assertThat(seenByA).extracting(PhishingReport::getId)
+      .containsExactly(reportA);
+  List<PhishingReport> seenByB =
+      runAsTenant(TENANT_B, () -> reportRepository.findAll());
+  assertThat(seenByB).extracting(PhishingReport::getId)
+      .containsExactly(reportB)
+      .doesNotContain(reportA);
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 34 - Điểm đắt giá
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Điểm đắt giá nhất: cố tình truy vấn chéo tenant}
+\begin{lstlisting}[language=Java,style=code]
+// Tenant B CO TINH query dich danh du lieu cua tenant A:
+List<PhishingReport> crossTenant = runAsTenant(TENANT_B,
+    () -> reportRepository.findByTenantId(TENANT_A));
+
+assertThat(crossTenant).isEmpty();
+\end{lstlisting}
+  \begin{block}{Vì sao đây là assertion giá trị nhất?}
+    Query có hẳn \texttt{WHERE tenant\_id = :tenantA} --- nếu cách ly chỉ nằm
+    ở tầng ứng dụng thì nó \emph{phải} trả về dữ liệu của A. Kết quả rỗng
+    chứng minh RLS lọc \textbf{trước} cả mệnh đề WHERE: dù code bị lừa
+    (hoặc có lỗi), database vẫn không nhả dữ liệu chéo tenant.
+  \end{block}
+  \begin{exampleblock}{Tư duy thiết kế test}
+    Đừng chỉ test ``đường ngay'': hãy đóng vai \textbf{kẻ tấn công} / đoạn
+    code lỗi và chứng minh hàng rào vẫn giữ. Đây là test bảo mật ở mức tích
+    hợp.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 35 - Test 2 fail-closed
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{\texttt{TenantIsolationIT} (6/6): fail-closed khi thiếu tenant}
+  \vspace*{-0.4em}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@Test
+void queryingWithoutTenantContextFailsClosed() {
+  saveReportForTenant(TENANT_A);   // co du lieu san
+  // (1) Duong qua aspect: thieu tenant -> fail NGAY
+  TenantContext.clear();
+  assertThatThrownBy(() -> transactionTemplate.execute(
+          status -> reportRepository.findAll()))
+      .isInstanceOf(IllegalStateException.class);
+  // (2) Duong SQL thuan (khong qua aspect):
+  //     GUC chua set -> policy che het -> 0 dong
+  long visible = countRowsWithoutTenantGuc();
+  assertThat(visible).isZero();
+}
+private long countRowsWithoutTenantGuc() { // JDBC tho
+  try (var c = dataSource.getConnection();
+       var st = c.createStatement();
+       var rs = st.executeQuery(
+           "SELECT count(*) FROM phishing_report")) {
+    rs.next(); return rs.getLong(1);
+  } catch (Exception e) { throw new IllegalStateException(e); }
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 36 - Bài học case study
+%---------------------------------------------------------------------
+\begin{frame}{Bài học từ \texttt{TenantIsolationIT}}
+  \begin{enumerate}
+    \item \textbf{Test điều mock không thể chứng minh}: RLS sống trong
+      PostgreSQL --- chỉ PostgreSQL thật (Testcontainers) mới kiểm chứng được.
+    \item \textbf{Vô hiệu hóa các lối tắt làm test pass ảo}:
+      \texttt{FORCE ROW LEVEL SECURITY} + kết nối bằng \texttt{normal\_user}
+      \texttt{NOBYPASSRLS} --- nếu không, mọi assertion đều vô nghĩa.
+    \item \textbf{Hai phía của thuộc tính an ninh}: cách ly khi \emph{có}
+      tenant, và fail-closed khi \emph{thiếu} tenant.
+    \item \textbf{Kiểm chứng ở nhiều tầng}: qua JPA repository (đường thật của
+      ứng dụng) \emph{và} qua JDBC thô (chứng minh hàng rào nằm ở DB, không
+      phải ở aspect).
+    \item \textbf{Test độc lập}: tái tạo schema mỗi test, luôn
+      \texttt{TenantContext.clear()} trong \texttt{finally}/\texttt{@AfterEach}.
+  \end{enumerate}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 37 - RlsCoverageIT
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Test ``vệ sĩ'' đi kèm: \texttt{RlsCoverageIT}}
+  Chạy migration Flyway thật lên PostgreSQL dùng một lần, rồi soi catalog:
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@Test
+void everyTenantScopedTableHasRlsEnabledAndAPolicy() {
+  Flyway.configure().dataSource(POSTGRES.getJdbcUrl(), ...)
+      .locations("classpath:db/migration").load().migrate();
+  Set<String> tenantTables = query(c,   // bang co cot tenant_id
+      "SELECT table_name FROM information_schema.columns "
+      + "WHERE column_name = 'tenant_id'");
+  Set<String> rlsEnabled  = query(c, "... c.relrowsecurity");
+  Set<String> withPolicy  = query(c,
+      "SELECT tablename FROM pg_policies ...");
+  // Moi bang tenant-scoped PHAI bat RLS va co policy
+  assertThat(missing).isEmpty();
+}
+\end{lstlisting}
+  \begin{exampleblock}{Ý nghĩa}
+    Ai đó thêm bảng mới có \texttt{tenant\_id} mà quên RLS $\Rightarrow$ test
+    fail và \emph{nêu đích danh} bảng thiếu. Một quy tắc kiến trúc dữ liệu
+    được thực thi tự động, mãi mãi.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Kiểm thử hệ event-driven (Spring Modulith)}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 38 - Pipeline AIDA
+%---------------------------------------------------------------------
+\begin{frame}{Pipeline sự kiện AIDA: bốn module bắt tay qua event}
+  \begin{center}
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    bx/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+               minimum width=3.3cm,minimum height=0.9cm,font=\scriptsize,align=center},
+    ev/.style={font=\scriptsize,darkgray,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \node[bx] (ai)  at (0,2.6)   {\textbf{ai}\\\texttt{runOrchestration()}\\lưu AidaRun ``running''};
+    \node[bx] (an)  at (5.6,2.6) {\textbf{analytics}\\\texttt{AidaOrchestrationListener}\\recompute risk; $\geq$ 60 $\to$ yêu cầu enroll};
+    \node[bx] (le)  at (11.2,2.6){\textbf{learning}\\\texttt{RemediationEnrollmentListener}\\auto-enroll user};
+    \node[bx] (done) at (2.8,0.4){\textbf{ai}\\\texttt{...CompletedListener}\\chốt run ``success''};
+    \draw[arr] (ai) -- node[ev,above]{AidaOrchestration\\RequestedEvent} (an);
+    \draw[arr] (an) -- node[ev,above]{RemediationEnrollment\\RequestedEvent} (le);
+    \draw[arr] (an.south) to[out=-90,in=20]
+      node[ev,below right,xshift=-2pt]{AidaOrchestration\\CompletedEvent} (done.east);
+  \end{tikzpicture}}
+  \end{center}
+  \begin{itemize}\small
+    \item \texttt{@ApplicationModuleListener} (Spring Modulith): chạy
+      \textbf{bất đồng bộ}, transaction riêng, tenant lấy từ event.
+    \item Không module nào gọi thẳng module nào --- chỉ giao tiếp qua
+      event trong \texttt{contracts}.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 39 - Chiến lược test event
+%---------------------------------------------------------------------
+\begin{frame}{Test hệ event-driven: hai mức, hai câu hỏi}
+  \begin{columns}[t]
+    \column{0.5\textwidth}
+    \begin{block}{Mức 1: listener đơn lẻ = unit test}
+      \begin{itemize}\small
+        \item Gọi thẳng \texttt{listener.on(event)} với mock dependency
+        \item DigiShield có sẵn: \texttt{Aida\allowbreak Orchestration\allowbreak
+          Listener\allowbreak Test},
+          \texttt{Aida\allowbreak Orchestration\allowbreak Completed\allowbreak
+          Listener\allowbreak Test}
+        \item Trả lời: ``\emph{nhận được} event thì xử lý đúng không?''
+      \end{itemize}
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{Mức 2: kịch bản xuyên module = IT}
+      \begin{itemize}\small
+        \item Context thật + DB thật; bắt event bằng listener cài trong test
+        \item Trả lời: ``event \emph{có thực sự được phát} và định tuyến tới
+          module kia không?''
+        \item Ví dụ thật: \texttt{SimulationModuleIT}
+      \end{itemize}
+    \end{block}
+  \end{columns}
+  \vspace{0.3em}
+  {\small \textbf{Lỗi chỉ mức 2 bắt được}: quên \texttt{publish}, sai kiểu
+  event, listener không được đăng ký, nhầm điều kiện phát (CLICK vs DELIVERED)
+  --- unit test từng listener vẫn xanh, pipeline vẫn đứt.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 40 - SimulationModuleIT setup
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{File thật: \texttt{SimulationModuleIT} --- bắt event trong test}
+  \vspace*{-0.4em}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@SpringBootTest(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.flyway.enabled=false", ... })
+class SimulationModuleIT {
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>("postgres:16-alpine");
+  static { POSTGRES.start(); }
+  // Listener cai rieng cho test: gom moi event phat ra
+  static class TestEventListener {
+    private final List<Object> events =
+        new CopyOnWriteArrayList<>();
+    @EventListener
+    public void onEvent(Object event) { events.add(event); }
+    public <T> List<T> ofType(Class<T> type) {
+      return events.stream().filter(type::isInstance)
+          .map(type::cast).toList();
+    }
+  }
+}
+\end{lstlisting}
+  {\scriptsize Kỹ thuật ``event probe'': một bean \texttt{@TestConfiguration}
+  lắng nghe tất cả event để test assert lên chúng.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 41 - SimulationModuleIT tests
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{File thật: CLICK phát event --- DELIVERED thì không}
+  \vspace*{-0.7em}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize,aboveskip=1pt,belowskip=0pt]
+@Test
+void recordingClickPublishesUserClickedEvent() {
+  TenantContext.set(TENANT);
+  UUID userId = UUID.randomUUID();
+  SimCampaign campaign = simulationService
+      .createCampaign(Channel.EMAIL, null, null);
+  simulationService.recordEvent(
+      campaign.getId(), userId, SimAction.CLICK);
+  var published = testEventListener.ofType(UserClickedSimulationEvent.class);
+  assertThat(published).hasSize(1);
+  assertThat(published.get(0).userId()).isEqualTo(userId);
+}
+@Test
+void recordingNonClickPublishesNoEvent() {
+  TenantContext.set(TENANT);
+  SimCampaign c = simulationService
+      .createCampaign(Channel.SMS, null, null);
+  simulationService.recordEvent(
+      c.getId(), UUID.randomUUID(), SimAction.DELIVERED);
+  assertThat(testEventListener
+      .ofType(UserClickedSimulationEvent.class)).isEmpty();
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 42 - ModularityTests
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Kiểm thử \emph{kiến trúc}: \texttt{ModularityTests} (file thật)}
+  \small\texttt{boot/app/src/test/java/com/digishield/ModularityTests.java} ---
+  chạy trong tầng \emph{unit} (không cần Docker):
+\begin{lstlisting}[language=Java,style=code,basicstyle=\ttfamily\scriptsize]
+class ModularityTests {
+    private final ApplicationModules modules =
+            ApplicationModules.of(DigishieldApplication.class);
+    @Test
+    void verifiesModularStructure() {
+        modules.verify();   // pham ranh gioi module -> FAIL
+    }
+    @Test
+    void writesDocumentation() {  // sinh so do C4/PlantUML
+        new Documenter(modules).writeDocumentation()
+            .writeIndividualModulesAsPlantUml();
+    }
+}
+\end{lstlisting}
+  {\small \textbf{Ý nghĩa}: nếu ai đó để \texttt{simulation} import thẳng class
+  nội bộ của \texttt{auth}, \texttt{verify()} fail ngay --- quy tắc kiến trúc
+  trở thành một \textbf{test case}, không phải lời dặn trong tài liệu.}
+\end{frame}
+
+%=====================================================================
+\section{So sánh chiến lược và flaky test}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 43 - Bảng so sánh chiến lược
+%---------------------------------------------------------------------
+\begin{frame}{So sánh bốn chiến lược kiểm thử backend}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.7cm}>{\raggedright\arraybackslash}p{1.6cm}>{\raggedright\arraybackslash}p{2.4cm}>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{3.2cm}}
+    \toprule
+    \textbf{Chiến lược} & \textbf{Tốc độ} & \textbf{Độ tin cậy} & \textbf{Phạm vi} & \textbf{Dùng khi} \\
+    \midrule
+    Unit + Mockito &
+    $<$10ms & cao nhất về logic, mù về hạ tầng & 1 class &
+    logic nghiệp vụ, nhánh rẽ, biên \\
+    Slice \texttt{@WebMvcTest} + MockMvc &
+    $\sim$1--2s & wiring HTTP thật, service mock & tầng web &
+    routing, JSON, mã trạng thái \\
+    \texttt{@SpringBootTest} + H2 &
+    $\sim$5--10s & wiring đủ, DB ``giả giọng'' & cả app, DB khác loại &
+    luồng CRUD chung, không đụng tính năng PG \\
+    \texttt{@SpringBootTest} + Testcontainers PG &
+    $\sim$10--30s & cao nhất trong JVM & cả app + DB thật &
+    RLS, migration, native query, event xuyên module \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  \vspace{0.3em}
+  \begin{alertblock}{Nguyên tắc chọn}
+    Dùng chiến lược \textbf{nhẹ nhất} đủ kiểm chứng điều cần kiểm chứng ---
+    leo lên tầng nặng hơn chỉ khi tầng dưới ``mù'' về rủi ro đó.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 44 - Pyramid
+%---------------------------------------------------------------------
+\begin{frame}{Kim tự tháp: đa số unit, ít integration test chất lượng cao}
+  \begin{columns}
+    \column{0.42\textwidth}
+    \begin{center}
+    \begin{tikzpicture}
+      \fill[lightgray] (-2.4,0) -- (2.4,0) -- (0,3.4) -- cycle;
+      \draw[darkgray,thick] (-2.4,0) -- (2.4,0) -- (0,3.4) -- cycle;
+      \draw[darkgray] (-1.55,1.2) -- (1.55,1.2);
+      \draw[darkgray] (-0.75,2.35) -- (0.75,2.35);
+      \node[font=\scriptsize] at (0,0.55) {Unit + slice (nhiều, nhanh)};
+      \node[font=\scriptsize,align=center] at (0,1.75) {Integration\\(ít, chọn lọc)};
+      \node[font=\scriptsize,align=center] at (0,2.75) {E2E};
+    \end{tikzpicture}
+    \end{center}
+    \column{0.58\textwidth}
+    \textbf{DigiShield áp dụng đúng tinh thần này:}
+    \begin{itemize}\small
+      \item 176 unit test trong \texttt{src/test} các module --- phủ
+        logic nhánh, biên, exception
+      \item Chỉ \textbf{7 file IT} (19 test) trong \texttt{src/integrationTest}
+        --- mỗi file gác một rủi ro \emph{không thể} kiểm chứng cách khác:
+        RLS, độ phủ RLS, event xuyên module, wiring HTTP, security header, CSP
+    \end{itemize}
+    \begin{exampleblock}{Câu hỏi trước khi viết một IT mới}
+      ``Rủi ro nào unit test \emph{không thể} bắt được mà test này bắt
+      được?'' --- nếu không trả lời được, viết unit test đi.
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 45 - Flaky nguyên nhân
+%---------------------------------------------------------------------
+\begin{frame}{Flaky test: kẻ thù số một của integration test}
+  \begin{block}{Flaky = lúc pass lúc fail mà code không đổi}
+    Một suite flaky bị cả team \emph{mất niềm tin} --- ``chắc lại flaky
+    thôi'' --- và lỗi thật sẽ lọt qua.
+  \end{block}
+  \begin{itemize}
+    \item \textbf{Thời gian / bất đồng bộ}: assert ngay sau khi phát event,
+      nhưng \texttt{@ApplicationModuleListener} chạy trên thread khác ---
+      lúc kịp, lúc không.
+    \item \textbf{Thứ tự test}: test A để lại dữ liệu, test B vô tình phụ
+      thuộc; đổi thứ tự chạy là fail.
+    \item \textbf{Trạng thái chia sẻ}: container/DB dùng chung giữa các test
+      mà không dọn; \texttt{TenantContext} (ThreadLocal) rò rỉ sang test sau.
+    \item \textbf{Môi trường}: port bị chiếm, đồng hồ hệ thống, mạng chậm
+      khi pull image.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 46 - Flaky phòng chống
+%---------------------------------------------------------------------
+\begin{frame}{Phòng chống flaky --- các kỹ thuật DigiShield đang dùng}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{6.6cm}}
+    \toprule
+    \textbf{Kỹ thuật} & \textbf{Trong code thật} \\
+    \midrule
+    Dọn / tái tạo trạng thái mỗi test &
+    \texttt{TenantIsolationIT} chạy lại \texttt{rls-setup.sql} trong
+    \texttt{@BeforeEach} \\
+    Dọn ThreadLocal trong \texttt{@AfterEach} &
+    \texttt{TenantContext.clear()} ở cả hai IT \\
+    Không ngủ chờ (\texttt{Thread.sleep}) &
+    \texttt{SimulationModuleIT} định tuyến publisher về gọi đồng bộ trong
+    test; nơi khác dùng cơ chế chờ theo điều kiện (Awaitility) \\
+    Port ngẫu nhiên, không hardcode &
+    Testcontainers + \texttt{@DynamicPropertySource} \\
+    Collection an toàn đa luồng cho probe &
+    \texttt{CopyOnWriteArrayList} trong \texttt{TestEventListener} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  {\small \textbf{Quy tắc vàng}: test phải \textbf{tự lo} tiền điều kiện của nó
+  và \textbf{trả lại} môi trường như cũ --- không tin tưởng test chạy trước,
+  không để lại ``di sản'' cho test chạy sau.}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 47 - Tổng quan thực hành
+%---------------------------------------------------------------------
+\begin{frame}{Thực hành trên lớp}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{c>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{3.6cm}c}
+    \toprule
+    \textbf{BT} & \textbf{Nội dung} & \textbf{Kỹ thuật} & \textbf{Thời gian} \\
+    \midrule
+    1 & Chạy \texttt{./gradlew integrationTest}, đọc report HTML &
+        Gradle, Testcontainers & 15 phút \\
+    2 & Đọc hiểu \texttt{TenantIsolationIT}: trả lời 3 câu hỏi kiểm tra &
+        RLS, fail-closed & 15 phút \\
+    3 & Viết IT mới: luồng watchlist POST $\to$ GET check &
+        \texttt{@SpringBootTest} + MockMvc & 30 phút \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  {\small \textbf{Chuẩn bị}: Docker Desktop đang chạy; pull image trước cho
+  nhanh: \texttt{docker pull postgres:16-alpine}}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{3 câu hỏi của BT2}
+    \small (1) Bỏ \texttt{FORCE ROW LEVEL SECURITY} thì test nào pass ảo, vì sao?
+    (2) Vì sao phải tạo \texttt{normal\_user}?
+    (3) Chuyện gì xảy ra nếu quên \texttt{TenantContext.clear()}?
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 48 - BT1
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{BT1 --- chạy và đọc kết quả integration test}
+\begin{lstlisting}[style=bash]
+cd digishield
+# 1) Unit test (nhanh, khong can Docker)
+./gradlew test
+
+# 2) Integration test (can Docker; lan dau pull image)
+./gradlew integrationTest
+
+# 3) Mo report HTML
+open boot/app/build/reports/tests/integrationTest/index.html
+\end{lstlisting}
+  \begin{itemize}\small
+    \item Ghi lại: tổng thời gian của \texttt{test} vs
+      \texttt{integrationTest}; thời gian từng test class.
+    \item Quan sát log: container PostgreSQL khởi động, port được gán.
+    \item Thử tắt Docker rồi chạy lại --- đọc hiểu
+      \texttt{ContainerLaunchException}.
+    \item So sánh: chạy \texttt{integrationTest} lần 2 nhanh hơn bao nhiêu
+      (image đã cache)?
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 49 - BT3 skeleton
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{BT3 --- IT mới: luồng watchlist (khung sườn)}
+  \vspace*{-0.5em}
+  {\scriptsize ANALYST thêm tài khoản đáng ngờ rồi tra cứu phải thấy
+  \texttt{inWatchlist=true} --- file \texttt{.../WatchlistFlowIT.java}:}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@SpringBootTest(properties = {
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.flyway.enabled=false",
+    "spring.cache.type=none", "management.health.redis.enabled=false" })
+@AutoConfigureMockMvc(addFilters = false) // don gian hoa: bo qua authz
+class WatchlistFlowIT {
+  static final PostgreSQLContainer<?> POSTGRES =
+      new PostgreSQLContainer<>("postgres:16-alpine");
+  static { POSTGRES.start(); }
+  @Autowired MockMvc mockMvc;
+  @DynamicPropertySource
+  static void ds(DynamicPropertyRegistry reg) {
+    reg.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+    reg.add("spring.datasource.username", POSTGRES::getUsername);
+    reg.add("spring.datasource.password", POSTGRES::getPassword);
+  }
+  // + @TestConfiguration stub JwtDecoder (nhu TenantIsolationIT)
+  // + TenantContext: set tenant demo trong @BeforeEach
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 50 - BT3 test body
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{BT3 --- thân test cần hoàn thiện}
+  \vspace*{-0.7em}
+\begin{lstlisting}[language=Java,style=codesm,basicstyle=\ttfamily\scriptsize]
+@Test
+void addedAccountIsFlaggedByCheck() throws Exception {
+  // 1) POST them tai khoan vao watchlist -> 201 Created
+  mockMvc.perform(post("/api/v1/account-watchlist")
+          .contentType(MediaType.APPLICATION_JSON)
+          .content("""
+              {"type": "bank_account",
+               "value": "9704-2222-9999",
+               "risk_level": "high",
+               "source": "A05"}"""))
+      .andExpect(status().isCreated())
+      .andExpect(jsonPath("$.value")
+          .value("9704-2222-9999"));
+  // 2) GET check -> phai thay inWatchlist = true
+  mockMvc.perform(get("/api/v1/account-watchlist/check")
+          .param("value", "9704-2222-9999"))
+      .andExpect(status().isOk())
+      .andExpect(jsonPath("$.inWatchlist").value(true))
+      .andExpect(jsonPath("$.riskLevel").value("HIGH"));
+}
+\end{lstlisting}
+  {\scriptsize Nâng cao (điểm cộng): thêm test tiêu cực --- check một giá trị
+  \emph{chưa} thêm phải trả \texttt{inWatchlist=false}.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 51 - Lỗi thường gặp
+%---------------------------------------------------------------------
+\begin{frame}{Lỗi thường gặp khi làm bài}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{5.4cm}>{\raggedright\arraybackslash}p{6.4cm}}
+    \toprule
+    \textbf{Triệu chứng} & \textbf{Nguyên nhân / cách xử lý} \\
+    \midrule
+    \texttt{ContainerLaunchException} &
+    Docker chưa chạy $\to$ mở Docker Desktop \\
+    Treo lâu ở lần chạy đầu &
+    Đang pull image $\to$ \texttt{docker pull} trước \\
+    \texttt{No qualifying bean JwtDecoder} &
+    Full context cần security $\to$ stub \texttt{JwtDecoder} bằng
+    \texttt{@TestConfiguration} \\
+    \texttt{IllegalStateException} thiếu tenant &
+    Chưa \texttt{TenantContext.set(\ldots)} trước khi gọi service ghi DB \\
+    Đặt file \texttt{*IT.java} vào \texttt{src/test} &
+    Sai source set $\to$ không được task \texttt{integrationTest} nhặt;
+    chuyển sang \texttt{src/integrationTest} \\
+    Test pass một mình, fail khi chạy cả suite &
+    Rò rỉ trạng thái $\to$ dọn dữ liệu / ThreadLocal trong
+    \texttt{@BeforeEach}/\texttt{@AfterEach} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp và tài liệu tham khảo}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 52 - Bài nộp
+%---------------------------------------------------------------------
+\begin{frame}{Bài nộp (về nhà, tính vào BTL --- A1.2, 30\%)}
+  \begin{block}{Yêu cầu cho nhóm BTL}
+    \begin{enumerate}\small
+      \item Hoàn thiện \texttt{WatchlistFlowIT} (BT3) chạy pass, kèm ảnh
+        report HTML.
+      \item Viết \textbf{ít nhất 2 integration test} cho \emph{module nhóm
+        mình phụ trách} trong BTL:
+        \begin{itemize}
+          \item 1 test luồng HTTP qua MockMvc (tích cực + tiêu cực), và
+          \item 1 test chạm hạ tầng thật (Testcontainers PostgreSQL) hoặc
+            test sự kiện xuyên module (kiểu \texttt{SimulationModuleIT}).
+        \end{itemize}
+      \item Nửa trang phân tích: mỗi IT gác rủi ro gì mà unit test của nhóm
+        (buổi 5--6) không bắt được? Đo và so sánh thời gian chạy hai tầng test.
+    \end{enumerate}
+  \end{block}
+  \begin{alertblock}{Nộp}
+    Push lên branch \texttt{btl/nhom-XX} + báo cáo PDF trước buổi 8.
+    Test phải chạy được bằng \texttt{./gradlew integrationTest}.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 53 - Tài liệu tham khảo
+%---------------------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slide} Slide bài giảng điện tử --- Bộ môn Công nghệ Phần mềm.
+    \bibitem{ammann} Paul Ammann \& Jeff Offutt, \emph{Introduction to Software
+      Testing}, Cambridge University Press, 2008.
+    \bibitem{myers} Glenford J. Myers, \emph{The Art of Software Testing},
+      2nd ed., John Wiley \& Sons, 2004.
+    \bibitem{istqb} ISTQB Foundation Level Syllabus, version 4.0, 2023.
+      \url{https://istqb.org/}
+    \bibitem{testcontainers} Testcontainers (guides, module PostgreSQL).
+      \url{https://testcontainers.com/}
+    \bibitem{springtest} Spring Boot Testing.
+      \url{https://docs.spring.io/spring-boot/reference/testing/}
+    \bibitem{modulith} Spring Modulith (testing,
+      \texttt{ApplicationModules.verify()}).
+      \url{https://docs.spring.io/spring-modulith/reference/}
+    \bibitem{pgrls} PostgreSQL Row Security Policies.
+      \url{https://www.postgresql.org/docs/16/ddl-rowsecurity.html}
+  \end{thebibliography}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 54 - Tổng kết
+%---------------------------------------------------------------------
+\begin{frame}{Tổng kết buổi 7}
+  \begin{columns}[t]
+    \column{0.55\textwidth}
+    \textbf{Nhớ 5 điều:}
+    \begin{enumerate}\small
+      \item Unit test mù về hạ tầng --- IT lấp đúng khoảng mù đó.
+      \item DigiShield tách 2 tầng: \texttt{src/test} (*Test) vs
+        \texttt{src/integrationTest} (*IT, cần Docker).
+      \item \texttt{@SpringBootTest} đắt --- tận dụng context caching,
+        slice test khi đủ.
+      \item Tính năng của database (RLS) phải test trên database thật:
+        Testcontainers.
+      \item Ít IT thôi, nhưng mỗi cái phải gác một rủi ro không thể kiểm
+        chứng cách khác.
+    \end{enumerate}
+    \column{0.45\textwidth}
+    \begin{block}{Buổi 8}
+      Chuyển sang \textbf{kiểm thử hộp đen} (Chương 5): phân vùng tương
+      đương, phân tích giá trị biên, bảng quyết định, chuyển trạng thái ---
+      thiết kế test case từ đặc tả, áp lên chính các API vừa test hôm nay.
+    \end{block}
+    \begin{center}
+      \vspace{0.4em}
+      {\large \textbf{Hỏi --- đáp}}
+    \end{center}
+  \end{columns}
+\end{frame}
+
+\end{document}

@@ -1,0 +1,1819 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+%---------------------------------------------------------------------
+% Font & encoding
+%---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+%---------------------------------------------------------------------
+% Theme
+%---------------------------------------------------------------------
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+% Màu chủ đạo: xanh #428BCA
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+% Loại bỏ navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footline tùy chỉnh
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 8
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}
+      \insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Itemize
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact spacing + auto slide-break for long frames
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{frametitle continuation}{\normalfont\small~(tiếp)}
+
+%---------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage{array}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=none,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+}
+
+%---------------------------------------------------------------------
+% Metadata
+%---------------------------------------------------------------------
+\title{Kiểm thử Hộp đen --- Các kỹ thuật thiết kế test case}
+\subtitle{Buổi 8 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 1 - Title
+%---------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 2 - Nội dung
+%---------------------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \begin{enumerate}
+      \item Kiểm thử hộp đen là gì?
+      \item Equivalence Partitioning (EP)
+      \item Boundary Value Analysis (BVA)
+      \item Thảo luận: hợp đồng API và validation
+      \item Decision Table Testing
+      \item State Transition Testing
+    \end{enumerate}
+    \column{0.44\textwidth}
+    \begin{enumerate}
+      \setcounter{enumi}{6}
+      \item Use Case Testing
+      \item Error Guessing \& Exploratory
+      \item Chọn kỹ thuật nào, khi nào?
+      \item Thực hành trên DigiShield
+      \item Bài nộp (gắn với BTL)
+    \end{enumerate}
+  \end{columns}
+
+  \vspace{0.5em}
+  \begin{exampleblock}{Sợi chỉ đỏ}
+    Toàn bộ ví dụ áp dụng trực tiếp lên các API và service THẬT của
+    \textbf{DigiShield} mà nhóm đang kiểm thử trong BTL.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 3 - Vị trí trong đề cương
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương môn học}
+  \begin{block}{Chương 5 --- Kiểm thử hộp đen}
+    Buổi 8 mở đầu Chương 5 của đề cương: \textit{Giới thiệu --- Khái niệm chung ---
+    Các phương pháp phân lớp} (phân lớp tương đương, giá trị biên, bảng quyết định,
+    chuyển trạng thái, use case).
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{center}
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Buổi} & \textbf{Chương} & \textbf{Nội dung} \\
+    \midrule
+    3--4 & C3 & Hộp trắng: CFG, độ phủ, MC/DC, JaCoCo \\
+    5--7 & C4 & JUnit 5, Mockito, Integration test \\
+    \textbf{8} & \textbf{C5} & \textbf{Hộp đen: EP, BVA, DT, ST, Use Case} \\
+    9 & C5 & Khuôn mẫu test case; API testing: Postman + Newman \\
+    10--11 & C6 & Selenium E2E \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  {\small Buổi 3--7 ta nhìn \textbf{vào trong} mã nguồn. Hôm nay ta lùi ra,
+  chỉ nhìn \textbf{đặc tả} --- đúng góc nhìn của tester và người dùng.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 4 - Ôn tập / động lực
+%---------------------------------------------------------------------
+\begin{frame}{Ôn tập và động lực}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Đã học (buổi 3--7)}
+      \begin{itemize}
+        \item Độ phủ câu lệnh / nhánh / MC-DC
+        \item JUnit 5 + Mockito, \texttt{@SpringBootTest}
+        \item DigiShield có 176 test, JaCoCo đo độ phủ
+      \end{itemize}
+    \end{block}
+
+    \begin{exampleblock}{Câu hỏi nhanh}
+      Test \texttt{evaluate()} đạt 100\% độ phủ nhánh thì đã đủ
+      để kết luận ``đúng nghiệp vụ'' chưa?
+    \end{exampleblock}
+
+    \column{0.48\textwidth}
+    \begin{alertblock}{Chưa!}
+      Độ phủ chỉ nói mã \textbf{đã viết} được chạy qua.
+      Nó không phát hiện:
+      \begin{itemize}
+        \item Yêu cầu bị cài đặt \textbf{thiếu}
+        \item Hành vi \textbf{khác đặc tả}
+        \item Trường hợp đặc tả \textbf{bỏ sót}
+      \end{itemize}
+    \end{alertblock}
+    {\small Buổi này: kỹ thuật \textbf{có hệ thống} để chọn tập nhỏ nhất
+    các test case có khả năng tìm lỗi cao nhất --- từ đặc tả.}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Kiểm thử hộp đen}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 5
+%---------------------------------------------------------------------
+\begin{frame}{Kiểm thử hộp đen là gì?}
+  \begin{block}{Định nghĩa}
+    Kiểm thử hộp đen (Black-box testing) là kỹ thuật kiểm thử trong đó
+    test case được thiết kế \textbf{chỉ dựa trên đặc tả} (yêu cầu, tài liệu
+    thiết kế, hợp đồng API), \textbf{không dựa vào mã nguồn} bên trong.
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.47\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[scale=0.72,transform shape,
+      box/.style={rectangle,draw=darkgray,fill=lightgray,
+                  minimum width=2cm,minimum height=1.2cm,
+                  align=center,font=\small},
+      arr/.style={-{Stealth[length=5pt]},darkgray,thick}
+    ]
+      \node[box,fill=darkgray,text=white,minimum width=2.6cm,
+            minimum height=1.4cm] (bb) {?\\[0.2em]\scriptsize DigiShield API};
+      \node[left=0.9cm of bb,font=\small,align=center] (in) {Request\\JSON};
+      \node[right=0.9cm of bb,font=\small,align=center] (out) {Response\\Status + body};
+      \draw[arr] (in) -- (bb);
+      \draw[arr] (bb) -- (out);
+    \end{tikzpicture}
+    \end{center}
+
+    \column{0.49\textwidth}
+    {\small
+    \textbf{Đặc điểm:}
+    \begin{itemize}
+      \item Không cần biết cách cài đặt
+      \item Phù hợp với tester / BA
+      \item Kiểm thử từ góc nhìn người dùng
+      \item Phát hiện lỗi yêu cầu, thiết kế
+    \end{itemize}
+    }
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 6
+%---------------------------------------------------------------------
+\begin{frame}[shrink=8]{Hộp đen so với Hộp trắng}
+  \vspace{-0.2em}
+  \begin{center}
+  \scriptsize
+  \renewcommand{\arraystretch}{0.9}
+  \begin{tabular}{p{2.5cm}p{3.9cm}p{3.9cm}}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{Hộp đen} & \textbf{Hộp trắng} \\
+    \midrule
+    Cơ sở thiết kế & Đặc tả, yêu cầu, OpenAPI & Mã nguồn, luồng điều khiển \\
+    Kiến thức cần có & Nghiệp vụ, API & Ngôn ngữ lập trình, thuật toán \\
+    Người thực hiện & Tester, BA & Developer, tester kỹ thuật \\
+    Phát hiện & Lỗi yêu cầu, logic nghiệp vụ & Lỗi cài đặt, nhánh chưa test \\
+    Thước đo & Độ phủ đặc tả (lớp, biên, rule) & Coverage (statement, branch) \\
+    Ví dụ DigiShield & POST /interventions/evaluate trả đúng quyết định? & Nhánh PAUSE/WARN/ALLOW đều được chạy? \\
+    Buổi học & \textbf{Buổi 8--9} (buổi này) & Buổi 3--4 \\
+    \bottomrule
+  \end{tabular}
+  \renewcommand{\arraystretch}{1}
+  \end{center}
+
+  \vspace{0.05em}
+  \begin{alertblock}{Lưu ý}
+    Hai kỹ thuật \textbf{bổ sung} cho nhau, không thay thế. BTL yêu cầu cả hai.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 7
+%---------------------------------------------------------------------
+\begin{frame}{``Đặc tả'' của DigiShield nằm ở đâu?}
+  \begin{block}{Test hộp đen cần đặc tả --- DigiShield có 4 nguồn}
+    \begin{enumerate}
+      \item \textbf{OpenAPI spec}: \texttt{docs/DigiShield\_openapi.yaml}
+        --- endpoint, request/response schema (buổi 9 import vào Postman)
+      \item \textbf{Javadoc / mô tả nghiệp vụ} trên interface service
+        (\texttt{InterceptionService}, \texttt{ReportingService}, \ldots)
+      \item \textbf{User story} của sản phẩm: ``Analyst xác nhận báo cáo
+        phishing thì hệ thống tự động đào tạo lại người dùng rủi ro''
+      \item \textbf{Hành vi giao diện}: các trang React (SOC Inbox, Watchlist)
+    \end{enumerate}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Thực tế phũ phàng}
+    Đặc tả thường \textbf{không đầy đủ}. Khi thiết kế test hộp đen mà không
+    trả lời được ``expected là gì?'' $\Rightarrow$ bạn vừa tìm ra một
+    \textbf{lỗ hổng đặc tả} --- cũng giá trị như tìm ra bug.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 8
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Các kỹ thuật hộp đen trong ISTQB}
+  \begin{columns}
+    \column{0.48\textwidth}
+    \begin{block}{Kỹ thuật dựa trên đặc tả}
+      \begin{enumerate}
+        \item \textbf{Equivalence Partitioning} (EP)
+        \item \textbf{Boundary Value Analysis} (BVA)
+        \item \textbf{Decision Table} Testing
+        \item \textbf{State Transition} Testing
+        \item \textbf{Use Case} Testing
+        \item Pairwise / Combinatorial
+        \item Cause-Effect Graphing
+      \end{enumerate}
+    \end{block}
+
+    \column{0.48\textwidth}
+    \begin{block}{Buổi này: 5 kỹ thuật đầu + 2 kỹ thuật kinh nghiệm}
+      \begin{itemize}
+        \item EP + BVA: từng trường đầu vào
+        \item Decision Table: nhiều điều kiện kết hợp
+        \item State Transition: hệ thống có trạng thái
+        \item Use Case: kịch bản người dùng
+        \item Error Guessing, Exploratory: dựa trên kinh nghiệm
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.2em}
+  {\scriptsize Tham khảo: ISTQB CTFL Syllabus; Myers, \textit{The Art of Software Testing}, ch.~4 [3].}
+\end{frame}
+
+%=====================================================================
+\section{Equivalence Partitioning}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 9
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Equivalence Partitioning --- Nguyên lý}
+  \begin{block}{Định nghĩa}
+    EP chia miền giá trị đầu vào thành các \textbf{lớp tương đương}
+    (equivalence class) sao cho các giá trị trong cùng một lớp
+    được hệ thống \textbf{xử lý theo cùng một cách}.
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{block}{Nguyên tắc chọn đại diện}
+    Nếu một giá trị trong lớp phát hiện lỗi, thì các giá trị khác
+    trong cùng lớp cũng sẽ phát hiện lỗi đó.\\[0.1em]
+    $\Rightarrow$ Chỉ cần kiểm thử \textbf{một đại diện} từ mỗi lớp.
+  \end{block}
+
+  \vspace{0.15em}
+  \small
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.48\textwidth}
+    \textbf{Phân loại lớp:}
+    \begin{itemize}
+      \item \textbf{Hợp lệ}: hệ thống chấp nhận
+      \item \textbf{Không hợp lệ}: hệ thống từ chối / xử lý riêng
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Lợi ích:}
+    \begin{itemize}
+      \item Giảm số test case
+      \item Bao phủ đại diện mọi tình huống
+      \item Dễ lý giải và review
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 10
+%---------------------------------------------------------------------
+\begin{frame}{EP --- Quy trình áp dụng}
+  \begin{enumerate}
+    \item \textbf{Xác định các trường đầu vào} cần kiểm thử.
+    \vspace{0.2em}
+    \item \textbf{Với mỗi trường}, xác định tất cả ràng buộc từ đặc tả:
+      kiểu dữ liệu, phạm vi (min/max), định dạng, bắt buộc/tùy chọn.
+    \vspace{0.2em}
+    \item \textbf{Phân lớp} thành lớp hợp lệ và không hợp lệ theo từng ràng buộc.
+    \vspace{0.2em}
+    \item \textbf{Chọn một đại diện} từ mỗi lớp.
+    \vspace{0.2em}
+    \item \textbf{Kết hợp} đại diện từ nhiều trường thành test case hoàn chỉnh.
+  \end{enumerate}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Áp dụng ngay trên DigiShield}
+    Ba ví dụ: (a) nhãn tuổi báo cáo \texttt{ageLabel}, (b) tham số
+    \texttt{size} của \texttt{GET /interventions}, (c) trường
+    \texttt{action} của \texttt{POST /sim/events}.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 11
+%---------------------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Ví dụ (a): nhãn tuổi báo cáo phishing}
+  \begin{block}{Đặc tả (từ javadoc \texttt{ReportingServiceImpl})}
+    Mỗi báo cáo trong SOC Inbox hiển thị \textbf{nhãn tuổi} gọn:
+    dưới 60 phút $\to$ \texttt{"Np"} (phút); từ 1 giờ đến dưới 24 giờ
+    $\to$ \texttt{"Nh"}; từ 24 giờ trở lên $\to$ \texttt{"Nd"}.
+  \end{block}
+
+\begin{lstlisting}[language=java]
+// ReportingServiceImpl.java (module reporting)
+private String ageLabel(Instant reportedAt, Instant now) {
+    if (reportedAt == null) return null;
+    Duration d = Duration.between(reportedAt, now);
+    long mins = Math.max(0, d.toMinutes());
+    if (mins < 60) return mins + "p";  // duoi 1 gio
+    long hours = d.toHours();
+    if (hours < 24) return hours + "h"; // duoi 1 ngay
+    return d.toDays() + "d";            // tu 1 ngay
+}
+\end{lstlisting}
+
+  {\small Tester hộp đen \textbf{không nhìn} code này --- chỉ nhìn đặc tả.
+  Ta chiếu code để đối chiếu sau khi phân lớp.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 12
+%---------------------------------------------------------------------
+\begin{frame}[shrink=8]{EP cho \texttt{ageLabel} --- ba lớp thời gian}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.95]
+    \draw[->,darkgray,thick] (-5.1,0) -- (5.6,0) node[right,font=\scriptsize]{tuổi};
+    \fill[darkgray!60] (-5.1,0.15) rectangle (-1.5,-0.15);
+    \fill[darkgray!35] (-1.5,0.15) rectangle (2.5,-0.15);
+    \fill[darkgray!15] (2.5,0.15) rectangle (5.4,-0.15);
+    \draw[darkgray,thick] (-1.5,0.28) -- (-1.5,-0.28)
+      node[below,yshift=-0.16cm,text=black]{\scriptsize 60 phút};
+    \draw[darkgray,thick] (2.5,0.28) -- (2.5,-0.28)
+      node[below,yshift=-0.16cm,text=black]{\scriptsize 24 giờ};
+    \node[font=\scriptsize] at (-3.3,0.7) {EP1: \texttt{"Np"}};
+    \node[font=\scriptsize] at (0.5,0.7) {EP2: \texttt{"Nh"}};
+    \node[font=\scriptsize] at (4.0,0.7) {EP3: \texttt{"Nd"}};
+    \node[circle,fill=darkgray,inner sep=2pt] at (-3.3,0) {};
+    \node[font=\scriptsize,below,yshift=-0.05cm] at (-3.3,-0.12) {25 phút};
+    \node[circle,fill=darkgray,inner sep=2pt] at (0.5,0) {};
+    \node[font=\scriptsize,below,yshift=-0.05cm] at (0.5,-0.12) {5 giờ};
+    \node[circle,fill=darkgray,inner sep=2pt] at (4.0,0) {};
+    \node[font=\scriptsize,below,yshift=-0.05cm] at (4.0,-0.12) {3 ngày};
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{center}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Lớp} & \textbf{Điều kiện (tuổi $t$)} & \textbf{Đại diện} & \textbf{Expected} \\
+    \midrule
+    EP1 (hợp lệ) & $0 \leq t < 60$ phút & $t = 25$ phút & \texttt{"25p"} \\
+    EP2 (hợp lệ) & $60$ phút $\leq t < 24$ giờ & $t = 5$ giờ & \texttt{"5h"} \\
+    EP3 (hợp lệ) & $t \geq 24$ giờ & $t = 3$ ngày & \texttt{"3d"} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  {\small Mỗi lớp một đại diện $\Rightarrow$ 3 test case thay vì vô hạn giá trị thời gian.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 13
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{EP cho \texttt{ageLabel} --- các lớp ``khó chịu''}
+  \begin{block}{Đặc tả im lặng về hai tình huống}
+    \begin{itemize}
+      \item \texttt{reportedAt = null} (dữ liệu cũ, import lỗi)?
+      \item \texttt{reportedAt} \textbf{sau} \texttt{now} (lệch đồng hồ giữa
+        client/server, múi giờ sai)?
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{center}
+  \small
+  \begin{tabular}{lllp{3.4cm}}
+    \toprule
+    \textbf{Lớp} & \textbf{Điều kiện} & \textbf{Hành vi thực tế} & \textbf{Câu hỏi cho spec} \\
+    \midrule
+    EP4 & \texttt{reportedAt = null} & trả về \texttt{null} & UI hiển thị gì khi nhãn null? \\
+    EP5 & báo cáo ``từ tương lai'' & \texttt{Math.max(0,\dots)} $\to$ \texttt{"0p"} & che giấu lỗi lệch giờ có ổn không? \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Bài học}
+    EP nghiêm túc luôn hỏi: \textit{``còn lớp đầu vào nào mà đặc tả chưa nói đến?''}
+    Lớp không hợp lệ / bất thường thường là nơi tìm ra defect và lỗ hổng đặc tả.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 14
+%---------------------------------------------------------------------
+\begin{frame}[fragile,shrink=10]{Ví dụ (b): tham số \texttt{size} của GET /interventions}
+  \begin{block}{Đặc tả}
+    \texttt{GET /api/v1/interventions?page=\&size=} (role ANALYST) trả về
+    danh sách sự kiện can thiệp, phân trang; \texttt{size} là số phần tử
+    mỗi trang, hợp lệ từ 1 đến 100.
+  \end{block}
+
+\begin{lstlisting}[language=java]
+// InterceptionServiceImpl.listInterventions(page, size)
+int safePage = Math.max(page, 1);
+int safeSize = Math.min(Math.max(size, 1), 100);
+Pageable pageable = PageRequest.of(safePage - 1, safeSize);
+\end{lstlisting}
+
+  \begin{center}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Lớp} & \textbf{Điều kiện} & \textbf{Đại diện} & \textbf{Hành vi thực tế} \\
+    \midrule
+    EP1 (không hợp lệ) & $size < 1$ & $0$, $-5$ & \textbf{clamp} về 1, HTTP 200 \\
+    EP2 (hợp lệ) & $1 \leq size \leq 100$ & $20$ & dùng nguyên giá trị, 200 \\
+    EP3 (không hợp lệ) & $size > 100$ & $500$ & \textbf{clamp} về 100, HTTP 200 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  {\small Lớp ``không hợp lệ'' không bị từ chối mà bị \textbf{sửa lặng lẽ} ---
+  ta sẽ thảo luận ở phần BVA.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 15
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Ví dụ (c): trường \texttt{action} của POST /sim/events}
+  \begin{block}{Đặc tả}
+    \texttt{POST /api/v1/sim/events} với body
+    \texttt{\{campaignId, userId, action\}} ghi nhận tương tác của người học
+    với chiến dịch mô phỏng. \texttt{action} là một trong 5 giá trị enum:
+    \texttt{DELIVERED, OPEN, CLICK, SUBMIT, REPORT}.
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{center}
+  \small
+  \begin{tabular}{lllp{2.6cm}}
+    \toprule
+    \textbf{Lớp} & \textbf{Điều kiện} & \textbf{Đại diện} & \textbf{Expected} \\
+    \midrule
+    EP1 (hợp lệ) & đúng 1 trong 5 enum & \texttt{"CLICK"} & 200, event lưu \\
+    EP2 (không hợp lệ) & chuỗi ngoài enum & \texttt{"HACKED"} & 400 \\
+    EP3 (không hợp lệ) & sai chữ hoa/thường & \texttt{"click"} & ? --- spec chưa nói \\
+    EP4 (không hợp lệ) & null / thiếu trường & (bỏ \texttt{action}) & 400 \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{exampleblock}{Nhận xét}
+    Với trường kiểu \textbf{enum}, mỗi giá trị hợp lệ là một lớp con đáng test
+    (5 giá trị $\to$ 5 TC) vì mỗi action đi vào thống kê chiến dịch khác nhau.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 16
+%---------------------------------------------------------------------
+\begin{frame}{EP --- Lưu ý khi kết hợp nhiều trường}
+  \begin{alertblock}{Giả định một lỗi (single-fault assumption)}
+    Để test lớp \textbf{không hợp lệ} của một trường, giữ các trường khác
+    ở giá trị \textbf{hợp lệ}. Nếu hai trường cùng sai, không rõ lỗi do
+    trường nào gây ra.
+  \end{alertblock}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Ví dụ với POST /sim/events}
+    \small
+    \begin{itemize}
+      \item Test \texttt{action="HACKED"} $\Rightarrow$ \texttt{campaignId},
+        \texttt{userId} phải là UUID có thật trong dữ liệu demo.
+      \item Test \texttt{campaignId} không tồn tại $\Rightarrow$
+        \texttt{action="CLICK"} hợp lệ.
+      \item Các lớp \textbf{hợp lệ} của nhiều trường có thể gộp vào chung
+        một test case để tiết kiệm.
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Boundary Value Analysis}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 17
+%---------------------------------------------------------------------
+\begin{frame}{Boundary Value Analysis --- Nguyên lý}
+  \begin{block}{Động lực}
+    Kinh nghiệm cho thấy lỗi \textbf{thường xuất hiện tại vùng biên}
+    giữa các lớp tương đương hơn là ở giữa lớp.
+    Lập trình viên dễ viết sai \texttt{<} thành \texttt{<=},
+    \texttt{Math.max} thành \texttt{Math.min}.
+  \end{block}
+
+  \vspace{0.4em}
+  \begin{block}{BVA 2-value}
+    Với mỗi biên, kiểm thử \textbf{hai} giá trị:
+    ngay tại biên (\textit{on-point}) và sát biên phía bên kia
+    (\textit{off-point}).
+  \end{block}
+
+  \begin{block}{BVA 3-value}
+    Kiểm thử \textbf{ba} giá trị cho mỗi biên:
+    \textit{below-point}, \textit{on-point}, \textit{above-point}.
+  \end{block}
+
+  \vspace{0.2em}
+  {\scriptsize Cả hai biến thể đều thuộc ISTQB CTFL Syllabus v4.0 (2023);
+  trước v4.0, 3-value nằm ở cấp Advanced.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 18
+%---------------------------------------------------------------------
+\begin{frame}[shrink=8]{BVA --- \texttt{size} từ 1 đến 100 (GET /interventions)}
+  \begin{center}
+  \begin{tikzpicture}[scale=1.0,transform shape]
+    \draw[->,darkgray,thick] (-1,0) -- (9.9,0) node[right,font=\small]{size};
+    \fill[darkgray!15] (-1,0.25) rectangle (1.5,-0.25);
+    \fill[darkgray!40] (1.5,0.25) rectangle (8,-0.25);
+    \fill[darkgray!15] (8,0.25) rectangle (9.6,-0.25);
+    \draw[darkgray,thick] (1.5, 0.4) -- (1.5,-0.4);
+    \draw[darkgray,thick] (8,   0.4) -- (8,  -0.4);
+    \foreach \x in {1.0,1.5,2.0,7.5,8.0,8.5}{
+      \node[circle,fill=darkgray,inner sep=2.2pt] at (\x,0) {};
+    }
+    \node[font=\scriptsize,below] at (1.0,-0.35) {0};
+    \node[font=\scriptsize,above] at (1.5,0.42) {1};
+    \node[font=\scriptsize,below] at (2.0,-0.35) {2};
+    \node[font=\scriptsize,below] at (7.5,-0.35) {99};
+    \node[font=\scriptsize,above] at (8.0,0.42) {100};
+    \node[font=\scriptsize,below] at (8.5,-0.35) {101};
+    \node[font=\small,below] at (0.0,-0.7) {clamp về 1};
+    \node[font=\small,below] at (4.75,-0.7) {dùng nguyên giá trị};
+    \node[font=\small,below] at (9.1,-0.7) {clamp về 100};
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lllll}
+    \toprule
+    \textbf{TC} & \textbf{size} & \textbf{Loại điểm} & \textbf{safeSize thực tế} & \textbf{Expected (spec?)} \\
+    \midrule
+    TC-B1 & $0$   & off-point biên dưới & $1$   & 400 hay 200-với-1? \\
+    TC-B2 & $1$   & on-point biên dưới  & $1$   & 200, 1 phần tử/trang \\
+    TC-B3 & $2$   & above-point         & $2$   & 200, 2 phần tử/trang \\
+    TC-B4 & $99$  & below-point         & $99$  & 200 \\
+    TC-B5 & $100$ & on-point biên trên  & $100$ & 200, tối đa 100 \\
+    TC-B6 & $101$ & off-point biên trên & $100$ & 400 hay 200-với-100? \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 19
+%---------------------------------------------------------------------
+\begin{frame}{Thảo luận: clamp lặng lẽ --- feature hay bug?}
+  \begin{block}{Quan sát từ BVA}
+    \texttt{size=0} và \texttt{size=101} \textbf{không gây lỗi 400}:
+    code \texttt{Math.min(Math.max(size,1),100)} lặng lẽ đưa về 1 và 100.
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Quan điểm ``feature'':}
+    \begin{itemize}
+      \item API bao dung, khó bị phá bằng tham số phân trang
+      \item Trải nghiệm client tốt hơn (không chết trang)
+    \end{itemize}
+    \column{0.48\textwidth}
+    \textbf{Quan điểm ``bug tiềm ẩn'':}
+    \begin{itemize}
+      \item Hành vi này \textbf{không có trong spec} $\Rightarrow$ client không biết
+      \item Che giấu lỗi phía client (gửi \texttt{size=-1} vẫn ``chạy'')
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Kết luận cho tester}
+    Test hộp đen \textbf{không tự quyết} đúng/sai --- nó buộc đội dự án
+    \textbf{chốt spec}: hoặc ghi rõ ``ngoài khoảng thì clamp'' vào OpenAPI,
+    hoặc đổi code trả 400. Expected của TC-B1/TC-B6 chỉ viết được sau khi chốt.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 20
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{BVA --- điểm rủi ro 0..100 (module analytics)}
+  \begin{block}{Đặc tả \texttt{AnalyticsServiceImpl.computeScore}}
+    Điểm rủi ro người dùng = điểm nền $5$ cộng trọng số tín hiệu
+    (click mô phỏng, báo cáo xác nhận\ldots trong cửa sổ 90 ngày),
+    \textbf{chặn trong đoạn} $[0, 100]$:
+    \texttt{Math.max(0, Math.min(100, 5 + signalWeight))}.
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{center}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{TC} & \textbf{signalWeight} & \textbf{score thô} & \textbf{Expected} \\
+    \midrule
+    TC-R1 & $0$ (không tín hiệu) & $5$ & $5$ (điểm nền) \\
+    TC-R2 & $94$ & $99$ & $99$ \\
+    TC-R3 & $95$ & $100$ & $100$ (on-point) \\
+    TC-R4 & $96$ & $101$ & $100$ (bị chặn trên) \\
+    TC-R5 & $-5$ & $0$ & $0$ (on-point dưới) \\
+    TC-R6 & $-6$ & $-1$ & $0$ (bị chặn dưới) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  {\small Biên của \textbf{đầu ra} cũng cần BVA, không chỉ đầu vào:
+  dashboard hiển thị sai khi score vượt 100 là lỗi nghiêm trọng về niềm tin.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 21
+%---------------------------------------------------------------------
+\begin{frame}[fragile,shrink=10]{BVA --- độ tin cậy AI trong \texttt{StubAiClient}}
+  \begin{block}{Đặc tả}
+    \texttt{POST /ai/classify}: nội dung có tín hiệu lừa đảo $\to$ nhãn
+    \texttt{"threat"} với \texttt{confidence} $= 0.6 + 0.1\times$(số tín hiệu),
+    chặn tối đa $1.0$.
+  \end{block}
+
+\begin{lstlisting}[language=java]
+// StubAiClient.classify(payload)
+long threatHits = countHits(text, THREAT_SIGNALS);
+if (threatHits > 0) {
+    double confidence = clamp(0.6 + 0.1 * threatHits);
+    return new ClassificationView("threat", confidence, ...);
+}
+// clamp(v) = Math.max(0.0, Math.min(1.0, v))
+\end{lstlisting}
+
+  \begin{center}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Số tín hiệu} & $1$ & $4$ & $5$ \\
+    \midrule
+    \textbf{confidence} & $0.7$ & $1.0$ (chạm trần) & $1.0$ (bão hòa) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  {\small Biên nằm ở \textbf{4 tín hiệu}: từ đó trở đi confidence không tăng nữa.
+  Test data: payload chứa \texttt{"otp"}, \texttt{"urgent"}, \texttt{"login"}, \ldots}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 22
+%---------------------------------------------------------------------
+\begin{frame}[shrink=8]{EP + BVA kết hợp --- bộ test cho \texttt{ageLabel}}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lllll}
+    \toprule
+    \textbf{TC-ID} & \textbf{Tuổi báo cáo} & \textbf{Kỹ thuật} & \textbf{Lớp/biên} & \textbf{Expected} \\
+    \midrule
+    TC-A1 & 0 phút        & BVA & on-point biên dưới & \texttt{"0p"} \\
+    TC-A2 & 25 phút       & EP  & EP1 đại diện       & \texttt{"25p"} \\
+    TC-A3 & 59 phút       & BVA & below 60 phút      & \texttt{"59p"} \\
+    TC-A4 & 60 phút       & BVA & on-point 60 phút   & \texttt{"1h"} \\
+    TC-A5 & 5 giờ         & EP  & EP2 đại diện       & \texttt{"5h"} \\
+    TC-A6 & 23 giờ 59 phút& BVA & below 24 giờ       & \texttt{"23h"} \\
+    TC-A7 & 24 giờ        & BVA & on-point 24 giờ    & \texttt{"1d"} \\
+    TC-A8 & 3 ngày        & EP  & EP3 đại diện       & \texttt{"3d"} \\
+    TC-A9 & null          & EP  & EP4 bất thường     & null (spec?) \\
+    TC-A10 & $-10$ phút (tương lai) & EP & EP5 bất thường & \texttt{"0p"} (spec?) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{exampleblock}{Buổi 5--7 đã học cách cài đặt}
+    Bảng này chuyển thẳng thành \texttt{@ParameterizedTest} với
+    \texttt{@CsvSource} --- hàm thuần \texttt{ageLabel} là ứng viên hoàn hảo.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 23
+%---------------------------------------------------------------------
+\begin{frame}{EP và BVA --- Tổng kết so sánh}
+  \begin{center}
+  \small
+  \begin{tabular}{p{2.5cm}p{4.5cm}p{4cm}}
+    \toprule
+    \textbf{Thuộc tính} & \textbf{EP} & \textbf{BVA} \\
+    \midrule
+    Mục tiêu     & Giảm số test case bằng cách chọn đại diện & Tập trung vào điểm dễ lỗi nhất \\
+    Áp dụng khi  & Đầu vào chia được thành vùng xử lý khác nhau & Có phạm vi / giới hạn rõ ràng \\
+    Số test case & Bằng số lớp & Gấp đôi (hoặc ba) số biên \\
+    Loại lỗi     & Xử lý sai theo nhóm & Off-by-one, điều kiện biên sai \\
+    DigiShield   & \texttt{action} enum, 3 lớp \texttt{ageLabel} & \texttt{size} 1..100, score 0..100 \\
+    Kết hợp      & \multicolumn{2}{c}{Luôn dùng cả hai; BVA là EP được tinh chỉnh tại biên} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%=====================================================================
+\section{Thảo luận: hợp đồng API và validation}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 24
+%---------------------------------------------------------------------
+\begin{frame}[fragile,shrink=12]{DigiShield không dùng Bean Validation}
+  \begin{block}{Quan sát kiến trúc}
+    DigiShield \textbf{không} dùng \texttt{@NotNull}, \texttt{@Email},
+    \texttt{@Size} trên DTO. Mọi kiểm tra đầu vào viết \textbf{thủ công
+    trong service}:
+  \end{block}
+
+\begin{lstlisting}[language=java]
+// AuthServiceImpl.createUser(input)
+String email = input.email();
+if (email == null || email.isBlank()) {
+    throw new IllegalArgumentException("email is required");
+}
+\end{lstlisting}
+
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    {\small\textbf{Hệ quả với tester:}
+    \begin{itemize}
+      \item Không thể ``đọc annotation ra spec''
+      \item Mỗi trường phải \textbf{thử mới biết} hành vi thật
+    \end{itemize}}
+    \column{0.48\textwidth}
+    {\small\textbf{Hệ quả với hệ thống:}
+    \begin{itemize}
+      \item \texttt{IllegalArgumentException} không được handler nào dịch
+        sang HTTP status chuẩn
+      \item Kết quả trả về client là gì? $\to$ slide sau
+    \end{itemize}}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 25
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Thí nghiệm: POST /users với email rỗng --- 400 hay 500?}
+  \begin{exampleblock}{Làm ngay trên máy (dev profile, không cần Docker)}
+    \small
+    Gửi \texttt{POST /api/v1/users} với body
+    \texttt{\{"email": "", "displayName": "Test"\}}
+    (profile dev: \texttt{DevSecurityConfig} permitAll --- không cần token).
+    Quan sát status code.
+  \end{exampleblock}
+
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Kỳ vọng theo hợp đồng API}
+      Lỗi \textbf{của client} $\Rightarrow$ \texttt{400 Bad Request}
+      + thông báo chỉ rõ trường sai.
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{alertblock}{Hành vi thực tế}
+      \texttt{IllegalArgumentException} nổ ra khỏi service, không có
+      \texttt{@ControllerAdvice} $\Rightarrow$ Spring trả
+      \texttt{500 Internal Server Error}.
+    \end{alertblock}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{block}{Bài học về hợp đồng API}
+    \small 500 nghĩa là ``lỗi của server'' --- client sẽ retry, alert sẽ réo.
+    Một test hộp đen tốt \textbf{phân biệt 4xx với 5xx}: đây là defect thật
+    tìm được chỉ bằng EP lớp không hợp lệ, không cần đọc code.
+    (Định dạng email sai kiểu \texttt{"abc"} thì sao? --- không có kiểm tra nào cả!)
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Decision Table Testing}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 26
+%---------------------------------------------------------------------
+\begin{frame}{Decision Table Testing --- Nguyên lý}
+  \begin{block}{Khi nào dùng?}
+    Khi kết quả đầu ra phụ thuộc vào \textbf{tổ hợp} của nhiều điều kiện
+    đầu vào. Một điều kiện đơn lẻ không đủ để xác định hành vi hệ thống.
+  \end{block}
+
+  \vspace{0.4em}
+  \begin{columns}[T,onlytextwidth]
+    \column{0.52\textwidth}
+    \textbf{Cấu trúc một Decision Table:}
+    \begin{itemize}
+      \item \textbf{Conditions} (hàng trên): điều kiện đầu vào
+      \item \textbf{Actions} (hàng dưới): hành động / kết quả
+      \item \textbf{Rules} (cột): mỗi cột một tổ hợp điều kiện
+      \item $n$ điều kiện Boolean $\Rightarrow$ tối đa $2^n$ rules
+    \end{itemize}
+
+    \column{0.42\textwidth}
+    \begin{block}{Ký hiệu}
+      {\small
+      \begin{tabular}{ll}
+        \texttt{T} & Điều kiện đúng \\
+        \texttt{F} & Điều kiện sai \\
+        \texttt{-} & Không quan trọng \\
+        $\checkmark$ & Hành động xảy ra \\
+        (trống) & Không xảy ra \\
+      \end{tabular}
+      }
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 27
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ví dụ chủ lực: can thiệp giao dịch đáng ngờ}
+  \begin{block}{Đặc tả \texttt{POST /interventions/evaluate}}
+    Khi người dùng chuyển tiền, hệ thống chấm 3 tín hiệu: đang có
+    \textbf{cuộc gọi} (onCall), \textbf{người nhận mới} (newPayee),
+    tài khoản đích \textbf{trong watchlist} (watchlistHit).
+    Cả 3 $\to$ \texttt{PAUSE}; chỉ cần watchlist $\to$ \texttt{WARN};
+    còn lại \texttt{ALLOW}.
+  \end{block}
+
+\begin{lstlisting}[language=java]
+// InterceptionServiceImpl.evaluate(request)
+if (request.onCall() && request.newPayee()
+        && watchlistHit) {
+    decision = Decision.PAUSE;   // chan + giao duc
+} else if (watchlistHit) {
+    decision = Decision.WARN;    // canh bao
+} else {
+    decision = Decision.ALLOW;   // cho qua
+}
+eventRepository.save(event);     // luon ghi log
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 28
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Decision Table đầy đủ: $2^3 = 8$ rules}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{5pt}
+  \begin{tabular}{lcccccccc}
+    \toprule
+    & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{R4} & \textbf{R5} & \textbf{R6} & \textbf{R7} & \textbf{R8} \\
+    \midrule
+    \textbf{Điều kiện} & & & & & & & & \\
+    \quad onCall       & T & T & T & T & F & F & F & F \\
+    \quad newPayee     & T & T & F & F & T & T & F & F \\
+    \quad watchlistHit & T & F & T & F & T & F & T & F \\
+    \midrule
+    \textbf{Hành động} & & & & & & & & \\
+    \quad PAUSE  & $\checkmark$ & & & & & & & \\
+    \quad WARN   & & & $\checkmark$ & & $\checkmark$ & & $\checkmark$ & \\
+    \quad ALLOW  & & $\checkmark$ & & $\checkmark$ & & $\checkmark$ & & $\checkmark$ \\
+    \quad Lưu InterventionEvent & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ & $\checkmark$ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  {\small Mỗi cột là một test case tiềm năng. Hàng ``Lưu InterventionEvent''
+  nhắc ta: \textbf{hành động phụ} (ghi log, publish event) cũng phải kiểm tra,
+  không chỉ giá trị trả về.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 29
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Rút gọn Decision Table}
+  \begin{block}{Ba luật nghiệp vụ, bốn cột rút gọn}
+    \small
+    (1) PAUSE khi \textbf{cả ba} tín hiệu; (2) WARN khi watchlistHit nhưng
+    \textbf{không đủ cả ba}; (3) ALLOW khi \textbf{không} watchlistHit.
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{lcccc}
+    \toprule
+    & \textbf{R1} & \textbf{R2'} & \textbf{R3'} & \textbf{R4'} \\
+    \midrule
+    onCall       & T & F & T & - \\
+    newPayee     & T & - & F & - \\
+    watchlistHit & T & T & T & F \\
+    \midrule
+    PAUSE & $\checkmark$ & & & \\
+    WARN  & & $\checkmark$ & $\checkmark$ & \\
+    ALLOW & & & & $\checkmark$ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  {\small R4' gộp R2, R4, R6, R8 (không watchlist $\to$ luôn ALLOW).
+  Luật WARN ``watchlistHit và không đủ cả ba'' cần \textbf{hai} cột R2'/R3'
+  vì ký hiệu \texttt{-} không diễn đạt được ``không đồng thời cả hai T''
+  trong một cột --- 8 rules rút còn 4, vẫn phủ đủ 3 hành vi.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 30
+%---------------------------------------------------------------------
+\begin{frame}{Decision Table phát hiện tổ hợp đáng ngờ}
+  \begin{alertblock}{Nhìn lại cột R2 của bảng đầy đủ}
+    \texttt{onCall = T}, \texttt{newPayee = T}, \texttt{watchlistHit = F}
+    $\Rightarrow$ \textbf{ALLOW}?!\\[0.3em]
+    Người dùng \textbf{đang nghe điện thoại} và chuyển tiền cho
+    \textbf{người nhận hoàn toàn mới} --- kịch bản lừa đảo qua cuộc gọi
+    kinh điển ở VN --- nhưng vì tài khoản đích chưa kịp vào watchlist,
+    hệ thống cho qua không một lời cảnh báo.
+  \end{alertblock}
+
+  \vspace{0.4em}
+  \begin{block}{Thảo luận cả lớp}
+    \begin{itemize}
+      \item Đây là bug của \textbf{code} hay của \textbf{đặc tả}? (Code làm đúng spec!)
+      \item Nếu là bạn, bạn đề xuất rule mới nào cho R2? (\texttt{WARN}?)
+      \item Ai là người quyết định --- tester, developer hay product owner?
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.2em}
+  {\small Đây chính là sức mạnh của Decision Table: \textbf{liệt kê đủ tổ hợp}
+  buộc ta đối diện những trường hợp mà đặc tả viết theo lối kể chuyện đã bỏ quên.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 31
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Từ rule thành test case API}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabularx}{\textwidth}{l l >{\raggedright\arraybackslash}X l}
+    \toprule
+    \textbf{TC-ID} & \textbf{Rule} & \textbf{Input (POST /interventions/evaluate)} & \textbf{Expected} \\
+    \midrule
+    TC-DT-1 & R1 & onCall=true, newPayee=true, destAccount có trong watchlist & decision \texttt{"PAUSE"}, 3 signals \\
+    TC-DT-2 & R2 & onCall=true, newPayee=true, destAccount lạ & decision \texttt{"ALLOW"}, 2 signals \\
+    TC-DT-3 & R3' & onCall=true, newPayee=false, destAccount trong watchlist & decision \texttt{"WARN"} \\
+    TC-DT-4 & R2' & onCall=false, newPayee=true, destAccount trong watchlist & decision \texttt{"WARN"} \\
+    TC-DT-5 & R4' & onCall=false, newPayee=false, destAccount lạ & decision \texttt{"ALLOW"}, 0 signals \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{exampleblock}{Chuẩn bị dữ liệu}
+    \small ``destAccount có trong watchlist'' là \textbf{precondition}:
+    tạo trước bằng \texttt{POST /account-watchlist} (role ANALYST).
+    Buổi 9 ta sẽ tự động hóa chuỗi này bằng Postman.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{State Transition Testing}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 32
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{State Transition Testing --- Nguyên lý}
+  \begin{block}{Định nghĩa}
+    Kiểm thử hành vi của hệ thống khi \textbf{chuyển từ trạng thái này
+    sang trạng thái khác} dưới tác động của các sự kiện (events).
+  \end{block}
+
+  \vspace{0.1em}
+  \small
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.48\textwidth}
+    \textbf{Thành phần của máy trạng thái:}
+    \begin{itemize}
+      \item \textbf{State}: trạng thái tại một thời điểm
+      \item \textbf{Event}: sự kiện kích hoạt
+      \item \textbf{Guard}: điều kiện phụ
+      \item \textbf{Action}: hành động khi chuyển tiếp
+      \item \textbf{Transition}: cạnh nối hai state
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Ký hiệu:}
+    \begin{center}
+    \begin{tikzpicture}[
+      st/.style={circle,draw=darkgray,fill=lightgray,
+                 minimum size=1cm,font=\scriptsize,align=center},
+      arr/.style={-{Stealth[length=4pt]},darkgray}
+    ]
+      \node[st] (A) {State\\A};
+      \node[st,right=2cm of A] (B) {State\\B};
+      \draw[arr] (A) -- (B)
+        node[midway,above,font=\scriptsize]{event [guard]}
+        node[midway,below,font=\scriptsize]{/ action};
+    \end{tikzpicture}
+    \end{center}
+
+    \vspace{0.3em}
+    \textbf{Áp dụng khi:} hành vi phụ thuộc vào trạng thái hiện tại
+    --- báo cáo phishing, mẫu AI, chiến dịch mô phỏng.
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 33
+%---------------------------------------------------------------------
+\begin{frame}{Vòng đời báo cáo phishing (\texttt{PhishingReport})}
+  \begin{center}
+  \begin{tikzpicture}[
+    st/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=3pt,
+               minimum width=2.3cm,minimum height=0.75cm,font=\small,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick},
+    lbl/.style={font=\scriptsize,midgray,align=center}
+  ]
+    \node[circle,fill=darkgray,inner sep=4pt] (init) at (-2.6,0) {};
+    \node[st] (sub)  at (0,0)    {SUBMITTED};
+    \node[st,fill=darkgray,text=white] (conf) at (5,1.1)  {CONFIRMED};
+    \node[st] (dis)  at (5,-1.3) {DISMISSED};
+    \node[st,draw=darkgray,dashed,fill=white] (tri) at (0,-2.4) {TRIAGING\\\scriptsize(?)};
+
+    \draw[arr] (init) -- (sub)
+      node[midway,above,lbl]{POST /reports/phishing};
+    \draw[arr] (sub) -- (conf)
+      node[midway,above,sloped,lbl]{triage(true)\\/ publish event};
+    \draw[arr] (sub) -- (dis)
+      node[midway,below,sloped,lbl]{triage(false)};
+    \draw[arr] (conf) to[out=20,in=-20,looseness=4]
+      node[right,lbl]{convert-to-training\\/ convertedToTraining=true} (conf);
+  \end{tikzpicture}
+  \end{center}
+
+  {\small Enum thật: \texttt{ReportStatus = \{SUBMITTED, TRIAGING, CONFIRMED,
+  DISMISSED\}}. Khi CONFIRMED, service publish
+  \texttt{PhishingReportConfirmedEvent} --- kích hoạt pipeline AIDA
+  (chấm lại rủi ro, tự ghi danh khóa học).}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 34
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{State Transition Table cho PhishingReport}
+  \begin{block}{Theo đặc tả kỳ vọng}
+    Mỗi ô: trạng thái kế tiếp khi nhận event; \texttt{---} = chuyển tiếp
+    không hợp lệ, hệ thống phải từ chối.
+  \end{block}
+
+  \vspace{0.1em}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{6pt}
+  \begin{tabular}{lccc}
+    \toprule
+    \textbf{State} $\backslash$ \textbf{Event}
+      & triage(true) & triage(false) & convert-to-training \\
+    \midrule
+    SUBMITTED & CONFIRMED & DISMISSED & --- \\
+    CONFIRMED & ---       & ---       & CONFIRMED (+flag) \\
+    DISMISSED & ---       & ---       & --- \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{exampleblock}{Test case sinh ra}
+    \small Ô có tên state $\Rightarrow$ test chuyển tiếp \textbf{hợp lệ}
+    (kiểm cả action phụ: publish event, set aiLabel). Ô \texttt{---}
+    $\Rightarrow$ test chuyển tiếp \textbf{không hợp lệ}: gọi và kỳ vọng bị từ chối.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 35
+%---------------------------------------------------------------------
+\begin{frame}{Điều mà State Transition Testing phát hiện ra}
+  \begin{alertblock}{Hai phát hiện khi đối chiếu bảng với hệ thống thật}
+    \small
+    \begin{enumerate}
+      \item \textbf{Trạng thái chết} (dead state): \texttt{TRIAGING} có trong
+        enum nhưng \textbf{không có chỗ nào trong code gán nó} --- trạng thái
+        không thể đạt tới. Spec thừa hay code thiếu?
+      \item \textbf{Không có guard trạng thái}: \texttt{triage()} không kiểm tra
+        status hiện tại. Triage lại một báo cáo đã \texttt{CONFIRMED} bằng
+        \texttt{confirmThreat=false} $\Rightarrow$ nó lặng lẽ thành
+        \texttt{DISMISSED} (và ngược lại). \texttt{convert-to-training} cũng
+        chạy được trên báo cáo \texttt{DISMISSED}!
+    \end{enumerate}
+  \end{alertblock}
+
+  \vspace{0.3em}
+  \begin{block}{Vì sao invalid transition đáng test đến vậy?}
+    \small Người dùng thật sẽ bấm nút hai lần, gọi API sai thứ tự, replay request.
+    Hệ thống nghiệp vụ an ninh (chống lừa đảo!) mà cho phép ``lật'' kết luận
+    threat $\leftrightarrow$ clean không kiểm soát là rủi ro kiểm toán nghiêm trọng.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 36
+%---------------------------------------------------------------------
+\begin{frame}{Máy trạng thái thứ hai: mẫu phishing AI (\texttt{AiTemplate})}
+  \begin{center}
+  \begin{tikzpicture}[
+    st/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=3pt,
+               minimum width=2.2cm,minimum height=0.75cm,font=\small,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick},
+    lbl/.style={font=\scriptsize,midgray,align=center}
+  ]
+    \node[circle,fill=darkgray,inner sep=4pt] (init) at (-3.2,0) {};
+    \node[st] (draft) at (0,0) {DRAFT};
+    \node[st,fill=darkgray,text=white] (appr) at (4.6,0) {APPROVED};
+    \draw[arr] (init) -- (draft)
+      node[midway,above,lbl]{generate /\\create(approved=false)};
+    \draw[arr] (draft) -- (appr)
+      node[midway,above,lbl]{submit\\(CONTENT\_EDITOR)};
+    \draw[arr] (init) to[out=-35,in=-145]
+      node[midway,below,lbl]{create(approved=true)} (appr);
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.2em}
+  \small
+  \begin{itemize}
+    \item Mẫu do AI sinh (\texttt{POST /ai/templates/generate}) \textbf{luôn}
+      vào \texttt{DRAFT} --- con người phải duyệt trước khi dùng cho chiến dịch.
+    \item Câu hỏi state-transition: mẫu \texttt{APPROVED} có ``submit'' lại được
+      không? Chiến dịch có được phép chọn mẫu \texttt{DRAFT} không?
+      $\to$ hai test không hợp lệ đáng giá.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 37
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Các chiến lược bao phủ chuyển trạng thái}
+  \small
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.48\textwidth}
+    \begin{block}{All states}
+      Mỗi \textbf{trạng thái} được đi qua ít nhất một lần
+      --- tiêu chí riêng, yếu nhất.
+    \end{block}
+    \begin{block}{0-switch (all transitions)}
+      Mỗi \textbf{chuyển tiếp hợp lệ} được thực thi ít nhất một lần
+      --- mức tối thiểu nên đạt.
+    \end{block}
+    \begin{block}{1-switch}
+      Mọi \textbf{cặp} chuyển tiếp liên tiếp --- ví dụ
+      triage(true) rồi convert-to-training ngay sau đó.
+      Tổng quát: $N$-switch = chuỗi $N{+}1$ chuyển tiếp liên tiếp.
+    \end{block}
+
+    \column{0.48\textwidth}
+    \begin{exampleblock}{0-switch (all transitions) cho PhishingReport}
+      \begin{enumerate}
+        \item submit $\to$ SUBMITTED
+        \item SUBMITTED $\to$ CONFIRMED
+        \item SUBMITTED $\to$ DISMISSED
+        \item CONFIRMED $\to$ convert-to-training
+      \end{enumerate}
+      \textbf{+ Invalid transitions:}
+      \begin{enumerate}
+        \setcounter{enumi}{4}
+        \item triage lại report CONFIRMED
+        \item convert report DISMISSED
+      \end{enumerate}
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 38
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Bảng test case chuyển trạng thái}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabularx}{\textwidth}{l l >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X}
+    \toprule
+    \textbf{TC-ID} & \textbf{Loại} & \textbf{Kịch bản} & \textbf{Expected} \\
+    \midrule
+    TC-ST-1 & valid & POST /reports/phishing với payload mẫu & 200, status \texttt{submitted} \\
+    TC-ST-2 & valid & triage \texttt{confirmThreat=true} report SUBMITTED & status \texttt{confirmed}, aiLabel \texttt{threat}, event published \\
+    TC-ST-3 & valid & triage \texttt{confirmThreat=false} report SUBMITTED & status \texttt{dismissed}, aiLabel \texttt{clean}, KHÔNG có event \\
+    TC-ST-4 & valid & convert-to-training report CONFIRMED & \texttt{convertedToTraining=true} \\
+    TC-ST-5 & invalid & triage(false) report đã CONFIRMED & kỳ vọng bị từ chối --- thực tế: đổi thành DISMISSED! \\
+    TC-ST-6 & invalid & convert-to-training report DISMISSED & kỳ vọng bị từ chối --- thực tế: vẫn set flag \\
+    TC-ST-7 & invalid & triage id không tồn tại & lỗi ``Không tìm thấy báo cáo'' \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+  \end{center}
+
+  \vspace{0.15em}
+  {\small TC-ST-5/6 \textbf{fail so với đặc tả kỳ vọng} --- ghi nhận thành defect
+  report, đem thảo luận với đội phát triển (bài học buổi 12 về quy trình defect).}
+\end{frame}
+
+%=====================================================================
+\section{Use Case Testing}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 39
+%---------------------------------------------------------------------
+\begin{frame}[shrink=8]{Use Case Testing --- Nguyên lý}
+  \begin{block}{Định nghĩa}
+    Thiết kế test case từ \textbf{kịch bản sử dụng} (use case) mô tả cách
+    người dùng tương tác với hệ thống để đạt một mục tiêu nghiệp vụ.
+  \end{block}
+
+  \vspace{0.15em}
+  \small
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.48\textwidth}
+    \textbf{Cấu trúc một Use Case:}
+    \begin{itemize}
+      \item \textbf{Actor}: người / hệ thống tương tác
+      \item \textbf{Precondition}: điều kiện trước
+      \item \textbf{Main flow}: luồng chính (happy path)
+      \item \textbf{Alternative}: luồng thay thế
+      \item \textbf{Exception}: luồng lỗi
+      \item \textbf{Postcondition}: trạng thái sau
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Test case được sinh từ:}
+    \begin{itemize}
+      \item Một TC cho luồng chính
+      \item Một TC cho mỗi luồng thay thế
+      \item Một TC cho mỗi luồng lỗi
+      \item TC khi precondition không thỏa
+    \end{itemize}
+    \vspace{0.2em}
+    Khác EP/BVA: kiểm thử \textbf{chuỗi bước xuyên nhiều API},
+    phát hiện lỗi \textbf{tích hợp nghiệp vụ}.
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 40
+%---------------------------------------------------------------------
+\begin{frame}[shrink=16]{UC-DS-01: Analyst xử lý báo cáo phishing}
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.50\textwidth}
+    \small
+    \begin{block}{Main flow (pipeline AIDA)}
+      \textbf{Actor:} Learner + Analyst\\
+      \textbf{Precondition:} đăng nhập; tenant demo\\[0.2em]
+      \begin{enumerate}
+        \item Learner nghi ngờ email, gửi\\ \texttt{POST /reports/phishing}
+        \item Analyst mở SOC Inbox,\\ \texttt{GET /reports/phishing}
+        \item Analyst xác nhận mối đe dọa:\\ \texttt{POST /reports/phishing/\{id\}/triage}
+        \item Hệ thống publish \texttt{PhishingReportConfirmedEvent}
+        \item Analytics chấm lại rủi ro --- score của learner \textbf{tăng}
+        \item Learning \textbf{tự ghi danh} learner vào khóa nhận thức
+      \end{enumerate}
+    \end{block}
+
+    \column{0.46\textwidth}
+    \small
+    \begin{alertblock}{Alternative / Exception flows}
+      \textbf{AF1}: Analyst bác bỏ (\texttt{confirmThreat=false})
+      $\to$ DISMISSED, \textbf{không} có bước 4--6\\[0.25em]
+      \textbf{AF2}: Analyst chuyển báo cáo thành bài huấn luyện
+      (\texttt{convert-to-training})\\[0.25em]
+      \textbf{EF1}: id không tồn tại $\to$ lỗi\\[0.25em]
+      \textbf{EF2}: báo cáo thuộc tenant khác $\to$ coi như không tồn tại
+      (fail-closed)\\[0.25em]
+      \textbf{EF3}: role LEARNER gọi triage $\to$ 403;
+      chưa đăng nhập $\to$ 401
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 41
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Test case từ UC-DS-01}
+  \begin{center}
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabularx}{\textwidth}{l l >{\raggedright\arraybackslash}X l}
+    \toprule
+    \textbf{TC-ID} & \textbf{Kịch bản} & \textbf{Các bước chính} & \textbf{Expected} \\
+    \midrule
+    TC-UC-1 & Main flow & submit $\to$ triage(true) $\to$ GET /analytics/risk & confirmed; risk tăng; enrollment mới \\
+    TC-UC-2 & AF1 & submit $\to$ triage(false) & dismissed; risk KHÔNG đổi \\
+    TC-UC-3 & AF2 & triage(true) $\to$ convert-to-training & convertedToTraining=true \\
+    TC-UC-4 & EF1 & triage với UUID ngẫu nhiên & lỗi, không đổi dữ liệu \\
+    TC-UC-5 & EF2 & triage report của tenant khác & ``không tìm thấy'' (không lộ dữ liệu) \\
+    TC-UC-6 & EF3 & triage bằng token role LEARNER (ngoài dev) & 403 Forbidden \\
+    TC-UC-7 & EF3 & triage không đăng nhập & 401 Unauthorized \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+  \end{center}
+
+  \vspace{0.15em}
+  \begin{exampleblock}{Nhận xét}
+    \small TC-UC-1 xuyên qua \textbf{4 module} (reporting, analytics, learning, ai)
+    --- đúng loại lỗi mà unit test từng module không bao giờ thấy.
+    Buổi 7 ta đã test pipeline này bằng \texttt{@SpringBootTest}; buổi 9 sẽ
+    chạy nó bằng Postman.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Error Guessing \& Exploratory Testing}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 42
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Error Guessing --- đoán lỗi bằng kinh nghiệm}
+  \begin{block}{Ý tưởng}
+    Tester giàu kinh nghiệm \textbf{đoán} nơi dễ có lỗi dựa trên các
+    dạng lỗi kinh điển, rồi thiết kế test nhắm thẳng vào đó.
+    Bổ trợ --- không thay thế --- các kỹ thuật có hệ thống.
+  \end{block}
+
+  \vspace{0.2em}
+  \small
+  \textbf{Checklist đoán lỗi áp lên DigiShield:}
+  \begin{itemize}
+    \item Chuỗi rỗng / null / toàn khoảng trắng: email \texttt{"~~~"}
+      (3 dấu cách) qua được \texttt{isBlank()} không?
+    \item Unicode, emoji, tiếng Việt có dấu trong \texttt{payload} báo cáo phishing
+    \item Số âm, số 0, \texttt{Integer.MAX\_VALUE} cho \texttt{page}, \texttt{size}
+    \item Trùng lặp: gửi cùng một request hai lần (POST /users cùng email
+      --- DigiShield chọn upsert idempotent, có đúng ý spec?)
+    \item Chuỗi rất dài (payload 1MB), ký tự đặc biệt SQL/HTML
+      (\texttt{' OR 1=1}, \texttt{<script>})
+    \item Sai kiểu JSON: \texttt{"size": "abc"}, thiếu dấu ngoặc
+  \end{itemize}
+
+  \vspace{0.2em}
+  {\small Mẹo: giữ một \textbf{fault catalogue} của nhóm --- mỗi defect tìm được
+  thêm một dòng, dùng lại cho module sau.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 43
+%---------------------------------------------------------------------
+\begin{frame}{Exploratory Testing --- kiểm thử khám phá}
+  \begin{block}{Ý tưởng}
+    Học --- thiết kế --- thực thi --- đánh giá diễn ra \textbf{đồng thời}.
+    Không có kịch bản viết trước; tester vừa dùng hệ thống vừa đào sâu
+    theo những gì quan sát được.
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    {\small\textbf{Session-based:} mỗi phiên 60--90 phút có:
+    \begin{itemize}
+      \item \textbf{Charter}: mục tiêu khám phá
+      \item \textbf{Time-box}: giới hạn thời gian
+      \item \textbf{Ghi chú}: bug, câu hỏi, ý tưởng test mới
+    \end{itemize}}
+    \column{0.46\textwidth}
+    \begin{exampleblock}{Charter mẫu cho DigiShield}
+      \small ``Khám phá SOC Inbox (\texttt{/soc/inbox}) với vai ANALYST:
+      tìm cách làm nhãn tuổi, bộ lọc trạng thái và nút triage
+      hiển thị sai hoặc mâu thuẫn nhau.''
+    \end{exampleblock}
+  \end{columns}
+
+  \vspace{0.3em}
+  {\small Kết quả phiên khám phá thường \textbf{quay lại bổ sung} cho các kỹ
+  thuật hệ thống: một quan sát lạ $\to$ một lớp tương đương mới hoặc một rule mới.}
+\end{frame}
+
+%=====================================================================
+\section{Chọn kỹ thuật nào, khi nào?}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 44
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Lựa chọn kỹ thuật phù hợp}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{0.95}
+  \begin{tabular}{p{3.4cm}p{2.4cm}p{5.6cm}}
+    \toprule
+    \textbf{Tình huống} & \textbf{Kỹ thuật} & \textbf{Ví dụ DigiShield} \\
+    \midrule
+    Một trường có phạm vi giá trị & EP + BVA & \texttt{size} 1..100, score 0..100, \texttt{ageLabel} \\
+    Trường kiểu enum & EP & \texttt{action} của /sim/events, \texttt{role} khi login \\
+    Nhiều điều kiện kết hợp & Decision Table & onCall + newPayee + watchlistHit \\
+    Hệ thống có trạng thái & State Transition & PhishingReport, AiTemplate, chiến dịch \\
+    Kịch bản người dùng xuyên module & Use Case & Pipeline triage $\to$ risk $\to$ enroll \\
+    Nghi ngờ theo kinh nghiệm & Error Guessing & email blank $\to$ 500, clamp lặng lẽ \\
+    Chưa hiểu rõ hệ thống & Exploratory & phiên khám phá SOC Inbox \\
+    \bottomrule
+  \end{tabular}
+  \renewcommand{\arraystretch}{1}
+  \end{center}
+
+  \vspace{0.1em}
+  \begin{exampleblock}{Thực tế}
+    \small Một bộ test case tốt \textbf{trộn nhiều kỹ thuật}: EP/BVA cho từng
+    trường, Decision Table cho logic lõi, Use Case cho luồng tổng thể,
+    Error Guessing rắc thêm ``gia vị''.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 45
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10]{Bài tập 1 (nhóm): EP + BVA cho POST /auth/login}
+  \begin{block}{Đặc tả}
+    \texttt{POST /api/v1/auth/login} với body \texttt{\{email, password\}}
+    (record \texttt{LoginRequest} trong \texttt{AuthController}).
+    Thành công trả về TokenPair. User seed: \texttt{admin@coquan.gov.vn}.
+  \end{block}
+
+  \vspace{0.15em}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{p{1.2cm}p{3.4cm}p{2.0cm}p{2.2cm}p{1.6cm}}
+    \toprule
+    \textbf{TC-ID} & \textbf{email} & \textbf{password} & \textbf{Kỹ thuật} & \textbf{Expected} \\
+    \midrule
+    TC-L1 & admin@coquan.gov.vn & demo1234 & EP-valid & 200 + token \\
+    TC-L2 & (rỗng) & demo1234 & EP-invalid & ? \\
+    TC-L3 & \ldots & \ldots & \ldots & \ldots \\
+    \multicolumn{5}{c}{\textit{(nhóm hoàn thiện tối thiểu 12 TC)}} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.1em}
+  \begin{alertblock}{Yêu cầu}
+    \small Phân lớp đủ 2 trường (email theo tồn tại + định dạng; password
+    đúng/sai/rỗng) + trường thừa trong body. Chạy thử bằng curl/Postman để
+    điền cột Expected \textbf{thực tế} --- chú ý: dev dùng
+    \texttt{StubAuthProvider}, password \emph{không} được kiểm tra; lệch
+    spec--hiện thực chính là phát hiện đáng ghi nhận.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 46
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Bài tập 2 (nhóm): Decision Table cho \texttt{moderate()}}
+  \begin{block}{Đặc tả \texttt{POST /ai/moderate} (role ANALYST)}
+    Kiểm duyệt nội dung mẫu phishing trước khi dùng cho đào tạo:
+    không chứa từ không an toàn $\to$ \texttt{"pass"};
+    chứa \textbf{đúng 1} từ $\to$ \texttt{"flag"};
+    chứa \textbf{từ 2 từ trở lên} $\to$ \texttt{"block"}.
+    (Danh sách từ: malware, ransomware, exploit, ddos, \ldots)
+  \end{block}
+
+  \vspace{0.2em}
+  \small
+  \textbf{Yêu cầu:}
+  \begin{enumerate}
+    \item Đặt 2 điều kiện: C1 = ``có $\geq 1$ từ không an toàn'',
+      C2 = ``có $\geq 2$ từ không an toàn''. Lập bảng đầy đủ $2^2 = 4$ rules.
+    \item Phát hiện rule \textbf{bất khả thi} (infeasible): C1=F, C2=T
+      --- vì sao không thể xảy ra? Xử lý thế nào trong bảng?
+    \item Mỗi rule khả thi $\to$ một test case với \texttt{content} cụ thể
+      (tự chọn từ trong danh sách).
+    \item Bonus (BVA trên số đếm): 0, 1, 2, 3 từ --- biên nằm ở đâu?
+  \end{enumerate}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 47
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Bài tập 3 (nhóm): chuyển trạng thái + tổng hợp}
+  \begin{block}{Yêu cầu}
+    \small
+    \begin{enumerate}
+      \item Vẽ lại state diagram cho \texttt{PhishingReport} \textbf{theo đề xuất
+        của nhóm} (sửa các vấn đề đã phát hiện: TRIAGING, guard trạng thái).
+      \item Thiết kế bảng test 0-switch (all transitions): mọi transition
+        hợp lệ + tối thiểu 3 transition không hợp lệ.
+      \item Gộp kết quả 3 bài tập thành một bảng test case chung.
+    \end{enumerate}
+  \end{block}
+
+  \vspace{0.2em}
+  \begin{exampleblock}{Khuôn mẫu bảng dùng hôm nay (bản rút gọn)}
+    \small
+    \begin{center}
+    \begin{tabular}{llllll}
+      \toprule
+      TC-ID & Mục tiêu & Precondition & Input & Expected & Kỹ thuật \\
+      \bottomrule
+    \end{tabular}
+    \end{center}
+    Khuôn mẫu đặc tả test case \textbf{đầy đủ} (steps, priority, actual,
+    trạng thái\ldots) sẽ học ở \textbf{buổi 9} --- hôm nay tập trung vào
+    \textit{chọn đúng ca test}.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 48
+%---------------------------------------------------------------------
+\begin{frame}[shrink=6]{Bài nộp --- Deadline: trước buổi 9}
+  \begin{block}{Gắn với Bài tập lớn (A1.2 --- 30\%)}
+    \small
+    Mỗi nhóm nộp \textbf{bộ test case hộp đen cho module DigiShield của nhóm}
+    (hoặc ứng dụng nhóm tự chọn đã được GV duyệt):
+    \begin{enumerate}
+      \item \textbf{Tối thiểu 20 test case}, dùng ít nhất \textbf{3 kỹ thuật}
+        (EP/BVA bắt buộc; chọn thêm DT, ST hoặc UC tùy module).
+      \item Với mỗi kỹ thuật: kèm \textbf{sản phẩm trung gian} --- bảng phân lớp,
+        sơ đồ biên, decision table (đầy đủ + rút gọn), state diagram.
+      \item Đánh dấu các TC mà \textbf{Expected chưa xác định được do thiếu spec}
+        --- kèm câu hỏi gửi ``product owner'' (GV đóng vai).
+      \item Ít nhất \textbf{2 TC tiêu cực về phân quyền} (401/403).
+    \end{enumerate}
+  \end{block}
+
+  \vspace{0.1em}
+  \begin{alertblock}{Định dạng nộp}
+    \small File PDF hoặc bảng tính, tên \texttt{Nhom\_XX\_Buoi08.pdf}.
+    Bộ test case này sẽ được \textbf{thực thi bằng Postman ở buổi 9} và là
+    một chương của báo cáo BTL cuối kỳ.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 49
+%---------------------------------------------------------------------
+\begin{frame}{Câu hỏi ôn tập}
+  \begin{enumerate}
+    \item EP và BVA khác nhau thế nào? Với \texttt{size} 1..100, liệt kê đầy đủ
+      các điểm BVA 2-value.
+    \item DigiShield ``clamp'' \texttt{size} thay vì trả 400. Nêu một lập luận
+      ủng hộ và một lập luận phản đối; tester nên làm gì?
+    \item Bảng quyết định đầy đủ của \texttt{evaluate()} có mấy rule?
+      Vì sao rule (onCall=T, newPayee=T, watchlistHit=F) đáng đưa ra
+      thảo luận với product owner?
+    \item Vì sao phải test cả \textbf{invalid transitions}? Cho ví dụ một
+      invalid transition của \texttt{PhishingReport} mà code hiện tại
+      \textbf{không} chặn.
+    \item Use Case Testing phát hiện loại lỗi gì mà EP/BVA bỏ sót?
+      Minh họa bằng pipeline triage $\to$ risk $\to$ enroll.
+    \item Test hộp đen tìm ra lỗi ``email rỗng trả 500'': đây là lỗi của code
+      hay của hợp đồng API? Ai cần sửa gì?
+  \end{enumerate}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 50
+%---------------------------------------------------------------------
+\begin{frame}{Tóm tắt buổi 8}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Kỹ thuật đã học:}
+    \begin{itemize}
+      \item \textbf{EP}: phân lớp, chọn đại diện
+      \item \textbf{BVA}: on-point / off-point tại biên
+      \item \textbf{Decision Table}: tổ hợp điều kiện, rút gọn
+      \item \textbf{State Transition}: valid + invalid transitions
+      \item \textbf{Use Case}: kịch bản xuyên module
+      \item Error Guessing, Exploratory (bổ trợ)
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \textbf{Đã áp dụng lên DigiShield:}
+    \begin{itemize}
+      \item \texttt{ageLabel}, \texttt{size}, \texttt{action}
+      \item \texttt{evaluate()} --- bảng 8 rule
+      \item \texttt{PhishingReport}, \texttt{AiTemplate}
+      \item UC-DS-01: pipeline AIDA
+      \item 2 defect/lỗ hổng spec tìm được!
+    \end{itemize}
+
+    \vspace{0.2em}
+    \begin{block}{Buổi tới --- Buổi 9}
+      Khuôn mẫu đặc tả test case; API testing với
+      \textbf{Postman + Newman}.\\
+      \textit{Chuẩn bị}: cài Postman; mang theo bộ test case bài nộp.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Tài liệu tham khảo}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 51
+%---------------------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slide-bomon}
+    Bộ môn Công nghệ Phần mềm,
+    \textit{Slide bài giảng điện tử môn Kiểm thử Phần mềm}.
+
+    \bibitem{ammann-offutt}
+    Paul Ammann, Jeff Offutt,
+    \textit{Introduction to Software Testing}, Cambridge University Press, 2008.
+
+    \bibitem{myers-testing}
+    Glenford J. Myers,
+    \textit{The Art of Software Testing}, 2nd ed., Wiley, 2004
+    --- đặc biệt Chương 4: \textit{Test-Case Design}.
+
+    \bibitem{istqb-web}
+    ISTQB --- International Software Testing Qualifications Board,
+    \url{https://istqb.org/}.
+
+    \bibitem{istqb-ctfl}
+    ISTQB Foundation Level Working Group,
+    \textit{Certified Tester Foundation Level Syllabus}, v4.0, 2023.
+
+    \bibitem{digishield}
+    Mã nguồn và OpenAPI spec của DigiShield:
+    \texttt{docs/DigiShield\_openapi.yaml}, các module
+    \texttt{interception}, \texttt{reporting}, \texttt{ai}, \texttt{auth}.
+  \end{thebibliography}
+\end{frame}
+
+%=====================================================================
+\end{document}

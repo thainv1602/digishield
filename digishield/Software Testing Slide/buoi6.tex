@@ -1,0 +1,1769 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+%---------------------------------------------------------------------
+% Font & encoding
+%---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+%---------------------------------------------------------------------
+% Theme
+%---------------------------------------------------------------------
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+% Màu chủ đạo: xanh #428BCA
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+% Loại bỏ navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footline tùy chỉnh
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 6
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}
+      \insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Itemize
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact spacing + auto slide-break for long frames
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{frametitle continuation}{\normalfont\small~(tiếp)}
+
+%---------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage{array}
+% multirow không có trong bản TeX Live này và không dùng trong deck
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=none,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+}
+
+%---------------------------------------------------------------------
+% Metadata
+%---------------------------------------------------------------------
+\title{JUnit nâng cao --- Mockito}
+\subtitle{Buổi 6 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 1 - Title
+%---------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 2 - Nội dung
+%---------------------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{enumerate}\small
+    \item Vấn đề: unit test một class có dependency
+    \item Test double: dummy, stub, fake, spy, mock --- và Mockito
+    \item Thiết lập: \texttt{@ExtendWith}, \texttt{@Mock}, \texttt{@InjectMocks}
+    \item Stubbing: \texttt{when/thenReturn}, \texttt{thenThrow}, argument matcher
+    \item Phân tích ca kiểm thử: \texttt{InterceptionServiceImpl.evaluate()}
+    \item Verify: \texttt{times}, \texttt{never}, \texttt{verifyNoInteractions}, \texttt{InOrder}
+    \item ArgumentCaptor: bắt và kiểm tra đối tượng được lưu
+    \item Kiểm thử exception: \texttt{assertThrows}, \texttt{assertThatThrownBy}
+    \item Kiểm thử phát sự kiện: \texttt{RiskRecomputedEvent}
+    \item Tổ chức test: \texttt{@Nested}, \texttt{@DisplayName}, helper builder
+    \item \texttt{@Mock} vs \texttt{@MockitoBean} (Spring)
+    \item Anti-patterns --- Thực hành --- Bài nộp
+  \end{enumerate}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 3 - Vị trí trong đề cương
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương}
+  \begin{block}{Chương 4 --- Phân tích một ca kiểm thử với JUnit}
+    Buổi 6 là buổi thứ hai của Chương 4: từ JUnit 5 cơ bản (Buổi 5)
+    sang kiểm thử class có \textbf{dependency} bằng \textbf{Mockito}.
+  \end{block}
+
+  \begin{center}
+  \small
+  \begin{tabular}{cll}
+    \toprule
+    \textbf{Buổi} & \textbf{Chương} & \textbf{Chủ đề} \\
+    \midrule
+    5 & C4 JUnit & JUnit 5 cơ bản: lifecycle, assertions, AssertJ \\
+    \textbf{6} & \textbf{C4 JUnit} & \textbf{Mockito: mock, stub, verify, captor} \\
+    7 & C4 (mở rộng) & Integration test: Spring Boot, Testcontainers \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{exampleblock}{Mục tiêu buổi học}
+    Đọc hiểu và tự viết được bộ unit test Mockito hoàn chỉnh cho một
+    service thật của DigiShield --- đúng như bộ test đang chạy trong repo.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Vấn đề: dependency trong unit test}
+%=====================================================================
+
+%--- SLIDE 4 ----------------------------------------------------------
+\begin{frame}[fragile]{Ôn tập Buổi 5 --- và giới hạn của nó}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \begin{block}{Buổi 5 đã test được}
+      \begin{itemize}\small
+        \item \texttt{StubAiClient.classify()} --- hàm thuần, không dependency
+        \item \texttt{ReportingServiceImpl\allowbreak.ageLabel()} --- tính nhãn thời gian
+        \item Assertions, AssertJ, \texttt{@ParameterizedTest}
+      \end{itemize}
+    \end{block}
+
+    \column{0.46\textwidth}
+    \begin{alertblock}{Câu hỏi mở đầu}
+      \small
+      Làm sao unit test
+      \texttt{InterceptionServiceImpl\allowbreak.evaluate()} khi nó cần
+      \textbf{đọc watchlist từ database} và
+      \textbf{ghi lại sự kiện can thiệp}?
+    \end{alertblock}
+  \end{columns}
+
+  \medskip
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+public InterceptionServiceImpl(
+        AccountWatchEntryRepository watchRepository,
+        InterventionEventRepository eventRepository,
+        Messages messages) { ... }   // 3 dependency!
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 5 ----------------------------------------------------------
+\begin{frame}{Vì sao không dùng database thật trong unit test?}
+  \begin{itemize}
+    \item \textbf{Chậm}: khởi động PostgreSQL/H2 + Spring context mất vài giây;
+      unit test cần chạy trong \textbf{mili-giây} (hàng trăm test mỗi lần build).
+    \item \textbf{Không ổn định}: dữ liệu tồn dư giữa các test, thứ tự chạy
+      ảnh hưởng kết quả (vi phạm tính \textit{isolated} của FIRST).
+    \item \textbf{Khó dựng tình huống}: làm sao ép repository ném
+      exception, hay trả về đúng một bản ghi watchlist "CONFIRMED"?
+    \item \textbf{Sai mức kiểm thử}: unit test kiểm tra \textbf{logic quyết định}
+      của service; việc JPA đọc/ghi đúng là chuyện của integration test (Buổi 7).
+  \end{itemize}
+
+  \begin{block}{Giải pháp}
+    Thay dependency thật bằng \textbf{test double} --- đối tượng "đóng thế"
+    do ta điều khiển hoàn toàn. Mockito là thư viện tạo test double
+    phổ biến nhất trong hệ sinh thái Java.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 6 ----------------------------------------------------------
+\begin{frame}{Dependency của \texttt{InterceptionServiceImpl}}
+  \begin{center}
+  \begin{tikzpicture}[
+    svc/.style={rectangle,draw=darkgray,fill=lightgray,
+                rounded corners=2pt,minimum width=3.4cm,
+                minimum height=0.8cm,font=\small,align=center},
+    dep/.style={rectangle,draw=darkgray,fill=white,
+                rounded corners=2pt,minimum width=3.4cm,
+                minimum height=0.8cm,font=\footnotesize,align=center},
+    mock/.style={rectangle,draw=darkgray,fill=darkgray,
+                 text=white,rounded corners=2pt,
+                 minimum width=3.4cm,minimum height=0.8cm,
+                 font=\footnotesize,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray},
+    lbl/.style={font=\scriptsize,midgray}
+  ]
+    \node[svc] (os) at (4.2,3) {\textbf{InterceptionServiceImpl}\\(class cần test)};
+
+    \node[dep] (or) at (0,1.2) {AccountWatchEntry\\Repository (JPA)};
+    \node[dep] (ic) at (4.2,1.2) {InterventionEvent\\Repository (JPA)};
+    \node[dep] (kt) at (8.4,1.2) {Messages\\(i18n bundle)};
+
+    \node[mock] (mor) at (0,-0.5) {@Mock\\watchRepository};
+    \node[mock] (mic) at (4.2,-0.5) {@Mock\\eventRepository};
+    \node[mock] (mkt) at (8.4,-0.5) {@Mock\\messages};
+
+    \draw[arr] (os) -- (or);
+    \draw[arr] (os) -- (ic);
+    \draw[arr] (os) -- (kt);
+    \draw[arr,dashed] (or) -- node[lbl,right]{thay bằng}(mor);
+    \draw[arr,dashed] (ic) -- node[lbl,right]{thay bằng}(mic);
+    \draw[arr,dashed] (kt) -- node[lbl,right]{thay bằng}(mkt);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{alertblock}{Cả 3 dependency đều được mock}
+    Không cần PostgreSQL, không cần Spring context, không cần file
+    message bundle. Test chạy hoàn toàn \textbf{in-memory}.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Test double và Mockito}
+%=====================================================================
+
+%--- SLIDE 7 ----------------------------------------------------------
+\begin{frame}{Phân loại test double (G. Meszaros \cite{meszaros})}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{1.5cm}>{\raggedright\arraybackslash}p{5.6cm}>{\raggedright\arraybackslash}p{5.5cm}}
+    \toprule
+    \textbf{Loại} & \textbf{Mô tả} & \textbf{Ví dụ DigiShield} \\
+    \midrule
+    Dummy & Chỉ để lấp tham số, không bao giờ được dùng thật &
+      \texttt{UUID} truyền cho DTO \\
+    Stub & Trả về câu trả lời \textbf{định sẵn} cho lời gọi &
+      repository trả \texttt{Optional.of(hit)} \\
+    Fake & Cài đặt thật nhưng đơn giản hóa &
+      \texttt{StubAiClient} thay Claude API \\
+    Spy & Bọc đối tượng thật, \textbf{ghi lại} lời gọi &
+      \texttt{@Spy} trên service thật \\
+    Mock & Được lập trình cả \textbf{kỳ vọng về hành vi}: gọi gì, mấy lần &
+      \texttt{verify(eventRepository)\allowbreak.save(...)} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{exampleblock}{Lưu ý thuật ngữ}
+    Trong Mockito, đối tượng \texttt{@Mock} dùng được như \textbf{cả stub lẫn mock}:
+    \texttt{when(...)} để stub, \texttt{verify(...)} để kiểm tra hành vi.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 8 ----------------------------------------------------------
+\begin{frame}{Stub vs Mock --- hai kiểu xác minh}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{State verification (dùng stub)}
+      \begin{itemize}\small
+        \item Cho dependency trả dữ liệu định sẵn
+        \item Assert trên \textbf{kết quả trả về}
+        \item Ví dụ: watchlist hit $\to$ decision phải là \texttt{PAUSE}
+      \end{itemize}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{Behaviour verification (dùng mock)}
+      \begin{itemize}\small
+        \item Kiểm tra service \textbf{đã gọi} dependency đúng cách
+        \item Assert trên \textbf{tương tác}
+        \item Ví dụ: \texttt{eventRepository.save()} được gọi đúng 1 lần
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \medskip
+  \begin{alertblock}{Nguyên tắc chọn}
+    Ưu tiên state verification khi method \textbf{trả về giá trị}; dùng
+    behaviour verification cho \textbf{side effect} (ghi DB, publish event,
+    gửi email) --- vì không có giá trị trả về nào để assert.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 9 ----------------------------------------------------------
+\begin{frame}{Mockito là gì?}
+  \begin{block}{Mockito \cite{mockito}}
+    Thư viện mã nguồn mở (\texttt{site.mockito.org}) tạo test double cho Java.
+    Sinh \textbf{proxy class} lúc runtime (ByteBuddy) thay cho interface /
+    class thật; mặc định mọi method trả \texttt{null} / \texttt{0} /
+    \texttt{false} / collection rỗng.
+  \end{block}
+
+  \begin{itemize}
+    \item Đi kèm sẵn trong \texttt{spring-boot-starter-test} --- DigiShield
+      không cần khai báo thêm dependency nào.
+    \item Tích hợp JUnit 5 qua \texttt{MockitoExtension}
+      (gói \texttt{mockito-junit-jupiter}).
+    \item Mock được interface \textbf{và} class thường; class/method
+      \texttt{final}, \texttt{static} cần \texttt{mockito-inline} (hạn chế dùng).
+  \end{itemize}
+
+  \begin{exampleblock}{Trong repo DigiShield}
+    176 unit test hiện có đều theo cùng một khuôn:
+    \texttt{MockitoExtension} + \texttt{@Mock/@InjectMocks/@Captor} + AssertJ.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Thiết lập Mockito}
+%=====================================================================
+
+%--- SLIDE 10 ---------------------------------------------------------
+\begin{frame}[fragile]{Ba annotation cốt lõi}
+  \begin{center}
+  \small
+  \begin{tabular}{p{2.8cm}p{9.6cm}}
+    \toprule
+    \textbf{Annotation} & \textbf{Ý nghĩa} \\
+    \midrule
+    \texttt{@Mock} & Tạo mock cho field --- thay dependency thật \\
+    \texttt{@InjectMocks} & Tạo instance \textbf{thật} của class cần test,
+      tự tiêm các \texttt{@Mock} vào qua constructor \\
+    \texttt{@Captor} & Tạo \texttt{ArgumentCaptor} để bắt argument (xem sau) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize,aboveskip=0pt,belowskip=0pt]
+@ExtendWith(MockitoExtension.class)  // kich hoat Mockito
+class InterceptionServiceImplTest {
+    // @Mock -> the vao cho 3 dependency
+    // @InjectMocks -> new InterceptionServiceImpl(
+    //                     watchRepository, eventRepository,
+    //                     messages)
+}
+\end{lstlisting}
+
+  \begin{alertblock}{Quên \texttt{@ExtendWith(MockitoExtension.class)}?}
+    Các field \texttt{@Mock} sẽ là \texttt{null} $\to$
+    \texttt{NullPointerException} ngay dòng đầu tiên của test.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 11 ---------------------------------------------------------
+\begin{frame}[fragile]{Khai báo thật trong \texttt{InterceptionServiceImplTest} (1/2)}
+  Trích nguyên văn từ \texttt{modules/interception/src/test/...}:
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@ExtendWith(MockitoExtension.class)
+class InterceptionServiceImplTest {
+
+    private static final UUID TENANT_ID = UUID.fromString(
+        "11111111-1111-1111-1111-111111111111");
+    private static final String DEST_ACCOUNT = "1234567890";
+
+    @Mock
+    private AccountWatchEntryRepository watchRepository;
+
+    @Mock
+    private InterventionEventRepository eventRepository;
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 11b --------------------------------------------------------
+\begin{frame}[fragile]{Khai báo thật trong \texttt{InterceptionServiceImplTest} (2/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+    @Mock
+    private Messages messages;
+
+    @InjectMocks
+    private InterceptionServiceImpl interceptionService;
+
+    @Captor
+    private ArgumentCaptor<InterventionEvent> eventCaptor;
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 12 ---------------------------------------------------------
+\begin{frame}[fragile]{Setup và teardown --- trích test thật}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize,aboveskip=0pt,belowskip=0pt]
+@BeforeEach
+void setUp() {
+    // Service doc tenant tu TenantContext (ThreadLocal)
+    TenantContext.set(TENANT_ID.toString());
+    // save() tra ve chinh doi tuong duoc luu
+    lenient().when(eventRepository.save(
+            any(InterventionEvent.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+    // messages.get(key) tra ve chinh key
+    lenient().when(messages.get(anyString()))
+        .thenAnswer(inv -> inv.getArgument(0));
+}
+
+@AfterEach
+void tearDown() {
+    TenantContext.clear();  // don ThreadLocal sau moi test
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 13 ---------------------------------------------------------
+\begin{frame}{Vì sao cần \texttt{lenient()}?}
+  \begin{block}{Strict stubbing (mặc định từ Mockito 2+)}
+    Mockito \textbf{fail test} nếu một stub được khai báo mà không được dùng:
+    \texttt{UnnecessaryStubbingException}. Mục đích: phát hiện test "chết"
+    và stub thừa.
+  \end{block}
+
+  \begin{itemize}
+    \item Stub trong \texttt{@BeforeEach} áp dụng cho \textbf{mọi} test của class.
+    \item Nhưng test \texttt{checkAccount\_...} không hề gọi
+      \texttt{eventRepository.save()} $\to$ stub đó "thừa" với test này.
+    \item \texttt{lenient()} đánh dấu: stub này \textit{được phép} không dùng.
+  \end{itemize}
+
+  \begin{exampleblock}{Kinh nghiệm}
+    Chỉ \texttt{lenient()} cho stub dùng chung trong \texttt{@BeforeEach};
+    stub riêng của từng test vẫn để strict --- nó là "máy dò" stub rác miễn phí.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Stubbing}
+%=====================================================================
+
+%--- SLIDE 14 ---------------------------------------------------------
+\begin{frame}[fragile]{Stubbing cơ bản: \texttt{when / thenReturn} (1/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// Hai kich ban THAY THE nhau -- moi kich ban dat trong
+// MOT test rieng (dat chung: stub sau ghi de stub truoc,
+// strict stubbing bao UnnecessaryStubbing)
+
+// Kich ban A: "khi duoc hoi tai khoan nay, tra ve mot
+// ban ghi watchlist muc CONFIRMED"
+AccountWatchEntry watchHit = new AccountWatchEntry(
+    UUID.randomUUID(), TENANT_ID, WatchType.BANK_ACCOUNT,
+    DEST_ACCOUNT, RiskLevel.CONFIRMED, "fraud-feed");
+
+when(watchRepository
+        .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+    .thenReturn(Optional.of(watchHit));
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 14b --------------------------------------------------------
+\begin{frame}[fragile]{Stubbing cơ bản: \texttt{when / thenReturn} (2/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// Kich ban B: khong co trong watchlist
+when(watchRepository
+        .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+    .thenReturn(Optional.empty());
+\end{lstlisting}
+
+  \begin{block}{Đọc như một câu điều kiện}
+    \texttt{when(mock.method(args)).thenReturn(value)} ---
+    "khi method được gọi với args này thì trả về value".
+    Chưa stub $\to$ trả mặc định: object là \texttt{null}, nhưng
+    \texttt{Optional} là \texttt{Optional.empty()}, collection là rỗng.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 15 ---------------------------------------------------------
+\begin{frame}[fragile]{\texttt{thenThrow}, \texttt{thenAnswer}, stub nhiều lần gọi}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// Gia lap DB loi: lan goi nao cung nem exception
+when(watchRepository.findByTenantIdAndValue(any(), any()))
+    .thenThrow(new DataAccessResourceFailureException(
+        "connection lost"));
+
+// Lan 1 loi, lan 2 tra ve rong (mo phong retry)
+when(watchRepository.findByTenantIdAndValue(any(), any()))
+    .thenThrow(new RuntimeException("timeout"))
+    .thenReturn(Optional.empty());
+
+// thenAnswer: tinh ket qua tu chinh argument --
+// dung trong test that cua DigiShield cho save():
+when(eventRepository.save(any(InterventionEvent.class)))
+    .thenAnswer(inv -> inv.getArgument(0));
+\end{lstlisting}
+
+  \begin{exampleblock}{\texttt{thenAnswer} cho repository}
+    JPA \texttt{save()} trả về entity đã lưu. Stub "trả về chính argument"
+    mô phỏng đúng hợp đồng đó mà không cần database.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 16 ---------------------------------------------------------
+\begin{frame}[fragile]{\texttt{doReturn} vs \texttt{thenReturn}, \texttt{doThrow} cho void}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+// deleteById() tra ve void -> KHONG viet duoc
+// when(repo.deleteById(id)).thenThrow(...)   // sai cu phap!
+
+// Dang do...when danh cho void method:
+doThrow(new IllegalStateException("locked"))
+    .when(watchRepository).deleteById(any(UUID.class));
+
+// doReturn: khong goi method that -> bat buoc voi @Spy
+doReturn(Optional.empty())
+    .when(spyService).checkAccount(anyString());
+\end{lstlisting}
+
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{5.4cm}>{\raggedright\arraybackslash}p{6.6cm}}
+    \toprule
+    \textbf{\texttt{when(...)\allowbreak.thenReturn(...)}} & \textbf{\texttt{doReturn(...).when(...)}} \\
+    \midrule
+    Cách viết chuẩn, type-safe & Dùng khi method \textbf{void} (\texttt{doThrow},
+      \texttt{doNothing}) hoặc khi stub trên \texttt{@Spy} \\
+    Gọi method trên mock (vô hại) & Không thực thi method thật \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%--- SLIDE 17 ---------------------------------------------------------
+\begin{frame}[fragile]{Argument matcher: \texttt{any()}, \texttt{eq()}, \texttt{anyString()}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// Gia tri cu the: chi khop dung tham so nay
+when(watchRepository
+        .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+    .thenReturn(Optional.of(watchHit));
+
+// Matcher: khop moi gia tri
+when(messages.get(anyString()))
+    .thenAnswer(inv -> inv.getArgument(0));
+
+// Tron matcher va gia tri raw -> PHAI boc eq():
+when(riskSignalRepository
+        .findByTenantIdAndUserIdAndOccurredAtAfter(
+            eq(TENANT_ID), eq(userId), any(Instant.class)))
+    .thenReturn(List.of());
+\end{lstlisting}
+
+  \begin{alertblock}{Quy tắc bắt buộc}
+    Trong \textbf{một} lời gọi stub/verify: hoặc \textbf{tất cả} tham số là
+    giá trị raw, hoặc \textbf{tất cả} là matcher. Trộn lẫn $\to$
+    \texttt{InvalidUseOfMatchersException} lúc chạy.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Phân tích ca kiểm thử: evaluate()}
+%=====================================================================
+
+%--- SLIDE 18 ---------------------------------------------------------
+\begin{frame}[fragile]{Mã nguồn \texttt{evaluate()} --- gom tín hiệu (1/2)}
+  \texttt{modules/interception/.../InterceptionServiceImpl.java}:
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Override
+public InterventionDecision evaluate(EvaluateRequest request) {
+    UUID tenantId = TenantContext.requireUuid();
+
+    List<String> signals = new ArrayList<>();
+    if (request.onCall()) {          // dang nghe dien thoai?
+        signals.add("ON_CALL");
+    }
+    if (request.newPayee()) {        // nguoi nhan moi?
+        signals.add("NEW_PAYEE");
+    }
+
+    Optional<AccountWatchEntry> hit = watchRepository
+        .findByTenantIdAndValue(tenantId,
+                                request.destAccount());
+    boolean watchlistHit = hit.isPresent();
+    if (watchlistHit) {
+        signals.add("WATCHLIST_HIT");
+    }
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 19 ---------------------------------------------------------
+\begin{frame}[fragile]{Mã nguồn \texttt{evaluate()} --- ra quyết định (2/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+    Decision decision;
+    String message;
+    if (request.onCall() && request.newPayee()
+            && watchlistHit) {
+        decision = Decision.PAUSE;               // (R1)
+        message = messages.get("intervention.hold");
+    } else if (watchlistHit) {
+        decision = Decision.WARN;                // (R2)
+        message = messages.get("intervention.watch");
+    } else {
+        decision = Decision.ALLOW;               // (R3)
+        message = messages.get("intervention.clear");
+    }
+    // Ghi lai su kien can thiep (side effect!)
+    InterventionEvent event = new InterventionEvent(
+        UUID.randomUUID(), tenantId, request.userId(),
+        String.join(",", signals), decision, Instant.now());
+    eventRepository.save(event);
+    return new InterventionDecision(
+        decision.name(), signals, message);
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 20 ---------------------------------------------------------
+\begin{frame}{Chiến lược test: mỗi nhánh một test method}
+  \setbeamerfont{itemize/enumerate body}{size=\footnotesize}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{lcccl}
+    \toprule
+    \textbf{Rule} & \texttt{onCall} & \texttt{newPayee} & \texttt{watchlistHit} & \textbf{Decision} \\
+    \midrule
+    R1 & T & T & T & \texttt{PAUSE} \\
+    R2 & F & F & T & \texttt{WARN} \\
+    R3a & T & T & F & \texttt{ALLOW} (bẫy hay!) \\
+    R3b & F & F & F & \texttt{ALLOW}, signals rỗng \\
+    \bottomrule
+  \end{tabular}\\[0em]
+  {\scriptsize R2 dùng F/F làm đại diện cho "không đồng thời cả hai $=$ T".}
+  \end{center}
+
+  \begin{itemize}
+    \item Điều khiển \texttt{onCall}, \texttt{newPayee}: qua \textbf{tham số}
+      \texttt{EvaluateRequest} --- không cần mock.
+    \item Điều khiển \texttt{watchlistHit}: qua \textbf{stub}
+      \texttt{watchRepository} trả \texttt{Optional.of(...)} hay \texttt{empty()}.
+    \item Mỗi test còn phải verify \textbf{side effect}: một
+      \texttt{InterventionEvent} đúng nội dung được lưu.
+  \end{itemize}
+
+  {\small \textbf{Liên hệ Buổi 3--4}: đây chính là phủ nhánh (branch coverage)
+  của CFG \texttt{evaluate()} --- nay hiện thực bằng Mockito thay vì chỉ vẽ
+  trên giấy.}
+\end{frame}
+
+%--- SLIDE 21 ---------------------------------------------------------
+\begin{frame}[fragile]{Test R1 --- PAUSE (1/2): Arrange + Act}
+  Trích nguyên văn test thật:
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pausesWithEducationalMessage() {
+    // Arrange
+    UUID userId = UUID.randomUUID();
+    AccountWatchEntry watchHit = new AccountWatchEntry(
+        UUID.randomUUID(), TENANT_ID,
+        WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
+        RiskLevel.CONFIRMED, "fraud-feed");
+    when(watchRepository
+            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .thenReturn(Optional.of(watchHit));
+    EvaluateRequest request = new EvaluateRequest(
+        userId, new BigDecimal("5000000"),
+        DEST_ACCOUNT, true, true);   // onCall, newPayee
+
+    // Act
+    InterventionDecision decision =
+        interceptionService.evaluate(request);
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 22 ---------------------------------------------------------
+\begin{frame}[fragile]{Test R1 --- PAUSE (2/2): Assert hai tầng}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+    // Assert 1: gia tri tra ve (state verification)
+    assertThat(decision.decision())
+        .isEqualTo(Decision.PAUSE.name());
+    assertThat(decision.signals()).containsExactly(
+        "ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT");
+    assertThat(decision.message()).isNotBlank();
+
+    // Assert 2: su kien duoc luu (behaviour verification)
+    verify(eventRepository).save(eventCaptor.capture());
+    InterventionEvent persisted = eventCaptor.getValue();
+    assertThat(persisted.getTenantId()).isEqualTo(TENANT_ID);
+    assertThat(persisted.getUserId()).isEqualTo(userId);
+    assertThat(persisted.getDecision())
+        .isEqualTo(Decision.PAUSE);
+    assertThat(persisted.getSignals())
+        .isEqualTo("ON_CALL,NEW_PAYEE,WATCHLIST_HIT");
+}
+\end{lstlisting}
+
+  \begin{block}{Một test --- hai góc nhìn}
+    Kết quả trả về đúng \textbf{và} dữ liệu ghi xuống DB đúng.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 23 ---------------------------------------------------------
+\begin{frame}[fragile]{Test R2 --- WARN: hit nhưng không đủ điều kiện PAUSE}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize,aboveskip=0pt,belowskip=0pt,framesep=1pt]
+@Test
+void evaluate_whenWatchlistHitButNotOnCallNorNewPayee_warns() {
+    // Arrange: van hit watchlist, nhung onCall=false,
+    // newPayee=false
+    UUID userId = UUID.randomUUID();
+    AccountWatchEntry watchHit = new AccountWatchEntry(
+        UUID.randomUUID(), TENANT_ID,
+        WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
+        RiskLevel.HIGH, "fraud-feed");
+    when(watchRepository
+            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .thenReturn(Optional.of(watchHit));
+    EvaluateRequest request = new EvaluateRequest(
+        userId, new BigDecimal("100"),
+        DEST_ACCOUNT, false, false);
+    InterventionDecision decision =
+        interceptionService.evaluate(request);
+    assertThat(decision.decision())
+        .isEqualTo(Decision.WARN.name());
+    assertThat(decision.signals())
+        .containsExactly("WATCHLIST_HIT");
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 24 ---------------------------------------------------------
+\begin{frame}[fragile]{Test R3a --- ALLOW: tín hiệu hành vi, tài khoản sạch}
+  \vspace*{-0.2em}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void evaluate_whenOnCallAndNewPayeeButNoWatchlistHit_warnsIsNotTriggeredAndAllows() {
+    // Arrange: tin hieu cao nhung KHONG nam trong watchlist
+    UUID userId = UUID.randomUUID();
+    when(watchRepository
+            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .thenReturn(Optional.empty());
+    EvaluateRequest request = new EvaluateRequest(
+        userId, new BigDecimal("9999"),
+        DEST_ACCOUNT, true, true);
+    InterventionDecision decision =
+        interceptionService.evaluate(request);
+    // Khong hit -> roi xuong nhanh ALLOW
+    assertThat(decision.decision())
+        .isEqualTo(Decision.ALLOW.name());
+    assertThat(decision.signals())
+        .containsExactly("ON_CALL", "NEW_PAYEE");
+}
+\end{lstlisting}
+
+  \vspace{-0.2em}
+  {\small \textbf{Vì sao test này quý?} Nó chứng minh rule \textbf{không}
+  PAUSE/WARN chỉ vì hành vi đáng ngờ --- tránh false positive làm phiền
+  người dùng.}
+\end{frame}
+
+%--- SLIDE 25 ---------------------------------------------------------
+\begin{frame}[fragile]{Test R3b --- ALLOW: không tín hiệu, signals rỗng}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
+    UUID userId = UUID.randomUUID();
+    when(watchRepository
+            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .thenReturn(Optional.empty());
+    InterventionDecision decision = interceptionService
+        .evaluate(new EvaluateRequest(userId,
+            new BigDecimal("10"), DEST_ACCOUNT,
+            false, false));
+    assertThat(decision.signals()).isEmpty();
+    verify(eventRepository).save(eventCaptor.capture());
+    assertThat(eventCaptor.getValue().getSignals())
+        .isEmpty();   // chuoi signals rong duoc luu
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 25b --------------------------------------------------------
+\begin{frame}[fragile]{Test \texttt{checkAccount} --- ủy quyền đúng tenant}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void checkAccount_delegatesToRepositoryScopedByTenant() {
+    AccountWatchEntry entry = new AccountWatchEntry(
+        UUID.randomUUID(), TENANT_ID, WatchType.PHONE,
+        "+84900000000", RiskLevel.WATCH, "user-report");
+    when(watchRepository.findByTenantIdAndValue(
+            TENANT_ID, "+84900000000"))
+        .thenReturn(Optional.of(entry));
+    assertThat(interceptionService
+        .checkAccount("+84900000000")).containsSame(entry);
+    verify(watchRepository)
+        .findByTenantIdAndValue(TENANT_ID, "+84900000000");
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 26 ---------------------------------------------------------
+\begin{frame}{Tổng kết ca kiểm thử \texttt{evaluate()} (1/2)}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{p{5.9cm}p{2.2cm}p{4.0cm}}
+    \toprule
+    \textbf{Test method (thật trong repo)} & \textbf{Nhánh} & \textbf{Kỹ thuật chính} \\
+    \midrule
+    \texttt{...WatchlistHit\_pauses...} & R1 PAUSE & stub hit + captor sự kiện \\
+    \texttt{...ButNotOnCallNorNewPayee\allowbreak\_warns} & R2 WARN & stub hit, request F/F \\
+    \texttt{...ButNoWatchlistHit\allowbreak\_...Allows} & R3a ALLOW & stub \texttt{Optional.empty()} \\
+    \texttt{...whenNoSignals\_allows...} & R3b ALLOW & signals rỗng được lưu \\
+    \texttt{checkAccount\_delegates...} & ủy quyền & verify tham số tenant \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%--- SLIDE 26b --------------------------------------------------------
+\begin{frame}{Tổng kết ca kiểm thử \texttt{evaluate()} (2/2)}
+  \begin{itemize}
+    \item 5 test $\to$ 100\% \textbf{decision coverage} cho \texttt{evaluate()} + \texttt{checkAccount()}.
+    \item Lưu ý: JaCoCo đếm branch theo \textbf{từng điều kiện con} của
+      \texttt{\&\&} (short-circuit) nên report có thể báo thiếu 1 branch
+      (\texttt{newPayee=F} khi \texttt{onCall=T}); muốn 100\% branch theo
+      JaCoCo $\to$ thêm một test (T,\,F,\,T).
+    \item Mỗi test độc lập: tự stub, tự tạo request, không phụ thuộc thứ tự.
+    \item Toàn bộ chạy $<$ 1 giây: \texttt{./gradlew :modules:interception:test}.
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Verify --- xác minh tương tác}
+%=====================================================================
+
+%--- SLIDE 27 ---------------------------------------------------------
+\begin{frame}[fragile]{\texttt{verify} --- đếm số lần gọi}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+// Mac dinh = times(1): duoc goi dung mot lan
+verify(eventRepository).save(any(InterventionEvent.class));
+
+verify(eventRepository, times(1)).save(any());
+verify(eventRepository, never()).deleteById(any());
+verify(watchRepository, atLeastOnce())
+    .findByTenantIdAndValue(any(), anyString());
+verify(watchRepository, atMost(2))
+    .findByTenantIdAndValue(any(), anyString());
+\end{lstlisting}
+
+  \begin{center}
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Chế độ} & \textbf{Ý nghĩa} \\
+    \midrule
+    \texttt{times(n)} & đúng $n$ lần (mặc định $n=1$) \\
+    \texttt{never()} & không được gọi lần nào \\
+    \texttt{atLeast(n)} / \texttt{atLeastOnce()} & tối thiểu $n$ / 1 lần \\
+    \texttt{atMost(n)} & tối đa $n$ lần \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%--- SLIDE 28 ---------------------------------------------------------
+\begin{frame}[fragile]{\texttt{verifyNoInteractions} và \texttt{InOrder}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize,aboveskip=0pt,belowskip=0pt,framesep=1pt]
+// Mock KHONG duoc dung den (goi bat ky method nao -> fail)
+verifyNoInteractions(eventPublisher);
+
+// Sau cac verify da liet ke, khong con loi goi nao khac
+verifyNoMoreInteractions(eventRepository);
+
+// Kiem tra THU TU: luu bao cao truoc, publish event sau
+InOrder inOrder = inOrder(reportRepository, eventPublisher);
+inOrder.verify(reportRepository)
+    .save(any(PhishingReport.class));
+inOrder.verify(eventPublisher)
+    .publish(any(PhishingReportConfirmedEvent.class));
+\end{lstlisting}
+
+  \begin{block}{Khi nào cần \texttt{InOrder}?}
+    Khi thứ tự là một phần của hợp đồng nghiệp vụ --- ví dụ phải
+    \textbf{lưu xong} báo cáo rồi mới phát sự kiện (listener sẽ đọc lại từ DB).
+    Nếu thứ tự không quan trọng, đừng ràng buộc: test sẽ dễ vỡ.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 29 ---------------------------------------------------------
+\begin{frame}[fragile]{Nguyên tắc: failure path phải verify điều KHÔNG xảy ra (1/2)}
+  Ví dụ \texttt{ReportingServiceImpl\allowbreak.triage(id, false)} --- bác bỏ báo cáo:
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void triage_whenDismissed_doesNotPublishEvent() {
+    when(reportRepository.findById(reportId))
+        .thenReturn(Optional.of(report));
+    when(reportRepository.save(any(PhishingReport.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    reportingService.triage(reportId, false);  // dismiss
+
+    // Diem mau chot: KHONG duoc phat event "da xac nhan"
+    verifyNoInteractions(eventPublisher);
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 29b --------------------------------------------------------
+\begin{frame}{Nguyên tắc: failure path phải verify điều KHÔNG xảy ra (2/2)}
+  \begin{alertblock}{Nếu thiếu dòng verify này?}
+    Bug "dismiss vẫn publish \texttt{PhishingReportConfirmedEvent}" sẽ lọt lưới:
+    analytics tưởng báo cáo đã được xác nhận nên \textbf{giảm} điểm rủi ro
+    của người dùng 15 điểm (weight $-15$) --- giảm sai, vì báo cáo thực ra
+    bị bác bỏ $\to$ hệ thống đánh giá người dùng "cảnh giác" hơn thực tế.
+    Trong khi đó mọi assert trên giá trị trả về vẫn xanh.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{ArgumentCaptor}
+%=====================================================================
+
+%--- SLIDE 30 ---------------------------------------------------------
+\begin{frame}[fragile]{Vấn đề: đối tượng sinh ra bên trong service (1/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// Trong evaluate(): event duoc new ngay trong service
+InterventionEvent event = new InterventionEvent(
+    UUID.randomUUID(), tenantId, request.userId(),
+    String.join(",", signals), decision, Instant.now());
+eventRepository.save(event);
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Test \textbf{không có tham chiếu} tới \texttt{event} --- nó không được
+      trả về, không truyền vào từ ngoài.
+    \item \texttt{verify(eventRepository).save(any())} chỉ biết "có lưu gì đó",
+      không biết \textbf{nội dung} đúng hay sai.
+    \item Cần "bắt" argument tại thời điểm mock được gọi $\to$
+      \texttt{ArgumentCaptor}.
+  \end{itemize}
+\end{frame}
+
+%--- SLIDE 30b --------------------------------------------------------
+\begin{frame}{Vấn đề: đối tượng sinh ra bên trong service (2/2)}
+  \begin{block}{Hai cách tạo captor}
+    \texttt{@Captor ArgumentCaptor<InterventionEvent> eventCaptor;} (field, như test thật)\\
+    hoặc \texttt{ArgumentCaptor.forClass(InterventionEvent.class)} (cục bộ trong test).
+  \end{block}
+\end{frame}
+
+%--- SLIDE 31 ---------------------------------------------------------
+\begin{frame}[fragile]{Captor trong test thật --- bắt \texttt{InterventionEvent}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Captor
+private ArgumentCaptor<InterventionEvent> eventCaptor;
+
+// ... trong test method:
+verify(eventRepository).save(eventCaptor.capture());
+InterventionEvent persisted = eventCaptor.getValue();
+
+assertThat(persisted.getId()).isNotNull();
+assertThat(persisted.getTenantId()).isEqualTo(TENANT_ID);
+assertThat(persisted.getUserId()).isEqualTo(userId);
+assertThat(persisted.getDecision())
+    .isEqualTo(Decision.PAUSE);
+assertThat(persisted.getSignals())
+    .isEqualTo("ON_CALL,NEW_PAYEE,WATCHLIST_HIT");
+assertThat(persisted.getTs()).isNotNull();
+\end{lstlisting}
+
+  \begin{exampleblock}{Đây chính là Data Flow Testing (Buổi 4) bằng công cụ}
+    Kiểm tra dữ liệu từ điểm định nghĩa (request, signals) tới điểm sử dụng
+    (bản ghi được lưu) --- không chỉ kiểm tra nhánh.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 32 ---------------------------------------------------------
+\begin{frame}[fragile]{\texttt{getValue()} vs \texttt{getAllValues()}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+// importUsers() goi createUser() -> save() NHIEU lan
+authService.importUsers(List.of(u1, u2, u3));
+
+ArgumentCaptor<AppUser> captor =
+    ArgumentCaptor.forClass(AppUser.class);
+verify(userRepository, times(3)).save(captor.capture());
+
+List<AppUser> saved = captor.getAllValues();
+assertThat(saved).hasSize(3);
+assertThat(saved).extracting(AppUser::getEmail)
+    .containsExactly("a@dgs.vn", "b@dgs.vn", "c@dgs.vn");
+\end{lstlisting}
+
+  \begin{center}
+  \small
+  \begin{tabular}{ll}
+    \toprule
+    \texttt{getValue()} & argument của lần gọi \textbf{cuối cùng} \\
+    \texttt{getAllValues()} & \textbf{danh sách} argument của mọi lần gọi \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%--- SLIDE 33 ---------------------------------------------------------
+\begin{frame}{Khi nào dùng captor, khi nào assert giá trị trả về?}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{Assert giá trị trả về khi\ldots}
+      \begin{itemize}\small
+        \item Method \textbf{trả về} kết quả cần kiểm tra
+          (\texttt{InterventionDecision})
+        \item Dữ liệu quan sát được từ "bên ngoài" service
+      \end{itemize}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{Dùng ArgumentCaptor khi\ldots}
+      \begin{itemize}\small
+        \item Đối tượng chỉ đi \textbf{vào dependency} (save, publish, send)
+        \item Cần kiểm tra \textbf{nội dung} chi tiết, không chỉ "có gọi"
+        \item Giá trị sinh nội bộ: id, timestamp, chuỗi signals ghép
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \medskip
+  \begin{alertblock}{Thứ tự ưu tiên}
+    (1) assert giá trị trả về $\to$ (2) captor cho side effect $\to$
+    (3) \texttt{verify} đếm lần gọi. Đừng dùng captor khi một
+    \texttt{assertThat(result)} đơn giản là đủ --- test ngắn nhất có thể.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Kiểm thử exception}
+%=====================================================================
+
+%--- SLIDE 34 ---------------------------------------------------------
+\begin{frame}[fragile]{Ca kiểm thử: \texttt{AuthServiceImpl.createUser()}}
+  \vspace*{-0.65em}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Override
+@Transactional
+public UserView createUser(UserUpsert input) {
+    UUID tenantId = TenantContext.requireUuid();
+    String email = input.email();
+    if (email == null || email.isBlank()) {
+        throw new IllegalArgumentException(
+            "email is required");
+    }
+    AppUser existing = userRepository
+        .findByTenantIdAndEmail(tenantId, email)
+        .orElse(null);
+    if (existing != null) {  // idempotent: cap nhat
+        applyChanges(existing, input);
+        return toUserView(userRepository.save(existing));
+    }
+    // ... tao user moi, role mac dinh LEARNER ...
+}
+\end{lstlisting}
+
+  \vspace{-0.2em}
+  {\small \textbf{DigiShield không dùng bean validation}: không có
+  \texttt{@NotNull/@Email} --- mọi ràng buộc nằm trong code service
+  $\to$ phải test bằng unit test, không dựa vào framework.}
+\end{frame}
+
+%--- SLIDE 35 ---------------------------------------------------------
+\begin{frame}[fragile]{Ba mức kiểm thử exception}
+  \begin{block}{Mức 1: đúng loại exception (JUnit \texttt{assertThrows})}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+assertThrows(IllegalArgumentException.class,
+    () -> authService.createUser(
+        new UserUpsert("  ", null, null, null)));
+\end{lstlisting}
+  \end{block}
+
+  \begin{block}{Mức 2: đúng loại + đúng message}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+IllegalArgumentException ex = assertThrows(
+    IllegalArgumentException.class,
+    () -> authService.createUser(blankEmailInput));
+assertEquals("email is required", ex.getMessage());
+\end{lstlisting}
+  \end{block}
+
+  \begin{block}{Mức 3: + không có side effect}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+verify(userRepository, never()).save(any(AppUser.class));
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 36 ---------------------------------------------------------
+\begin{frame}[fragile]{Phong cách AssertJ: \texttt{assertThatThrownBy}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void createUser_whenEmailBlank_throwsAndSavesNothing() {
+    // Arrange: service doc tenant tu TenantContext
+    TenantContext.set(TENANT_ID.toString());
+    UserUpsert input = new UserUpsert("   ", "learner",
+                                      null, "vi");
+    // Act + Assert: chuoi fluent cua AssertJ
+    assertThatThrownBy(() -> authService.createUser(input))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("email is required");
+
+    // Khong duoc dong cham gi den repository sau validate
+    verify(userRepository, never()).save(any());
+}
+\end{lstlisting}
+
+  \begin{exampleblock}{So với \texttt{assertThrows}}
+    Cùng sức mạnh; AssertJ cho phép nối \texttt{.hasMessageContaining()},
+    \texttt{.hasCauseInstanceOf()}\ldots{} trong một chuỗi, đồng bộ với
+    style \texttt{assertThat} của phần còn lại trong repo.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Kiểm thử phát sự kiện}
+%=====================================================================
+
+%--- SLIDE 37 ---------------------------------------------------------
+\begin{frame}[fragile]{Ca kiểm thử: \texttt{AnalyticsServiceImpl.recomputeRisk()} (1/2)}
+  Service tính điểm rủi ro rồi \textbf{phát sự kiện} cho module khác:
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+private RiskScore doRecompute(UUID tenantId, UUID userId) {
+    int value = computeScore(tenantId, userId);
+
+    RiskScore score = new RiskScore(
+        UUID.randomUUID(), tenantId, RiskScope.USER,
+        userId, value, Instant.now());
+    RiskScore saved = riskScoreRepository.save(score);
+
+    eventPublisher.publish(
+        new RiskRecomputedEvent(tenantId, userId, value));
+    return saved;
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 37b --------------------------------------------------------
+\begin{frame}{Ca kiểm thử: \texttt{AnalyticsServiceImpl.recomputeRisk()} (2/2)}
+  \begin{block}{\texttt{EventPublisher} là một interface}
+    DigiShield bọc \texttt{ApplicationEventPublisher} của Spring sau interface
+    \texttt{shared.messaging.EventPublisher} $\to$ mock được như mọi
+    dependency khác, không cần Spring context.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 38 ---------------------------------------------------------
+\begin{frame}[fragile]{Test thật (trích \texttt{AnalyticsServiceImplTest}) --- 1/2}
+  \vspace*{-0.3em}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Mock  private RiskScoreRepository riskScoreRepository;
+@Mock  private RiskSignalRepository riskSignalRepository;
+@Mock  private EventPublisher eventPublisher;
+@InjectMocks private AnalyticsServiceImpl analyticsService;
+
+@Captor private ArgumentCaptor<RiskScore> scoreCaptor;
+@Captor private ArgumentCaptor<RiskRecomputedEvent>
+    eventCaptor;
+
+@Test
+void recomputeRisk_persistsUserScopedScoreAndPublishesEvent() {
+    UUID userId = UUID.randomUUID();
+    when(riskSignalRepository
+        .findByTenantIdAndUserIdAndOccurredAtAfter(
+            eq(TENANT_ID), eq(userId), any(Instant.class)))
+        .thenReturn(List.of());       // khong co tin hieu
+    when(riskScoreRepository.save(any(RiskScore.class)))
+        .thenAnswer(inv -> inv.getArgument(0));
+
+    RiskScore result = analyticsService
+        .recomputeRisk(userId);
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 39 ---------------------------------------------------------
+\begin{frame}[fragile]{Test thật: điểm được lưu và sự kiện được phát (2/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+    // Assert: entity duoc luu dung
+    verify(riskScoreRepository).save(scoreCaptor.capture());
+    RiskScore persisted = scoreCaptor.getValue();
+    assertThat(persisted.getScope())
+        .isEqualTo(RiskScope.USER);
+    assertThat(persisted.getScopeId()).isEqualTo(userId);
+    assertThat(persisted.getValue()).isEqualTo(5);
+    // khong tin hieu -> diem nen = BASE_RISK
+    assertThat(result).isSameAs(persisted);
+    // Assert: su kien phan chieu dung diem da luu
+    verify(eventPublisher).publish(eventCaptor.capture());
+    RiskRecomputedEvent event = eventCaptor.getValue();
+    assertThat(event.tenantId()).isEqualTo(TENANT_ID);
+    assertThat(event.userId()).isEqualTo(userId);
+    assertThat(event.score())
+        .isEqualTo(persisted.getValue());
+}
+\end{lstlisting}
+
+  \vspace{-0.2em}
+  {\small \textbf{Mẫu tái dùng cho BTL}: cặp captor ``entity lưu xuống'' +
+  ``event phát ra'', rồi assert \textbf{chéo}: event phải khớp dữ liệu đã lưu.}
+\end{frame}
+
+%=====================================================================
+\section{Tổ chức test}
+%=====================================================================
+
+%--- SLIDE 40 ---------------------------------------------------------
+\begin{frame}[fragile]{\texttt{@Nested} --- nhóm test theo kịch bản}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@ExtendWith(MockitoExtension.class)
+class InterceptionServiceImplTest {
+    // ... @Mock / @InjectMocks nhu tren ...
+    @Nested
+    @DisplayName("Khi tai khoan dich nam trong watchlist")
+    class WhenWatchlistHit {
+        @BeforeEach            // chi chay cho nhom nay
+        void stubHit() {
+            when(watchRepository.findByTenantIdAndValue(
+                    TENANT_ID, DEST_ACCOUNT))
+                .thenReturn(Optional.of(watchHit));
+        }
+        @Test @DisplayName("onCall + newPayee -> PAUSE")
+        void pausesWhenBothBehaviourSignals() { ... }
+        @Test @DisplayName("khong co tin hieu -> WARN")
+        void warnsOtherwise() { ... }
+    }
+    @Nested
+    @DisplayName("Khi tai khoan dich sach")
+    class WhenAccountClean { ... }   // 2 test ALLOW
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 41 ---------------------------------------------------------
+\begin{frame}{Lợi ích của \texttt{@Nested} + \texttt{@DisplayName}}
+  \begin{columns}
+    \column{0.55\textwidth}
+    \textbf{Báo cáo test trong IDE / Gradle:}
+
+    \vspace{0.3em}
+    \begin{tikzpicture}[
+      nd/.style={rectangle,draw=darkgray,fill=lightgray,
+                 rounded corners=1pt,minimum width=6cm,
+                 minimum height=0.45cm,font=\scriptsize,
+                 align=left,inner sep=3pt},
+      gr/.style={rectangle,draw=darkgray,fill=darkgray,
+                 text=white,rounded corners=1pt,
+                 minimum width=6cm,minimum height=0.45cm,
+                 font=\scriptsize\bfseries,align=left,inner sep=3pt}
+    ]
+      \node[gr] (r) at (0,3.0) {InterceptionServiceImplTest};
+      \node[nd] (g1) at (0.3,2.4) {Khi tài khoản đích nằm trong watchlist};
+      \node[nd] (t1) at (0.7,1.9) {onCall + newPayee $\to$ PAUSE};
+      \node[nd] (t2) at (0.7,1.4) {không có tín hiệu $\to$ WARN};
+      \node[nd] (g2) at (0.3,0.9) {Khi tài khoản đích sạch};
+      \node[nd] (t3) at (0.7,0.4) {luôn ALLOW, signals đúng};
+      \draw[darkgray,thin] (r.south west) -- (g1.north west);
+      \draw[darkgray,thin] (g1.south west) -- (t1.north west);
+    \end{tikzpicture}
+
+    \column{0.42\textwidth}
+    \textbf{Ghi nhớ:}
+    \begin{itemize}\small
+      \item \texttt{@BeforeEach} trong nhóm chỉ chạy cho nhóm đó
+        $\to$ hết lặp stub
+      \item \texttt{@DisplayName} tiếng Việt: báo cáo đọc được
+        bởi cả người không code
+      \item Khuyến nghị dùng khi class $\geq$ 10 test method
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 42 ---------------------------------------------------------
+\begin{frame}[fragile]{Helper builder cho dữ liệu test}
+  \texttt{EvaluateRequest} có 5 tham số --- lặp lại ở mọi test rất ồn:
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// Helper trong test class: chi tham so QUAN TRONG lo ra
+private EvaluateRequest request(boolean onCall,
+                                boolean newPayee) {
+    return new EvaluateRequest(
+        UUID.randomUUID(),           // userId bat ky
+        new BigDecimal("1000000"),   // so tien mac dinh
+        DEST_ACCOUNT, onCall, newPayee);
+}
+
+// Test doc thanh mot cau:
+interceptionService.evaluate(request(true, true));
+interceptionService.evaluate(request(false, false));
+\end{lstlisting}
+
+  \begin{block}{Nguyên tắc "test data minimal"}
+    Trong mỗi test chỉ hiện các giá trị \textbf{ảnh hưởng đến kết quả}
+    (\texttt{onCall}, \texttt{newPayee}); phần còn lại giấu vào helper.
+    Người đọc thấy ngay input nào quyết định output nào.
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{@Mock vs @MockitoBean}
+%=====================================================================
+
+%--- SLIDE 43 ---------------------------------------------------------
+\begin{frame}[shrink,fragile]{\texttt{@Mock} vs \texttt{@MockitoBean} (Spring)}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{\texttt{@Mock} (Mockito thuần)}
+      \begin{itemize}\small
+        \item Không Spring context
+        \item \texttt{@ExtendWith(\allowbreak MockitoExtension.class)}
+        \item Tốc độ: \textbf{mili-giây}
+        \item Dùng cho: \textbf{unit test}
+      \end{itemize}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@ExtendWith(
+  MockitoExtension.class)
+class InterceptionServiceImplTest {
+  @Mock
+  AccountWatchEntryRepository repo;
+  @InjectMocks
+  InterceptionServiceImpl svc;
+}
+\end{lstlisting}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{\texttt{@MockitoBean} (Spring Boot 4)}
+      \begin{itemize}\small
+        \item Thay bean \textbf{trong ApplicationContext}
+        \item Dùng với \texttt{@SpringBootTest}
+        \item Tốc độ: \textbf{vài giây} (khởi động context)
+        \item Dùng cho: \textbf{integration test}
+      \end{itemize}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@SpringBootTest
+class InterceptionControllerIT {
+  @MockitoBean
+  AiClient aiClient;  // thay bean
+  @Autowired
+  MockMvc mockMvc;    // bean that
+}
+\end{lstlisting}
+    \end{block}
+  \end{columns}
+
+  \begin{alertblock}{Lưu ý phiên bản}
+    \texttt{@MockBean} (cũ) đã bị thay bởi \texttt{@MockitoBean} từ Spring Boot 3.4+;
+    DigiShield chạy Spring Boot 4 nên chỉ dùng \texttt{@MockitoBean}.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 44 ---------------------------------------------------------
+\begin{frame}{Khi nào mới cần Spring context? (dẫn sang Buổi 7)}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{>{\raggedright\arraybackslash}p{6.6cm}cc}
+    \toprule
+    \textbf{Tình huống} & \textbf{@Mock} & \textbf{@MockitoBean} \\
+    \midrule
+    Unit test logic một service & \checkmark & \\
+    Test controller qua MockMvc & & \checkmark \\
+    Test security/filter/serialization & & \checkmark \\
+    Test listener sự kiện Spring Modulith & & \checkmark \\
+    Test truy vấn JPA thật (Testcontainers) & & \checkmark \\
+    Pipeline CI cần nhanh, chạy mỗi commit & \checkmark & \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  {\small \textbf{Trong DigiShield}: \texttt{./gradlew test} --- unit test
+  Mockito, không cần Docker, vài giây; \texttt{./gradlew integrationTest} ---
+  \texttt{*IT.java} với \texttt{@SpringBootTest} + Testcontainers, cần Docker
+  (Buổi 7).\\[0.25em]
+  \textbf{Testing pyramid (Buổi 2)}: nhiều unit test rẻ ở đáy, ít integration
+  test đắt ở giữa --- tỷ lệ trong repo hiện tại: 176 unit / 19 integration.}
+\end{frame}
+
+%=====================================================================
+\section{Anti-patterns}
+%=====================================================================
+
+%--- SLIDE 45 ---------------------------------------------------------
+\begin{frame}[fragile]{Anti-pattern 1--2: over-mocking, test chép lại cài đặt}
+  \begin{alertblock}{Over-mocking}
+    Mock cả những thứ không cần: DTO, entity, \texttt{List}, class tiện ích.
+    \texttt{EvaluateRequest} là record --- cứ \texttt{new} nó ra! Chỉ mock
+    \textbf{dependency có side effect hoặc khó dựng} (DB, mạng, thời gian).
+  \end{alertblock}
+
+  \begin{alertblock}{Test chép lại cài đặt (mirror implementation)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// XAU: lap lai cong thuc cua service trong test
+int expected = Math.max(0, Math.min(100, 5 + weight));
+assertThat(result.getValue()).isEqualTo(expected);
+
+// TOT (nhu test that): tinh tay ky vong tu dac ta
+// 2 click x 25 diem -> 5 + 50 = 55
+assertThat(result.getValue()).isEqualTo(55);
+\end{lstlisting}
+    Copy công thức vào test $\to$ code sai thì test cũng sai theo,
+    không bao giờ fail. Kỳ vọng phải đến từ \textbf{đặc tả}, không từ code.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 46 ---------------------------------------------------------
+\begin{frame}[fragile]{Anti-pattern 3--4: mock "trả lời mọi thứ", assert quá ít}
+  \begin{alertblock}{Mock trả lời mọi thứ}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// XAU: any() moi noi -> test khong con kiem tra
+// service truyen DUNG tenant/tai khoan hay khong
+when(watchRepository.findByTenantIdAndValue(
+        any(), any())).thenReturn(Optional.of(hit));
+\end{lstlisting}
+    Test thật của DigiShield stub với \texttt{TENANT\_ID, DEST\_ACCOUNT} cụ thể:
+    nếu service truyền nhầm tenant, stub không khớp $\to$ test fail. Strict
+    stubbing chỉ cứu được một phần --- hãy stub hẹp nhất có thể.
+  \end{alertblock}
+
+  \begin{alertblock}{Assert quá ít (test tăng coverage rỗng)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// XAU: goi xong khong assert gi ca
+interceptionService.evaluate(request);   // "no crash" ??
+\end{lstlisting}
+    Coverage 100\% nhưng không phát hiện lỗi nào. Mutation testing (PIT)
+    sẽ vạch trần loại test này --- mỗi test tối thiểu một assert có ý nghĩa.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%--- SLIDE 47 ---------------------------------------------------------
+\begin{frame}{Tổng quan bài thực hành Buổi 6}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabular}{c>{\raggedright\arraybackslash}p{5.2cm}>{\raggedright\arraybackslash}p{4.6cm}c}
+    \toprule
+    \textbf{BT} & \textbf{Nội dung} & \textbf{Kỹ thuật} & \textbf{Phút} \\
+    \midrule
+    1 & Chạy và đọc bộ test có sẵn của \texttt{interception} & \texttt{./gradlew test}, đọc report & 10 \\
+    2 & Test \texttt{ReportingServiceImpl\allowbreak.triage()} --- nhánh confirm & stub, captor, verify publish & 20 \\
+    3 & \texttt{triage()} --- nhánh dismiss + cross-tenant & \texttt{never}, \texttt{verifyNoInteractions}, \texttt{assertThatThrownBy} & 20 \\
+    4 & Test \texttt{AuthServiceImpl\allowbreak.importUsers()} & \texttt{getAllValues()}, đếm accepted & 20 \\
+    5 & Đo coverage các class vừa test & JaCoCo report & 10 \\
+    \midrule
+    & & \textbf{Tổng} & \textbf{80} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  {\small \textbf{Chuẩn bị}: mở \texttt{modules/reporting/.../\allowbreak
+  ReportingServiceImpl.java} và \texttt{modules/auth/.../\allowbreak
+  AuthServiceImpl.java}; test đặt trong \texttt{src/test/java} cùng package
+  với class được test.}
+\end{frame}
+
+%--- SLIDE 48 ---------------------------------------------------------
+\begin{frame}[fragile]{BT 2--3: mã nguồn \texttt{triage()} cần test}
+  \vspace*{-0.5em}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+public PhishingReport triage(UUID reportId,
+                             boolean confirmThreat) {
+    UUID tenantId = TenantContext.requireUuid();
+    PhishingReport report = reportRepository
+        .findById(reportId)
+        .filter(r -> tenantId.equals(r.getTenantId()))
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Khong tim thay bao cao phishing: " + reportId));
+
+    if (confirmThreat) {
+        report.setAiLabel(AiLabel.THREAT);
+        report.setStatus(ReportStatus.CONFIRMED);
+        PhishingReport saved = reportRepository.save(report);
+        eventPublisher.publish(
+            new PhishingReportConfirmedEvent(
+                tenantId, saved.getUserId(), saved.getId()));
+        return saved;
+    }
+    report.setAiLabel(AiLabel.CLEAN);
+    report.setStatus(ReportStatus.DISMISSED);
+    return reportRepository.save(report);
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 49 ---------------------------------------------------------
+\begin{frame}[fragile]{BT 2--3: khung test cần hoàn thiện (1/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@ExtendWith(MockitoExtension.class)
+class ReportingServiceImplTest {
+  @Mock PhishingReportRepository reportRepository;
+  @Mock BlacklistEntryRepository blacklistRepository;
+  @Mock ThreatIntelRepository threatIntelRepository;
+  @Mock EventPublisher eventPublisher;
+  @InjectMocks ReportingServiceImpl reportingService;
+  @Captor ArgumentCaptor<PhishingReportConfirmedEvent>
+      eventCaptor;
+
+  @Test
+  void triage_confirm_marksThreatAndPublishesEvent() {
+    // TODO: stub findById tra ve report cung tenant
+    // TODO: stub save tra ve argument (thenAnswer)
+    // TODO: goi triage(id, true)
+    // TODO: assert status CONFIRMED, aiLabel THREAT
+    // TODO: captor event -- dung tenantId/userId/reportId
+  }
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 49b --------------------------------------------------------
+\begin{frame}[fragile]{BT 2--3: khung test cần hoàn thiện (2/2)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+  @Test
+  void triage_dismiss_marksCleanAndDoesNotPublish() {
+    // TODO: goi triage(id, false)
+    // TODO: assert DISMISSED / CLEAN
+    // TODO: verifyNoInteractions(eventPublisher)
+  }
+
+  @Test
+  void triage_reportOfOtherTenant_throwsAndSavesNothing() {
+    // TODO: report.tenantId KHAC TenantContext
+    // TODO: assertThatThrownBy ... IllegalArgumentException
+    // TODO: verify(reportRepository, never()).save(any())
+  }
+}
+\end{lstlisting}
+
+  {\small \textbf{Lưu ý}: repo đã có \texttt{ReportingServiceImplTest}
+  hoàn chỉnh (5 test) và \texttt{AuthServiceImplTest} (19 test) --- tự viết
+  theo khung trên \emph{trước}, rồi mới mở file thật để so đáp án
+  (tên test trong repo dài và mô tả kỹ hơn).}
+\end{frame}
+
+%--- SLIDE 50 ---------------------------------------------------------
+\begin{frame}[fragile]{BT 4: \texttt{importUsers()} --- đếm accepted, bỏ dòng blank}
+  \vspace*{-0.2em}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+public ImportResult importUsers(List<UserUpsert> users) {
+    int accepted = 0;
+    if (users != null) {
+        for (UserUpsert input : users) {
+            if (input == null || input.email() == null
+                    || input.email().isBlank()) {
+                continue;            // bo qua dong hong
+            }
+            createUser(input);
+            accepted++;
+        }
+    }
+    String jobId = "import-" + UUID.randomUUID();
+    return new ImportResult(jobId, accepted);
+}
+\end{lstlisting}
+
+  \vspace{-0.2em}
+  {\small \textbf{Yêu cầu tối thiểu 4 test}:
+  (1) 3 dòng hợp lệ $\to$ \texttt{accepted = 3}, save 3 lần,
+  \texttt{getAllValues()} đúng email;
+  (2) lẫn dòng \texttt{null}/email blank $\to$ chỉ đếm dòng hợp lệ;
+  (3) danh sách \texttt{null} $\to$ \texttt{accepted = 0}, không save;
+  (4) \texttt{jobId} có tiền tố \texttt{"import-"}.}
+\end{frame}
+
+%--- SLIDE 51 ---------------------------------------------------------
+\begin{frame}[fragile]{Chạy test và đo coverage}
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\footnotesize]
+# Chay toan bo unit test (khong can Docker)
+./gradlew test
+
+# Chay rieng mot module / mot class
+./gradlew :modules:reporting:test
+./gradlew :modules:auth:test \
+    --tests "*AuthServiceImplTest"
+
+# Bao cao coverage tong hop (JaCoCo)
+./gradlew testCodeCoverageReport
+# Mo: build/reports/jacoco/
+#     testCodeCoverageReport/html/index.html
+\end{lstlisting}
+
+  {\small \textbf{Kiểm tra chéo}: sau khi viết đủ test, \texttt{triage()} và
+  \texttt{importUsers()} phải đạt \textbf{100\% branch} trong JaCoCo ---
+  JaCoCo đếm branch theo \textbf{từng điều kiện con} của \texttt{||}: cần đủ
+  ba loại dòng hỏng (\texttt{null}, email \texttt{null}, email blank).}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp}
+%=====================================================================
+
+%--- SLIDE 52 ---------------------------------------------------------
+\begin{frame}{Bài nộp --- gắn với Bài tập lớn (A1.2, 30\%)}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \begin{block}{Yêu cầu (theo nhóm BTL)}
+    \begin{enumerate}
+      \item Bộ \textbf{unit test Mockito} cho service chính của module nhóm
+        đang phụ trách (interception, reporting, auth, analytics,
+        simulation\ldots):
+        \begin{itemize}\small
+          \item Mỗi nhánh quyết định một test method (như \texttt{evaluate()})
+          \item Có ít nhất: 1 ArgumentCaptor, 1 test exception
+            (type + message + side effect), 1 verify publish sự kiện
+            hoặc \texttt{verifyNoInteractions}
+          \item Tổ chức bằng \texttt{@Nested} + \texttt{@DisplayName} tiếng Việt
+        \end{itemize}
+      \item Ảnh chụp \textbf{JaCoCo report}: branch coverage của service
+        được test $\geq 80\%$; ghi rõ nhánh nào chưa phủ và vì sao.
+      \item Bảng ánh xạ: test method $\leftrightarrow$ nhánh/rule
+        $\leftrightarrow$ kỹ thuật (stub / captor / verify) --- như slide
+        "Tổng kết ca kiểm thử".
+    \end{enumerate}
+  \end{block}
+
+  {\small \textbf{Định dạng}: push lên nhánh \texttt{feat/btl-unit-test-<nhóm>}
+  của repo nhóm + nộp PDF báo cáo \texttt{Nhom\_XX\_Buoi06.pdf}.
+  Hạn: trước Buổi 7.}
+\end{frame}
+
+%--- SLIDE 53 ---------------------------------------------------------
+\begin{frame}{Câu hỏi ôn tập}
+  \begin{enumerate}\small
+    \item Phân biệt stub và mock theo Meszaros. Trong
+      \texttt{InterceptionServiceImplTest}, \texttt{watchRepository} đóng
+      vai trò nào ở test PAUSE?
+    \item Vì sao \texttt{@BeforeEach} của test đó phải dùng
+      \texttt{lenient()}? Bỏ đi thì test nào sẽ fail và với exception gì?
+    \item Viết lại \texttt{when(repo.findByTenantIdAndValue(TENANT\_ID,
+      any()))} cho đúng quy tắc matcher.
+    \item Khi nào bắt buộc dùng \texttt{ArgumentCaptor} thay vì assert
+      giá trị trả về? Cho ví dụ từ \texttt{evaluate()}.
+    \item Test "dismiss không publish event" bảo vệ chúng ta khỏi bug
+      nghiệp vụ nào trong chuỗi reporting $\to$ analytics?
+    \item \texttt{@Mock} và \texttt{@MockitoBean} khác nhau thế nào?
+      Nếu dùng \texttt{@MockitoBean} trong test không có
+      \texttt{@SpringBootTest} thì sao?
+  \end{enumerate}
+\end{frame}
+
+%--- SLIDE 54 ---------------------------------------------------------
+\begin{frame}[shrink]{Tóm tắt Buổi 6 và chuẩn bị Buổi 7}
+  \begin{columns}
+    \column{0.55\textwidth}
+    \begin{block}{Đã học}
+      \begin{itemize}\small
+        \item Test double: dummy/stub/fake/spy/mock
+        \item \texttt{@Mock}, \texttt{@InjectMocks}, \texttt{@Captor}, \texttt{lenient()}
+        \item Stub: \texttt{thenReturn/\allowbreak thenThrow/\allowbreak
+          thenAnswer}, matcher
+        \item Ca kiểm thử \texttt{evaluate()}: 5 test phủ 3 nhánh
+        \item \texttt{verify}, \texttt{verifyNoInteractions}, \texttt{InOrder}
+        \item Captor cho entity và event; exception 3 mức
+        \item \texttt{@Nested}, anti-patterns
+      \end{itemize}
+    \end{block}
+
+    \column{0.43\textwidth}
+    \begin{block}{Buổi 7: Integration test}
+      \begin{itemize}\small
+        \item \texttt{@SpringBootTest}, MockMvc
+        \item Testcontainers (PostgreSQL)
+        \item Test Row-Level Security đa tenant
+        \item Test pipeline sự kiện AIDA
+      \end{itemize}
+    \end{block}
+    \begin{alertblock}{Chuẩn bị}
+      \small Cài \textbf{Docker Desktop}; chạy thử
+      \texttt{integrationTest} trước ở nhà (lần đầu kéo image
+      PostgreSQL 16 khá lâu).
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Tài liệu tham khảo}
+%=====================================================================
+
+%--- SLIDE 55 ---------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slide} Slide bài giảng điện tử --- Bộ môn Công nghệ Phần mềm.
+    \bibitem{ammann} Paul Ammann \& Jeff Offutt, \textit{Introduction to
+      Software Testing}, Cambridge University Press, 2008.
+    \bibitem{myers} Glenford J. Myers, \textit{The Art of Software Testing},
+      2nd ed., Wiley, 2004.
+    \bibitem{istqb} ISTQB, \textit{Certified Tester Foundation Level Syllabus},
+      version 4.0, 2023. \url{https://istqb.org/}
+    \bibitem{mockito} Mockito Team, \textit{Mockito Documentation}.
+      \url{https://site.mockito.org/}
+    \bibitem{junit} JUnit Team, \textit{JUnit 5 User Guide}.
+      \url{https://junit.org/junit5/docs/current/user-guide/}
+    \bibitem{meszaros} Gerard Meszaros, \textit{xUnit Test Patterns:
+      Refactoring Test Code}, Addison-Wesley, 2007.
+    \bibitem{digishield} Mã nguồn DigiShield: \texttt{modules/interception},
+      \texttt{modules/auth}, \texttt{modules/analytics},
+      \texttt{modules/reporting} (test trong \texttt{src/test/java}).
+  \end{thebibliography}
+\end{frame}
+
+\end{document}
