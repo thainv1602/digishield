@@ -1,5 +1,6 @@
 package com.digishield.interception.application;
 
+import com.digishield.interception.api.dto.AccountWatchEntryView;
 import com.digishield.interception.api.dto.EvaluateRequest;
 import com.digishield.interception.api.dto.InterventionDecision;
 import com.digishield.interception.domain.AccountWatchEntry;
@@ -20,15 +21,19 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -170,6 +175,70 @@ class InterceptionServiceImplTest {
         InterventionEvent persisted = eventCaptor.getValue();
         assertThat(persisted.getDecision()).isEqualTo(Decision.ALLOW);
         assertThat(persisted.getSignals()).isEmpty();
+    }
+
+    @Test
+    void addWatchEntry_whenRiskLevelMissing_isRejectedAsBadRequestAndNothingIsWritten() {
+        // Arrange: a body that omits risk_level — the shape that used to NPE.
+        AccountWatchEntryView request = new AccountWatchEntryView(
+                null, "phone", "+84900000000", null, "user-report", null);
+
+        // Act + Assert
+        assertThatThrownBy(() -> interceptionService.addWatchEntry(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("risk_level")
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(watchRepository, never()).save(any());
+    }
+
+    @Test
+    void addWatchEntry_whenTypeOutsideTheEnum_isRejectedAsBadRequest() {
+        // Arrange
+        AccountWatchEntryView request = new AccountWatchEntryView(
+                null, "carrier-pigeon", "+84900000000", "high", "user-report", null);
+
+        // Act + Assert
+        assertThatThrownBy(() -> interceptionService.addWatchEntry(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("type")
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(watchRepository, never()).save(any());
+    }
+
+    @Test
+    void addWatchEntry_whenValueBlank_isRejectedAsBadRequest() {
+        // Arrange
+        AccountWatchEntryView request = new AccountWatchEntryView(
+                null, "phone", "   ", "high", "user-report", null);
+
+        // Act + Assert
+        assertThatThrownBy(() -> interceptionService.addWatchEntry(request))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("value");
+        verify(watchRepository, never()).save(any());
+    }
+
+    @Test
+    void addWatchEntry_whenValid_persistsEntryScopedToTheCurrentTenant() {
+        // Arrange: lowercase wire values, as the OpenAPI contract sends them.
+        when(watchRepository.save(any(AccountWatchEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        AccountWatchEntryView request = new AccountWatchEntryView(
+                null, "phone", "+84900000000", "high", "user-report", null);
+
+        // Act
+        AccountWatchEntryView created = interceptionService.addWatchEntry(request);
+
+        // Assert
+        assertThat(created.id()).isNotNull();
+        assertThat(created.addedAt()).isNotNull();
+        ArgumentCaptor<AccountWatchEntry> captor = ArgumentCaptor.forClass(AccountWatchEntry.class);
+        verify(watchRepository).save(captor.capture());
+        AccountWatchEntry persisted = captor.getValue();
+        assertThat(persisted.getTenantId()).isEqualTo(TENANT_ID);
+        assertThat(persisted.getType()).isEqualTo(WatchType.PHONE);
+        assertThat(persisted.getRiskLevel()).isEqualTo(RiskLevel.HIGH);
     }
 
     @Test

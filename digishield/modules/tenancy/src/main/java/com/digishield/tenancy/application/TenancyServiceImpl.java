@@ -45,14 +45,18 @@ import com.digishield.tenancy.infrastructure.TenantSettingsRepository;
 import com.digishield.tenancy.infrastructure.UsageMeteringRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -112,11 +116,17 @@ public class TenancyServiceImpl implements TenancyService {
     @Override
     public TenantView createTenant(CreateTenantCommand command) {
         UUID id = UUID.randomUUID();
+        // Validated at the boundary: an unknown tier used to escape as a raw
+        // IllegalArgumentException and be reported as a 500, which reads as "the
+        // server broke" for what is simply a bad request body.
+        if (command.name() == null || command.name().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "name is required");
+        }
         Tenant tenant = new Tenant(
                 id,
                 id,
-                command.name(),
-                TenantTier.valueOf(command.tier()),
+                command.name().trim(),
+                requiredTier(command.tier()),
                 command.dataRegion(),
                 TenantStatus.PROVISIONING
         );
@@ -247,7 +257,7 @@ public class TenancyServiceImpl implements TenancyService {
             tenant.setName(command.name().trim());
         }
         if (command.tier() != null && !command.tier().isBlank()) {
-            tenant.setTier(TenantTier.valueOf(command.tier().trim().toUpperCase()));
+            tenant.setTier(requiredTier(command.tier()));
         }
         if (command.status() != null && !command.status().isBlank()) {
             tenant.setStatus(parseStatus(command.status()));
@@ -578,7 +588,33 @@ public class TenancyServiceImpl implements TenancyService {
         if (normalized.equals("OFFBOARDING")) {
             return TenantStatus.DEACTIVATED;
         }
-        return TenantStatus.valueOf(normalized);
+        try {
+            return TenantStatus.valueOf(normalized);
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "status must be one of " + lowercaseNames(TenantStatus.values()) + " or offboarding");
+        }
+    }
+
+    /**
+     * Parses a required {@code tier}, case-insensitively.
+     *
+     * @throws ResponseStatusException {@code 400} when absent, blank or unknown
+     */
+    private static TenantTier requiredTier(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tier is required");
+        }
+        try {
+            return TenantTier.valueOf(raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "tier must be one of " + lowercaseNames(TenantTier.values()));
+        }
+    }
+
+    private static List<String> lowercaseNames(Enum<?>[] values) {
+        return Arrays.stream(values).map(v -> v.name().toLowerCase(Locale.ROOT)).toList();
     }
 
     private Map<String, Object> readJson(String json) {
