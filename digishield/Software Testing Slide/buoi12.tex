@@ -695,7 +695,7 @@ void wrapHandlesNull() {                 // bien: null
 
 \begin{frame}{Kiến trúc 3 lớp \texttt{AiClient} của DigiShield (1/2)}
   \begin{center}
-  \begin{tikzpicture}[node distance=0.5cm and 1.1cm,
+  \begin{tikzpicture}[node distance=0.5cm and 2.2cm,
       box/.style={draw=darkgray, thick, rounded corners=2pt, fill=lightgray,
                   minimum height=0.85cm, minimum width=3.0cm, align=center, font=\small},
       lbl/.style={font=\scriptsize, text=darkgray}]
@@ -703,7 +703,7 @@ void wrapHandlesNull() {                 // bien: null
     \node[box, right=of svc] (claude) {\texttt{ClaudeAiClient}\\Claude thật};
     \node[box, above=of claude] (ml) {\texttt{MlAiClient}\\model tự host};
     \node[box, below=of claude] (stub) {\texttt{StubAiClient}\\tất định, miễn phí};
-    \draw[-{Stealth}, thick, darkgray] (svc) -- node[lbl, above]{\texttt{AiClient}} (claude);
+    \draw[-{Stealth}, thick, darkgray] (svc.east) -- node[lbl, above]{\texttt{AiClient}} (claude.west);
     \draw[-{Stealth}, thick, darkgray, dashed] (ml.south) -- node[lbl, right]{escalate} (claude.north);
     \draw[-{Stealth}, thick, darkgray, dashed] (claude.south) -- node[lbl, right]{fallback khi lỗi} (stub.north);
   \end{tikzpicture}

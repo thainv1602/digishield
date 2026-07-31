@@ -724,13 +724,13 @@ npm run dev     # Vite dev server, port 5173
 <button type="button">Super</button>
 
 <form>
-  <label for="login-email">(*@{\normalfont\small Email công việc}@*)</label>
+  <label for="login-email">(*@{\normalfont\scriptsize\smash{Email công việc}}@*)</label>
   <input id="login-email" type="email"
          value="admin@coquan.gov.vn" />
-  <label for="login-pw">(*@{\normalfont\small Mật khẩu}@*)</label>
+  <label for="login-pw">(*@{\normalfont\scriptsize\smash{Mật khẩu}}@*)</label>
   <input id="login-pw" type="password"
          value="demo1234" />
-  <button type="submit">(*@{\normalfont\small Đăng nhập}@*)</button>
+  <button type="submit">(*@{\normalfont\scriptsize\smash{Đăng nhập}}@*)</button>
 </form>
 \end{lstlisting}
 
@@ -953,7 +953,7 @@ driver.findElement(By.cssSelector(
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 // Nut submit theo text hien thi
 driver.findElement(By.xpath(
-    "//button[contains(text(),'(*@{\normalfont\small Đăng nhập}@*)')]"));
+    "//button[contains(text(),'(*@{\normalfont\scriptsize Đăng nhập}@*)')]"));
 
 // Chon persona tren segmented control
 // (nhan cac nut la 'Admin', 'Learner',
@@ -1468,7 +1468,7 @@ System.out.println(
   \begin{block}{Yêu cầu: bộ kịch bản Selenium cho chức năng đăng nhập}
     Áp dụng cho \textbf{ứng dụng của nhóm} (BTL) --- nhóm nào dùng DigiShield thì
     làm trên DigiShield:
-    \begin{enumerate}
+    \begin{enumerate}\small
       \item Bảng \textbf{đặc tả test case} đăng nhập theo khuôn mẫu buổi 9:
             tối thiểu 5 ca (2 tích cực, 3 tiêu cực)
       \item Project test riêng (Maven/Gradle) cài Selenium 4.x + JUnit 5,
@@ -1478,7 +1478,6 @@ System.out.println(
       \item \texttt{README.md}: cách chạy hệ thống + cách chạy test
     \end{enumerate}
   \end{block}
-  \vspace{-0.4em}
 
   \begin{alertblock}{Nộp}
     Đẩy lên repo nhóm trước \textbf{buổi 11}. Đây là thành phần

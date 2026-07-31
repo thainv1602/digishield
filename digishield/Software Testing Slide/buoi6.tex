@@ -1096,7 +1096,7 @@ assertThat(saved).extracting(AppUser::getEmail)
 
 %--- SLIDE 34 ---------------------------------------------------------
 \begin{frame}[fragile]{Ca kiểm thử: \texttt{AuthServiceImpl.createUser()}}
-  \vspace*{-0.65em}
+  \vspace*{-0.25em}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Override
 @Transactional
@@ -1118,7 +1118,7 @@ public UserView createUser(UserUpsert input) {
 }
 \end{lstlisting}
 
-  \vspace{-0.2em}
+  \vspace{-0.5em}
   {\small \textbf{DigiShield không dùng bean validation}: không có
   \texttt{@NotNull/@Email} --- mọi ràng buộc nằm trong code service
   $\to$ phải test bằng unit test, không dựa vào framework.}
@@ -1311,14 +1311,12 @@ class InterceptionServiceImplTest {
                  minimum width=6cm,minimum height=0.45cm,
                  font=\scriptsize\bfseries,align=left,inner sep=3pt}
     ]
-      \node[gr] (r) at (0,3.0) {InterceptionServiceImplTest};
-      \node[nd] (g1) at (0.3,2.4) {Khi tài khoản đích nằm trong watchlist};
-      \node[nd] (t1) at (0.7,1.9) {onCall + newPayee $\to$ PAUSE};
-      \node[nd] (t2) at (0.7,1.4) {không có tín hiệu $\to$ WARN};
-      \node[nd] (g2) at (0.3,0.9) {Khi tài khoản đích sạch};
-      \node[nd] (t3) at (0.7,0.4) {luôn ALLOW, signals đúng};
-      \draw[darkgray,thin] (r.south west) -- (g1.north west);
-      \draw[darkgray,thin] (g1.south west) -- (t1.north west);
+      \node[gr,anchor=west] (r) at (0,3.0) {InterceptionServiceImplTest};
+      \node[nd,anchor=west,minimum width=5.7cm] (g1) at (0.3,2.4) {Khi tài khoản đích nằm trong watchlist};
+      \node[nd,anchor=west,minimum width=5.3cm] (t1) at (0.7,1.8) {onCall + newPayee $\to$ PAUSE};
+      \node[nd,anchor=west,minimum width=5.3cm] (t2) at (0.7,1.2) {không có tín hiệu $\to$ WARN};
+      \node[nd,anchor=west,minimum width=5.7cm] (g2) at (0.3,0.6) {Khi tài khoản đích sạch};
+      \node[nd,anchor=west,minimum width=5.3cm] (t3) at (0.7,0.0) {luôn ALLOW, signals đúng};
     \end{tikzpicture}
 
     \column{0.42\textwidth}

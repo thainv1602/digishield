@@ -287,7 +287,7 @@ class InterceptionServiceImplTest {
     \node[bx]   (s2) at (8.6,2.7) {Service + Repository};
     \node[real] (d2) at (8.6,1.8) {PostgreSQL container};
     \draw[arr] (c2)--(s2); \draw[arr] (s2)--(d2);
-    \draw[darkgray,dashed,rounded corners=4pt] (6.7,1.35) rectangle (10.5,4.05);
+    \draw[darkgray,dashed,rounded corners=4pt] (6.35,1.3) rectangle (10.85,4.12);
     \node[font=\scriptsize,darkgray] at (8.6,1.05) {Testcontainers (Docker)};
   \end{tikzpicture}
   \end{center}
@@ -1205,8 +1205,8 @@ void everyTenantScopedTableHasRlsEnabledAndAPolicy() {
     arr/.style={-{Stealth[length=4pt]},darkgray,thick}
   ]
     \node[bx] (ai)  at (0,2.6)   {\textbf{ai}\\\texttt{runOrchestration()}\\lưu AidaRun ``running''};
-    \node[bx] (an)  at (5.6,2.6) {\textbf{analytics}\\\texttt{AidaOrchestrationListener}\\recompute risk; $\geq$ 60 $\to$ yêu cầu enroll};
-    \node[bx] (le)  at (11.2,2.6){\textbf{learning}\\\texttt{RemediationEnrollmentListener}\\auto-enroll user};
+    \node[bx] (an)  at (7.2,2.6) {\textbf{analytics}\\\texttt{AidaOrchestrationListener}\\recompute risk; $\geq$ 60 $\to$ yêu cầu enroll};
+    \node[bx] (le)  at (15.6,2.6){\textbf{learning}\\\texttt{RemediationEnrollmentListener}\\auto-enroll user};
     \node[bx] (done) at (2.8,0.4){\textbf{ai}\\\texttt{...CompletedListener}\\chốt run ``success''};
     \draw[arr] (ai) -- node[ev,above]{AidaOrchestration\\RequestedEvent} (an);
     \draw[arr] (an) -- node[ev,above]{RemediationEnrollment\\RequestedEvent} (le);
