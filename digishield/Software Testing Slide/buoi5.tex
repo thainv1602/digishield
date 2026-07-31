@@ -1,0 +1,1680 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 5
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}\insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact spacing + auto slide-break for long frames
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{frametitle continuation}{\normalfont\small~(tiếp)}
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc,graphs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{colortbl}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=left,
+  numberstyle=\tiny\color{midgray},
+  numbersep=5pt,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\color{midgray},
+  stringstyle=\color{darkgray},
+}
+
+\lstdefinestyle{nonumber}{numbers=none}
+
+\newcommand{\sref}[1]{\textsuperscript{\scriptsize[#1]}}
+
+\title{JUnit 5 cơ bản}
+\subtitle{Buổi 5 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+\date{Học kỳ 2025--2026}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%--- SLIDE 1: TITLE ---------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%--- SLIDE 2: NOI DUNG ------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \large
+  \setlength{\itemsep}{0.3em}
+  \begin{enumerate}
+    \item JUnit là gì? Lịch sử và kiến trúc JUnit 5
+    \item Các bước cài đặt JUnit: Maven và Gradle (DigiShield)
+    \item Cấu trúc thư mục test và test đầu tiên
+    \item Vòng đời test và các annotation cơ bản
+    \item Họ assertion của JUnit 5
+    \item AssertJ --- assertion kiểu fluent
+    \item Ca kiểm thử hoàn chỉnh với \texttt{StubAiClient}
+    \item Parameterized tests
+    \item Chạy test bằng Gradle và đọc report
+    \item Thiết kế dễ kiểm thử (testability) --- Thực hành --- Bài nộp
+  \end{enumerate}
+\end{frame}
+
+%--- SLIDE 3: VI TRI DE CUONG -----------------------------------------
+\begin{frame}[shrink=8]{Vị trí trong đề cương môn học}
+  \begin{block}{Chương 4 --- JUnit trong kiểm thử hộp trắng}
+    Nội dung chương theo đề cương: \textbf{Giới thiệu} ---
+    \textbf{Khái niệm chung} --- \textbf{Các bước cài đặt JUnit}.
+  \end{block}
+
+  \vspace{0.35em}
+  \begin{center}
+  \small
+  \begin{tabular}{cll}
+    \toprule
+    \textbf{Buổi} & \textbf{Chương} & \textbf{Chủ đề} \\
+    \midrule
+    3--4 & C3 Hộp trắng & CFG, độ phủ, cyclomatic, JaCoCo \\
+    \rowcolor{lightgray}
+    \textbf{5} & \textbf{C4 JUnit} & \textbf{JUnit 5 cơ bản (hôm nay)} \\
+    6 & C4 JUnit & Mockito: mock / stub / verify \\
+    7 & C4 (mở rộng) & Integration test: Spring, Testcontainers \\
+    8--9 & C5 Hộp đen & EP, BVA, bảng quyết định, Postman \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.35em}
+  \begin{exampleblock}{Kết nối với buổi 3--4}
+    Buổi 3--4 ta đã \textbf{thiết kế} test case trên giấy từ CFG và độ phủ nhánh.
+    Hôm nay ta \textbf{cài đặt} chúng thành mã chạy được bằng JUnit 5
+    trên chính codebase DigiShield.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 4: MUC TIEU ------------------------------------------------
+\begin{frame}{Mục tiêu buổi học}
+  Sau buổi học, sinh viên có thể:
+  \begin{itemize}
+    \item Trình bày được kiến trúc JUnit 5 (Platform / Jupiter / Vintage)
+    \item Cài đặt JUnit 5 vào project Maven và project Gradle
+    \item Giải thích cấu hình test thật của DigiShield
+          (\texttt{spring-boot-starter-test}, JVM Test Suites)
+    \item Viết unit test theo mẫu AAA với \texttt{@Test},
+          các annotation vòng đời, assertion và AssertJ
+    \item Viết parameterized test với \texttt{@ValueSource},
+          \texttt{@CsvSource}, \texttt{@MethodSource}
+    \item Chạy test bằng \texttt{./gradlew test} và đọc report HTML
+  \end{itemize}
+
+  \vspace{0.4em}
+  \begin{alertblock}{Chuẩn bị}
+    Clone repo DigiShield, mở bằng IntelliJ IDEA; JDK 25;
+    không cần Docker cho buổi này.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Giới thiệu JUnit}
+%=====================================================================
+
+%--- SLIDE 5 ----------------------------------------------------------
+\begin{frame}[shrink=8]{Vì sao phải tự động hóa unit test?}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{Kiểm thử thủ công}
+      \begin{itemize}
+        \item Chạy app, nhập tay, quan sát mắt thường
+        \item Lặp lại sau \textbf{mỗi lần sửa code} --- tốn công
+        \item Không đo được độ phủ
+        \item Dễ bỏ sót trường hợp biên
+      \end{itemize}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{Unit test tự động}
+      \begin{itemize}
+        \item Viết một lần, chạy hàng nghìn lần
+        \item Chạy trong CI/CD trước khi merge
+        \item Là ``lưới an toàn'' khi refactor
+        \item Là \textbf{tài liệu sống} (living documentation) mô tả hành vi code
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Trong DigiShield}
+    Backend hiện có \textbf{176 test} trong 27 class test.
+    Mỗi lần đẩy code, toàn bộ chạy lại bằng \texttt{./gradlew test} ---
+    vài chục giây thay vì vài giờ kiểm thử tay.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 6 ----------------------------------------------------------
+\begin{frame}[shrink=8]{JUnit là gì?}
+  \begin{block}{Định nghĩa}
+    JUnit là \textbf{framework kiểm thử đơn vị} (unit testing framework)
+    cho Java: cung cấp annotation để đánh dấu test, assertion để
+    kiểm tra kết quả, và bộ chạy (runner) để thực thi + báo cáo.\sref{5}
+  \end{block}
+
+  \vspace{0.35em}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \textbf{Lịch sử:}
+    \begin{itemize}
+      \item 1997: Kent Beck \& Erich Gamma viết JUnit
+            trên chuyến bay tới hội nghị OOPSLA
+      \item Khởi nguồn họ framework \textbf{xUnit}
+            (NUnit, PyTest, PHPUnit, \dots)
+      \item 2006: JUnit 4 (annotation \texttt{@Test})
+      \item 2017: JUnit 5 --- viết lại toàn bộ
+    \end{itemize}
+
+    \column{0.44\textwidth}
+    \textbf{Vị thế hiện nay:}
+    \begin{itemize}
+      \item Chuẩn \textit{de facto} cho test Java
+      \item Tích hợp sẵn trong Maven, Gradle, IntelliJ, Eclipse, CI/CD
+      \item \texttt{spring-boot-\allowbreak starter-test} chọn JUnit 5 làm mặc định
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 7 ----------------------------------------------------------
+\begin{frame}{JUnit 4 \(\to\) JUnit 5: có gì thay đổi?\sref{5}}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.05}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+    \toprule
+    & \textbf{JUnit 4 (2006)} & \textbf{JUnit 5 (2017--nay)} \\
+    \midrule
+    Kiến trúc & 1 file jar duy nhất & 3 phần: Platform + Jupiter + Vintage \\
+    Java tối thiểu & Java 5 & Java 8+ (lambda) \\
+    Trước/sau mỗi test & \texttt{@Before}/\allowbreak\texttt{@After} & \texttt{@BeforeEach}/\allowbreak\texttt{@AfterEach} \\
+    Trước/sau tất cả & \texttt{@BeforeClass}/\allowbreak\texttt{@AfterClass} & \texttt{@BeforeAll}/\allowbreak\texttt{@AfterAll} \\
+    Bỏ qua test & \texttt{@Ignore} & \texttt{@Disabled} \\
+    Mở rộng & \texttt{@RunWith} (1 runner) & \texttt{@ExtendWith} (nhiều extension) \\
+    Test theo tham số & Cồng kềnh (runner riêng) & \texttt{@ParameterizedTest} tích hợp \\
+    Test lồng nhau & Không & \texttt{@Nested} \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.3em}
+  {\small \textbf{Lưu ý khi đọc tài liệu trên mạng}: nhiều bài viết cũ vẫn dùng
+  \texttt{@Before}, \texttt{@RunWith} của JUnit 4 --- các annotation này
+  \textbf{không tồn tại} trong JUnit 5 (Jupiter).}
+\end{frame}
+
+%--- SLIDE 8 ----------------------------------------------------------
+\begin{frame}[shrink=8]{Kiến trúc JUnit 5 = Platform + Jupiter + Vintage}
+  \begin{center}
+  \begin{tikzpicture}[
+    bx/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+               minimum height=0.8cm,font=\small,align=center},
+    top/.style={bx,minimum width=3.3cm},
+    arr/.style={-{Stealth[length=4pt]},darkgray}
+  ]
+    \node[bx,minimum width=11cm,fill=darkgray,text=white] (platform) at (0,0)
+      {\textbf{JUnit Platform} --- nền tảng khởi chạy test (launcher, engine API)};
+    \node[top] (jupiter) at (-3.9,1.4) {\textbf{JUnit Jupiter}\\API viết test mới};
+    \node[top] (vintage) at (0,1.4) {\textbf{JUnit Vintage}\\chạy test JUnit 3/4 cũ};
+    \node[top] (third) at (3.9,1.4) {\textbf{Engine khác}\\Spock, Cucumber, \dots};
+    \node[bx,minimum width=11cm] (tools) at (0,-1.4)
+      {IDE (IntelliJ, Eclipse) \quad Build tool (Gradle, Maven) \quad CI/CD};
+
+    \draw[arr] (jupiter) -- (jupiter |- platform.north);
+    \draw[arr] (vintage) -- (vintage |- platform.north);
+    \draw[arr] (third) -- (third |- platform.north);
+    \draw[arr] (tools) -- (tools |- platform.south);
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.25em}
+  \begin{itemize}
+    \item \textbf{Platform}: giao tiếp với IDE/Gradle; khám phá và khởi chạy test
+    \item \textbf{Jupiter}: annotation (\texttt{@Test}, \texttt{@BeforeEach}, \dots)
+          và assertion ta dùng hằng ngày
+    \item \textbf{Vintage}: cầu nối chạy test viết bằng JUnit 3/4 trên Platform mới
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Các bước cài đặt JUnit}
+%=====================================================================
+
+%--- SLIDE 9 ----------------------------------------------------------
+\begin{frame}{Các bước cài đặt JUnit --- tổng quan}
+  \begin{enumerate}
+    \setlength{\itemsep}{0.4em}
+    \item \textbf{Khai báo dependency} JUnit Jupiter trong file build
+          (\texttt{pom.xml} với Maven, \texttt{build.gradle.kts} với Gradle)
+    \item \textbf{Bảo đảm build tool dùng JUnit Platform} để chạy test
+          (Maven Surefire 2.22+; Gradle \texttt{useJUnitPlatform()}
+          hoặc \texttt{useJUnitJupiter()})
+    \item \textbf{Tạo thư mục} \texttt{src/test/java} song song với
+          \texttt{src/main/java}
+    \item \textbf{Viết class test} theo quy ước \texttt{*Test.java}
+    \item \textbf{Chạy}: \texttt{mvn test} / \texttt{./gradlew test} / nút Run trong IDE
+  \end{enumerate}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Hai con đường trong môn học}
+    \textbf{Maven}: cho project riêng của nhóm (nếu nhóm tự chọn đề tài).\\
+    \textbf{Gradle}: theo đúng cấu hình thật của DigiShield --- dùng cho BTL.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 10 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Cài đặt với Maven --- \texttt{pom.xml}}
+\begin{lstlisting}[language=xml]
+<!-- 1. Dependency JUnit Jupiter (scope test) -->
+<dependency>
+  <groupId>org.junit.jupiter</groupId>
+  <artifactId>junit-jupiter</artifactId>
+  <version>5.11.4</version>
+  <scope>test</scope>
+</dependency>
+
+<!-- 2. Surefire 2.22+ de ho tro JUnit Platform -->
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-surefire-plugin</artifactId>
+  <version>3.5.2</version>
+</plugin>
+\end{lstlisting}
+  \vspace{-0.2em}
+  {\small Chạy: \texttt{mvn test}. Với project Spring Boot chỉ cần
+  \texttt{spring-boot-starter-test} --- đã gói sẵn JUnit 5.}
+\end{frame}
+
+%--- SLIDE 11 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Cài đặt với Gradle --- project thường}
+\begin{lstlisting}[style=nonumber]
+// build.gradle.kts
+dependencies {
+    // BOM giu cac artifact JUnit cung phien ban
+    testImplementation(platform(
+        "org.junit:junit-bom:5.11.4"))
+    testImplementation(
+        "org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly(
+        "org.junit.platform:junit-platform-launcher")
+}
+
+tasks.test {
+    // Bat buoc: chay test tren JUnit Platform
+    useJUnitPlatform()
+}
+\end{lstlisting}
+  {\small Thiếu \texttt{useJUnitPlatform()} là lỗi kinh điển:
+  Gradle biên dịch test nhưng \textbf{không chạy} test nào cả.}
+\end{frame}
+
+%--- SLIDE 12 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Cài đặt trong DigiShield --- convention cho 9 module}
+  \begin{block}{\small Trích \texttt{buildSrc/src/main/kotlin/\allowbreak digishield.spring-\allowbreak module-\allowbreak conventions.gradle.kts}}
+\begin{lstlisting}[style=nonumber]
+dependencies {
+    // ... dependency production ...
+    "testImplementation"("org.springframework.boot:"
+        + "spring-boot-starter-test")
+    "testImplementation"("org.springframework.modulith:"
+        + "spring-modulith-starter-test")
+    "testRuntimeOnly"("org.junit.platform:"
+        + "junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+\end{lstlisting}
+  \end{block}
+  \vspace{-0.2em}
+  {\small Convention plugin áp dụng cho cả 9 module nghiệp vụ
+  (\texttt{auth}, \texttt{ai}, \texttt{reporting}, \dots) --- khai báo
+  \textbf{một lần}, mọi module đều có JUnit 5.}
+\end{frame}
+
+%--- SLIDE 13 ---------------------------------------------------------
+\begin{frame}{\texttt{spring-boot-starter-test} kéo theo những gì?}
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabularx}{\textwidth}{lX}
+    \toprule
+    \textbf{Thư viện} & \textbf{Vai trò} \\
+    \midrule
+    JUnit 5 (Jupiter) & Framework test: \texttt{@Test}, assertion, lifecycle \\
+    Mockito & Tạo mock/stub cho dependency (buổi 6) \\
+    AssertJ & Assertion kiểu fluent: \texttt{assertThat(x).isEqualTo(y)} \\
+    Hamcrest & Matcher (ít dùng khi đã có AssertJ) \\
+    JSONassert + JsonPath & So sánh và trích xuất JSON \\
+    Spring Test & \texttt{@SpringBootTest}, \texttt{MockMvc} (buổi 7) \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.5em}
+  \begin{exampleblock}{Ý nghĩa}
+    Chỉ cần \textbf{một} dependency, sinh viên có đủ toàn bộ công cụ
+    của cả 3 buổi 5--6--7. Không cần khai báo JUnit/Mockito/AssertJ riêng lẻ.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 14 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=12]{DigiShield: JVM Test Suites --- tách unit và integration\sref{7}}
+  \begin{block}{\small Trích \texttt{boot/app/build.gradle.kts} (cấu hình thật)}
+\begin{lstlisting}[style=nonumber]
+testing {
+  suites {
+    // Suite unit test mac dinh -> JUnit Jupiter
+    getByName<JvmTestSuite>("test") {
+      useJUnitJupiter()
+    }
+    // Suite integration test: Spring + Testcontainers
+    register<JvmTestSuite>("integrationTest") {
+      useJUnitJupiter()
+      // ... dependency rieng: Testcontainers, ...
+      targets { all { testTask.configure {
+        // IT cham (can Docker) chay sau UT nhanh
+        shouldRunAfter(tasks.named("test"))
+      } } }
+    }
+  }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 15 ---------------------------------------------------------
+\begin{frame}{Hai tầng test của DigiShield}
+  \renewcommand{\arraystretch}{1.15}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+    \toprule
+    & \textbf{Unit test (buổi 5--6)} & \textbf{Integration test (buổi 7)} \\
+    \midrule
+    Lệnh chạy & \texttt{./gradlew test} & \texttt{./gradlew integrationTest} \\
+    Thư mục & \texttt{src/test} & \texttt{boot/app/src/\allowbreak integrationTest} \\
+    Quy ước tên & \texttt{*Test.java} & \texttt{*IT.java} \\
+    Phạm vi & 1 class, cô lập & Nhiều module + DB thật \\
+    Hạ tầng & Không cần gì & Docker (Testcontainers, PostgreSQL 16) \\
+    Tốc độ & mili-giây / test & giây--phút / test \\
+    Ví dụ thật & \texttt{StubAiClientTest} & \texttt{TenantIsolationIT} \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.3em}
+  {\small \textbf{Liên hệ testing pyramid (buổi 2)}: đáy tháp là unit test ---
+  nhiều, nhanh, rẻ. DigiShield tách hẳn hai suite để CI chạy tầng nhanh trước,
+  tầng chậm sau.}
+\end{frame}
+
+%--- SLIDE 16 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Cấu trúc thư mục: code và test song song}
+\begin{lstlisting}[style=nonumber]
+modules/ai/
+  src/main/java/
+    com/digishield/ai/application/
+      StubAiClient.java          <-- ma nguon
+  src/test/java/
+    com/digishield/ai/application/
+      StubAiClientTest.java      <-- unit test
+\end{lstlisting}
+  \vspace{0.2em}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \textbf{Quy ước:}
+    \begin{itemize}
+      \item Test đặt \textbf{cùng package} với class được test
+      \item Tên file: \texttt{<TenClass>Test.java}
+      \item Mỗi class quan trọng một class test
+    \end{itemize}
+    \column{0.46\textwidth}
+    \textbf{Lợi ích cùng package:}
+    \begin{itemize}
+      \item Truy cập được method \textit{package-private}
+      \item Không cần import class được test
+      \item Dễ tìm: IDE nhảy qua lại bằng
+            \texttt{Ctrl+Shift+T}
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Test đầu tiên}
+%=====================================================================
+
+%--- SLIDE 17 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Hàm sẽ kiểm thử: \texttt{ageLabel} (module reporting)}
+  \begin{block}{\small Trích \texttt{ReportingServiceImpl.java} (đã bỏ \texttt{private} để minh họa) --- nhãn ``tuổi'' của báo cáo lừa đảo}
+\begin{lstlisting}[language=java]
+String ageLabel(Instant reportedAt, Instant now) {
+    if (reportedAt == null) {
+        return null;
+    }
+    Duration d = Duration.between(reportedAt, now);
+    long mins = Math.max(0, d.toMinutes());
+    if (mins < 60) {
+        return mins + "p";    // vd "5p"  (p = phut)
+    }
+    long hours = d.toHours();
+    if (hours < 24) {
+        return hours + "h";   // vd "3h"
+    }
+    return d.toDays() + "d";  // vd "2d"
+}
+\end{lstlisting}
+  \end{block}
+  \vspace{-0.3em}
+  {\small Hàm \textbf{thuần} (pure): kết quả chỉ phụ thuộc tham số ---
+  ứng viên hoàn hảo cho unit test đầu tiên.}
+\end{frame}
+
+%--- SLIDE 18 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Test đầu tiên: \texttt{@Test} + \texttt{assertEquals}}
+\begin{lstlisting}[language=java]
+package com.digishield.reporting.application;
+
+import java.time.Duration;
+import java.time.Instant;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class ReportAgeTest {
+
+    @Test
+    void ageLabel_under60Minutes_returnsMinutes() {
+        Instant now =
+            Instant.parse("2026-07-14T10:00:00Z");
+        Instant reportedAt =
+            now.minus(Duration.ofMinutes(5));
+
+        String label = ReportAge.ageLabel(reportedAt, now);
+
+        assertEquals("5p", label);
+    }
+}
+\end{lstlisting}
+  \vspace{-0.3em}
+  {\small \texttt{@Test} đánh dấu method là một ca kiểm thử;
+  \texttt{assertEquals(expected, actual)} --- chú ý thứ tự tham số!
+  \texttt{ReportAge} là class ta sẽ tự tách ra từ
+  \texttt{ReportingServiceImpl} (xem slide sau).}
+\end{frame}
+
+%--- SLIDE 19 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Mẫu AAA: Arrange --- Act --- Assert}
+  \begin{columns}
+    \column{0.46\textwidth}
+    \begin{block}{Ba bước của mọi unit test}
+      \begin{itemize}
+        \item \textbf{Arrange}: chuẩn bị dữ liệu, đối tượng, trạng thái
+        \item \textbf{Act}: gọi \textbf{một} hành vi cần kiểm thử
+        \item \textbf{Assert}: kiểm tra kết quả so với kỳ vọng
+      \end{itemize}
+    \end{block}
+    \begin{exampleblock}{Mẹo}
+      Tách 3 khối bằng dòng trống. Nếu phần Act có
+      \textit{nhiều hơn một} lời gọi hành vi --- cân nhắc tách test.
+    \end{exampleblock}
+
+    \column{0.52\textwidth}
+\begin{lstlisting}[language=java,style=nonumber]
+@Test
+void ageLabel_over24Hours_returnsDays() {
+    // ARRANGE: bao cao gui cach day 2 ngay
+    Instant now = Instant.parse(
+        "2026-07-14T10:00:00Z");
+    Instant reportedAt =
+        now.minus(Duration.ofDays(2));
+
+    // ACT: goi ham can kiem thu
+    String label =
+        ReportAge.ageLabel(reportedAt, now);
+
+    // ASSERT: ky vong nhan "2d"
+    assertEquals("2d", label);
+}
+\end{lstlisting}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 20 ---------------------------------------------------------
+\begin{frame}{Quy ước đặt tên method test}
+  \begin{block}{Mẫu khuyến nghị trong môn học}
+    \centering
+    \texttt{tenMethod\_dieuKien\_ketQuaKyVong}
+  \end{block}
+
+  \vspace{0.25em}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.2}
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X}
+    \toprule
+    \textbf{Tên test (thật trong DigiShield)} & \textbf{Đọc thành câu} \\
+    \midrule
+    \texttt{classify\_flagsThreatSignals} & classify gắn nhãn threat khi có tín hiệu lừa đảo \\
+    \texttt{moderate\_passesSafeContent} & moderate cho qua nội dung an toàn \\
+    \texttt{classify\_returnsCleanForBenignContent} & classify trả nhãn clean với nội dung lành tính \\
+    \texttt{benchmark\_whenNoScores\_returnsZero} & benchmark trả 0 khi chưa có điểm nào \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.25em}
+  {\small \textbf{Nguyên tắc}: tên test là \textbf{đặc tả hành vi} --- người đọc
+  hiểu code làm gì mà không cần mở phần thân. Tránh tên vô nghĩa:
+  \texttt{test1}, \texttt{testOk}.}
+\end{frame}
+
+%--- SLIDE 21 ---------------------------------------------------------
+\begin{frame}{Ghi chú: test method \texttt{private} thế nào?}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \begin{alertblock}{Vấn đề thực tế}
+    \small Trong code thật, \texttt{ageLabel} là method \textbf{private} của
+    \texttt{ReportingServiceImpl}. JUnit không gọi trực tiếp được method private.
+  \end{alertblock}
+
+  \vspace{0.2em}
+  {\small\textbf{Các lựa chọn (từ tốt đến kém):}}
+  \begin{enumerate}
+    \item \textbf{Test gián tiếp} qua method public đang gọi nó
+          (\texttt{listPhishingReports} trả DTO chứa nhãn tuổi)
+    \item \textbf{Tách} logic thuần ra class riêng (\texttt{ReportAge}) ---
+          vừa dễ test, vừa tái sử dụng
+    \item Hạ xuống \textbf{package-private} (bỏ từ khóa \texttt{private}) ---
+          test cùng package gọi được; chấp nhận được với hàm thuần
+    \item Reflection --- \textit{không khuyến khích}: test vỡ khi đổi tên
+  \end{enumerate}
+
+  \vspace{0.2em}
+  {\small \textbf{Bài học thiết kế}: khó viết test thường là \textbf{triệu chứng}
+  của thiết kế khó bảo trì. Ta quay lại chủ đề này ở phần \textit{testability}
+  cuối buổi.}
+\end{frame}
+
+%=====================================================================
+\section{Vòng đời test}
+%=====================================================================
+
+%--- SLIDE 22 ---------------------------------------------------------
+\begin{frame}[shrink=8]{Vòng đời một class test JUnit 5}
+  \begin{center}
+  \begin{tikzpicture}[
+    bx/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+               minimum width=3.4cm,minimum height=0.62cm,font=\small,align=center},
+    hi/.style={bx,fill=darkgray,text=white},
+    arr/.style={-{Stealth[length=4pt]},darkgray}
+  ]
+    \node[hi] (ba) at (0,3.0)  {\texttt{@BeforeAll} (static, 1 lần)};
+    \node[bx] (be) at (0,2.0)  {\texttt{@BeforeEach}};
+    \node[hi] (t)  at (0,1.0)  {\texttt{@Test} (mỗi method)};
+    \node[bx] (ae) at (0,0.0)  {\texttt{@AfterEach}};
+    \node[hi] (aa) at (0,-1.0) {\texttt{@AfterAll} (static, 1 lần)};
+
+    \draw[arr] (ba) -- (be);
+    \draw[arr] (be) -- (t);
+    \draw[arr] (t) -- (ae);
+    \draw[arr] (ae) -- (aa);
+    \draw[arr] (ae.east) .. controls (2.9,0.0) and (2.9,2.0) .. (be.east)
+      node[midway,right,font=\scriptsize,text=darkgray,align=center]
+      {lặp lại cho\\từng \texttt{@Test}};
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{itemize}
+    \item Mặc định JUnit tạo \textbf{instance mới} của class test cho
+          \textbf{mỗi} test method \(\Rightarrow\) test độc lập, không rò trạng thái
+    \item \texttt{@BeforeAll}/\texttt{@AfterAll} phải là \texttt{static}:
+          chạy trước khi có instance nào
+  \end{itemize}
+\end{frame}
+
+%--- SLIDE 23 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Vòng đời trong test thật của DigiShield}
+  \begin{block}{\small Trích \texttt{AnalyticsServiceImplTest.java} (module analytics)}
+\begin{lstlisting}[language=java]
+class AnalyticsServiceImplTest {
+
+    private static final UUID TENANT_ID = UUID.fromString(
+        "11111111-1111-1111-1111-111111111111");
+
+    @BeforeEach
+    void setUp() {
+        // Moi test can tenant trong ThreadLocal
+        TenantContext.set(TENANT_ID.toString());
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Don sach de test sau khong bi anh huong
+        TenantContext.clear();
+    }
+}
+\end{lstlisting}
+  \end{block}
+  \vspace{-0.3em}
+  {\small Quên \texttt{tearDown} \(\Rightarrow\) tenant ``rò'' sang test khác
+  --- lỗi chập chờn (flaky) rất khó truy.}
+\end{frame}
+
+%--- SLIDE 24 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{@DisplayName}, \texttt{@Disabled}, \texttt{@Tag}}
+  \begin{columns}
+    \column{0.55\textwidth}
+\begin{lstlisting}[language=java,style=nonumber]
+@Test
+@DisplayName(
+  "classify: co tu 'password' -> threat")
+void classify_flagsThreatSignals() { }
+
+@Test
+@Disabled("Cho fix bug DS-142")
+void moderate_handlesEmoji() { }
+
+@Test
+@Tag("slow")
+void classify_largePayload() { }
+\end{lstlisting}
+
+    \column{0.43\textwidth}
+    \begin{itemize}
+      \item \texttt{@DisplayName}: tên đẹp hiển thị trong report/IDE
+      \item \texttt{@Disabled}: tắt tạm --- \textbf{luôn kèm lý do};
+            test bị tắt vẫn hiện trong report (skipped)
+      \item \texttt{@Tag}: gắn nhãn để lọc khi chạy
+            (vd chỉ chạy nhóm \texttt{"slow"} trên CI ban đêm)
+    \end{itemize}
+    \begin{alertblock}{Cảnh báo}
+      \texttt{@Disabled} không phải thùng rác: test tắt quá lâu
+      = mất một phần lưới an toàn.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Assertion trong JUnit 5}
+%=====================================================================
+
+%--- SLIDE 25 ---------------------------------------------------------
+\begin{frame}{Họ assertion của JUnit 5 --- tổng quan}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.15}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+    \toprule
+    \textbf{Assertion} & \textbf{Kiểm tra} & \textbf{Ví dụ dùng khi} \\
+    \midrule
+    \texttt{assertEquals(e, a)} & Giá trị bằng nhau & Nhãn phân loại, số điểm \\
+    \texttt{assertTrue / assertFalse} & Điều kiện Boolean & confidence \(\ge 0.6\) \\
+    \texttt{assertNull / assertNotNull} & null hay không & DTO trả về tồn tại \\
+    \texttt{assertThrows} & Ném đúng exception & Email blank bị từ chối \\
+    \texttt{assertAll} & Nhóm assertion, chạy hết & Kiểm nhiều field một DTO \\
+    \texttt{assertTimeout} & Hoàn thành trong hạn & Hàm không được quá chậm \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.35em}
+  {\small \textbf{Import tĩnh}:
+  \texttt{import static org.junit.jupiter.api.Assertions.*;}\\
+  Mọi assertion đều nhận thêm tham số cuối là \textbf{thông điệp} hiển thị khi
+  fail: \texttt{assertEquals("5p", label, "nhan phut sai")}.}
+\end{frame}
+
+%--- SLIDE 26 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{assertEquals} / \texttt{assertTrue} / \texttt{assertNotNull}}
+\begin{lstlisting}[language=java]
+StubAiClient client = new StubAiClient();
+
+@Test
+void classify_twoThreatSignals_confidenceGrows() {
+    // "otp" va "password" -> 2 tin hieu lua dao
+    ClassificationView r = client.classify(
+        "Nhap OTP va password de mo khoa tai khoan");
+
+    assertEquals("threat", r.label());
+    assertTrue(r.confidence() >= 0.6,
+        "confidence phai tu 0.6 tro len");
+    assertNotNull(r.reason());
+}
+\end{lstlisting}
+  \vspace{-0.2em}
+  \begin{alertblock}{Bẫy số thực}
+    Không dùng \texttt{assertEquals(0.8, r.confidence())} với \texttt{double}
+    --- sai số dấu phẩy động! Dùng \texttt{assertEquals(0.8, x, 1e-9)}
+    (tham số delta) hoặc AssertJ \texttt{isBetween}.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 27 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{assertThrows} --- kiểm thử tình huống lỗi}
+  \begin{block}{\small Hành vi thật: \texttt{AuthServiceImpl.createUser} từ chối email trống}
+\begin{lstlisting}[language=java]
+@Test
+void createUser_blankEmail_throwsException() {
+    var request = requestWithEmail("   ");
+
+    IllegalArgumentException ex = assertThrows(
+        IllegalArgumentException.class,
+        () -> authService.createUser(request));
+
+    assertEquals("email is required",
+        ex.getMessage());
+}
+\end{lstlisting}
+  \end{block}
+  \vspace{-0.2em}
+  \begin{itemize}
+    \item Tham số 2 là \textbf{lambda}: code ném exception được bọc lại,
+          JUnit bắt và so khớp kiểu
+    \item \texttt{assertThrows} \textbf{trả về} exception \(\Rightarrow\)
+          kiểm tiếp message
+    \item Test fail nếu: không ném gì, hoặc ném sai kiểu
+  \end{itemize}
+\end{frame}
+
+%--- SLIDE 28 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{assertAll} --- kiểm nhiều field, báo đủ mọi lỗi}
+\begin{lstlisting}[language=java]
+@Test
+void classify_threat_allFieldsValid() {
+    ClassificationView r = client.classify(
+        "urgent: verify your account now");
+
+    assertAll("classification",
+        () -> assertEquals("threat", r.label()),
+        () -> assertTrue(r.confidence() >= 0.6),
+        () -> assertTrue(r.confidence() <= 1.0),
+        () -> assertNotNull(r.reason()));
+}
+\end{lstlisting}
+  \vspace{0.2em}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{Không có \texttt{assertAll}}
+      Assertion đầu fail \(\Rightarrow\) dừng ngay,
+      các lỗi sau bị \textbf{che khuất}; phải sửa--chạy nhiều vòng.
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{Có \texttt{assertAll}}
+      Chạy \textbf{tất cả} lambda, gom mọi lỗi vào một
+      \texttt{MultipleFailuresError} --- thấy toàn cảnh trong 1 lần chạy.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 29 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{assertTimeout} --- ràng buộc thời gian}
+\begin{lstlisting}[language=java]
+@Test
+void classify_completesWithin200ms() {
+    ClassificationView r = assertTimeout(
+        Duration.ofMillis(200),
+        () -> client.classify("hello team"));
+
+    assertEquals("clean", r.label());
+}
+\end{lstlisting}
+  \vspace{0.2em}
+  \begin{itemize}
+    \item Lambda được chạy; nếu vượt hạn \(\Rightarrow\) test fail
+          (vẫn chờ chạy xong)
+    \item \texttt{assertTimeoutPreemptively}: ngắt ngay khi quá hạn
+          (chạy ở thread khác --- cẩn thận với ThreadLocal như
+          \texttt{TenantContext}!)
+  \end{itemize}
+  \begin{alertblock}{Dùng có chừng mực}
+    Timeout phụ thuộc máy chạy \(\Rightarrow\) dễ flaky trên CI yếu.
+    Kiểm thử hiệu năng nghiêm túc để dành đến buổi 12 (JMeter, k6).
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{AssertJ}
+%=====================================================================
+
+%--- SLIDE 30 ---------------------------------------------------------
+\begin{frame}[shrink=8]{AssertJ --- assertion kiểu fluent}
+  \begin{block}{AssertJ là gì?\sref{6}}
+    Thư viện assertion đi kèm \texttt{spring-boot-starter-test}, cú pháp
+    \textbf{chuỗi} (fluent): \texttt{assertThat(actual).isEqualTo(expected)}.
+    DigiShield dùng AssertJ trong \textbf{toàn bộ} test hiện có.
+  \end{block}
+
+  \vspace{0.35em}
+  \textbf{Vì sao đội DigiShield chọn AssertJ?}
+  \begin{itemize}
+    \item Đọc như câu văn: \texttt{assertThat(reasons).hasSize(2)}
+    \item Không nhầm thứ tự expected/actual như \texttt{assertEquals}
+    \item IDE gợi ý đúng method theo \textbf{kiểu dữ liệu}
+          (String có \texttt{isNotBlank}, List có \texttt{contains}, \dots)
+    \item Thông báo lỗi giàu ngữ cảnh: in phần tử thiếu/thừa của collection
+  \end{itemize}
+
+  \vspace{0.35em}
+  \begin{exampleblock}{Import duy nhất cần nhớ}
+    \texttt{import static org.assertj.core.api.Assertions.assertThat;}
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 31 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{JUnit Assertions vs AssertJ --- cùng một ý}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{JUnit (Assertions)}
+\begin{lstlisting}[language=java,style=nonumber]
+assertEquals("threat", r.label());
+
+assertTrue(r.confidence() >= 0.0
+    && r.confidence() <= 1.0);
+
+assertTrue(reasons.size() >= 2);
+
+assertTrue(
+  reasons.get(0).contains("malware"));
+
+assertFalse(r.reason().isBlank());
+\end{lstlisting}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{AssertJ (fluent)}
+\begin{lstlisting}[language=java,style=nonumber]
+assertThat(r.label())
+    .isEqualTo("threat");
+
+assertThat(r.confidence())
+    .isBetween(0.0, 1.0);
+
+assertThat(reasons)
+    .hasSizeGreaterThanOrEqualTo(2);
+
+assertThat(reasons.get(0))
+    .contains("malware");
+
+assertThat(r.reason()).isNotBlank();
+\end{lstlisting}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.2em}
+  {\small Khi fail, AssertJ in: \textit{Expecting actual ... to contain
+  "malware" but did not} --- kèm giá trị thực tế, đỡ phải debug.}
+\end{frame}
+
+%--- SLIDE 32 ---------------------------------------------------------
+\begin{frame}{AssertJ --- các method hay dùng nhất (1/2)}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.2}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+    \toprule
+    \textbf{Kiểu} & \textbf{Method} & \textbf{Ví dụ} \\
+    \midrule
+    Mọi kiểu & \texttt{isEqualTo}, \texttt{isNotNull} & \texttt{assertThat(label)\allowbreak.isEqualTo("spam")} \\
+    String & \texttt{contains}, \texttt{startsWith}, \texttt{isNotBlank} & \texttt{assertThat(ref)\allowbreak.startsWith("tmpl/")} \\
+    Số & \texttt{isBetween}, \texttt{isZero}, \texttt{isPositive} & \texttt{assertThat(c)\allowbreak.isBetween(0.0, 1.0)} \\
+    Collection & \texttt{hasSize}, \texttt{isEmpty}, \texttt{contains} & \texttt{assertThat(reasons)\allowbreak.isEmpty()} \\
+    Exception & \texttt{assertThatThrownBy} & \texttt{...isInstanceOf(\allowbreak IllegalArgumentException\allowbreak.class)} \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+\end{frame}
+
+%--- SLIDE 32b --------------------------------------------------------
+\begin{frame}{AssertJ --- các method hay dùng nhất (2/2)}
+  \begin{block}{Quy ước trong môn học (theo codebase DigiShield)}
+    Viết test mới bằng \textbf{AssertJ}. Vẫn dùng JUnit
+    \texttt{assertThrows}/\texttt{assertAll} khi tiện --- hai thư viện
+    chung sống thoải mái trong cùng một test.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 33 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Test thật trong DigiShield: \texttt{StubAiClientTest}}
+  \begin{block}{\small Trích nguyên văn \texttt{modules/ai/src/test/java/.../StubAiClientTest.java}}
+\begin{lstlisting}[language=java]
+class StubAiClientTest {
+
+    private final StubAiClient client =
+        new StubAiClient();
+
+    @Test
+    void classify_flagsThreatSignals() {
+        ClassificationView result = client.classify(
+            "Please verify your account and "
+            + "enter your password");
+
+        assertThat(result.label())
+            .isEqualTo("threat");
+        assertThat(result.confidence())
+            .isBetween(0.0, 1.0);
+        assertThat(result.reason()).isNotBlank();
+    }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Ca kiểm thử hoàn chỉnh: StubAiClient}
+%=====================================================================
+
+%--- SLIDE 34 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Đối tượng kiểm thử: \texttt{StubAiClient.classify}}
+  \begin{block}{\small \texttt{modules/ai/.../StubAiClient.java} --- bộ phân loại nội dung lừa đảo (rút gọn)}
+\begin{lstlisting}[language=java]
+public ClassificationView classify(String payload) {
+    String text = payload == null
+        ? "" : payload.toLowerCase(Locale.ROOT);
+
+    long threatHits = countHits(text, THREAT_SIGNALS);
+    long spamHits   = countHits(text, SPAM_SIGNALS);
+
+    if (threatHits > 0) {
+        double confidence =
+            clamp(0.6 + 0.1 * threatHits);
+        return new ClassificationView(
+            "threat", confidence, "...");
+    }
+    if (spamHits > 0) {
+        return new ClassificationView("spam",
+            clamp(0.5 + 0.1 * spamHits), "...");
+    }
+    return new ClassificationView("clean", 0.92, "...");
+}
+\end{lstlisting}
+  \end{block}
+  \vspace{-0.3em}
+  {\small \texttt{THREAT\_SIGNALS}: "password", "verify your account",
+  "otp", "urgent", \dots; \texttt{SPAM\_SIGNALS}: "sale", "free", "\%", \dots}
+\end{frame}
+
+%--- SLIDE 35 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Đối tượng kiểm thử: \texttt{StubAiClient.moderate}}
+\begin{lstlisting}[language=java]
+public ModerationView moderate(String content) {
+    String text = content == null
+        ? "" : content.toLowerCase(Locale.ROOT);
+
+    List<String> reasons = new ArrayList<>();
+    for (String word : UNSAFE_WORDS) {
+        if (text.contains(word)) {
+            reasons.add("Noi dung chua tu: " + word);
+        }
+    }
+    String verdict;
+    if (reasons.isEmpty())        verdict = "pass";
+    else if (reasons.size() >= 2) verdict = "block";
+    else                          verdict = "flag";
+    return new ModerationView(
+        verdict, List.copyOf(reasons));
+}
+\end{lstlisting}
+  \vspace{-0.2em}
+  {\small Ba lớp hành vi rõ rệt: 0 lý do \(\to\) \texttt{pass};
+  1 \(\to\) \texttt{flag}; \(\ge 2 \to\) \texttt{block} ---
+  tương ứng ba nhánh code, đúng kiểu độ phủ nhánh đã học ở hộp trắng.}
+\end{frame}
+
+%--- SLIDE 36 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Bộ test hoàn chỉnh (1/2): hai nhánh của \texttt{classify}}
+\begin{lstlisting}[language=java]
+class StubAiClientTest {
+    private final StubAiClient client =
+        new StubAiClient();
+
+    @Test
+    void classify_flagsThreatSignals() {
+        ClassificationView r = client.classify(
+            "Tai khoan suspended, click here ngay");
+        assertThat(r.label()).isEqualTo("threat");
+        assertThat(r.confidence())
+            .isBetween(0.6, 1.0); // 2 hit -> ~0.8
+    }
+
+    @Test
+    void classify_returnsCleanForBenignContent() {
+        assertThat(client.classify(
+            "Hen gap ban o hop giao ban sang mai")
+            .label()).isEqualTo("clean");
+    }
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 37 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Bộ test hoàn chỉnh (2/2): ba lớp của \texttt{moderate}}
+\begin{lstlisting}[language=java]
+    @Test
+    void moderate_passesSafeContent() {
+        ModerationView r = client.moderate("hello world");
+        assertThat(r.verdict()).isEqualTo("pass");
+        assertThat(r.reasons()).isEmpty();
+    }
+
+    @Test
+    void moderate_flagsSingleUnsafeWord() {
+        ModerationView r = client.moderate(
+            "canh bao: phat hien malware");
+        assertThat(r.verdict()).isEqualTo("flag");
+        assertThat(r.reasons()).hasSize(1);
+    }
+
+    @Test
+    void moderate_blocksMultipleUnsafeWords() {
+        ModerationView r = client.moderate(
+            "ransomware nay co the exploit he thong");
+        assertThat(r.verdict()).isEqualTo("block");
+        assertThat(r.reasons())
+            .hasSizeGreaterThanOrEqualTo(2);
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 38 ---------------------------------------------------------
+\begin{frame}{Phân tích: mỗi test bao phủ một hành vi}
+  \footnotesize
+  \renewcommand{\arraystretch}{1.2}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}Xll}
+    \toprule
+    \textbf{Test} & \textbf{Dữ liệu vào} & \textbf{Nhánh code} & \textbf{Kỳ vọng} \\
+    \midrule
+    \texttt{classify\_flagsThreat...} & "suspended", "click here" & \texttt{threatHits > 0} & threat \\
+    \texttt{classify\_returnsClean...} & câu vô hại & cả hai đếm = 0 & clean \\
+    \texttt{moderate\_passes...} & "hello world" & \texttt{reasons} rỗng & pass \\
+    \texttt{moderate\_flags...} & 1 từ ("malware") & \texttt{size == 1} & flag \\
+    \texttt{moderate\_blocks...} & 2 từ & \texttt{size >= 2} & block \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.35em}
+  \begin{block}{Liên hệ buổi 3--4}
+    \small Bảng trên chính là \textbf{ánh xạ test \(\leftrightarrow\) nhánh}:
+    5 test này đủ đạt độ phủ nhánh cao cho hai method.
+    Còn thiếu nhánh nào? \textit{(gợi ý: \texttt{payload == null}, nhánh spam)}
+    --- đó là bài thực hành.
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Parameterized tests}
+%=====================================================================
+
+%--- SLIDE 39 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Vấn đề: nhiều test chỉ khác dữ liệu}
+  \begin{columns}
+    \column{0.52\textwidth}
+\begin{lstlisting}[language=java,style=nonumber]
+@Test
+void ageLabel_0min()  {
+  ... assertEquals("0p", ...); }
+@Test
+void ageLabel_59min() {
+  ... assertEquals("59p", ...); }
+@Test
+void ageLabel_60min() {
+  ... assertEquals("1h", ...); }
+// ... lap lai 6 lan, chi khac so lieu
+\end{lstlisting}
+
+    \column{0.46\textwidth}
+    \begin{alertblock}{Code smell trong test}
+      Copy--paste test chỉ đổi số liệu:
+      \begin{itemize}
+        \item Dài dòng, khó đọc
+        \item Sửa logic phải sửa \(n\) chỗ
+        \item Dễ quên bổ sung ca biên mới
+      \end{itemize}
+    \end{alertblock}
+    \begin{block}{Giải pháp}
+      \texttt{@ParameterizedTest}: \textbf{một} method,
+      \textbf{nhiều} bộ dữ liệu --- mỗi bộ hiện thành
+      một test riêng trong report.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 40 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{@ValueSource} --- một tham số đơn}
+\begin{lstlisting}[language=java]
+@ParameterizedTest
+@ValueSource(strings = {
+    "malware", "ransomware", "ddos", "exploit"})
+void moderate_singleUnsafeWord_flags(String word) {
+    ModerationView r = client.moderate(
+        "canh bao: phat hien " + word);
+
+    assertThat(r.verdict()).isEqualTo("flag");
+    assertThat(r.reasons()).hasSize(1);
+}
+\end{lstlisting}
+  \vspace{0.2em}
+  \begin{itemize}
+    \item 4 giá trị \(\Rightarrow\) chạy thành \textbf{4 test} độc lập;
+          một giá trị fail không chặn các giá trị khác
+    \item \texttt{@ValueSource} hỗ trợ \texttt{strings}, \texttt{ints},
+          \texttt{longs}, \texttt{doubles}, \texttt{booleans}, \dots
+    \item Nhớ đổi \texttt{@Test} thành \texttt{@ParameterizedTest}
+  \end{itemize}
+\end{frame}
+
+%--- SLIDE 41 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{@CsvSource} --- bảng dữ liệu vào/ra cho \texttt{ageLabel}}
+\begin{lstlisting}[language=java]
+@ParameterizedTest(name = "{0} phut truoc -> {1}")
+@CsvSource({
+    "0,     0p",    // bien duoi
+    "59,    59p",   // sat bien 60 phut
+    "60,    1h",    // vua cham nguong gio
+    "1439,  23h",   // sat bien 24 gio
+    "1440,  1d",    // vua cham nguong ngay
+    "2880,  2d"
+})
+void ageLabel_byMinutes(long minutes, String expected) {
+    Instant now =
+        Instant.parse("2026-07-14T10:00:00Z");
+    Instant reportedAt =
+        now.minus(Duration.ofMinutes(minutes));
+
+    assertEquals(expected,
+        ReportAge.ageLabel(reportedAt, now));
+}
+\end{lstlisting}
+  \vspace{-0.3em}
+  {\small Mỗi dòng CSV là một ca; giá trị tự chuyển kiểu theo tham số.
+  Nhận ra gì không? --- đây chính là \textbf{BVA} quanh biên 60 và 1440!}
+\end{frame}
+
+%--- SLIDE 42 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{\texttt{@MethodSource} --- dữ liệu phức tạp từ method}
+\begin{lstlisting}[language=java]
+static Stream<Arguments> classifyCases() {
+    return Stream.of(
+      Arguments.of(
+        "nhap password de xac minh", "threat"),
+      Arguments.of(
+        "giam gia 50% cuoi tuan nay", "spam"),
+      Arguments.of(
+        "hop giao ban 9h sang mai",   "clean"));
+}
+
+@ParameterizedTest(name = "\"{0}\" -> {1}")
+@MethodSource("classifyCases")
+void classify_labelsByContent(
+        String payload, String expected) {
+    assertThat(client.classify(payload).label())
+        .isEqualTo(expected);
+}
+\end{lstlisting}
+  \vspace{-0.3em}
+  {\small Method nguồn: \texttt{static}, trả \texttt{Stream<Arguments>} ---
+  dùng khi dữ liệu là object, không nhét vừa chuỗi CSV.}
+\end{frame}
+
+%--- SLIDE 43 ---------------------------------------------------------
+\begin{frame}{Khi nào dùng nguồn nào?}
+  \renewcommand{\arraystretch}{1.2}
+  \footnotesize
+  \begin{tabularx}{\textwidth}{l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+    \toprule
+    \textbf{Nguồn} & \textbf{Phù hợp khi} & \textbf{Ví dụ trong bài} \\
+    \midrule
+    \texttt{@ValueSource} & 1 tham số kiểu đơn giản & 4 từ khóa không an toàn \\
+    \texttt{@CsvSource} & Bảng vào/ra 2--4 cột gọn & phút \(\to\) nhãn tuổi \\
+    \texttt{@MethodSource} & Object phức tạp, dữ liệu tính toán & payload \(\to\) nhãn phân loại \\
+    \texttt{@EnumSource} & Duyệt mọi giá trị enum & mọi \texttt{TemplateChannel} \\
+    \texttt{@CsvFileSource} & Bảng lớn để trong file .csv & bộ test case của BTL \\
+    \bottomrule
+  \end{tabularx}
+  \renewcommand{\arraystretch}{1}
+
+  \vspace{0.5em}
+  \begin{alertblock}{Đừng lạm dụng}
+    Parameterized test phù hợp khi các ca \textbf{cùng logic kiểm tra}.
+    Nếu mỗi ca cần assert khác nhau (pass/flag/block với field khác nhau)
+    --- viết test thường rõ ràng hơn.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Chạy test và đọc report}
+%=====================================================================
+
+%--- SLIDE 44 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Chạy test bằng Gradle}
+\begin{lstlisting}[language=bash,style=nonumber]
+# Toan bo unit test cua ca project (176 test)
+./gradlew test
+
+# Chi test cua module ai
+./gradlew :modules:ai:test
+
+# Chi mot class test
+./gradlew :modules:ai:test \
+    --tests "*StubAiClientTest"
+
+# Chi mot method test
+./gradlew :modules:ai:test --tests \
+    "*StubAiClientTest.classify_flagsThreatSignals"
+
+# Integration test (buoi 7 - can Docker)
+./gradlew :boot:app:integrationTest
+\end{lstlisting}
+  \vspace{-0.2em}
+  {\small Gradle chỉ chạy lại test khi code đổi (up-to-date check);
+  ép chạy lại: thêm \texttt{--rerun-tasks} hoặc \texttt{cleanTest}.}
+\end{frame}
+
+%--- SLIDE 45 ---------------------------------------------------------
+\begin{frame}[shrink=8]{Đọc report HTML của Gradle}
+  \begin{block}{Vị trí report sau khi chạy \texttt{./gradlew :modules:ai:test}}
+    \texttt{modules/ai/build/reports/tests/test/index.html}
+  \end{block}
+
+  \vspace{0.35em}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \textbf{Report cho biết:}
+    \begin{itemize}
+      \item Tổng số test / fail / skipped, thời gian chạy
+      \item Duyệt theo package \(\to\) class \(\to\) method
+      \item Với test fail: stack trace + thông điệp assertion
+      \item Parameterized test: từng bộ dữ liệu một dòng
+    \end{itemize}
+
+    \column{0.46\textwidth}
+    \textbf{Khi test fail trên terminal:}
+    \begin{itemize}
+      \item Gradle in tên test fail + 1 dòng lý do
+      \item Mở link report ở cuối log để xem chi tiết
+      \item Trong IDE: click chạy từng test, xanh/đỏ ngay lập tức
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.35em}
+  \begin{exampleblock}{Nhắc lại buổi 4}
+    Chạy \texttt{test} xong, JaCoCo tự sinh report độ phủ:
+    \texttt{build/reports/jacoco/}; report gộp toàn project:
+    \texttt{./gradlew testCodeCoverageReport}.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 46 ---------------------------------------------------------
+\begin{frame}{Chạy test trong IntelliJ IDEA}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \textbf{Thao tác cơ bản:}
+    \begin{itemize}
+      \item Icon \(\triangleright\) xanh bên trái class/method
+            \(\to\) Run
+      \item \texttt{Ctrl+Shift+F10}: chạy test dưới con trỏ
+      \item \texttt{Shift+F10}: chạy lại cấu hình gần nhất
+      \item Chuột phải thư mục \texttt{src/test/java}
+            \(\to\) Run All Tests
+    \end{itemize}
+
+    \column{0.46\textwidth}
+    \textbf{Nên bật:}
+    \begin{itemize}
+      \item Run with Coverage --- xem độ phủ ngay trong editor
+      \item Rerun Failed Tests --- chỉ chạy lại test đỏ
+      \item Debug test: đặt breakpoint trong test
+            \textit{lẫn} trong code được test
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.5em}
+  \begin{block}{Quy trình khuyến nghị trên lớp}
+    Viết test \(\to\) chạy bằng IDE cho nhanh \(\to\) trước khi commit
+    chạy \texttt{./gradlew test} để chắc chắn giống môi trường CI.
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Thiết kế dễ kiểm thử}
+%=====================================================================
+
+%--- SLIDE 47 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Vì sao \texttt{ageLabel} nhận \texttt{now} làm tham số?}
+  \begin{columns}
+    \column{0.52\textwidth}
+\begin{lstlisting}[language=java,style=nonumber]
+// KHO test: tu lay gio he thong
+String ageLabel(Instant reportedAt) {
+  Duration d = Duration.between(
+      reportedAt, Instant.now());
+  // ket qua doi theo... gio chay test!
+}
+
+// DE test: 'now' la tham so
+// (cach DigiShield dang lam)
+String ageLabel(Instant reportedAt,
+                Instant now) {
+  Duration d = Duration.between(
+      reportedAt, now);
+}
+\end{lstlisting}
+
+    \column{0.46\textwidth}
+    \begin{alertblock}{Nếu gọi \texttt{Instant.now()} bên trong}
+      \begin{itemize}
+        \item Test "5 phút trước" hôm nay pass, mai\dots vẫn pass,
+              nhưng test biên "59/60 phút" thành \textbf{flaky}
+        \item Không thể test ca "2 ngày trước" mà không chờ 2 ngày
+      \end{itemize}
+    \end{alertblock}
+    \begin{block}{Nguyên tắc}
+      Phụ thuộc ẩn (giờ hệ thống, random, biến toàn cục)
+      \(\to\) đưa thành \textbf{tham số} hoặc dependency được inject.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 48 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Tổng quát hóa: inject \texttt{java.time.Clock}}
+\begin{lstlisting}[language=java]
+class ReportingServiceImpl {
+    private final Clock clock; // inject qua constructor
+
+    public ReportDto toDto(PhishingReport r) {
+        // moi cho can "bay gio" deu hoi clock
+        return new ReportDto(..., ageLabel(
+            r.getReportedAt(), clock.instant()));
+    }
+}
+
+// Production: Clock.systemUTC()
+// Trong test: dong ho dung yen tai mot thoi diem
+Clock fixed = Clock.fixed(
+    Instant.parse("2026-07-14T10:00:00Z"),
+    ZoneOffset.UTC);
+var service = new ReportingServiceImpl(fixed, ...);
+\end{lstlisting}
+  \vspace{-0.2em}
+  {\small \textbf{Testability} là tiêu chí thiết kế: code dễ test thường
+  cũng là code ít phụ thuộc ẩn, dễ bảo trì --- hai mặt của một đồng xu.}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%--- SLIDE 49 ---------------------------------------------------------
+\begin{frame}[shrink=8]{Thực hành 1 --- Phủ kín \texttt{StubAiClient.classify}}
+  \begin{block}{Yêu cầu (làm tại lớp, theo cặp)}
+    Mở \texttt{modules/ai/src/test/java/.../StubAiClientTest.java},
+    bổ sung để \texttt{classify} được phủ \textbf{cả 3 lớp} hành vi:
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{enumerate}
+    \item \texttt{classify\_threat...}: payload chứa \(\ge 2\) tín hiệu
+          (\texttt{"otp"}, \texttt{"password"}) --- assert nhãn,
+          \texttt{confidence} bằng AssertJ \texttt{isBetween}
+    \item \texttt{classify\_spam...}: payload khuyến mãi có \texttt{"\%"}
+          hoặc \texttt{"free"} --- nhãn \texttt{"spam"}
+    \item \texttt{classify\_clean...}: nội dung vô hại --- nhãn
+          \texttt{"clean"}, confidence đúng \texttt{0.92}
+    \item \texttt{classify\_nullPayload...}: \texttt{payload = null}
+          --- hành vi là gì? Đọc code trước, đoán, rồi viết test kiểm chứng
+    \item Chuyển các ca 1--3 thành \textbf{một}
+          \texttt{@ParameterizedTest} + \texttt{@MethodSource}
+  \end{enumerate}
+
+  \vspace{0.3em}
+  {\small Gợi ý: tín hiệu so khớp ở dạng \textbf{chữ thường} ---
+  thử \texttt{"OTP"} viết hoa xem test còn pass không?}
+\end{frame}
+
+%--- SLIDE 50 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=12]{Thực hành 2 --- \texttt{benchmark} với danh sách rỗng}
+  \begin{block}{\small Khung có sẵn --- Mockito sẽ học kỹ ở buổi 6, hôm nay dùng như công thức}
+\begin{lstlisting}[language=java]
+@ExtendWith(MockitoExtension.class)
+class AnalyticsServiceImplTest {
+    static final UUID TENANT_ID = UUID.fromString(
+        "11111111-1111-1111-1111-111111111111");
+    @Mock RiskScoreRepository riskScoreRepository;
+    // ... cac @Mock khac nhu file test that ...
+    @InjectMocks AnalyticsServiceImpl service;
+
+    @BeforeEach void setUp() {
+        TenantContext.set(TENANT_ID.toString());
+    }
+    @AfterEach void tearDown() {
+        TenantContext.clear();
+    }
+
+    @Test
+    void benchmark_whenNoScores_returnsZero() {
+        when(riskScoreRepository
+            .findByTenantIdAndScope(
+                TENANT_ID, RiskScope.DEPT))
+            .thenReturn(List.of());
+
+        assertThat(service.benchmark(RiskScope.DEPT))
+            .isZero();
+    }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 51 ---------------------------------------------------------
+\begin{frame}[fragile,shrink=8]{Thực hành 3 --- Chạy, đọc report, nộp minh chứng}
+  \begin{enumerate}
+    \item Chạy test của hai module vừa sửa:
+\begin{lstlisting}[language=bash,style=nonumber]
+./gradlew :modules:ai:test \
+          :modules:analytics:test
+\end{lstlisting}
+    \item Mở report:
+          \texttt{modules/ai/build/reports/tests/test/index.html}
+          --- chụp màn hình trang tổng quan (số test, 0 failed)
+    \item Cố tình sửa một expected cho \textbf{sai}
+          (vd \texttt{"threat"} \(\to\) \texttt{"spam"}), chạy lại,
+          đọc thông báo fail của AssertJ --- rồi sửa về đúng
+    \item Mở report JaCoCo của module ai, ghi lại \% line coverage
+          của \texttt{StubAiClient} trước/sau khi thêm test
+  \end{enumerate}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Vì sao bước 3 quan trọng?}
+    Test chưa từng thấy fail là test chưa được kiểm chứng ---
+    phải biết nó \textit{trông thế nào khi thất bại} mới tin được nó.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp}
+%=====================================================================
+
+%--- SLIDE 52 ---------------------------------------------------------
+\begin{frame}[shrink=8]{Bài nộp về nhà (gắn với Bài tập lớn --- 30\%)}
+  \begin{block}{Mỗi nhóm BTL nộp trước buổi 6}
+    Viết \textbf{tối thiểu 10 unit test} cho module DigiShield mà nhóm
+    đã đăng ký (hoặc ứng dụng nhóm tự chọn đã được GV duyệt).
+  \end{block}
+
+  \vspace{0.3em}
+  \textbf{Yêu cầu kỹ thuật:}
+  \begin{itemize}
+    \item Đặt đúng vị trí \texttt{src/test/java}, cùng package,
+          tên \texttt{*Test.java}; tên method theo mẫu
+          \texttt{tenMethod\_dieuKien\_ketQua}
+    \item Dùng AssertJ; có ít nhất 1 \texttt{assertThrows}
+          (hoặc \texttt{assertThatThrownBy}) và 1 \texttt{@ParameterizedTest}
+    \item Mỗi test theo AAA, kiểm \textbf{một} hành vi;
+          test độc lập --- chạy riêng lẻ vẫn pass
+    \item Toàn bộ pass với \texttt{./gradlew test} (không cần Docker)
+  \end{itemize}
+
+  \vspace{0.3em}
+  \textbf{Nộp:} link branch Git \texttt{feature/unit-test-<nhom>} +
+  ảnh report HTML + bảng ánh xạ \textit{test \(\leftrightarrow\) nhánh code}
+  (như slide phân tích \texttt{StubAiClient}).
+\end{frame}
+
+%--- SLIDE 53 ---------------------------------------------------------
+\begin{frame}{Tổng kết buổi 5}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \textbf{Đã học:}
+    \begin{itemize}
+      \item JUnit 5 = Platform + Jupiter + Vintage
+      \item Cài đặt: Maven, Gradle,
+            cấu hình thật của DigiShield
+      \item \texttt{@Test}, vòng đời, AAA, quy ước đặt tên
+      \item Assertion JUnit + AssertJ fluent
+      \item \texttt{@ParameterizedTest} với 3 nguồn dữ liệu
+      \item Chạy Gradle/IDE, đọc report; testability
+    \end{itemize}
+
+    \column{0.46\textwidth}
+    \begin{block}{Buổi 6 --- Mockito}
+      \texttt{StubAiClient} test được ``tay không'' vì
+      \textbf{không có dependency}. Nhưng
+      \texttt{ReportingServiceImpl} cần repository, publisher\dots
+      \(\to\) cần \textbf{mock}: \texttt{@Mock},
+      \texttt{when/thenReturn}, \texttt{verify},
+      \texttt{ArgumentCaptor}.
+    \end{block}
+    \begin{alertblock}{Việc cần làm}
+      Hoàn thành bài nộp 10 unit test
+      \textbf{trước buổi 6}.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 54 ---------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slide} Slide bài giảng điện tử --- Bộ môn Công nghệ Phần mềm.
+    \bibitem{ammann} Paul Ammann \& Jeff Offutt, \textit{Introduction to Software
+          Testing}, Cambridge University Press, 2008.
+    \bibitem{myers} Glenford J. Myers, \textit{The Art of Software Testing},
+          2nd edition, John Wiley \& Sons, 2004.
+    \bibitem{istqb} ISTQB Foundation Level Syllabus, version 4.0, 2023.
+          \url{https://istqb.org/}
+    \bibitem{junit} JUnit Team, \textit{JUnit 5 User Guide},
+          \url{https://junit.org/junit5/docs/current/user-guide/}
+    \bibitem{assertj} AssertJ Core documentation,
+          \url{https://assertj.github.io/doc/}
+    \bibitem{gradle} Gradle, \textit{Testing in Java \& JVM projects} (JVM Test Suites),
+          \url{https://docs.gradle.org/current/userguide/java_testing.html}
+    \bibitem{digishield} Mã nguồn DigiShield: \texttt{modules/ai}, \texttt{modules/analytics},
+          \texttt{modules/reporting}, \texttt{boot/app/build.gradle.kts}.
+  \end{thebibliography}
+\end{frame}
+
+%=====================================================================
+\end{document}
+%=====================================================================

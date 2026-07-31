@@ -1,0 +1,1565 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,10pt]{beamer}
+\hfuzz=10000pt
+\vfuzz=10000pt
+\hbadness=10000
+\vbadness=10000
+
+\AtBeginDocument{\hfuzz=\maxdimen\vfuzz=\maxdimen}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\setmainfont{Noto Sans}
+\setsansfont{Noto Sans}
+\setmonofont[ItalicFont={Noto Sans Mono}]{Noto Sans Mono}
+
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=white}
+\setbeamercolor{date}{fg=lightgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.48\paperwidth,ht=1.8ex,dp=0.7ex,left]{palette primary}%
+      \usebeamerfont{author in head/foot}\hspace*{0.8em}Kiểm thử Phần mềm --- Buổi 4
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.48\paperwidth,ht=1.8ex,dp=0.7ex,right]{palette primary}%
+      \usebeamerfont{date in head/foot}\insertframenumber{}/\inserttotalframenumber\hspace*{0.8em}
+    \end{beamercolorbox}%
+  }%
+}
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{colortbl}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  frame=single,
+  framesep=6pt,
+  numbers=left,
+  numberstyle=\tiny\color{midgray},
+  numbersep=5pt,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+  stringstyle=\color{darkgray},
+}
+\lstdefinestyle{nonumber}{numbers=none}
+\lstdefinestyle{small}{basicstyle=\ttfamily\scriptsize,numbers=none}
+
+\setbeamertemplate{bibliography item}{\insertbiblabel}
+\newcommand{\sref}[1]{\textsuperscript{\scriptsize\cite{#1}}}
+
+\title{Unit Test Nâng cao --- OrderService}
+\subtitle{Buổi 4 / 13 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Kiểm thử Phần mềm}
+\date{Học kỳ 2024--2025}
+
+%=====================================================================
+\begin{document}
+\hfuzz=100pt
+\hbadness=10000
+%=====================================================================
+
+%--- SLIDE 1 ----------------------------------------------------------
+\begin{frame}[shrink=18]
+  \vspace*{-0.2em}
+  \begin{center}
+    {\bfseries\large TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.25em]
+    {\bfseries\normalsize BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.45em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+  \end{center}
+
+  \vfill
+  \titlepage
+\end{frame}
+
+%--- SLIDE 2 ----------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{enumerate}
+    \item Ôn tập và mở rộng từ Buổi 3
+    \item Phân tích \texttt{OrderService.placeOrder()} --- CFG và test strategy
+    \item \texttt{@Mock} vs \texttt{@MockBean} --- phân biệt rõ ràng
+    \item Mock Feign Client và KafkaTemplate
+    \item ArgumentCaptor nâng cao --- xác minh nhiều lần gọi
+    \item Kiểm thử exception: message, type, side effects
+    \item Data Flow Testing áp dụng cho \texttt{placeOrder()}
+    \item \texttt{@Nested} test class --- tổ chức test theo nhóm
+    \item Thực hành: viết test hoàn chỉnh cho \texttt{OrderService}
+    \item Bài nộp
+  \end{enumerate}
+\end{frame}
+
+%--- SLIDE 3 ----------------------------------------------------------
+\begin{frame}[fragile]{Ôn tập Buổi 3 --- Kiểm tra nhanh}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{Đã học}
+      \begin{itemize}
+        \item SC, BC, CC, Path Coverage\sref{istqb}
+        \item CFG và Cyclomatic Complexity $V(G)$\sref{myers}
+        \item Data Flow Testing: def-use pairs\sref{istqb}
+        \item JUnit 5: annotation, assertion, \texttt{@ParameterizedTest}\sref{junit5}
+        \item Mockito: mock, stub, verify, ArgumentCaptor\sref{mockito}
+        \item JaCoCo: cấu hình và đọc report\sref{jacoco}
+      \end{itemize}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{exampleblock}{Câu hỏi nhanh}
+      \small
+      \begin{enumerate}
+        \item \texttt{@Mock} và \texttt{@MockBean} khác nhau
+          ở điểm nào cốt lõi nhất?
+        \item \texttt{ArgumentCaptor} dùng để làm gì mà
+          \texttt{verify()} thông thường không làm được?
+        \item JaCoCo báo branch màu vàng nghĩa là gì?
+        \item $V(G) = 5$ nghĩa là cần tối thiểu bao nhiêu test case?
+      \end{enumerate}
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Phân tích OrderService}
+%=====================================================================
+
+%--- SLIDE 4 ----------------------------------------------------------
+\begin{frame}[fragile]{OrderService --- Mã nguồn đầy đủ (1/2)}
+\begin{lstlisting}[language=java]
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class OrderService {
+
+    private final OrderRepository orderRepository;      // (1)
+    private final InventoryClient inventoryClient;      // (2)
+    private final KafkaTemplate<String, OrderPlacedEvent>
+                                 kafkaTemplate;        // (3)
+
+    public void placeOrder(OrderRequest request) {
+        if (request == null) {                          // L1
+            throw new IllegalArgumentException(
+                "Request null");                       // L2
+        }
+        if (request.getQuantity() == null
+                || request.getQuantity() <= 0) {        // L3
+            throw new IllegalArgumentException(
+                "Invalid qty");                        // L4
+        }
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{OrderService --- Mã nguồn đầy đủ (2/2)}
+\begin{lstlisting}[language=java]
+        boolean inStock = inventoryClient              // L5
+            .isInStock(request.getSkuCode(),
+                       request.getQuantity());
+        if (!inStock) {                                // L6
+            throw new RuntimeException(
+                "Product not in stock");              // L7
+        }
+
+        Order order = buildOrder(request);             // L8
+        orderRepository.save(order);                   // L9
+        kafkaTemplate.send("notificationTopic",        // L10
+            new OrderPlacedEvent(order.getOrderNumber()));
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 5 ----------------------------------------------------------
+\begin{frame}[fragile]{CFG của \texttt{placeOrder()} và $V(G)$\sref{myers}}
+  \begin{columns}
+    \column{0.42\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[
+      nd/.style={circle,draw=darkgray,fill=lightgray,
+                 minimum size=0.62cm,font=\tiny,inner sep=1pt,align=center},
+      dn/.style={diamond,draw=darkgray,fill=white,
+                 minimum size=0.72cm,font=\tiny,
+                 inner sep=1pt,aspect=1.5,align=center},
+      ex/.style={circle,draw=darkgray,fill=darkgray,
+                 text=white,minimum size=0.62cm,font=\tiny,align=center},
+      arr/.style={-{Stealth[length=3pt]},darkgray},
+      lb/.style={font=\tiny,midgray}
+    ]
+      \node[nd] (n1) at (2.2,7.2) {1\\entry};
+      \node[dn] (n2) at (2.2,6.3) {2\\L1};
+      \node[ex] (n3) at (0.4,5.4) {3\\L2};
+      \node[dn] (n4) at (2.2,5.4) {4\\L3};
+      \node[ex] (n5) at (0.4,4.5) {5\\L4};
+      \node[nd] (n6) at (2.2,4.5) {6\\L5};
+      \node[dn] (n7) at (2.2,3.6) {7\\L6};
+      \node[ex] (n8) at (0.4,2.7) {8\\L7};
+      \node[nd] (n9) at (2.2,2.7) {9\\L8};
+      \node[nd] (n10) at (2.2,1.8) {10\\L9};
+      \node[ex] (n11) at (2.2,0.9) {11\\L10};
+
+      \draw[arr] (n1)--(n2);
+      \draw[arr] (n2)--node[lb,left]{T}(n3);
+      \draw[arr] (n2)--node[lb,right]{F}(n4);
+      \draw[arr] (n4)--node[lb,left]{T}(n5);
+      \draw[arr] (n4)--node[lb,right]{F}(n6);
+      \draw[arr] (n6)--(n7);
+      \draw[arr] (n7)--node[lb,left]{T}(n8);
+      \draw[arr] (n7)--node[lb,right]{F}(n9);
+      \draw[arr] (n9)--(n10);
+      \draw[arr] (n10)--(n11);
+    \end{tikzpicture}
+    \end{center}
+
+    \column{0.54\textwidth}
+    \textbf{Tính $V(G)$:}
+
+    \medskip
+    \begin{tabular}{ll}
+      $N$ (nodes)       & = 11 \\
+      $E$ (edges)       & = 13 \\
+      $P$ (components)  & = 1  \\
+    \end{tabular}
+
+    \[
+      V(G) = E - N + 2P = 13 - 11 + 2 = \mathbf{4}
+    \]
+
+    Cách nhanh: số decision node + 1 = $3 + 1 = \mathbf{4}$
+
+    \medskip
+    \textbf{4 đường dẫn độc lập:}
+    \begin{enumerate}\small
+      \item $1{\to}2(T){\to}3$\quad (request null)
+      \item $1{\to}2(F){\to}4(T){\to}5$\quad (qty invalid)
+      \item $1{\to}2(F){\to}4(F){\to}6{\to}7(T){\to}8$\quad (not in stock)
+      \item $1{\to}2(F){\to}4(F){\to}6{\to}7(F){\to}9{\to}10{\to}11$\quad (success)
+    \end{enumerate}
+
+    \medskip
+    $\Rightarrow$ Tối thiểu \textbf{4 test case} để đạt 100\% BC.
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 6 ----------------------------------------------------------
+\begin{frame}[fragile]{Dependency của \texttt{OrderService}}
+  \begin{center}
+  \begin{tikzpicture}[
+    svc/.style={rectangle,draw=darkgray,fill=lightgray,
+                rounded corners=2pt,minimum width=3cm,
+                minimum height=0.8cm,font=\small,align=center},
+    dep/.style={rectangle,draw=darkgray,fill=white,
+                rounded corners=2pt,minimum width=3cm,
+                minimum height=0.8cm,font=\small,align=center},
+    mock/.style={rectangle,draw=darkgray,fill=darkgray,
+                 text=white,rounded corners=2pt,
+                 minimum width=3cm,minimum height=0.8cm,
+                 font=\small,align=center},
+    arr/.style={-{Stealth[length=4pt]},darkgray},
+    lbl/.style={font=\scriptsize,midgray}
+  ]
+    \node[svc] (os) at (4,3) {\textbf{OrderService}\\(class cần test)};
+
+    \node[dep] (or) at (0,1.2) {OrderRepository\\(Spring Data JPA)};
+    \node[dep] (ic) at (4,1.2) {InventoryClient\\(Feign / HTTP)};
+    \node[dep] (kt) at (8,1.2) {KafkaTemplate\\(Apache Kafka)};
+
+    \node[mock] (mor) at (0,-0.4) {Mock\\OrderRepository};
+    \node[mock] (mic) at (4,-0.4) {Mock\\InventoryClient};
+    \node[mock] (mkt) at (8,-0.4) {Mock\\KafkaTemplate};
+
+    \draw[arr] (os) -- (or);
+    \draw[arr] (os) -- (ic);
+    \draw[arr] (os) -- (kt);
+    \draw[arr,dashed] (or) -- node[lbl,right]{thay bằng}(mor);
+    \draw[arr,dashed] (ic) -- node[lbl,right]{thay bằng}(mic);
+    \draw[arr,dashed] (kt) -- node[lbl,right]{thay bằng}(mkt);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{alertblock}{Tất cả 3 dependency đều được mock}
+    Không cần MySQL, không cần Kafka, không cần inventory-service chạy.
+    Test chạy hoàn toàn \textbf{in-memory} trong mili-giây.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{@Mock vs @MockBean}
+%=====================================================================
+
+%--- SLIDE 7 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=12]{@Mock vs @MockBean --- Phân biệt cốt lõi\sref{mockito}}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{\texttt{@Mock} (Mockito thuần)}
+      \begin{itemize}
+        \item Tạo mock \textbf{ngoài Spring context}
+        \item Dùng với \texttt{@ExtendWith(
+    MockitoExtension.class)}
+        \item Không khởi động ApplicationContext
+        \item Tốc độ: \textbf{mili-giây}
+        \item Dùng cho: \textbf{unit test}
+      \end{itemize}
+\begin{lstlisting}[language=java,style=small]
+@ExtendWith(
+    MockitoExtension.class)
+class OrderServiceTest {
+  @Mock
+  OrderRepository repo;
+  @InjectMocks
+  OrderService service;
+}
+\end{lstlisting}
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{block}{\texttt{@MockBean} (Spring Boot)}
+      \begin{itemize}
+        \item Tạo mock \textbf{và đăng ký vào ApplicationContext}
+        \item Dùng với \texttt{@SpringBootTest} hoặc \texttt{@WebMvcTest}
+        \item Khởi động (một phần) Spring context
+        \item Tốc độ: \textbf{vài giây}
+        \item Dùng cho: \textbf{integration test}
+      \end{itemize}
+\begin{lstlisting}[language=java,style=small]
+@SpringBootTest
+class OrderControllerIT {
+  @MockBean
+  InventoryClient client;
+  @Autowired
+  OrderService service;
+}
+\end{lstlisting}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 8 ----------------------------------------------------------
+\begin{frame}[shrink=12]{@Mock vs @MockBean --- Khi nào dùng cái nào?}
+  \begin{center}
+  \scriptsize
+  \begin{tabular}{p{5cm}cc}
+    \toprule
+    \textbf{Tình huống} & \textbf{@Mock} & \textbf{@MockBean} \\
+    \midrule
+    Unit test một Service class & \checkmark & \\
+    Test Controller với \texttt{@WebMvcTest} & & \checkmark \\
+    Test có \texttt{@SpringBootTest} & & \checkmark \\
+    Test có \texttt{@DataJpaTest} & & \checkmark \\
+    Cần Spring Security context & & \checkmark \\
+    Không cần Spring context & \checkmark & \\
+    Pipeline CI cần chạy nhanh & \checkmark & \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Lỗi thường gặp khi nhầm lẫn}
+    Dùng \texttt{@Mock} trong class có \texttt{@SpringBootTest}:
+    mock được tạo nhưng \textbf{không được inject} vào Spring bean
+    $\to$ service vẫn dùng dependency thật $\to$ test fail hoặc
+    kết nối database thật.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Mock Feign Client và KafkaTemplate}
+%=====================================================================
+
+%--- SLIDE 9 ----------------------------------------------------------
+\begin{frame}[fragile]{Mock Feign Client --- \texttt{InventoryClient}\sref{mockito}}
+  \begin{block}{Feign Client là interface, Mockito mock được không?}
+    Có. Mockito tạo proxy implementation của bất kỳ interface hoặc
+    non-final class nào. Feign Client là interface nên mock trực tiếp.
+  \end{block}
+
+\begin{lstlisting}[language=java]
+@ExtendWith(
+    MockitoExtension.class)
+class OrderServiceTest {
+
+    @Mock private OrderRepository    orderRepository;
+    @Mock private InventoryClient    inventoryClient;  // Feign interface
+    @Mock private KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+
+    @InjectMocks private OrderService orderService;
+
+    @Test
+    void placeOrder_InStock_ShouldCallInventoryWithCorrectArgs() {
+        // Stub: khi goi isInStock("SKU-A", 3) thi tra ve true
+        when(inventoryClient.isInStock("SKU-A", 3))
+            .thenReturn(true);
+
+        orderService.placeOrder(new OrderRequest("SKU-A", 3));
+
+        // Verify Feign duoc goi dung 1 lan, dung tham so
+        verify(inventoryClient, times(1))
+            .isInStock("SKU-A", 3);
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 10 ----------------------------------------------------------
+\begin{frame}[fragile]{Mock KafkaTemplate --- Success path}
+\begin{lstlisting}[language=java]
+@Test
+void placeOrder_Success_ShouldPublishKafkaEvent() {
+    when(inventoryClient.isInStock(anyString(), anyInt()))
+        .thenReturn(true);
+
+    orderService.placeOrder(new OrderRequest("SKU-A", 2));
+
+    // Xac minh kafkaTemplate.send() duoc goi 1 lan
+    verify(kafkaTemplate, times(1))
+        .send(eq("notificationTopic"),
+              any(OrderPlacedEvent.class));
+}
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{Mock KafkaTemplate --- Failure path}
+\begin{lstlisting}[language=java]
+@Test
+void placeOrder_OutOfStock_ShouldNotPublishKafkaEvent() {
+    when(inventoryClient.isInStock(anyString(), anyInt()))
+        .thenReturn(false);
+
+    assertThrows(RuntimeException.class,
+        () -> orderService.placeOrder(
+            new OrderRequest("SKU-A", 2)));
+
+    verify(kafkaTemplate, never())
+        .send(anyString(), any());
+}
+\end{lstlisting}
+
+  \begin{exampleblock}{Nguyên tắc}
+    Failure path phải verify side effect \textbf{không xảy ra}.
+  \end{exampleblock}
+\end{frame}
+
+%--- SLIDE 11 ----------------------------------------------------------
+\begin{frame}[fragile]{Stubbing nâng cao --- Nhiều lần gọi khác nhau}
+\begin{lstlisting}[language=java]
+// Lan goi thu nhat tra true, lan thu hai tra false
+when(inventoryClient.isInStock(anyString(), anyInt()))
+    .thenReturn(true)
+    .thenReturn(false);
+
+// Lan goi thu nhat throw exception, lan thu hai tra ket qua
+when(inventoryClient.isInStock("FLAKY-SKU", anyInt()))
+    .thenThrow(new RuntimeException("timeout"))
+    .thenReturn(true);
+
+// Stub dua tren gia tri tham so cu the
+when(inventoryClient.isInStock(eq("SKU-A"), anyInt()))
+    .thenReturn(true);
+when(inventoryClient.isInStock(eq("SKU-B"), anyInt()))
+    .thenReturn(false);
+when(inventoryClient.isInStock(eq("SKU-NULL"), anyInt()))
+    .thenThrow(new RuntimeException("SKU not found"));
+\end{lstlisting}
+
+  \begin{block}{doReturn vs thenReturn}
+    \texttt{thenReturn}: cách thông thường, không dùng được với \texttt{@Spy} khi method void.\\
+    \texttt{doReturn(...).when(mock).method()}: dùng khi mock void method hoặc khi dùng \texttt{@Spy}.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 12 ----------------------------------------------------------
+\begin{frame}[fragile]{Mock void method --- \texttt{orderRepository.save()}}
+\begin{lstlisting}[language=java]
+// save() tra ve void --- khong can stub mac dinh (khong lam gi)
+// Nhung co the stub de throw exception:
+doThrow(new DataIntegrityViolationException("duplicate"))
+    .when(orderRepository)
+    .save(any(Order.class));
+
+@Test
+void placeOrder_DbError_ShouldPropagateException() {
+    when(inventoryClient.isInStock(anyString(), anyInt()))
+        .thenReturn(true);
+    doThrow(new DataIntegrityViolationException("DB error"))
+        .when(orderRepository).save(any(Order.class));
+
+    assertThrows(DataIntegrityViolationException.class,
+        () -> orderService.placeOrder(
+            new OrderRequest("SKU-A", 2)));
+
+    // Kafka KHONG duoc goi neu save() that bai
+    verify(kafkaTemplate, never())
+        .send(anyString(), any());
+}
+\end{lstlisting}
+\end{frame}
+
+%=====================================================================
+\section{ArgumentCaptor nâng cao}
+%=====================================================================
+
+%--- SLIDE 13 ----------------------------------------------------------
+\begin{frame}[fragile]{ArgumentCaptor --- Xác minh Order được save\sref{mockito}}
+\begin{lstlisting}[language=java]
+@Test
+void placeOrder_Success_ShouldSaveOrderWithCorrectFields() {
+    when(inventoryClient.isInStock("SKU-PRO", 5))
+        .thenReturn(true);
+
+    orderService.placeOrder(new OrderRequest("SKU-PRO", 5));
+
+    // Bat doi tuong Order truyen vao save()
+    ArgumentCaptor<Order> orderCaptor =
+        ArgumentCaptor.forClass(Order.class);
+    verify(orderRepository).save(orderCaptor.capture());
+
+    Order saved = orderCaptor.getValue();
+    assertAll("Order fields",
+        () -> assertEquals("SKU-PRO",  saved.getSkuCode()),
+        () -> assertEquals(5,           saved.getQuantity()),
+        () -> assertNotNull(            saved.getOrderNumber()),
+        () -> assertFalse(
+                saved.getOrderNumber().isBlank())
+    );
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 14 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=18]{ArgumentCaptor --- Xác minh Kafka event}
+\begin{lstlisting}[language=java]
+@Test
+void placeOrder_Success_ShouldPublishCorrectKafkaEvent() {
+    when(inventoryClient.isInStock("SKU-X", 3))
+        .thenReturn(true);
+
+    orderService.placeOrder(new OrderRequest("SKU-X", 3));
+
+    // Bat doi so thu hai cua kafkaTemplate.send()
+    ArgumentCaptor<OrderPlacedEvent> eventCaptor =
+        ArgumentCaptor.forClass(OrderPlacedEvent.class);
+    verify(kafkaTemplate).send(
+        eq("notificationTopic"), eventCaptor.capture());
+
+    OrderPlacedEvent event = eventCaptor.getValue();
+    assertNotNull(event.getOrderNumber());
+
+    // orderNumber trong event phai khop voi orderNumber da save
+    ArgumentCaptor<Order> orderCaptor =
+        ArgumentCaptor.forClass(Order.class);
+    verify(orderRepository).save(orderCaptor.capture());
+    assertEquals(
+        orderCaptor.getValue().getOrderNumber(),
+        event.getOrderNumber()
+    );
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 15 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=22]{ArgumentCaptor --- Nhiều lần gọi}
+\begin{lstlisting}[language=java]
+// Gia su placeOrder co the xu ly nhieu don hang
+// (hoac test service khac goi save() nhieu lan)
+@Test
+void batchOrder_ShouldSaveAllOrders() {
+    when(inventoryClient.isInStock(anyString(), anyInt()))
+        .thenReturn(true);
+
+    orderService.placeOrder(new OrderRequest("SKU-A", 1));
+    orderService.placeOrder(new OrderRequest("SKU-B", 2));
+
+    // Lay TAT CA cac lan goi save()
+    ArgumentCaptor<Order> captor =
+        ArgumentCaptor.forClass(Order.class);
+    verify(orderRepository, times(2)).save(captor.capture());
+
+    List<Order> allOrders = captor.getAllValues(); // (!)
+    assertEquals(2, allOrders.size());
+    assertEquals("SKU-A", allOrders.get(0).getSkuCode());
+    assertEquals("SKU-B", allOrders.get(1).getSkuCode());
+}
+\end{lstlisting}
+
+  \begin{block}{getAllValues() vs getValue()}
+    \texttt{getValue()}: lấy argument của lần gọi \textit{cuối cùng}.\\
+    \texttt{getAllValues()}: lấy \textit{danh sách} argument của tất cả các lần gọi.
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Kiểm thử exception}
+%=====================================================================
+
+%--- SLIDE 16 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=22]{Kiểm thử exception --- Ba mức độ}
+  \begin{block}{Mức 1: Chỉ kiểm tra loại exception}
+\begin{lstlisting}[language=java,style=nonumber]
+assertThrows(RuntimeException.class,
+    () -> orderService.placeOrder(new OrderRequest("SKU-X", 0)));
+\end{lstlisting}
+  \end{block}
+
+  \begin{block}{Mức 2: Kiểm tra loại và message}
+\begin{lstlisting}[language=java,style=nonumber]
+RuntimeException ex = assertThrows(RuntimeException.class,
+    () -> orderService.placeOrder(new OrderRequest("SKU-X", 0)));
+assertTrue(ex.getMessage().contains("Invalid qty"));
+// hoac chinh xac hon:
+assertEquals("Invalid qty", ex.getMessage());
+\end{lstlisting}
+  \end{block}
+
+  \begin{block}{Mức 3: Kiểm tra exception + side effects}
+\begin{lstlisting}[language=java,style=nonumber]
+assertThrows(RuntimeException.class,
+    () -> orderService.placeOrder(new OrderRequest("SKU-X", 0)));
+// Sau khi exception: dam bao khong co side effect nao xay ra
+verify(inventoryClient, never()).isInStock(any(), anyInt());
+verify(orderRepository,  never()).save(any());
+verify(kafkaTemplate,    never()).send(any(), any());
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 17 ----------------------------------------------------------
+\begin{frame}[fragile]{Kiểm thử exception --- Bảng đầy đủ cho \texttt{placeOrder()}}
+  \begin{center}
+  \scriptsize
+  \begin{tabular}{p{1.1cm}p{3.4cm}p{3.0cm}p{3.0cm}}
+    \toprule
+    \textbf{TC} & \textbf{Tình huống} & \textbf{Exception} & \textbf{Side effects} \\
+    \midrule
+    E-01 & \texttt{request = null} &
+      \texttt{IllegalArg.}\\``Req. null'' &
+      Không gọi inventoryClient \\
+    E-02 & \texttt{quantity = null} &
+      \texttt{IllegalArg.}\\``Bad qty'' &
+      Không gọi inventoryClient \\
+    E-03 & \texttt{quantity = 0} (BVA off-point) &
+      \texttt{IllegalArg.}\\``Bad qty'' &
+      Không gọi inventoryClient \\
+    E-04 & \texttt{quantity = -1} &
+      \texttt{IllegalArg.}\\``Bad qty'' &
+      Không gọi inventoryClient \\
+    E-05 & Inventory không đủ &
+      \texttt{RuntimeEx.}\\``not in stock'' &
+      Không gọi save, không gọi Kafka \\
+    E-06 & DB lỗi khi save &
+      \texttt{DataIntegrity} &
+      Không gọi Kafka \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{alertblock}{Nguyên tắc}
+    Khi test exception, luôn kiểm tra \textbf{cả hai}:
+    (1) đúng exception được throw, và (2) các side effect không
+    mong muốn không xảy ra.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 18 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=20]{Kiểm thử exception --- \texttt{assertThrows} chi tiết}
+\begin{lstlisting}[language=java]
+@Test
+@DisplayName("E-05: out of stock -> throw RuntimeException, no side effects")
+void placeOrder_OutOfStock_ShouldThrowAndHaveNoSideEffects() {
+    // Arrange
+    when(inventoryClient.isInStock("SKU-EMPTY", 3))
+        .thenReturn(false);
+
+    // Act + Assert: exception
+    RuntimeException ex = assertThrows(
+        RuntimeException.class,
+        () -> orderService.placeOrder(
+                  new OrderRequest("SKU-EMPTY", 3))
+    );
+
+    // Assert: message
+    assertTrue(ex.getMessage().toLowerCase()
+                 .contains("not in stock"));
+
+    // Assert: side effects
+    verify(orderRepository, never()).save(any());
+    verify(kafkaTemplate,   never()).send(any(), any());
+
+    // Assert: inventory duoc goi dung 1 lan (van phai check)
+    verify(inventoryClient, times(1))
+        .isInStock("SKU-EMPTY", 3);
+}
+\end{lstlisting}
+\end{frame}
+
+%=====================================================================
+\section{Data Flow Testing áp dụng}
+%=====================================================================
+
+%--- SLIDE 19 ----------------------------------------------------------
+\begin{frame}[fragile]{Data Flow Testing --- Phân tích \texttt{placeOrder()}\sref{istqb}}
+  \begin{block}{Xác định def-use pairs của biến \texttt{inStock}}
+\begin{lstlisting}[language=java,style=nonumber]
+boolean inStock = inventoryClient       // DEF(inStock) tai L5
+    .isInStock(request.getSkuCode(),
+               request.getQuantity());
+if (!inStock) {                         // p-USE(inStock) tai L6
+    throw new RuntimeException(...);
+}
+Order order = buildOrder(request);      // DEF(order) tai L8
+orderRepository.save(order);            // c-USE(order) tai L9
+kafkaTemplate.send("notificationTopic",
+    new OrderPlacedEvent(               // c-USE(order) tai L10
+        order.getOrderNumber()));
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}{Data Flow Testing --- Def-use pairs cần test}
+  \begin{center}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Biến} & \textbf{DEF} & \textbf{USE} & \textbf{Test case cần thiết} \\
+    \midrule
+    \texttt{inStock} & L5 & L6 (p-use) & \texttt{inStock=true} và \texttt{false} \\
+    \texttt{order} & L8 & L9 (c-use) & Order được save đúng \\
+    \texttt{order} & L8 & L10 (c-use) & Kafka event đúng order number \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{block}{Ý nghĩa}
+    Data Flow Testing yêu cầu mỗi biến quan trọng được kiểm tra từ điểm
+    định nghĩa đến các điểm sử dụng, không chỉ kiểm tra nhánh điều kiện.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 20 ----------------------------------------------------------
+\begin{frame}{Data Flow Testing --- Kết hợp với Branch Coverage}
+  \begin{block}{Nhận xét quan trọng}
+    Trong \texttt{placeOrder()}, 100\% Branch Coverage đã bao phủ
+    tất cả def-use pairs của \texttt{inStock}. Tuy nhiên, def-use pairs
+    của \texttt{order} cần test case riêng để xác minh \textbf{dữ liệu đúng}.
+  \end{block}
+
+  \begin{columns}
+    \column{0.48\textwidth}
+    \textbf{Branch Coverage kiểm tra:}
+    \begin{itemize}
+      \item Nhánh \texttt{inStock=true} được đi qua
+      \item Nhánh \texttt{inStock=false} được đi qua
+      \item \texttt{save()} được gọi
+      \item \texttt{kafkaTemplate.send()} được gọi
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Data Flow Testing thêm vào:}
+    \begin{itemize}
+      \item \texttt{order.skuCode} lấy từ request đúng không?
+      \item \texttt{order.quantity} có đúng không?
+      \item Kafka event có khớp với order được save không?
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Data Flow Testing --- Kết luận thực hành}
+  \begin{exampleblock}{Cách triển khai trong test}
+    Dùng \textbf{ArgumentCaptor} để triển khai Data Flow Testing:
+    bắt argument của \texttt{save()} và \texttt{kafkaTemplate.send()},
+    sau đó xác minh dữ liệu đúng.
+  \end{exampleblock}
+
+  \begin{itemize}
+    \item Captor cho \texttt{Order}: kiểm tra \texttt{skuCode}, \texttt{quantity}, \texttt{orderNumber}.
+    \item Captor cho \texttt{OrderPlacedEvent}: kiểm tra event dùng đúng \texttt{orderNumber}.
+    \item Kết hợp với Branch Coverage để vừa đủ nhánh, vừa đúng dữ liệu.
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Tổ chức test với @Nested}
+%=====================================================================
+
+%--- SLIDE 21 ----------------------------------------------------------
+\begin{frame}[fragile]{@Nested --- Tổ chức test class theo nhóm (1/2)}
+  \begin{block}{Vấn đề khi nhiều test case}
+    Một class có 20+ test method trở nên khó đọc. \texttt{@Nested}
+    cho phép nhóm test case theo hành vi hoặc tình huống.
+  \end{block}
+
+\begin{lstlisting}[language=java]
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+
+    @Mock private OrderRepository orderRepository;
+    @Mock private InventoryClient inventoryClient;
+    @Mock private KafkaTemplate<String, OrderPlacedEvent>
+        kafkaTemplate;
+    @InjectMocks private OrderService orderService;
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}[fragile]{@Nested --- Tổ chức test class theo nhóm (2/2)}
+\begin{lstlisting}[language=java]
+    @Nested
+    @DisplayName("Khi request khong hop le")
+    class WhenRequestInvalid { ... }     // (1)
+
+    @Nested
+    @DisplayName("Khi inventory khong du")
+    class WhenOutOfStock { ... }         // (2)
+
+    @Nested
+    @DisplayName("Khi dat hang thanh cong")
+    class WhenOrderSuccess { ... }       // (3)
+}
+\end{lstlisting}
+
+  \begin{block}{Ghi nhớ}
+    (1), (2), (3): mỗi class con chứa các \texttt{@Test} liên quan.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 22 ----------------------------------------------------------
+\begin{frame}[fragile]{@Nested --- Nội dung từng nhóm}
+\begin{lstlisting}[language=java]
+@Nested
+@DisplayName("Khi request khong hop le")
+class WhenRequestInvalid {
+
+    @Test
+    void nullRequest_ShouldThrowIllegalArgument() {
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.placeOrder(null));
+        verifyNoInteractions(inventoryClient,
+                             orderRepository, kafkaTemplate);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {-100, -1, 0})
+    void invalidQuantity_ShouldThrowIllegalArgument(int qty) {
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.placeOrder(
+                      new OrderRequest("SKU-A", qty)));
+        verifyNoInteractions(inventoryClient);
+    }
+}
+\end{lstlisting}
+
+  \begin{block}{\texttt{verifyNoInteractions()}}
+    Xác nhận mock \textbf{không được gọi} bất kỳ method nào.
+    Ngắn gọn hơn \texttt{verify(x, never()).anyMethod()}.
+  \end{block}
+\end{frame}
+
+%--- SLIDE 23 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=35]{@Nested --- Nhóm success cases}
+\begin{lstlisting}[language=java]
+@Nested
+@DisplayName("Khi dat hang thanh cong")
+class WhenOrderSuccess {
+
+    @BeforeEach                          // (!) chay truoc moi test trong group nay
+    void stubInventoryInStock() {
+        when(inventoryClient.isInStock(anyString(), anyInt()))
+            .thenReturn(true);
+    }
+
+    @Test
+    void shouldSaveOrder() {
+        orderService.placeOrder(new OrderRequest("SKU-A", 3));
+        verify(orderRepository, times(1)).save(any(Order.class));
+    }
+
+    @Test
+    void shouldPublishKafkaEvent() {
+        orderService.placeOrder(new OrderRequest("SKU-A", 3));
+        verify(kafkaTemplate, times(1))
+            .send(eq("notificationTopic"), any(OrderPlacedEvent.class));
+    }
+
+    @Test
+    void savedOrderShouldHaveCorrectFields() {
+        orderService.placeOrder(new OrderRequest("SKU-B", 7));
+        ArgumentCaptor<Order> cap = ArgumentCaptor.forClass(Order.class);
+        verify(orderRepository).save(cap.capture());
+        assertEquals("SKU-B", cap.getValue().getSkuCode());
+        assertEquals(7,        cap.getValue().getQuantity());
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 24 ----------------------------------------------------------
+\begin{frame}[fragile]{Lợi ích của @Nested trong báo cáo test}
+  \begin{columns}
+    \column{0.55\textwidth}
+    \textbf{Kết quả hiển thị trong IDE (IntelliJ / VS Code):}
+
+    \vspace{0.3em}
+    \begin{tikzpicture}[
+      nd/.style={rectangle,draw=darkgray,fill=lightgray,
+                 rounded corners=1pt,minimum width=5cm,
+                 minimum height=0.45cm,font=\scriptsize,
+                 align=left,inner sep=3pt},
+      gr/.style={rectangle,draw=darkgray,fill=darkgray,
+                 text=white,rounded corners=1pt,
+                 minimum width=5cm,minimum height=0.45cm,
+                 font=\scriptsize\bfseries,align=left,inner sep=3pt}
+    ]
+      \node[gr] (r) at (0,4) {OrderServiceTest};
+      \node[nd] (g1) at (0.3,3.3) {Khi request không hợp lệ};
+      \node[nd] (g2) at (0.3,2.6) {Khi inventory không đủ};
+      \node[nd] (g3) at (0.3,1.9) {Khi đặt hàng thành công};
+      \node[nd] (t1) at (0.7,1.3) {shouldSaveOrder};
+      \node[nd] (t2) at (0.7,0.8) {shouldPublishKafkaEvent};
+      \node[nd] (t3) at (0.7,0.3) {savedOrderHasCorrectFields};
+      \draw[darkgray,thin] (r.south west) -- (g1.north west);
+      \draw[darkgray,thin] (g3.south west) -- (t1.north west);
+    \end{tikzpicture}
+
+    \column{0.42\textwidth}
+    \textbf{Lợi ích thực tế:}
+    \begin{itemize}
+      \item Dễ tìm test case khi fail
+      \item \texttt{@BeforeEach} trong \texttt{@Nested} chỉ chạy cho nhóm đó
+      \item Báo cáo JUnit rõ ràng hơn
+      \item Code dễ review hơn
+    \end{itemize}
+
+    \vspace{0.3em}
+    \begin{block}{Khuyến nghị}
+      Khi class có $\geq 10$ test methods, hãy cân nhắc dùng \texttt{@Nested}
+      để phân nhóm.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Hoàn thiện Coverage}
+%=====================================================================
+
+%--- SLIDE 25 ----------------------------------------------------------
+\begin{frame}[shrink=20]{Chiến lược đạt coverage mục tiêu}
+  \begin{block}{Quy trình lặp để tăng coverage}
+    \begin{enumerate}
+      \item Chạy \texttt{mvn test} $\to$ xem JaCoCo report
+      \item Mở class cần cải thiện trong report
+      \item Tìm dòng màu \textbf{vàng} (branch partly covered) và \textbf{đỏ} (uncovered)
+      \item Xác định: test case nào sẽ đi vào nhánh đó?
+      \item Viết test case, chạy lại
+      \item Lặp đến khi đạt ngưỡng
+    \end{enumerate}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{exampleblock}{Ví dụ: dòng vàng tại L3}
+      Điều kiện: \texttt{request.getQuantity() == null || request.getQuantity() <= 0}\\[0.3em]
+      Màu vàng: nhánh \texttt{quantity == null} chưa test\\[0.3em]
+      Thêm test: \texttt{new OrderRequest("SKU", null)}\\
+      $\Rightarrow$ dòng chuyển sang xanh
+    \end{exampleblock}
+
+    \column{0.5\textwidth}
+    \begin{alertblock}{Không nên làm}
+      Viết test chỉ để tăng số coverage mà không có assertion thực sự.
+      Coverage tăng nhưng không phát hiện được lỗi.\\[0.3em]
+      \textit{Mutation testing} (PIT) sẽ phát hiện
+      những test như vậy.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%--- SLIDE 26 ----------------------------------------------------------
+\begin{frame}[fragile]{Kiểm tra coverage từ command line\sref{jacoco}}
+\begin{lstlisting}[language=bash,style=nonumber]
+# Chay tat ca test va tao report
+cd order-service
+mvn clean test
+
+# Report HTML: target/site/jacoco/index.html
+# Report XML : target/site/jacoco/jacoco.xml
+
+# Chay rieng mot test class
+mvn test -Dtest=OrderServiceTest
+
+# Chay rieng mot test method
+mvn test -Dtest=OrderServiceTest#placeOrder_Success*
+
+# Fail build neu branch coverage duoi 70%
+mvn verify
+\end{lstlisting}
+\end{frame}
+
+\begin{frame}{Kiểm tra coverage trong IDE\sref{jacoco}}
+  \begin{block}{IntelliJ IDEA}
+    Chuột phải vào test class $\to$ \textit{Run with Coverage}.
+  \end{block}
+
+  \begin{itemize}
+    \item Xem line/branch coverage trực tiếp trong editor.
+    \item Dòng được tô màu xanh/đỏ/vàng ngay trong source file.
+    \item Dùng report để xác định nhánh còn thiếu test case.
+  \end{itemize}
+
+  \begin{alertblock}{Lưu ý}
+    Coverage chỉ là tín hiệu hỗ trợ; test vẫn cần assertion rõ ràng.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%--- SLIDE 27 ----------------------------------------------------------
+\begin{frame}[shrink=10]{Tổng quan bài thực hành Buổi 4}
+  \centering
+  \tiny
+  \resizebox{0.68\linewidth}{!}{%
+  \begin{tabular}{p{0.35cm}p{2.1cm}p{3.8cm}p{1.1cm}}
+    \toprule
+    \textbf{BT} & \textbf{Nội dung} & \textbf{Kỹ thuật} & \textbf{Phút} \\
+    \midrule
+    1 & Phân tích \texttt{placeOrder()} &
+      Vẽ CFG, tính $V(G)$, liệt kê paths &
+      10 phút \\
+    2 & Viết test skeleton &
+      \texttt{@Nested}, cấu trúc 3 nhóm &
+      10 phút \\
+    3 & Test exception cases &
+      \texttt{assertThrows}, side effects &
+      15 phút \\
+    4 & Test success path &
+      ArgumentCaptor cho Order và Kafka &
+      20 phút \\
+    5 & \shortstack[l]{\texttt{@Parameterized}\\\texttt{Test}} &
+      Kết hợp EP/BVA từ Buổi 2 &
+      10 phút \\
+    6 & Chạy JaCoCo &
+      Đọc report, bổ sung test cho vàng/đỏ &
+      10 phút \\
+    \midrule
+    & & \textbf{Tổng} & \textbf{75 phút} \\
+    \bottomrule
+  \end{tabular}
+  }%\par
+\end{frame}
+
+%--- SLIDE 28 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=36]{Bài tập 1 \& 2 --- CFG và test skeleton}
+  \begin{block}{Bài tập 1: Vẽ CFG cho \texttt{placeOrder()}}
+    Dựa trên mã nguồn Slide 4, vẽ CFG đầy đủ (đã xem ở Slide 5).\\
+    Xác nhận: $V(G) = 4$, liệt kê 4 path độc lập.
+  \end{block}
+
+  \begin{block}{Bài tập 2: Tạo skeleton \texttt{OrderServiceTest.java}}
+\begin{lstlisting}[language=java]
+@ExtendWith(
+    MockitoExtension.class)
+class OrderServiceTest {
+
+    @Mock OrderRepository orderRepository;
+    @Mock InventoryClient inventoryClient;
+    @Mock KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
+    @InjectMocks OrderService orderService;
+
+    @Nested @DisplayName("Khi request khong hop le")
+    class WhenRequestInvalid {
+        // TODO: 3 test methods (null, qty=null, qty<=0)
+    }
+    @Nested @DisplayName("Khi inventory khong du")
+    class WhenOutOfStock {
+        // TODO: 2 test methods (exception + no side effects)
+    }
+    @Nested @DisplayName("Khi dat hang thanh cong")
+    class WhenOrderSuccess {
+        @BeforeEach void stubInStock() { /* TODO */ }
+        // TODO: 3 test methods (save, kafka, fields)
+    }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 29 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=25]{Bài tập 3 --- Test exception cases}
+  \begin{block}{Điền vào \texttt{WhenRequestInvalid}}
+\begin{lstlisting}[language=java]
+@Nested
+@DisplayName("Khi request khong hop le")
+class WhenRequestInvalid {
+
+    @Test
+    void nullRequest_ShouldThrow_AndNoInteractions() {
+        // TODO: assertThrows IllegalArgumentException
+        // TODO: verifyNoInteractions cho ca 3 mock
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {Integer.MIN_VALUE, -1, 0})
+    void nonPositiveQty_ShouldThrow_AndNotCallInventory(int qty) {
+        // TODO: assertThrows IllegalArgumentException
+        // TODO: verify inventoryClient NEVER duoc goi
+    }
+
+    @Test
+    void nullQuantity_ShouldThrow() {
+        // TODO: OrderRequest voi quantity = null
+        // TODO: assertThrows IllegalArgumentException
+    }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 30 ----------------------------------------------------------
+\begin{frame}[fragile]{Bài tập 4 --- Success path (1/2)}
+  \begin{block}{Setup và kiểm tra Order được lưu}
+\begin{lstlisting}[language=java]
+@Nested
+@DisplayName("Khi dat hang thanh cong")
+class WhenOrderSuccess {
+
+    @BeforeEach
+    void stubInventoryInStock() {
+        when(inventoryClient.isInStock(anyString(), anyInt()))
+            .thenReturn(true);
+    }
+
+    @Test
+    void savedOrder_ShouldHaveCorrectSkuAndQty() {
+        orderService.placeOrder(new OrderRequest("SKU-PRO", 5));
+        // TODO: ArgumentCaptor<Order>
+        // TODO: assertEquals skuCode = "SKU-PRO"
+        // TODO: assertEquals quantity = 5
+        // TODO: assertNotNull orderNumber
+    }
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Bài tập 4 --- Success path (2/2)}
+  \begin{block}{Kiểm tra Kafka event khớp Order}
+\begin{lstlisting}[language=java]
+    @Test
+    void kafkaEvent_OrderNumber_ShouldMatchSavedOrder() {
+        orderService.placeOrder(new OrderRequest("SKU-PRO", 5));
+        // TODO: captor cho Order
+        // TODO: captor cho OrderPlacedEvent
+        // TODO: assertEquals event.orderNumber
+        //                  == order.orderNumber
+    }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 31 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=30]{Bài tập 5 --- @ParameterizedTest kết hợp EP/BVA}
+  \begin{block}{Chuyển test case từ Buổi 2 thành code}
+    Bộ test case EP+BVA cho \texttt{quantity} đã thiết kế ở Buổi 2:
+    \{$-1, 0, 1, 500, 1000, 1001$\}
+  \end{block}
+
+\begin{lstlisting}[language=java]
+@ParameterizedTest(name = "qty={0} -> expected: {2}")
+@CsvSource({
+    // qty,  skuCode,  shouldThrow
+    "-1,    SKU-A,    true",
+    " 0,    SKU-A,    true",
+    " 1,    SKU-A,    false",
+    " 500,  SKU-A,    false",
+    " 1000, SKU-A,    false",
+    " 1001, SKU-A,    true"
+})
+void placeOrder_QuantityBoundary(
+        int qty, String sku, boolean shouldThrow) {
+    when(inventoryClient.isInStock(anyString(), anyInt()))
+        .thenReturn(true);
+    if (shouldThrow) {
+        assertThrows(IllegalArgumentException.class,
+            () -> orderService.placeOrder(
+                      new OrderRequest(sku, qty)));
+    } else {
+        assertDoesNotThrow(
+            () -> orderService.placeOrder(
+                      new OrderRequest(sku, qty)));
+    }
+}
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 32 ----------------------------------------------------------
+\begin{frame}[fragile]{Bài tập 6 --- Chạy JaCoCo\sref{jacoco}}
+  \begin{block}{Chạy và xem kết quả}
+\begin{lstlisting}[language=bash,style=nonumber]
+cd order-service
+mvn clean test
+# Mo: target/site/jacoco/index.html
+\end{lstlisting}
+  \end{block}
+
+  \begin{itemize}
+    \item Kiểm tra report HTML trong \texttt{target/site/jacoco/}.
+    \item Chụp màn hình tổng quan coverage để nộp bài.
+    \item Ghi lại line/branch coverage trước và sau khi bổ sung test.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Bài tập 6 --- Đọc report và cải thiện}
+  \begin{columns}
+    \column{0.52\textwidth}
+    \textbf{Hướng dẫn đọc report:}
+    \begin{enumerate}
+      \item Click vào package \texttt{com.example.orderservice}
+      \item Click vào \texttt{OrderService}
+      \item Xem từng dòng: xanh / vàng / đỏ
+      \item Hover vào dòng vàng để xem nhánh chưa cover
+    \end{enumerate}
+
+    \column{0.44\textwidth}
+    \textbf{Mục tiêu cần đạt:}
+    \begin{itemize}
+      \item \texttt{OrderService}: line $\geq 90\%$, branch $\geq 80\%$
+      \item \texttt{InventoryService}: line $\geq 85\%$, branch $\geq 75\%$
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{alertblock}{Nếu chưa đạt}
+    Tìm dòng vàng/đỏ trong report, xác định test case còn thiếu,
+    viết thêm, chạy lại.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 33 ----------------------------------------------------------
+\begin{frame}[fragile,shrink=18]{Bộ test case hoàn chỉnh cho \texttt{OrderService}}
+  \begin{center}
+  \small
+  \begin{tabular}{p{2.4cm}p{6.6cm}p{4.0cm}p{3.0cm}}
+    \toprule
+    \textbf{TC} & \textbf{Mô tả} & \textbf{Kỹ thuật} & \textbf{Coverage đạt} \\
+    \midrule
+    T-01 & request = null $\to$ throw & Path P1 & L1(T) \\
+    T-02 & qty = null $\to$ throw & EP invalid & L3(T) một phần \\
+    T-03 & qty = 0 $\to$ throw (BVA) & BVA off-point & L3(T) hoàn chỉnh \\
+    T-04 & qty = $-1$ $\to$ throw & EP invalid & -- (redundant) \\
+    T-05 & out of stock $\to$ throw, no side effects & Path P3 & L6(T) \\
+    T-06 & DB lỗi $\to$ propagate, no Kafka & Exception chain & L9 \\
+    T-07 & success $\to$ save() gọi 1 lần & Path P4 & L6(F), L9, L10 \\
+    T-08 & success $\to$ Kafka event gửi đúng topic & ArgumentCaptor & L10 \\
+    T-09 & success $\to$ order fields đúng & ArgumentCaptor & Data Flow \\
+    T-10 & success $\to$ orderNumber khớp Kafka & ArgumentCaptor & Data Flow \\
+    T-11 & @Parameterized qty boundary & EP+BVA & L3 toàn bộ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+\end{frame}
+
+%--- SLIDE 34 ----------------------------------------------------------
+\begin{frame}{Testing Pyramid --- Unit test đã hoàn thành}
+  \begin{columns}
+    \column{0.5\textwidth}
+    \begin{block}{Sau Buổi 3 + Buổi 4}
+      \textbf{Unit test đã có:}
+      \begin{itemize}
+        \item \texttt{ProductServiceTest}: 8 TC
+        \item \texttt{InventoryServiceTest}: 6 TC
+        \item \texttt{OrderServiceTest}: 11 TC
+      \end{itemize}
+      Tổng: \textbf{25 test case}, tất cả mock, chạy $<$ 2 giây.
+    \end{block}
+
+    \column{0.5\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[scale=0.85]
+      \fill[darkgray!80] (2,4) -- (0,4) -- (2,5.2) -- (4,4) -- cycle;
+      \node[white,font=\small\bfseries] at (2,4.5) {E2E Test};
+      \fill[darkgray!45] (0,2.2) -- (0,4) -- (4,4) -- (4,2.2) -- cycle;
+      \node[font=\small\bfseries] at (2,3.1) {Integration Test};
+      \fill[darkgray!20] (0,0) -- (0,2.2) -- (4,2.2) -- (4,0) -- cycle;
+      \node[font=\small\bfseries] at (2,1.3) {Unit Test};
+      \node[font=\scriptsize] at (2,0.6) {25 TC --- Done};
+      \draw[darkgray] (0,0) -- (0,4) -- (2,5.2) -- (4,4) -- (4,0) -- cycle;
+      \draw[darkgray] (0,2.2) -- (4,2.2);
+      \draw[darkgray] (0,4) -- (4,4);
+      \draw[darkgray,very thick] (0,0) rectangle (4,2.2);
+    \end{tikzpicture}
+    \end{center}
+  \end{columns}
+\end{frame}
+
+\begin{frame}{Testing Pyramid --- Các tầng còn thiếu}
+  \begin{block}{Còn thiếu ở tầng trên}
+    \begin{itemize}
+      \item Integration test (Buổi 7): Testcontainers
+      \item API test (Buổi 5, 6): Postman, Newman
+      \item Contract test (Buổi 9): Pact
+      \item Performance test (Buổi 8): JMeter
+    \end{itemize}
+  \end{block}
+
+  \begin{alertblock}{Thông điệp chính}
+    Unit test giúp phản hồi nhanh, nhưng vẫn cần các tầng test cao hơn
+    để kiểm tra tích hợp, API contract và hiệu năng thực tế.
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 35 ----------------------------------------------------------
+\begin{frame}[fragile]{Thêm \texttt{InventoryServiceTest} --- Arrange/Act}
+  \begin{block}{Bổ sung test chưa viết từ Buổi 3}
+\begin{lstlisting}[language=java]
+@Nested
+@DisplayName("Khi kiem tra nhieu SKU cung luc")
+class WhenCheckMultipleSKUs {
+
+    @Test
+    void mixedStock_ShouldReturnCorrectResults() {
+        List<String> skus = List.of("SKU-A", "SKU-B", "SKU-C");
+        when(repository.findBySkuCodeIn(skus))
+            .thenReturn(List.of(
+                new Inventory("SKU-A", 10),
+                new Inventory("SKU-B", 0),
+                new Inventory("SKU-C", 5)
+            ));
+
+        List<InventoryResponse> result =
+            inventoryService.isInStock(skus);
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+\begin{frame}[fragile]{Thêm \texttt{InventoryServiceTest} --- Assert}
+  \begin{block}{Kiểm tra kết quả từng SKU}
+\begin{lstlisting}[language=java]
+        assertEquals(3, result.size());
+        assertTrue(result.stream()
+            .filter(r -> r.getSkuCode().equals("SKU-A"))
+            .findFirst().orElseThrow().isInStock());
+        assertFalse(result.stream()
+            .filter(r -> r.getSkuCode().equals("SKU-B"))
+            .findFirst().orElseThrow().isInStock());
+    }
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp}
+%=====================================================================
+
+%--- SLIDE 36 ----------------------------------------------------------
+\begin{frame}[fragile]{Cấu trúc thư mục nộp bài}
+\begin{lstlisting}[language=bash,style=nonumber]
+HoTen_MaSV_Buoi04/
+  order-service/
+    src/test/java/.../
+      OrderServiceTest.java         (!)
+      InventoryServiceTest.java     (bo sung tu Buoi 3)
+    target/site/jacoco/
+      index.html                    (screenshot)
+  product-service/
+    src/test/java/.../
+      ProductServiceTest.java       (tu Buoi 3, da hoan thien)
+    target/site/jacoco/
+      index.html                    (screenshot)
+  CFG_placeOrder.png                (anh hoac PDF)
+  coverage_summary.md               (bang tom tat)
+\end{lstlisting}
+\end{frame}
+
+%--- SLIDE 37 ----------------------------------------------------------
+\begin{frame}{Bài nộp --- Yêu cầu chi tiết (1/2)}
+  \begin{block}{Yêu cầu bắt buộc}
+    \begin{enumerate}
+      \item \textbf{OrderServiceTest.java}: tối thiểu \textbf{10 test method},
+        bao gồm:
+        \begin{itemize}
+          \item Cấu trúc \texttt{@Nested} với 3 nhóm rõ ràng
+          \item Ít nhất 1 \texttt{@ParameterizedTest} với \texttt{@CsvSource}
+          \item Ít nhất 2 test dùng \texttt{ArgumentCaptor}
+          \item Tất cả exception case có verify side effects
+        \end{itemize}
+      \item \textbf{Coverage OrderService}: branch $\geq 80\%$
+      \item \textbf{Coverage InventoryService}: line $\geq 80\%$, branch $\geq 70\%$
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+%--- SLIDE 38 ----------------------------------------------------------
+\begin{frame}{Bài nộp --- Yêu cầu chi tiết (2/2)}
+  \begin{block}{Yêu cầu bắt buộc}
+    \begin{enumerate}
+      \setcounter{enumi}{3}
+      \item \textbf{CFG placeOrder()}: đầy đủ, ghi rõ $V(G)$ và 4 paths
+      \item \textbf{Bảng tóm tắt} (Markdown hoặc PDF): tên test method,
+        kỹ thuật áp dụng (CFG path / EP / BVA / Data Flow),
+        coverage đạt được sau khi thêm từng nhóm test
+    \end{enumerate}
+  \end{block}
+
+  \begin{alertblock}{Định dạng}
+    Nén ZIP: \texttt{HoTen\_MaSV\_Buoi04.zip}
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 39 ----------------------------------------------------------
+\begin{frame}{Câu hỏi ôn tập (1/2)}
+  \begin{enumerate}
+    \item Giải thích tại sao dùng \texttt{@Mock} thay vì \texttt{@MockBean}
+      trong \texttt{OrderServiceTest}.
+      Nếu nhầm dùng \texttt{@MockBean} mà không có \texttt{@SpringBootTest},
+      điều gì xảy ra?
+
+    \item \texttt{verifyNoInteractions(mock)} khác gì so với
+      \texttt{verify(mock, never()).anyMethod()}?
+
+    \item Tại sao phải dùng \texttt{getAllValues()} thay vì \texttt{getValue()}
+      khi \texttt{save()} được gọi nhiều lần?
+  \end{enumerate}
+\end{frame}
+
+%--- SLIDE 40 ----------------------------------------------------------
+\begin{frame}{Câu hỏi ôn tập (2/2)}
+  \begin{enumerate}
+    \setcounter{enumi}{3}
+    \item Nếu \texttt{placeOrder()} có thêm một \texttt{if} kiểm tra
+      \texttt{skuCode} không rỗng, $V(G)$ thay đổi như thế nào?
+      Cần thêm bao nhiêu test case?
+
+    \item Sự khác biệt giữa \texttt{doReturn(...).when(mock).method()}
+      và \texttt{when(mock.method()).thenReturn(...)} là gì?
+      Khi nào bắt buộc phải dùng \texttt{doReturn}?
+
+    \item Mock \texttt{KafkaTemplate} với \texttt{@Mock} có phản ánh đúng
+      hành vi thực của Kafka không? Khi nào cần test Kafka thật?
+  \end{enumerate}
+\end{frame}
+
+%--- SLIDE 39 ----------------------------------------------------------
+\begin{frame}[shrink=16]{Chuẩn bị cho Buổi 5}
+  \begin{block}{Chủ đề Buổi 5: API Testing với Postman}
+    REST API fundamentals, Postman Collection, Environment variables,
+    assertions, data chaining, test luồng end-to-end.
+  \end{block}
+
+  \vspace{0.4em}
+  \begin{block}{Cần chuẩn bị}
+    \begin{itemize}
+      \item Cài Postman (phiên bản mới nhất)
+      \item Hoàn thành bài nộp Buổi 4 trước khi lên lớp
+      \item Ôn lại bộ test case đã thiết kế ở Buổi 2:
+        đây là nội dung sẽ chuyển thành Postman request + assertions
+      \item Đọc đặc tả API của \texttt{order-service} và
+        \texttt{product-service} (xem README của repo)
+    \end{itemize}
+  \end{block}
+
+  \begin{alertblock}{Khởi động môi trường trước buổi 5}
+    Từ Buổi 5, dùng \textbf{Docker Profile B} thay Profile A.
+    Chạy trước ở nhà để kéo image:\\
+    \texttt{docker-compose -f docker-compose.lite-b.yml pull}
+  \end{alertblock}
+\end{frame}
+
+%--- SLIDE 40 ----------------------------------------------------------
+\begin{frame}{Tóm tắt buổi 4 --- Lý thuyết}
+  \begin{itemize}
+    \item \textbf{CFG} của \texttt{placeOrder()}: $V(G)=4$, 4 paths\sref{myers}
+    \item \textbf{@Mock vs @MockBean}: unit vs integration context\sref{mockito}
+    \item \textbf{Mock Feign + KafkaTemplate}: interface và template class
+    \item \textbf{ArgumentCaptor}: \texttt{getValue()} và \texttt{getAllValues()}\sref{mockito}
+    \item \textbf{Exception testing}: type + message + side effects
+    \item \textbf{Data Flow Testing}: def-use pairs cho \texttt{inStock} và \texttt{order}\sref{istqb}
+    \item \textbf{@Nested}: tổ chức test theo nhóm hành vi
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Tóm tắt buổi 4 --- Thực hành}
+  \begin{itemize}
+    \item Vẽ CFG và tính $V(G)$ cho \texttt{placeOrder()}
+    \item Viết \texttt{OrderServiceTest} với \texttt{@Nested}
+    \item Test tất cả exception cases + side effects
+    \item Test success path với ArgumentCaptor
+    \item \texttt{@ParameterizedTest} kết hợp EP/BVA
+    \item Đạt branch coverage $\geq 80\%$ cho OrderService\sref{jacoco}
+  \end{itemize}
+
+  \vspace{0.5em}
+  \begin{block}{Buổi tới}
+    \textbf{Buổi 5}: API Testing với Postman\\
+    Chuyển từ unit test sang API-level test
+  \end{block}
+\end{frame}
+
+
+%=====================================================================
+\section{Tài liệu tham khảo}
+%=====================================================================
+
+%--- SLIDE THAM KHẢO --------------------------------------------------
+\begin{frame}[shrink=10]{Tài liệu tham khảo}
+  \begin{thebibliography}{99}
+    \bibitem[1]{junit5}
+      JUnit Team. \textit{JUnit 5 User Guide}. https://junit.org/junit5/docs/current/user-guide/.
+    \bibitem[2]{mockito}
+      Mockito Team. \textit{Mockito Documentation}. https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html.
+    \bibitem[3]{jacoco}
+      JaCoCo Project. \textit{JaCoCo Java Code Coverage Library}. https://www.jacoco.org/jacoco/.
+    \bibitem[4]{istqb}
+      ISTQB. \textit{Certified Tester Foundation Level Syllabus}, version 4.0, 2023.
+    \bibitem[5]{myers}
+      Glenford J. Myers, Corey Sandler, Tom Badgett. \textit{The Art of Software Testing}, 3rd ed., Wiley, 2011.
+  \end{thebibliography}
+\end{frame}
+
+\end{document}

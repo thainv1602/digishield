@@ -1,0 +1,1766 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+%---------------------------------------------------------------------
+% Font & encoding
+%---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+% Uu tien Noto Sans / DejaVu Sans Mono (nhu old/main.tex);
+% fallback sang font he thong macOS ho tro tieng Viet neu chua cai.
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+%---------------------------------------------------------------------
+% Theme
+%---------------------------------------------------------------------
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+% Màu chủ đạo: xanh #428BCA
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+% Loại bỏ navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footline tùy chỉnh
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 2
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}
+      \insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Itemize
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact spacing + auto slide-break for long frames
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{frametitle continuation}{\normalfont\small~(tiếp)}
+
+%---------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage{array}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=none,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+}
+
+%---------------------------------------------------------------------
+% Metadata
+%---------------------------------------------------------------------
+\title{Quy trình Kiểm thử Phần mềm}
+\subtitle{Buổi 2 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 1 - Title
+%---------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 2 - Nội dung
+%---------------------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \begin{enumerate}
+      \item Vị trí trong đề cương --- mục tiêu
+      \item Một số quy trình phát triển phần mềm: Waterfall, V-model, Iterative, Agile/Scrum
+      \item Quy trình kiểm thử phần mềm (STLC): 6 giai đoạn
+      \item Các mức kiểm thử: unit $\to$ acceptance trên DigiShield
+      \item Các loại kiểm thử; re-test và regression
+    \end{enumerate}
+    \column{0.46\textwidth}
+    \begin{enumerate}
+      \setcounter{enumi}{5}
+      \item Testing Pyramid
+      \item Test Plan (IEEE 829), Test Strategy, traceability matrix
+      \item Vai trò trong nhóm kiểm thử; defect lifecycle
+      \item \textbf{Giao Bài tập lớn (30\%)}
+      \item Thực hành và bài nộp
+    \end{enumerate}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 3 - Vị trí trong đề cương
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương}
+  \begin{block}{Chương 2 --- Quy trình kiểm thử phần mềm}
+    \begin{itemize}
+      \item 2.1. Giới thiệu
+      \item 2.2. Một số quy trình phát triển phần mềm
+      \item 2.3. Quy trình kiểm thử phần mềm
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Kết nối với các buổi khác}
+    \small
+    Buổi 1 (C1) trả lời \textit{``kiểm thử là gì, tại sao''}. Buổi này trả lời
+    \textit{``kiểm thử diễn ra \textbf{khi nào}, \textbf{ở đâu} trong dự án và
+    \textbf{theo quy trình nào}''}. Từ Buổi 3 trở đi ta đi vào \textbf{kỹ thuật}
+    thiết kế và cài đặt test.
+  \end{exampleblock}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Thông báo quan trọng hôm nay}
+    Giao \textbf{Bài tập lớn (30\% điểm học phần)} và thông báo
+    \textbf{bài kiểm tra viết Chương 1+2 (10\%)} vào đầu Buổi 3.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 4 - Mục tiêu
+%---------------------------------------------------------------------
+\begin{frame}{Mục tiêu buổi học}
+  Sau buổi học, sinh viên có thể:
+  \begin{itemize}
+    \item Mô tả vị trí của hoạt động kiểm thử trong các mô hình phát triển:
+          Waterfall, V-model, Iterative/Incremental, Agile/Scrum.
+    \item Trình bày 6 giai đoạn của STLC kèm entry/exit criteria từng giai đoạn.
+    \item Phân biệt 4 mức kiểm thử và \textbf{ánh xạ được vào DigiShield}:
+          lệnh nào, thư mục nào, công cụ nào cho mỗi mức.
+    \item Phân biệt kiểm thử chức năng/phi chức năng, re-test/regression.
+    \item Soạn được một Test Plan rút gọn theo IEEE 829 và một traceability matrix.
+    \item Nắm rõ yêu cầu, timeline và rubric của Bài tập lớn.
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Một số quy trình phát triển phần mềm}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 5 - SDLC
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{SDLC --- Vòng đời phát triển phần mềm}
+  \begin{center}
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    phase/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=3pt,
+                  minimum width=2.0cm,minimum height=0.7cm,align=center,font=\small},
+    arr/.style={-{Stealth[length=4pt]},darkgray}
+  ]
+    \node[phase] (req)    {Phân tích\\Yêu cầu};
+    \node[phase,right=0.5cm of req]  (des)  {Thiết kế\\Hệ thống};
+    \node[phase,right=0.5cm of des]  (imp)  {Lập trình};
+    \node[phase,right=0.5cm of imp]  (test) {Kiểm thử};
+    \node[phase,right=0.5cm of test] (dep)  {Triển khai};
+    \node[phase,right=0.5cm of dep]  (maint){Bảo trì};
+
+    \draw[arr] (req) -- (des);
+    \draw[arr] (des) -- (imp);
+    \draw[arr] (imp) -- (test);
+    \draw[arr] (test) -- (dep);
+    \draw[arr] (dep) -- (maint);
+  \end{tikzpicture}}
+  \end{center}
+
+  \vspace{0.4em}
+  \begin{block}{Câu hỏi trung tâm của Chương 2}
+    Giai đoạn ``Kiểm thử'' nằm \textbf{ở đâu}? Câu trả lời \textbf{khác nhau}
+    tùy mô hình phát triển: Waterfall đặt kiểm thử ở \textit{cuối},
+    V-model đặt nó \textit{đối xứng} với từng pha phát triển,
+    Agile \textit{rải đều} nó vào mọi Sprint.
+  \end{block}
+
+  \vspace{0.3em}
+  \small Bốn mô hình sẽ xét: \textbf{Waterfall}, \textbf{V-model},
+  \textbf{Iterative/Incremental}, \textbf{Agile/Scrum}.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 6 - Waterfall
+%---------------------------------------------------------------------
+\begin{frame}{Mô hình Waterfall (thác nước)}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Đặc điểm}
+    \begin{itemize}
+      \item Tuyến tính: mỗi giai đoạn hoàn tất mới sang giai đoạn kế
+      \item Tài liệu hóa nặng, ký duyệt từng pha
+      \item Kiểm thử là \textbf{một pha riêng, sau lập trình}
+    \end{itemize}
+    \textbf{Phù hợp khi}
+    \begin{itemize}
+      \item Yêu cầu ổn định, ít thay đổi
+      \item Dự án có ràng buộc hợp đồng/pháp lý chặt
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    \begin{alertblock}{Hệ quả với kiểm thử}
+      \begin{itemize}
+        \item Lỗi yêu cầu/thiết kế bị phát hiện \textbf{rất muộn} --- chi phí sửa cao (quy tắc 1:10:100, Buổi 1)
+        \item Kiểm thử bị \textbf{dồn ép} cuối dự án: trễ tiến độ thì cắt thời gian test
+        \item Tester tham gia muộn, ít hiểu nghiệp vụ
+      \end{itemize}
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 7 - V-model tikz
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Mô hình V (V-Model)}
+  \begin{center}
+  \begin{tikzpicture}[scale=0.92,
+    lbox/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+                 minimum width=3.1cm,minimum height=0.62cm,align=center,font=\small},
+    rbox/.style={rectangle,draw=darkgray,fill=white,rounded corners=2pt,
+                 minimum width=3.1cm,minimum height=0.62cm,align=center,font=\small},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thin}
+  ]
+    % Left side (development)
+    \node[lbox] (req)  at (0, 3.9) {Phân tích Yêu cầu};
+    \node[lbox] (des)  at (0.7, 2.8) {Thiết kế Hệ thống};
+    \node[lbox] (arch) at (1.4, 1.7) {Thiết kế Kiến trúc};
+    \node[lbox] (mod)  at (2.1, 0.6) {Thiết kế Module};
+    \node[lbox,fill=darkgray,text=white] (cod) at (5.4, -0.4) {Lập trình};
+    % Right side (testing)
+    \node[rbox] (uat)  at (10.8, 3.9) {Acceptance Test};
+    \node[rbox] (st)   at (10.1, 2.8) {System Test};
+    \node[rbox] (it)   at (9.4, 1.7) {Integration Test};
+    \node[rbox] (ut)   at (8.7, 0.6) {Unit Test};
+
+    % Diagonal arrows down-left
+    \draw[arr] (req)  -- (des);
+    \draw[arr] (des)  -- (arch);
+    \draw[arr] (arch) -- (mod);
+    \draw[arr] (mod)  -- (cod);
+    % Diagonal arrows up-right
+    \draw[arr] (cod) -- (ut);
+    \draw[arr] (ut)  -- (it);
+    \draw[arr] (it)  -- (st);
+    \draw[arr] (st)  -- (uat);
+    % Horizontal correspondence
+    \draw[arr,dashed] (req)  -- (uat) node[midway,above,font=\scriptsize]{xác nhận yêu cầu người dùng};
+    \draw[arr,dashed] (des)  -- (st)  node[midway,above,font=\scriptsize]{xác nhận hành vi hệ thống};
+    \draw[arr,dashed] (arch) -- (it)  node[midway,above,font=\scriptsize]{xác nhận ghép nối};
+    \draw[arr,dashed] (mod)  -- (ut)  node[midway,above,font=\scriptsize]{xác nhận từng đơn vị};
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.15em}
+  \small Mỗi giai đoạn \textbf{phát triển} (trái) có một mức \textbf{kiểm thử}
+  tương ứng (phải); test được \textit{thiết kế ngay khi có tài liệu pha trái}.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 8 - V-model đọc hiểu
+%---------------------------------------------------------------------
+\begin{frame}{Đọc hiểu mô hình V}
+  \begin{center}
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Pha phát triển (trái)} & \textbf{Mức kiểm thử (phải)} & \textbf{Test basis} \\
+    \midrule
+    Phân tích yêu cầu   & Acceptance test   & Đặc tả yêu cầu, hợp đồng \\
+    Thiết kế hệ thống   & System test       & Đặc tả chức năng hệ thống \\
+    Thiết kế kiến trúc  & Integration test  & Thiết kế giao diện giữa module \\
+    Thiết kế module     & Unit test         & Đặc tả chi tiết module \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Ưu điểm}
+    \begin{itemize}
+      \item Kiểm thử được \textbf{lập kế hoạch sớm} (nguyên tắc 3 --- kiểm thử sớm)
+      \item Mỗi sản phẩm trung gian đều có mức test kiểm chứng
+    \end{itemize}
+    \column{0.5\textwidth}
+    \textbf{Nhược điểm}
+    \begin{itemize}
+      \item Vẫn tuyến tính, kém thích ứng khi yêu cầu đổi
+      \item \textit{Thực thi} test vẫn dồn về nửa sau dự án
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 9 - Iterative/Incremental
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Mô hình Iterative / Incremental}
+  \begin{center}
+  \begin{tikzpicture}[
+    it/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=3pt,
+               minimum width=3.15cm,minimum height=1.5cm,align=center,font=\scriptsize},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \node[it] (i1) {\textbf{Vòng lặp 1}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
+    \node[it,right=0.8cm of i1] (i2) {\textbf{Vòng lặp 2}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
+    \node[it,right=0.8cm of i2] (i3) {\textbf{Vòng lặp 3}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
+    \draw[arr] (i1) -- node[above,font=\scriptsize]{tăng trưởng} (i2);
+    \draw[arr] (i2) -- node[above,font=\scriptsize]{tăng trưởng} (i3);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{itemize}
+    \item Hệ thống được xây theo \textbf{từng phần tăng trưởng} (increment);
+          mỗi vòng lặp là một ``Waterfall thu nhỏ'' \textbf{có kiểm thử riêng}.
+    \item Kiểm thử diễn ra \textbf{nhiều lần, sớm hơn} so với Waterfall
+          $\to$ phản hồi nhanh về chất lượng.
+  \end{itemize}
+
+  \begin{alertblock}{Hệ quả quan trọng}
+    Chức năng của vòng lặp trước phải được \textbf{kiểm thử lại} ở vòng lặp sau
+    (regression) --- vì code mới có thể phá vỡ code cũ. Regression tăng dần
+    $\Rightarrow$ bắt buộc \textbf{tự động hóa}.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 10 - Agile/Scrum
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Agile / Scrum}
+  \begingroup\centering
+  \begin{tikzpicture}[
+    box/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=3pt,
+                minimum width=2.3cm,minimum height=0.85cm,align=center,font=\scriptsize},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \node[box] (pb) {Product\\Backlog};
+    \node[box,right=0.7cm of pb] (sb) {Sprint\\Backlog};
+    \node[box,fill=darkgray,text=white,minimum width=3.2cm,right=0.7cm of sb]
+      (sp) {\textbf{Sprint 2--4 tuần}\\code + test song song};
+    \node[box,right=0.7cm of sp] (inc) {Increment\\có thể phát hành};
+    \draw[arr] (pb) -- (sb);
+    \draw[arr] (sb) -- (sp);
+    \draw[arr] (sp) -- (inc);
+    \draw[arr,dashed] (inc.south) to[out=-150,in=-30]
+      node[below,font=\scriptsize]{phản hồi, review, retro} (pb.south);
+  \end{tikzpicture}\par\endgroup
+
+  \vspace{-0.45em}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{Kiểm thử trong Scrum}
+    \begin{itemize}
+      \item Không có ``pha test'' riêng --- test là một phần của
+            \textbf{Definition of Done} mỗi user story
+      \item Tester ngồi \textbf{trong} team, tham gia từ lúc viết acceptance criteria
+      \item Tự động hóa là nền tảng (unit, API, E2E chạy mỗi lần push)
+    \end{itemize}
+    \column{0.44\textwidth}
+    \begin{exampleblock}{\small Whole-team quality}
+      \small Developer viết unit test, tester thiết kế test hộp đen và tự động
+      hóa E2E, cả team chịu trách nhiệm chất lượng --- không ``ném qua tường''.
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 11 - So sánh vị trí kiểm thử
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí hoạt động kiểm thử trong từng mô hình}
+  \begingroup\centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{p{2.2cm}p{4.6cm}p{4.9cm}}
+    \toprule
+    \textbf{Mô hình} & \textbf{Kiểm thử diễn ra khi nào?} & \textbf{Rủi ro / lưu ý} \\
+    \midrule
+    Waterfall & Một pha riêng, sau lập trình & Lỗi phát hiện muộn, test bị cắt xén khi trễ hạn \\
+    \midrule
+    V-model & \textit{Thiết kế} test từ đầu mỗi pha; \textit{thực thi} ở nhánh phải & Vẫn cứng nhắc trước thay đổi yêu cầu \\
+    \midrule
+    Iterative & Cuối mỗi vòng lặp & Khối lượng regression tăng dần theo vòng lặp \\
+    \midrule
+    Agile/Scrum & Liên tục trong Sprint, mọi story & Đòi hỏi tự động hóa và kỹ năng kỹ thuật của tester \\
+    \bottomrule
+  \end{tabular}\par\endgroup
+
+  \begin{block}{Nhận xét}
+    Xu hướng chung của lịch sử các mô hình: kiểm thử dịch chuyển
+    \textbf{từ cuối dự án về đầu dự án} --- đó chính là \textit{shift-left}.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 12 - Shift-left
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Shift-Left Testing}
+  \begin{center}
+  \begin{tikzpicture}[
+    ph/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+               minimum width=1.9cm,minimum height=0.6cm,align=center,font=\scriptsize},
+    arr/.style={-{Stealth[length=5pt]},darkgray,very thick}
+  ]
+    \node[ph] (a) {Yêu cầu};
+    \node[ph,right=0.35cm of a] (b) {Thiết kế};
+    \node[ph,right=0.35cm of b] (c) {Lập trình};
+    \node[ph,right=0.35cm of c] (d) {Kiểm thử};
+    \node[ph,right=0.35cm of d] (e) {Vận hành};
+    \draw[arr] ([yshift=-0.55cm]d.south) -- node[below,font=\small]
+      {đẩy hoạt động kiểm thử sang TRÁI} ([yshift=-0.55cm]a.south);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \textbf{Shift-left nghĩa là}
+    \begin{itemize}
+      \item Review đặc tả, review thiết kế (kiểm thử tĩnh)
+      \item Viết acceptance criteria \textit{trước khi} code
+      \item Unit test viết cùng lúc với code (TDD)
+      \item Test tự động chạy ngay mỗi lần commit (CI)
+    \end{itemize}
+    \column{0.46\textwidth}
+    \begin{exampleblock}{\small Trên DigiShield}
+      \small Mỗi lần build, \texttt{./gradlew check} chạy toàn bộ unit test
+      \textbf{và} chặn merge nếu độ phủ dòng dưới ngưỡng JaCoCo --- lỗi bị
+      chặn ngay tại bàn dev, không đợi đến pha test.
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 13 - DigiShield dev process
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Quy trình phát triển của DigiShield --- hệ thống thực hành}
+  \begin{block}{Bối cảnh}
+    DigiShield (``Lá Chắn Số'') --- nền tảng chống lừa đảo/phishing: đào tạo nhận thức,
+    mô phỏng tấn công, tiếp nhận báo cáo, chấm điểm rủi ro, can thiệp giao dịch đáng ngờ.
+    Java 25 + Spring Boot, kiến trúc modular monolith (Spring Modulith, 9 module)
+    tại \texttt{modules/}.
+  \end{block}
+
+  \vspace{0.2em}
+  Hai tầng kiểm thử được cấu hình sẵn bằng JVM Test Suites:
+\begin{lstlisting}[language=bash]
+./gradlew test             # unit test (*Test.java),
+                           # khong can Docker
+./gradlew integrationTest  # integration (*IT.java),
+                           # can Docker (Testcontainers)
+\end{lstlisting}
+
+  \small Hiện có \textbf{176 test / 27 class} (JUnit 5, Mockito, AssertJ,
+  Testcontainers). Đây là ``hiện trường'' để ta quan sát mọi khái niệm của buổi học hôm nay.
+\end{frame}
+
+%=====================================================================
+\section{Quy trình kiểm thử phần mềm (STLC)}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 14 - STLC overview
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{STLC --- Software Testing Life Cycle}
+  \begin{center}
+  \begin{tikzpicture}[
+    phase/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+                  minimum width=2.7cm,minimum height=0.8cm,align=center,font=\small},
+    arr/.style={-{Stealth[length=4pt]},darkgray}
+  ]
+    \node[phase] (ra)  {1. Phân tích\\Yêu cầu};
+    \node[phase,right=0.4cm of ra]  (tp)  {2. Lập kế hoạch\\Kiểm thử};
+    \node[phase,right=0.4cm of tp]  (td)  {3. Thiết kế\\Test Case};
+    \node[phase,below=0.6cm of td]  (se)  {4. Chuẩn bị\\Môi trường};
+    \node[phase,left=0.4cm of se]   (te)  {5. Thực thi\\Kiểm thử};
+    \node[phase,left=0.4cm of te]   (tc)  {6. Đóng\\Chu trình};
+
+    \draw[arr] (ra) -- (tp);
+    \draw[arr] (tp) -- (td);
+    \draw[arr] (td) -- (se);
+    \draw[arr] (se) -- (te);
+    \draw[arr] (te) -- (tc);
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{block}{Entry / Exit criteria \cite{istqb}}
+    Mỗi giai đoạn có \textbf{Entry criteria} (điều kiện để bắt đầu) và
+    \textbf{Exit criteria} (điều kiện để kết thúc). Chúng là ``cổng chất lượng''
+    ngăn việc nhảy cóc --- ví dụ: không thực thi test khi môi trường chưa sẵn sàng.
+  \end{block}
+  \small Giai đoạn 3 và 4 có thể tiến hành \textit{song song}.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 15 - STLC phase 1
+%---------------------------------------------------------------------
+\begin{frame}{Giai đoạn 1: Phân tích yêu cầu kiểm thử}
+  \vspace*{-0.2em}
+  \textbf{Hoạt động}: đọc đặc tả/user story, xác định \textit{cái gì} cần kiểm thử
+  (testable requirements), đặt câu hỏi làm rõ, nhận diện yêu cầu phi chức năng.
+
+  \vspace{0.2em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Entry criteria}
+      \begin{itemize}
+        \item Có tài liệu yêu cầu / user story
+        \item Tiếp cận được BA/PO để hỏi đáp
+        \item Có tài liệu kiến trúc (nếu đã có)
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Exit criteria}
+      \begin{itemize}
+        \item Danh sách \textbf{testable requirements}; RTM khởi tạo
+        \item Đánh giá khả năng tự động hóa
+        \item Các câu hỏi mở đã được giải đáp
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.1em}
+  \begin{exampleblock}{\small DigiShield}
+    \small Đọc yêu cầu ``can thiệp giao dịch đáng ngờ'': khi nào PAUSE, WARN,
+    ALLOW? Nguồn watchlist là gì? $\to$ danh sách hạng mục cần kiểm thử
+    cho module \texttt{interception}.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 16 - STLC phase 2
+%---------------------------------------------------------------------
+\begin{frame}{Giai đoạn 2: Lập kế hoạch kiểm thử}
+  \textbf{Hoạt động}: viết Test Plan --- xác định phạm vi, cách tiếp cận, ước lượng
+  công sức, phân công vai trò, chọn công cụ, phân tích rủi ro, lập lịch.
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Entry criteria}
+      \begin{itemize}
+        \item Tài liệu phân tích yêu cầu kiểm thử (GĐ 1)
+        \item RTM khởi tạo
+        \item Thông tin nguồn lực, ngân sách
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Exit criteria}
+      \begin{itemize}
+        \item Test Plan được duyệt/ký
+        \item Ước lượng công sức được chốt
+        \item Vai trò, trách nhiệm đã phân công
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{\small DigiShield}
+    \small Test Plan cho module \texttt{interception} (mẫu rút gọn ở phần sau):
+    phạm vi = \texttt{evaluate} + watchlist; công cụ = JUnit/Mockito, Postman;
+    tiêu chí pass/fail; lịch theo tuần.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 17 - STLC phase 3
+%---------------------------------------------------------------------
+\begin{frame}{Giai đoạn 3: Thiết kế test case}
+  \textbf{Hoạt động}: viết test case chi tiết (ID, bước, dữ liệu, kết quả mong đợi),
+  chuẩn bị test data, cập nhật RTM (yêu cầu $\leftrightarrow$ test case),
+  review chéo test case.
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Entry criteria}
+      \begin{itemize}
+        \item Test Plan đã duyệt
+        \item Yêu cầu đủ chi tiết để thiết kế
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Exit criteria}
+      \begin{itemize}
+        \item Test case + test data được review, ký duyệt
+        \item RTM phủ 100\% yêu cầu trong phạm vi
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{\small DigiShield}
+    \small Từ quy tắc \texttt{onCall \&\& newPayee \&\& watchlistHit $\to$ PAUSE}
+    thiết kế đủ test case phủ các nhánh PAUSE/WARN/ALLOW --- kỹ thuật cụ thể
+    (bảng quyết định, độ phủ nhánh) học ở Buổi 3--4 và 8.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 18 - STLC phase 4
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Giai đoạn 4: Chuẩn bị môi trường kiểm thử}
+  \textbf{Hoạt động}: dựng môi trường (server, DB, dữ liệu demo), cài công cụ,
+  smoke test xác nhận môi trường dùng được.
+
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Entry criteria}
+      \small Có thiết kế môi trường; có bản build cài đặt được; test data sẵn sàng.
+    \end{block}
+    \begin{block}{Exit criteria}
+      \small Môi trường hoạt động, smoke test pass; test data đã nạp.
+    \end{block}
+    \column{0.50\textwidth}
+    \begin{exampleblock}{\small DigiShield: 2 môi trường}
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\scriptsize]
+# Moi truong dev (H2, khong can Docker)
+./gradlew :boot:app:bootRun \
+  --args='--spring.profiles.active=dev'
+
+# Moi truong prod-like (Docker)
+docker compose -f deploy/compose/\
+docker-compose.prodlike.yml up --build
+\end{lstlisting}
+    \end{exampleblock}
+  \end{columns}
+
+  \vspace{0.2em}
+  \small Smoke test: mở \texttt{http://localhost:8080/api/v1} --- dữ liệu demo
+  (6 user seed, vd. \texttt{admin@coquan.gov.vn}) tự nạp bởi \texttt{DevDataSeeder}.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 19 - STLC phase 5
+%---------------------------------------------------------------------
+\begin{frame}{Giai đoạn 5: Thực thi kiểm thử}
+  \textbf{Hoạt động}: chạy test case theo kế hoạch, ghi kết quả (pass/fail/blocked),
+  báo defect kèm bằng chứng, re-test sau khi sửa, chạy regression.
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Entry criteria}
+      \begin{itemize}
+        \item Test case + test data sẵn sàng
+        \item Môi trường đã smoke test pass
+        \item Bản build cần test đã triển khai
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Exit criteria}
+      \begin{itemize}
+        \item Toàn bộ test case theo kế hoạch đã thực thi
+        \item Defect đã được log và theo dõi
+        \item Kết quả được ghi vào RTM
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{\small DigiShield}
+    \small Tự động: \texttt{./gradlew test} rồi \texttt{./gradlew integrationTest};
+    thủ công/API: chạy collection Postman trên \texttt{http://localhost:8080/api/v1};
+    lỗi tìm được ghi thành bug report (mẫu ở phần sau).
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 20 - STLC phase 6
+%---------------------------------------------------------------------
+\begin{frame}{Giai đoạn 6: Đóng chu trình kiểm thử}
+  \textbf{Hoạt động}: viết Test Summary Report, đánh giá theo exit criteria của cả
+  chu trình, họp rút kinh nghiệm (lessons learned), lưu trữ testware để tái sử dụng.
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Entry criteria}
+      \begin{itemize}
+        \item Thực thi đã hoàn tất
+        \item Kết quả test và danh sách defect đầy đủ
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Exit criteria}
+      \begin{itemize}
+        \item Test Summary Report được duyệt
+        \item Defect còn mở có phương án xử lý
+        \item Testware đã bàn giao/lưu trữ
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{block}{Nội dung Test Summary Report}
+    \small Số test case thực thi, tỷ lệ pass/fail, độ phủ đạt được (JaCoCo),
+    defect theo mức nghiêm trọng, rủi ro còn lại, \textbf{khuyến nghị release hay không}.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 21 - STLC summary table
+%---------------------------------------------------------------------
+\begin{frame}{Tổng hợp STLC: đầu vào --- đầu ra}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.0}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{4.1cm}>{\raggedright\arraybackslash}p{4.6cm}}
+    \toprule
+    \textbf{Giai đoạn} & \textbf{Đầu vào chính} & \textbf{Đầu ra chính} \\
+    \midrule
+    1. Phân tích yêu cầu & Đặc tả, user story & Danh sách yêu cầu kiểm thử,
+    RTM khởi tạo \\
+    2. Lập kế hoạch & Kết quả GĐ 1, nguồn lực & Test Plan, ước lượng, phân công \\
+    3. Thiết kế test case & Test Plan & Test case, test data, RTM đầy đủ \\
+    4. Chuẩn bị môi trường & Thiết kế môi trường, build & Môi trường sẵn sàng (smoke pass) \\
+    5. Thực thi & Test case, môi trường & Kết quả test, bug report \\
+    6. Đóng chu trình & Kết quả thực thi & Test Summary Report, lessons learned \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.1em}
+  {\small \textbf{Ghi nhớ:} STLC lồng \textbf{bên trong} SDLC --- trong Agile, cả 6 giai
+  đoạn diễn ra \textit{thu nhỏ} trong từng Sprint. BTL cũng đi đúng 6 bước này.}
+\end{frame}
+
+%=====================================================================
+\section{Các mức kiểm thử trên DigiShield}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 22 - 4 levels overview
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Bốn mức kiểm thử}
+  \begin{center}
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    lv/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
+               minimum width=3.1cm,minimum height=0.72cm,align=center,font=\small},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \node[lv] (u) {Unit Test};
+    \node[lv,right=0.55cm of u] (i) {Integration Test};
+    \node[lv,right=0.55cm of i] (s) {System Test};
+    \node[lv,right=0.55cm of s] (a) {Acceptance Test};
+    \draw[arr] (u) -- (i);
+    \draw[arr] (i) -- (s);
+    \draw[arr] (s) -- (a);
+    \node[below=0.22cm of u,font=\scriptsize,align=center] {một class/method\\cô lập};
+    \node[below=0.22cm of i,font=\scriptsize,align=center] {nhiều thành phần\\+ DB thật};
+    \node[below=0.22cm of s,font=\scriptsize,align=center] {toàn hệ thống\\qua API/UI};
+    \node[below=0.22cm of a,font=\scriptsize,align=center] {người dùng\\xác nhận nghiệp vụ};
+  \end{tikzpicture}}
+  \end{center}
+
+  \vspace{0.9em}
+  \begin{block}{Nguyên tắc phân mức \cite{istqb,ammann}}
+    Mỗi mức có \textbf{đối tượng}, \textbf{test basis} và \textbf{người chịu trách nhiệm}
+    riêng (đúng tinh thần V-model). Lỗi nên được bắt ở mức \textbf{thấp nhất có thể} ---
+    rẻ hơn và dễ chẩn đoán hơn.
+  \end{block}
+  \small Bốn slide tiếp theo: ánh xạ từng mức vào DigiShield.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 23 - Unit level
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Mức 1: Unit Test trên DigiShield}
+  \begin{columns}[T]
+    \column{0.46\textwidth}
+    \begin{block}{Đặc điểm}
+      \begin{itemize}
+        \item Test \textbf{một class/method}, mock mọi dependency
+        \item Nằm trong \texttt{modules/*/src/test}, tên \texttt{*Test.java}
+        \item JUnit 5 + Mockito + AssertJ; hiện có \textbf{176 test}
+        \item Không cần Docker, chạy trong mili-giây
+      \end{itemize}
+    \end{block}
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\scriptsize]
+./gradlew test
+./gradlew jacocoTestReport
+\end{lstlisting}
+    \column{0.52\textwidth}
+    \begin{exampleblock}{\small \texttt{InterceptionServiceImplTest} (trích)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\tiny]
+@ExtendWith(MockitoExtension.class)
+class InterceptionServiceImplTest {
+  @Mock AccountWatchEntryRepository watchRepo;
+  @Mock InterventionEventRepository eventRepo;
+  @InjectMocks InterceptionServiceImpl svc;
+
+  @Test
+  void evaluate_allSignals_pauses() {
+    // Arrange: dich den nam trong watchlist
+    when(watchRepo.findByTenantIdAndValue(
+        TENANT_ID, DEST))
+      .thenReturn(Optional.of(watchHit));
+    // Act
+    var d = svc.evaluate(
+      new EvaluateRequest(userId, amount,
+        DEST, true, true));
+    // Assert: nhanh PAUSE duoc chon
+    assertThat(d.decision())
+      .isEqualTo("PAUSE");
+  }
+}
+\end{lstlisting}
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 24 - Integration level
+%---------------------------------------------------------------------
+\begin{frame}[shrink=10,fragile]{Mức 2: Integration Test trên DigiShield}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Đặc điểm}
+      \begin{itemize}
+        \item Nhiều thành phần làm việc với nhau: controller + service + \textbf{PostgreSQL thật} (Testcontainers)
+        \item Nằm ở \texttt{boot/app/src/}\allowbreak\texttt{integrationTest}, tên \texttt{*IT.java}
+        \item Cần Docker; chạy trong vài giây tới vài chục giây
+      \end{itemize}
+    \end{block}
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\scriptsize]
+./gradlew integrationTest
+\end{lstlisting}
+    \column{0.48\textwidth}
+    \begin{exampleblock}{\small Ví dụ thật trong repo}
+      \small
+      \begin{itemize}
+        \item \texttt{TenantIsolationIT}: chứng minh Row-Level Security cách ly dữ liệu giữa 2 tenant (fail-closed)
+        \item \texttt{Interception\allowbreak ControllerIT}: gọi HTTP thật vào endpoint evaluate
+        \item \texttt{SimulationModuleIT}, \texttt{RlsCoverageIT}
+      \end{itemize}
+    \end{exampleblock}
+    \small Câu hỏi mức này trả lời: \textit{``các mảnh ghép có khớp nhau không?''}
+    --- điều unit test với mock \textbf{không thể} phát hiện.
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 25 - System level
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Mức 3: System Test trên DigiShield}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \small Kiểm thử \textbf{toàn hệ thống đã triển khai}, từ bên ngoài, dựa trên đặc tả ---
+  gồm cả \textbf{phi chức năng} (hiệu năng, bảo mật, dễ dùng).
+
+  \vspace{0em}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Qua API --- Postman (Buổi 9)\vphantom{ỹể}}
+      \small Base URL: \texttt{localhost:8080/api/v1}
+      \begin{itemize}
+        \item Import spec \texttt{DigiShield\_openapi.yaml}
+        \item POST \texttt{/interventions/evaluate}
+        \item GET \texttt{/account-watchlist/}\allowbreak\texttt{check?value=...}
+        \item Test tiêu cực: \textbf{401} chưa đăng nhập, \textbf{403} sai role
+      \end{itemize}
+    \end{block}
+    \column{0.48\textwidth}
+    \begin{block}{Qua UI --- Selenium (Buổi 10--11)\vphantom{ỹể}}
+      \small Frontend React chạy ở \texttt{localhost:5173}
+      \begin{itemize}
+        \item Đăng nhập tại \texttt{/login} (input \texttt{\#login-email},
+              \texttt{\#login-pw})
+        \item Luồng SOC Inbox, Watchlist
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 26 - Acceptance level
+%---------------------------------------------------------------------
+\begin{frame}{Mức 4: Acceptance Test (UAT) trên DigiShield}
+  \vspace*{-0.2em}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \small Người dùng cuối / khách hàng thực thi các \textbf{kịch bản nghiệp vụ}
+  để quyết định \textit{chấp nhận} sản phẩm (test basis: yêu cầu người dùng).
+
+  \vspace{0.2em}
+  \begin{exampleblock}{Kịch bản UAT: chuyên viên phân tích (analyst) triage báo cáo phishing}
+    \small
+    \begin{enumerate}
+      \item Người dùng cuối gửi báo cáo phishing (POST \texttt{/reports/phishing} hoặc UI)
+      \item Đăng nhập bằng \texttt{analyst@coquan.gov.vn} (role ANALYST)
+      \item Analyst mở SOC Inbox, xem chi tiết báo cáo và nhãn AI gợi ý
+      \item \textbf{Xác nhận} $\to$ CONFIRMED, phát cảnh báo; \textbf{bác bỏ} $\to$ DISMISSED
+      \item Chuyển báo cáo đã xác nhận thành tình huống đào tạo (convert-to-training)
+    \end{enumerate}
+    \textbf{Tiêu chí chấp nhận}: analyst tự hoàn thành luồng, dữ liệu nhất quán,
+    $\le$ 2 phút/báo cáo.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 27 - mapping table
+%---------------------------------------------------------------------
+\begin{frame}{Bảng ánh xạ: mức kiểm thử $\leftrightarrow$ DigiShield}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.1}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{1.85cm}>{\raggedright\arraybackslash}p{3.9cm}>{\raggedright\arraybackslash}p{3.7cm}>{\raggedright\arraybackslash}p{2.2cm}}
+    \toprule
+    \textbf{Mức} & \textbf{Trên DigiShield} & \textbf{Công cụ / vị trí} & \textbf{Buổi học} \\
+    \midrule
+    Unit &
+    \texttt{./gradlew test} --- 176 test trong \texttt{modules/*} &
+    JUnit 5 + Mockito, \texttt{*Test.java} &
+    3--6 \\
+    \midrule
+    Integration &
+    \texttt{./gradlew integrationTest} &
+    Testcontainers, \texttt{boot/app/src/}\allowbreak\texttt{integrationTest}, \texttt{*IT.java} &
+    7 \\
+    \midrule
+    System &
+    API test trên \texttt{localhost:8080/}\allowbreak\texttt{api/v1}; UI test trên \texttt{localhost:5173} &
+    Postman/Newman; Selenium &
+    9--11 \\
+    \midrule
+    Acceptance &
+    UAT theo kịch bản nghiệp vụ (analyst triage báo cáo phishing) &
+    Kịch bản UAT, checklist &
+    12 (demo BTL) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{alertblock}{Ghi nhớ cho BTL}
+    \small Bài tập lớn yêu cầu nhóm chạm đủ \textbf{cả 4 mức} này trên module mình chọn.
+  \end{alertblock}
+\end{frame}
+
+%=====================================================================
+\section{Các loại kiểm thử}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 28 - functional vs non-functional
+%---------------------------------------------------------------------
+\begin{frame}{Kiểm thử chức năng và phi chức năng}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Chức năng (functional) --- ``làm gì''\vphantom{ỹể}}
+      \small Kiểm tra hệ thống làm \textbf{đúng việc} được đặc tả.
+      \begin{itemize}
+        \item \small Evaluate trả về PAUSE khi đủ 3 tín hiệu rủi ro
+        \item \small Triage xác nhận $\to$ trạng thái CONFIRMED
+        \item \small Login sai mật khẩu $\to$ từ chối
+      \end{itemize}
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{Phi chức năng (non-functional) --- ``tốt thế nào''\vphantom{ỹể}}
+      \small Kiểm tra \textbf{chất lượng} khi thực hiện việc đó.
+      \begin{itemize}
+        \item \small Hiệu năng: evaluate phản hồi $<$ 200ms
+        \item \small Bảo mật: LEARNER gọi API của ANALYST bị 403; cách ly dữ liệu giữa các tenant
+        \item \small Usability: form báo cáo dễ dùng trên di động
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  {\small \textbf{Ngoài ra}: kiểm thử \textbf{cấu trúc} (white-box --- độ phủ
+  lệnh/nhánh, Buổi 3--4) và kiểm thử \textbf{liên quan thay đổi}
+  (re-test, regression --- slide sau).}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 29 - retest vs regression
+%---------------------------------------------------------------------
+\begin{frame}{Re-test (kiểm thử lại) và Regression (hồi quy)}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Re-test (confirmation testing) \cite{istqb}}
+      Chạy lại \textbf{đúng test case đã fail} sau khi lỗi được sửa, để xác nhận
+      lỗi \textbf{đã hết}.
+      \begin{itemize}
+        \item \small Cùng môi trường, cùng dữ liệu, cùng bước
+        \item \small Bug chuyển từ Fixed $\to$ Verified
+      \end{itemize}
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{Regression testing}
+      Chạy lại \textbf{các test case đã pass} quanh vùng thay đổi, để xác nhận thay đổi
+      \textbf{không phá} chức năng cũ.
+      \begin{itemize}
+        \item \small Tập test tích lũy theo thời gian
+        \item \small Bắt buộc tự động hóa, gắn vào CI
+      \end{itemize}
+    \end{block}
+  \end{columns}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Ví dụ DigiShield}
+    \small Dev sửa lỗi trong \texttt{evaluate()} khiến WARN trả về sai.
+    \textbf{Re-test}: chạy lại test WARN đã fail. \textbf{Regression}: chạy lại
+    \textbf{toàn bộ} \texttt{./gradlew test} (176 test) --- đảm bảo các nhánh
+    PAUSE/ALLOW và 8 module còn lại không bị ảnh hưởng.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Testing Pyramid}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 30 - Pyramid
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Testing Pyramid}
+  \begin{columns}[T,totalwidth=\textwidth]
+    \column{0.48\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[scale=0.82]
+      % E2E layer
+      \fill[darkgray!80] (2,4) -- (0,4) -- (2,5.2) -- (4,4) -- cycle;
+      \node[white,font=\small\bfseries] at (2,4.5) {E2E Test};
+      % Integration layer
+      \fill[darkgray!50] (0,2.2) -- (0,4) -- (4,4) -- (4,2.2) -- cycle;
+      \node[font=\small\bfseries] at (2,3.1) {Integration Test};
+      % Unit layer
+      \fill[darkgray!25] (0,0) -- (0,2.2) -- (4,2.2) -- (4,0) -- cycle;
+      \node[font=\small\bfseries] at (2,1.1) {Unit Test};
+      % border
+      \draw[darkgray] (0,0) -- (0,4) -- (2,5.2) -- (4,4) -- (4,0) -- cycle;
+      \draw[darkgray] (0,2.2) -- (4,2.2);
+      \draw[darkgray] (0,4) -- (4,4);
+    \end{tikzpicture}
+    \end{center}
+
+    \column{0.48\textwidth}
+    {\small
+    \setlength{\tabcolsep}{3pt}
+    \begin{tabular}{llll}
+      \toprule
+      \textbf{Tầng} & \textbf{Số lượng} & \textbf{Tốc độ} & \textbf{Chi phí} \\
+      \midrule
+      Unit  & Nhiều nhất & ms    & Thấp \\
+      Integ & Vừa phải   & giây  & Vừa  \\
+      E2E   & Ít nhất    & phút  & Cao  \\
+      \bottomrule
+    \end{tabular}
+    }
+
+    \vspace{0.5em}
+    \textbf{Tỉ lệ khuyến nghị} \cite{fowler}:\\
+    70\% Unit : 20\% Integration : 10\% E2E
+
+    \vspace{0.5em}
+    \small Càng lên cao: càng \textbf{giống người dùng thật} nhưng càng
+    \textbf{chậm, đắt, mong manh} (flaky) và khó chẩn đoán khi fail.
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 31 - Pyramid on DigiShield
+%---------------------------------------------------------------------
+\begin{frame}{Pyramid soi vào DigiShield hiện tại}
+  \begin{center}
+  \small
+  \begin{tabular}{p{2.4cm}p{5.2cm}p{4.2cm}}
+    \toprule
+    \textbf{Tầng} & \textbf{Hiện trạng DigiShield} & \textbf{Nhận xét} \\
+    \midrule
+    Unit & 176 test, 27 class, chạy bằng \texttt{./gradlew test} & Đáy tháp đã có nền \\
+    Integration & 7 file \texttt{*IT.java} (19 test, Testcontainers): RLS, controller, module & Mỏng hơn --- đúng hình tháp \\
+    E2E / UI & Selenium \texttt{:e2e} mới có \textbf{1 kịch bản} & \textbf{Sinh viên mở rộng bằng Selenium (BTL)} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.4em}
+  \begin{block}{Bài học}
+    Một dự án thật hiếm khi có tháp ``đẹp'' ngay từ đầu. Việc của tester:
+    \textbf{nhận diện lỗ hổng theo tầng} và bổ sung có chiến lược --- không phải
+    viết thật nhiều E2E cho mọi thứ.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 32 - Ice cream cone
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Anti-pattern: Ice-Cream Cone}
+  \setbeamerfont{itemize/enumerate body}{size=\footnotesize}
+  \begin{columns}[T]
+    \column{0.44\textwidth}
+    \begin{center}
+    \begin{tikzpicture}[scale=0.55]
+      % Manual (big top)
+      \fill[darkgray!80] (0,4.4) -- (5,4.4) -- (4.3,3.2) -- (0.7,3.2) -- cycle;
+      \node[white,font=\small\bfseries] at (2.5,3.8) {Manual Test};
+      % E2E
+      \fill[darkgray!55] (0.7,3.2) -- (4.3,3.2) -- (3.6,2.0) -- (1.4,2.0) -- cycle;
+      \node[font=\small\bfseries] at (2.5,2.6) {E2E / UI};
+      % Integration
+      \fill[darkgray!35] (1.4,2.0) -- (3.6,2.0) -- (3.0,0.9) -- (2.0,0.9) -- cycle;
+      \node[font=\scriptsize\bfseries] at (2.5,1.45) {Integration};
+      % Unit (tiny tip)
+      \fill[darkgray!20] (2.0,0.9) -- (3.0,0.9) -- (2.5,0.1) -- cycle;
+      \node[font=\tiny\bfseries] at (2.5,0.68) {Unit};
+      \draw[darkgray] (0,4.4) -- (5,4.4) -- (2.5,0.1) -- cycle;
+      \draw[darkgray] (0.7,3.2) -- (4.3,3.2);
+      \draw[darkgray] (1.4,2.0) -- (3.6,2.0);
+      \draw[darkgray] (2.0,0.9) -- (3.0,0.9);
+    \end{tikzpicture}
+    \end{center}
+
+    \column{0.54\textwidth}
+    \small
+    \textbf{Tháp lộn ngược} \cite{fowler}: nhiều test thủ công/E2E, rất ít unit test.
+
+    \vspace{0.2em}
+    \textbf{Hậu quả}
+    \begin{itemize}
+      \item Bộ test chạy \textbf{hàng giờ}, phản hồi chậm
+      \item E2E flaky $\to$ mất niềm tin vào kết quả test
+      \item Lỗi phát hiện muộn, khó khoanh vùng nguyên nhân
+      \item Chi phí bảo trì test tăng vọt theo UI
+    \end{itemize}
+
+    \begin{alertblock}{\small Cảnh báo cho BTL}
+      \small Nhóm chỉ nộp Selenium E2E, thiếu unit test $\to$ \textbf{mất điểm}
+      theo rubric.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Test Plan, Test Strategy và Traceability}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 33 - Test Plan IEEE 829
+%---------------------------------------------------------------------
+\begin{frame}{Test Plan theo IEEE 829}
+  \begin{block}{Định nghĩa \cite{ieee829}}
+    Test Plan là tài liệu mô tả \textbf{phạm vi, cách tiếp cận, tài nguyên và lịch trình}
+    của hoạt động kiểm thử --- sản phẩm của Giai đoạn 2 STLC.
+  \end{block}
+
+  \vspace{0.1em}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Các mục chính (IEEE 829):}
+    \begin{itemize}
+      \item Test plan identifier; Introduction
+      \item Test items --- phần mềm/module nào
+      \item Features to be tested / \textbf{not} to be tested
+      \item Approach --- phương pháp, kỹ thuật, công cụ
+    \end{itemize}
+    \column{0.5\textwidth}
+    \textbf{(tiếp)}
+    \begin{itemize}
+      \item Item pass/fail criteria
+      \item Suspension / resumption criteria
+      \item Test deliverables; Test environment
+      \item Responsibilities; Schedule; \textbf{Risks} and contingencies
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.1em}
+  \small Hai slide sau: Test Plan \textbf{rút gọn} cho module \texttt{interception}
+  của DigiShield --- dùng làm mẫu cho BTL.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 34 - Test plan interception 1/2
+%---------------------------------------------------------------------
+\begin{frame}[shrink=8]{Ví dụ: Test Plan module \texttt{interception} (1/2)}
+  \small
+  \begin{block}{TP-INT-01 --- Phạm vi (Test items \& Features)}
+    \textbf{Trong phạm vi}: \texttt{InterceptionServiceImpl.evaluate()} (quyết định
+    PAUSE/WARN/ALLOW); phân trang \texttt{listInterventions(page,size)}; API
+    \texttt{/interventions/evaluate}, \texttt{/account-watchlist} (GET/POST),
+    \texttt{/account-watchlist/check}; phân quyền ANALYST.\\
+    \textbf{Ngoài phạm vi}: hiệu năng dưới tải lớn; tích hợp SMS/AWS SNS thật.
+  \end{block}
+
+  \begin{block}{Rủi ro sản phẩm (chọn lọc)}
+    \begin{itemize}
+      \item \textbf{R1 --- Cao}: ALLOW sai một giao dịch lừa đảo $\to$ người dùng mất tiền
+      \item \textbf{R2 --- Cao}: PAUSE sai giao dịch hợp lệ $\to$ mất niềm tin, khiếu nại
+      \item \textbf{R3 --- Cao}: rò rỉ watchlist giữa các tenant (multi-tenant)
+      \item \textbf{R4 --- Trung bình}: tham số phân trang biên (0, 100, 101) gây lỗi/tràn
+      \item \textbf{R5 --- Trung bình}: LEARNER truy cập được API dành cho ANALYST
+    \end{itemize}
+    $\Rightarrow$ Ưu tiên test theo rủi ro: R1--R3 phủ dày nhất.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 35 - Test plan interception 2/2
+%---------------------------------------------------------------------
+\begin{frame}[shrink=12]{Ví dụ: Test Plan module \texttt{interception} (2/2)}
+  \small
+  \begin{block}{Approach \& tiêu chí Pass/Fail}
+    \textbf{Approach}: unit (JUnit+Mockito, bảng quyết định cho \texttt{evaluate});
+    integration (\texttt{InterceptionControllerIT}, Testcontainers); API (Postman,
+    gồm test tiêu cực 401/403); E2E (Selenium: luồng Watchlist).\\
+    \textbf{Pass}: 100\% test case đã thiết kế được thực thi; tỷ lệ pass $\ge$ 95\%;
+    độ phủ nhánh của \texttt{evaluate()} = 100\%; \textbf{không còn defect
+    Critical/High mở}. \textbf{Suspension}: dừng khi môi trường sập hoặc $>$30\% test blocked.
+  \end{block}
+
+  \begin{columns}[T]
+    \column{0.46\textwidth}
+    \begin{block}{Môi trường}
+      \begin{itemize}
+        \item Unit: JDK, không cần Docker
+        \item IT: Docker + Testcontainers
+        \item API/E2E: backend dev (H2, cổng 8080) + frontend (cổng 5173)
+      \end{itemize}
+    \end{block}
+    \column{0.5\textwidth}
+    \begin{block}{Lịch (gắn timeline BTL)}
+      \begin{itemize}
+        \item Tuần 1: test plan + danh sách hạng mục
+        \item Tuần 2--4: thiết kế + unit test
+        \item Tuần 5--6: API test Postman
+        \item Tuần 7--8: Selenium + báo cáo
+      \end{itemize}
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 36 - Strategy vs plan
+%---------------------------------------------------------------------
+\begin{frame}{Test Strategy so với Test Plan}
+  \begin{center}
+  \footnotesize
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.2cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{4.6cm}}
+    \toprule
+    \textbf{Thuộc tính} & \textbf{Test Strategy} & \textbf{Test Plan} \\
+    \midrule
+    Phạm vi    & Toàn tổ chức / dự án    & Một vòng kiểm thử / module cụ thể \\
+    Người viết & Test Manager / QA Lead  & Test Lead / Engineer \\
+    Nội dung   & Nguyên tắc, công cụ, quy trình chung & Chi tiết: scope, resource, schedule \\
+    Tính ổn định & Ít thay đổi            & Cập nhật theo từng release \\
+    Ví dụ      & ``Mọi endpoint DigiShield phải có Postman test tiêu cực 401/403 trước khi merge'' & ``Vòng này: test \texttt{evaluate} + watchlist của module \texttt{interception}'' \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{-0.1em}
+  {\small \textbf{Quan hệ}: Strategy là ``hiến pháp'' chất lượng; mỗi Test Plan phải
+  \textbf{tuân theo} strategy và cụ thể hóa nó cho một phạm vi, một giai đoạn.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 37 - Traceability matrix
+%---------------------------------------------------------------------
+\begin{frame}{Traceability Matrix (RTM): yêu cầu $\leftrightarrow$ test case}
+  \textbf{Mục đích}: chứng minh \textbf{mọi yêu cầu đều có test} và mọi test đều truy
+  về một yêu cầu; đánh giá tác động khi yêu cầu thay đổi.
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Ví dụ RTM --- chức năng triage báo cáo phishing (DigiShield)}
+    \begin{center}
+    \scriptsize
+    \setlength{\tabcolsep}{3.5pt}
+    \begin{tabular}{ll>{\raggedright\arraybackslash}p{5.4cm}ll}
+      \toprule
+      \textbf{Req ID} & \textbf{TC ID} & \textbf{Yêu cầu} & \textbf{Mức} & \textbf{Trạng thái} \\
+      \midrule
+      RQ-TR-01 & TC-TR-01 & Xác nhận threat $\to$ trạng thái CONFIRMED, nhãn AI = THREAT & Unit & Pass \\
+      RQ-TR-02 & TC-TR-02 & Xác nhận threat $\to$ phát \texttt{PhishingReportConfirmedEvent} & Unit & Pass \\
+      RQ-TR-03 & TC-TR-03 & Bác bỏ $\to$ trạng thái DISMISSED, nhãn CLEAN & Unit & Pass \\
+      RQ-TR-04 & TC-TR-04 & Không triage được báo cáo của tenant khác & Integration & Pass \\
+      RQ-TR-05 & TC-TR-05 & LEARNER gọi POST \texttt{/reports/phishing/\{id\}/triage} $\to$ 403 & API & Chưa chạy \\
+      \bottomrule
+    \end{tabular}
+    \end{center}
+  \end{exampleblock}
+
+  \vspace{-0.2em}
+  \small RTM là sản phẩm bắt buộc trong báo cáo BTL (khởi tạo GĐ 1, hoàn thiện GĐ 3,
+  cập nhật GĐ 5).
+\end{frame}
+
+%=====================================================================
+\section{Vai trò trong nhóm và Defect Lifecycle}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 38 - roles
+%---------------------------------------------------------------------
+\begin{frame}{Vai trò và trách nhiệm trong nhóm kiểm thử}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{3.4cm}>{\raggedright\arraybackslash}p{8.2cm}}
+    \toprule
+    \textbf{Vai trò} & \textbf{Trách nhiệm chính} \\
+    \midrule
+    Test Manager / QA Lead & Test strategy, ngân sách, nhân sự, báo cáo lên quản lý dự án \\
+    Test Lead & Test plan, phân công, theo dõi tiến độ, tổng hợp báo cáo \\
+    Test Analyst / Designer & Phân tích yêu cầu, thiết kế test case, test data, RTM \\
+    Tester (manual) & Thực thi test case, log defect, re-test \\
+    Automation Tester / SDET & Framework test tự động, JUnit/Postman/Selenium, tích hợp CI \\
+    Developer & Unit test cho code của mình, sửa defect \\
+    Product Owner / User & Acceptance criteria, thực hiện UAT \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{alertblock}{Áp vào nhóm BTL (3--5 SV)}
+    \small Nhóm tự phân vai: 1 bạn kiêm Test Lead, còn lại chia nhau Designer /
+    Automation / API / E2E. \textbf{Mọi thành viên đều phải viết test}.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 39 - defect lifecycle
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Defect Lifecycle cơ bản}
+  \begin{center}
+  \begin{tikzpicture}[
+    st/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=3pt,
+               minimum width=1.9cm,minimum height=0.7cm,align=center,font=\small},
+    arr/.style={-{Stealth[length=4pt]},darkgray,thick}
+  ]
+    \node[st] (new) {New};
+    \node[st,right=0.75cm of new] (asg) {Assigned};
+    \node[st,right=0.75cm of asg] (fix) {Fixed};
+    \node[st,right=0.75cm of fix] (ver) {Verified};
+    \node[st,right=0.75cm of ver] (clo) {Closed};
+
+    \draw[arr] (new) -- node[above,font=\scriptsize]{lead duyệt} (asg);
+    \draw[arr] (asg) -- node[above,font=\scriptsize]{dev sửa} (fix);
+    \draw[arr] (fix) -- node[above,font=\scriptsize]{tester re-test} (ver);
+    \draw[arr] (ver) -- (clo);
+    \draw[arr,dashed] (fix.south) to[out=-40,in=-140]
+      node[below,font=\scriptsize]{re-test fail $\to$ Reopened} (asg.south);
+    \node[st,below=0.9cm of new,fill=white,densely dotted] (rej) {Rejected /\\Duplicate};
+    \draw[arr,dashed] (new.south) -- node[left,font=\scriptsize]{không phải lỗi} (rej.north);
+  \end{tikzpicture}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item \small \textbf{Severity} (mức nghiêm trọng với hệ thống) $\ne$ \textbf{Priority}
+          (mức khẩn với kế hoạch) --- lỗi chính tả trên trang chủ: severity thấp, priority cao.
+    \item \small Re-test chuyển Fixed $\to$ Verified; regression đảm bảo bản sửa không phá chỗ khác.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 40 - bug report sample
+%---------------------------------------------------------------------
+\begin{frame}{Bug report mẫu (lỗi giả định trên DigiShield)}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.08}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{9.4cm}}
+    \toprule
+    \textbf{ID} & BUG-DS-042 \\
+    \textbf{Tiêu đề} & Check watchlist với \texttt{value} rỗng trả 200 thay vì 400 \\
+    \textbf{Module} & interception --- GET \texttt{/account-watchlist/}\allowbreak\texttt{check?value=} \\
+    \textbf{Môi trường} & Backend dev (H2), commit \texttt{7ab8bc6}, đăng nhập role ANALYST \\
+    \textbf{Các bước} & 1) Đăng nhập \texttt{analyst@coquan.gov.vn}; 2) Gửi GET
+      \texttt{/api/v1/account-watchlist/}\allowbreak\texttt{check?value=} (chuỗi rỗng) \\
+    \textbf{Kết quả thực tế} & HTTP 200, body \texttt{\{"inWatchlist": false\}} \\
+    \textbf{Kết quả mong đợi} & HTTP 400 --- tham số \texttt{value} bắt buộc, không được rỗng \\
+    \textbf{Severity / Priority} & Medium / Medium \\
+    \textbf{Đính kèm} & Ảnh chụp Postman, log request \\
+    \textbf{Trạng thái} & New \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.1em}
+  \small Gốc rễ: DigiShield validate \textbf{thủ công} trong service $\to$ dễ bỏ sót
+  ca biên --- ``vùng đất màu mỡ'' để các nhóm săn lỗi thật.
+\end{frame}
+
+%=====================================================================
+\section{Giao Bài tập lớn (30\%)}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 41 - BTL đề bài
+%---------------------------------------------------------------------
+\begin{frame}{Bài tập lớn --- A1.2, chiếm 30\% điểm học phần}
+  \begin{block}{Tổ chức}
+    Nhóm \textbf{3--5 sinh viên}. Đăng ký nhóm + module \textbf{ngay hôm nay}
+    (phần thực hành). Mỗi nhóm một module, không trùng nhau nếu lớp đủ module.
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{block}{Đề bài}
+    Thực hiện \textbf{trọn vẹn quy trình kiểm thử (STLC)} cho:
+    \begin{itemize}
+      \item \textbf{Phương án A (khuyến nghị)}: một module của DigiShield ---
+            gợi ý: \texttt{interception}, \texttt{reporting}, \texttt{ai},
+            \texttt{learning}, \texttt{simulation}; hoặc
+      \item \textbf{Phương án B}: ứng dụng do nhóm tự chọn, \textbf{phải được GV duyệt}
+            trước Buổi 3 (đủ độ phức tạp: có API, có UI, có logic phân nhánh).
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.3em}
+  \small Điểm nhóm $\times$ hệ số đóng góp cá nhân (peer review + vấn đáp khi demo).
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 42 - BTL sản phẩm
+%---------------------------------------------------------------------
+\begin{frame}{Bài tập lớn --- Sản phẩm phải nộp}
+  \begin{enumerate}
+    \item \textbf{Test Plan} theo khung IEEE 829 rút gọn (như mẫu \texttt{interception} hôm nay)
+    \item \textbf{Thiết kế test case}: hộp đen (EP, BVA, bảng quyết định --- Buổi 8--9)
+          \textbf{và} hộp trắng (độ phủ nhánh --- Buổi 3--4), kèm RTM
+    \item \textbf{Unit test tự động}: JUnit 5 + Mockito chạy được bằng \texttt{./gradlew test}
+          (Buổi 5--7), kèm báo cáo độ phủ JaCoCo
+    \item \textbf{API test}: Postman collection + chạy Newman, có test tiêu cực
+          401/403 (Buổi 9)
+    \item \textbf{E2E test}: kịch bản Selenium trên frontend \texttt{localhost:5173}
+          (Buổi 10--11)
+    \item \textbf{Báo cáo tổng kết} (Test Summary Report) + \textbf{demo bảo vệ tại Buổi 12}
+  \end{enumerate}
+
+  \begin{alertblock}{Lưu ý}
+    Sản phẩm 1--2 làm được ngay sau hôm nay; sản phẩm 3--5 tích lũy dần theo
+    nội dung từng buổi --- \textbf{đừng dồn về cuối kỳ}.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 43 - BTL module gợi ý
+%---------------------------------------------------------------------
+\begin{frame}{Gợi ý module DigiShield cho các nhóm}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{3.5pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.1cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{5.2cm}}
+    \toprule
+    \textbf{Module} & \textbf{Nghiệp vụ} & \textbf{Điểm hay để kiểm thử} \\
+    \midrule
+    \texttt{interception} & Can thiệp giao dịch đáng ngờ, watchlist &
+      Logic PAUSE/WARN/ALLOW nhiều nhánh; BVA phân trang; phân quyền ANALYST \\
+    \texttt{reporting} & Tiếp nhận + triage báo cáo phishing &
+      State machine của triage; \texttt{ageLabel} hợp cho EP/BVA; cách ly tenant \\
+    \texttt{ai} & Phân loại/moderate nội dung, sinh template &
+      \texttt{StubAiClient} dễ test; validate thủ công; fallback Claude $\to$ Stub \\
+    \texttt{learning} & Khóa học, quiz nhận thức &
+      Luồng học + quiz trên UI (Selenium); auto-enroll qua sự kiện \\
+    \texttt{simulation} & Chiến dịch phishing mô phỏng &
+      Wizard tạo campaign (UI); sự kiện click/report; thống kê \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \small Mỗi module đều có: service có logic phân nhánh (unit), REST API (Postman),
+  trang UI liên quan (Selenium) --- đủ nguyên liệu cho cả 6 sản phẩm BTL.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 44 - BTL timeline
+%---------------------------------------------------------------------
+\begin{frame}{Timeline Bài tập lớn theo 12 buổi}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{cl>{\raggedright\arraybackslash}p{7.2cm}}
+    \toprule
+    \textbf{Buổi} & \textbf{Mốc} & \textbf{Nộp gì} \\
+    \midrule
+    2  & Lập nhóm     & Danh sách nhóm + module đăng ký (cuối buổi) \\
+    3  & Phạm vi      & Danh sách 10 hạng mục cần kiểm thử (đã sửa sau thực hành) \\
+    4  & \textbf{Test Plan} & Test Plan v1 theo IEEE 829 rút gọn \\
+    6  & Hộp trắng    & Test case hộp trắng + unit test JUnit đầu tiên \\
+    7  & \textbf{Unit/IT}  & Bộ JUnit + Mockito hoàn chỉnh, báo cáo JaCoCo \\
+    9  & \textbf{API} & Test case hộp đen + Postman/Newman collection \\
+    11 & \textbf{E2E} & Kịch bản Selenium chạy được + báo cáo nháp \\
+    12 & \textbf{Bảo vệ} & Báo cáo cuối (PDF) + demo + vấn đáp \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.2em}
+  \begin{alertblock}{Nguyên tắc chấm mốc}
+    \small Mỗi mốc nộp trễ: $-10\%$ điểm thành phần tương ứng. Mốc Buổi 4, 7, 9, 11, 12
+    là \textbf{bắt buộc} --- thiếu 2 mốc bắt buộc $\Rightarrow$ không được bảo vệ.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 45 - BTL rubric
+%---------------------------------------------------------------------
+\begin{frame}{Rubric chấm Bài tập lớn (thang 10)}
+  \begin{center}
+  \scriptsize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{4.4cm}c>{\raggedright\arraybackslash}p{6.2cm}}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{Điểm} & \textbf{Yêu cầu đạt mức tối đa} \\
+    \midrule
+    Test Plan + RTM & 1.5 & Đủ mục IEEE 829, rủi ro có ưu tiên, RTM phủ 100\% phạm vi \\
+    Thiết kế test case đen + trắng & 2.5 & Áp dụng đúng kỹ thuật (EP/BVA/bảng quyết định; độ phủ nhánh), có ca tiêu cực \\
+    JUnit + Mockito (+ JaCoCo) & 2.0 & Chạy pass bằng \texttt{./gradlew test}; độ phủ nhánh phần logic chọn $\ge 80\%$ \\
+    Postman / Newman & 1.5 & Collection chạy bằng Newman; có test 401/403 và dữ liệu biên \\
+    Selenium E2E & 1.5 & $\ge 2$ kịch bản chạy ổn định, có wait hợp lý \\
+    Báo cáo + demo + vấn đáp & 1.0 & Test Summary Report; trả lời được về mọi phần của nhóm \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.25em}
+  \small Tìm được \textbf{lỗi thật} trong DigiShield kèm bug report chuẩn:
+  \textbf{+0.5 điểm thưởng}/lỗi (tối đa +1.0).
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 46 - Kiểm tra buổi 3
+%---------------------------------------------------------------------
+\begin{frame}{Thông báo: Kiểm tra viết (10\%) --- đầu Buổi 3}
+  \begin{alertblock}{Bài kiểm tra viết giữa kỳ --- A1.1 (10\% điểm học phần)}
+    \textbf{Thời điểm}: 30 phút đầu Buổi 3. \quad \textbf{Hình thức}: tự luận ngắn,
+    không sử dụng tài liệu.
+  \end{alertblock}
+
+  \vspace{0.4em}
+  \textbf{Phạm vi: Chương 1 + Chương 2}, trọng tâm:
+  \begin{itemize}
+    \item Định nghĩa kiểm thử; Error --- Defect --- Failure; chi phí lỗi
+    \item 7 nguyên tắc kiểm thử (phát biểu + ví dụ)
+    \item Vẽ và giải thích mô hình V; so sánh vị trí kiểm thử trong Waterfall/Agile
+    \item 6 giai đoạn STLC + entry/exit criteria
+    \item 4 mức kiểm thử; re-test vs regression; testing pyramid
+    \item Các mục chính của Test Plan theo IEEE 829
+  \end{itemize}
+
+  \vspace{0.3em}
+  \small Dạng câu hỏi tham khảo: ``Vẽ mô hình V và chỉ ra mức kiểm thử tương ứng với
+  Thiết kế Module''; ``Phân biệt re-test và regression, cho ví dụ trên DigiShield''.
+\end{frame}
+
+%=====================================================================
+\section{Thực hành và bài nộp}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 47 - Thực hành
+%---------------------------------------------------------------------
+\begin{frame}{Thực hành trên lớp (theo nhóm BTL vừa lập)}
+  \begin{block}{Phần 1 --- Danh sách 10 hạng mục cần kiểm thử (25 phút)}
+    Với module nhóm đã chọn, liệt kê \textbf{10 hạng mục} (test items/features):
+    \begin{itemize}
+      \item \small Mỗi hạng mục: tên chức năng, endpoint/class liên quan, mức kiểm thử
+            dự kiến (unit/integration/system), rủi ro nếu hỏng (Cao/TB/Thấp)
+      \item \small Tham khảo mã nguồn trong \texttt{modules/<tên-module>} và spec
+            \texttt{../docs/DigiShield\_openapi.yaml} (thư mục cha của repo)
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{block}{Phần 2 --- Phác thảo Test Plan 1 trang (25 phút)}
+    Theo khung: Phạm vi (in/out) --- Approach --- Rủi ro (3--5 dòng có ưu tiên) ---
+    Tiêu chí pass/fail --- Môi trường --- Lịch theo timeline BTL.
+  \end{block}
+
+  \vspace{0.3em}
+  \small 10 phút cuối: 2--3 nhóm trình bày nhanh, cả lớp phản biện
+  (``hạng mục nào thiếu? rủi ro nào xếp sai?'').
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 48 - Bài nộp
+%---------------------------------------------------------------------
+\begin{frame}{Bài nộp --- Deadline: trước Buổi 3 (1/2)}
+  \begin{block}{Nộp theo nhóm (1 file PDF)}
+    \begin{enumerate}
+      \item Danh sách nhóm: họ tên, MSSV, vai trò dự kiến (Test Lead / Designer /
+            Automation / API / E2E)
+      \item Module đăng ký (hoặc đề xuất ứng dụng tự chọn kèm mô tả để GV duyệt)
+      \item Danh sách 10 hạng mục cần kiểm thử (hoàn thiện từ phần thực hành)
+      \item Test Plan 1 trang (hoàn thiện từ phần thực hành)
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 48b - Bài nộp (2/2)
+%---------------------------------------------------------------------
+\begin{frame}{Bài nộp --- Deadline: trước Buổi 3 (2/2)}
+  \begin{block}{Nộp cá nhân}
+    Vẽ lại mô hình V (tay hoặc công cụ) và ghi chú: với module nhóm em,
+    \textit{mỗi mức kiểm thử sẽ dùng công cụ gì trên DigiShield?}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{alertblock}{Định dạng}
+    \texttt{Nhom<X>\_Buoi02.pdf} và \texttt{HoTen\_MaSV\_Buoi02.pdf}.
+    Đồng thời ôn Chương 1+2 cho bài kiểm tra viết đầu Buổi 3.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 49 - Tóm tắt
+%---------------------------------------------------------------------
+\begin{frame}{Tóm tắt buổi 2}
+  \setbeamerfont{itemize/enumerate body}{size=\footnotesize}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    {\small\textbf{Lý thuyết đã học:}}
+    \begin{itemize}
+      \item Vị trí kiểm thử trong Waterfall, V-model, Iterative, Agile; shift-left
+      \item STLC: 6 giai đoạn + entry/exit criteria
+      \item 4 mức kiểm thử ánh xạ vào DigiShield
+      \item Chức năng/phi chức năng; re-test/regression
+      \item Testing pyramid và ice-cream cone
+      \item Test Plan IEEE 829, Test Strategy, RTM
+      \item Vai trò nhóm kiểm thử; defect lifecycle
+    \end{itemize}
+
+    \column{0.5\textwidth}
+    {\small\textbf{Việc phải làm:}}
+    \begin{itemize}
+      \item Nộp danh sách nhóm + module BTL
+      \item Hoàn thiện 10 hạng mục + test plan 1 trang
+      \item Ôn Chương 1+2 $\to$ \textbf{kiểm tra viết đầu Buổi 3 (10\%)}
+    \end{itemize}
+
+    \vspace{0.3em}
+    \begin{block}{Buổi tới (Buổi 3)}
+      \footnotesize Kiểm thử hộp trắng --- luồng điều khiển: CFG, độ phủ câu lệnh /
+      nhánh / đường, thực hành trên \texttt{evaluate()} của DigiShield.
+    \end{block}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 50 - Tài liệu tham khảo
+%---------------------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slide}
+    Slide bài giảng điện tử --- Bộ môn Công nghệ Phần mềm.
+
+    \bibitem{ammann}
+    Paul Ammann \& Jeff Offutt, \textit{Introduction to Software Testing},
+    Cambridge University Press, 2008.
+
+    \bibitem{myers}
+    Glenford J. Myers, \textit{The Art of Software Testing}, 2nd ed., Wiley, 2004.
+
+    \bibitem{istqb}
+    ISTQB Foundation Level Syllabus, version 4.0, 2023.
+
+    \bibitem{istqbweb}
+    ISTQB --- International Software Testing Qualifications Board.
+    \url{https://istqb.org/}
+
+    \bibitem{ieee829}
+    IEEE Std 829-2008. \textit{IEEE Standard for Software and System Test
+    Documentation}. IEEE, 2008.
+
+    \bibitem{fowler}
+    Martin Fowler. ``The Practical Test Pyramid'' và các bài viết về kiểm thử.
+    \url{https://martinfowler.com/}
+  \end{thebibliography}
+\end{frame}
+
+%=====================================================================
+\end{document}

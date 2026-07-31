@@ -1,0 +1,1687 @@
+%!TEX program = xelatex
+\documentclass[aspectratio=169,12pt]{beamer}
+\hfuzz=2pt
+\vfuzz=2pt
+\hbadness=10000
+\vbadness=10000
+
+%---------------------------------------------------------------------
+% Font & encoding
+%---------------------------------------------------------------------
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{vietnamese}
+\IfFontExistsTF{Noto Sans}
+  {\setmainfont{Noto Sans}\setsansfont{Noto Sans}}
+  {\setmainfont{Helvetica Neue}\setsansfont{Helvetica Neue}}
+\IfFontExistsTF{DejaVu Sans Mono}
+  {\setmonofont{DejaVu Sans Mono}}
+  {\setmonofont{Menlo}}
+
+%---------------------------------------------------------------------
+% Theme
+%---------------------------------------------------------------------
+\usetheme{Copenhagen}
+\usecolortheme{default}
+\usefonttheme{professionalfonts}
+
+% Màu chủ đạo: xanh #428BCA
+\definecolor{darkgray}{HTML}{428BCA}
+\definecolor{midgray}{HTML}{428BCA}
+\definecolor{lightgray}{RGB}{230,230,230}
+\definecolor{accentgray}{HTML}{428BCA}
+
+\setbeamercolor{palette primary}{bg=darkgray,fg=white}
+\setbeamercolor{palette secondary}{bg=midgray,fg=white}
+\setbeamercolor{palette tertiary}{bg=accentgray,fg=white}
+\setbeamercolor{palette quaternary}{bg=darkgray,fg=white}
+\setbeamercolor{structure}{fg=darkgray}
+\setbeamercolor{section in toc}{fg=darkgray}
+\setbeamercolor{alerted text}{fg=darkgray}
+\setbeamercolor{block title}{bg=darkgray,fg=white}
+\setbeamercolor{block body}{bg=lightgray,fg=black}
+\setbeamercolor{block title alerted}{bg=midgray,fg=white}
+\setbeamercolor{block body alerted}{bg=lightgray,fg=black}
+\setbeamercolor{block title example}{bg=accentgray,fg=white}
+\setbeamercolor{block body example}{bg=lightgray,fg=black}
+\setbeamercolor{frametitle}{bg=darkgray,fg=white}
+\setbeamercolor{title}{fg=white}
+\setbeamercolor{subtitle}{fg=lightgray}
+\setbeamercolor{author}{fg=black}
+\setbeamercolor{date}{fg=darkgray}
+\setbeamercolor{footline}{fg=white}
+\setbeamercolor{headline}{bg=darkgray}
+
+% Loại bỏ navigation symbols
+\setbeamertemplate{navigation symbols}{}
+
+% Footline tùy chỉnh
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{%
+  \leavevmode%
+  \hbox{%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,left,leftskip=1em]{palette primary}%
+      \usebeamerfont{author in head/foot}Kiểm thử Phần mềm --- Buổi 4
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.5\paperwidth,ht=1.8ex,dp=0.7ex,right,rightskip=1em]{palette primary}%
+      \usebeamerfont{date in head/foot}
+      \insertframenumber{}/\inserttotalframenumber
+    \end{beamercolorbox}%
+  }%
+}
+
+% Itemize
+\setbeamertemplate{itemize item}{\textbullet}
+\setbeamertemplate{itemize subitem}{--}
+\setbeamertemplate{itemize subsubitem}{\(\circ\)}
+\setbeamerfont{itemize/enumerate body}{size=\normalsize}
+\setbeamerfont{itemize/enumerate subbody}{size=\small}
+
+% Compact vertical spacing + auto slide-break for long frames
+\addtobeamertemplate{block begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block alerted begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block alerted end}{}{\vspace{-0.4em}}
+\addtobeamertemplate{block example begin}{\vspace{-0.3em}}{}
+\addtobeamertemplate{block example end}{}{\vspace{-0.4em}}
+\setlength{\parskip}{0pt}
+\setbeamertemplate{frametitle continuation}{\normalfont\small\;(tiếp)}
+
+%---------------------------------------------------------------------
+% Packages
+%---------------------------------------------------------------------
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+\usepackage{array}
+\usepackage{xcolor}
+
+\lstset{
+  basicstyle=\ttfamily\footnotesize,
+  breaklines=true,
+  frame=single,
+  framesep=3pt,
+  aboveskip=3pt,
+  belowskip=1pt,
+  numbers=none,
+  showstringspaces=false,
+  backgroundcolor=\color{lightgray},
+  rulecolor=\color{midgray},
+  keywordstyle=\bfseries,
+  commentstyle=\upshape\color{midgray},
+}
+
+% Kiểu node cho sơ đồ CFG
+\tikzset{
+  cfgnode/.style={circle,draw=darkgray,thick,inner sep=1pt,
+                  minimum size=5mm,font=\scriptsize},
+  cfgedge/.style={-{Stealth[length=2mm]},semithick,draw=black!70},
+}
+
+%---------------------------------------------------------------------
+% Metadata
+%---------------------------------------------------------------------
+\title{Kiểm thử Hộp trắng: Luồng dữ liệu và Độ phủ}
+\subtitle{Buổi 4 / 12 --- Môn: Kiểm thử Phần mềm}
+\author{Bộ môn Công nghệ Phần mềm}
+
+%=====================================================================
+\begin{document}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 1 - Title
+%---------------------------------------------------------------------
+\begin{frame}
+  \begin{center}
+    {\bfseries\normalsize TRƯỜNG ĐẠI HỌC GIAO THÔNG VẬN TẢI\\[-0.1em]
+    PHÂN HIỆU TẠI TP.HCM}\\[0.2em]
+    {\bfseries\small BỘ MÔN CÔNG NGHỆ THÔNG TIN}\\[0.35em]
+    \includegraphics[height=0.95cm]{image/LogoUTC.jpg}\hspace{0.08cm}
+    \includegraphics[height=0.95cm]{image/logo.jpg}
+
+    \vspace{0.6em}
+    \begin{beamercolorbox}[sep=8pt,center]{title}
+      \usebeamerfont{title}\inserttitle\par
+      \vspace{0.2em}
+      {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \end{beamercolorbox}
+
+    \vspace{0.5em}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.2em}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{center}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 2 - Nội dung buổi học
+%---------------------------------------------------------------------
+\begin{frame}{Nội dung buổi học}
+  \begin{enumerate}
+    \item Ôn tập buổi 3: CFG và độ phủ câu lệnh / nhánh
+    \item Độ phủ điều kiện và MC/DC
+    \item Độ phức tạp cyclomatic (McCabe)
+    \item Kiểm thử luồng dữ liệu: def / use, DU-pair
+    \item Bài tập: DU-pairs trong \texttt{computeScore()}
+    \item Anomaly luồng dữ liệu
+    \item JaCoCo trong DigiShield: cấu hình, chạy, đọc báo cáo
+    \item Demo: nâng coverage module \texttt{interception}
+    \item Giới hạn của độ phủ
+    \item Thực hành, bài nộp và tài liệu tham khảo
+  \end{enumerate}
+\end{frame}
+
+%=====================================================================
+\section{Vị trí trong đề cương và ôn tập}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 3
+%---------------------------------------------------------------------
+\begin{frame}{Vị trí trong đề cương}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \begin{block}{Chương 3 --- Kiểm thử hộp trắng (buổi 3--4)}
+    \begin{itemize}
+      \item \textbf{Buổi 3}: kiểm thử luồng \textbf{điều khiển} --- CFG,
+            độ phủ câu lệnh, độ phủ nhánh, độ phủ đường đi.
+      \item \textbf{Buổi 4 (hôm nay)}: hoàn thiện Chương 3 ---
+            độ phủ \textbf{điều kiện} / MC-DC, độ phức tạp cyclomatic,
+            kiểm thử luồng \textbf{dữ liệu}, đo độ phủ bằng \textbf{JaCoCo}.
+    \end{itemize}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Buổi 5--7 (Chương 4): JUnit 5, Mockito, integration test ---
+          nơi các kỹ thuật hôm nay được \textit{cài đặt} thành test.
+    \item Kỹ năng hôm nay dùng trực tiếp cho BTL: báo cáo độ phủ
+          module nhóm phụ trách.
+  \end{itemize}
+
+  \begin{exampleblock}{Hệ thống thực hành}
+    \small Toàn bộ ví dụ dùng code thật của DigiShield:
+    \texttt{InterceptionServiceImpl}, \texttt{AnalyticsServiceImpl},
+    \texttt{ReportingServiceImpl}.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 4
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ôn buổi 3: logic của \texttt{evaluate()} --- can thiệp giao dịch}
+  \vspace{-0.35em}
+  \begin{block}{\texttt{modules/interception/.../InterceptionServiceImpl.java}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+List<String> signals = new ArrayList<>();
+if (request.onCall())   signals.add("ON_CALL");
+if (request.newPayee()) signals.add("NEW_PAYEE");
+boolean watchlistHit = watchRepository
+    .findByTenantIdAndValue(tenantId,
+        request.destAccount()).isPresent();
+if (watchlistHit) signals.add("WATCHLIST_HIT");
+
+if (request.onCall() && request.newPayee()
+        && watchlistHit) {
+    decision = Decision.PAUSE;   // Tam dung giao dich
+} else if (watchlistHit) {
+    decision = Decision.WARN;    // Canh bao nguoi dung
+} else {
+    decision = Decision.ALLOW;   // Cho phep
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 5
+%---------------------------------------------------------------------
+\begin{frame}{Ôn buổi 3: độ phủ nhánh chưa đủ}
+  \begin{columns}[T]
+    \column{0.52\textwidth}
+    \begin{block}{Buổi 3 đã đạt được}
+      \begin{itemize}
+        \item Vẽ CFG cho \texttt{evaluate()}
+        \item 100\% độ phủ câu lệnh với 3 test\\
+              (3 lệnh gán PAUSE/WARN/ALLOW loại trừ nhau)
+        \item 100\% độ phủ nhánh với 3 test\\
+              (PAUSE / WARN / ALLOW)
+      \end{itemize}
+    \end{block}
+
+    \column{0.44\textwidth}
+    \begin{alertblock}{Câu hỏi mở của buổi 3}
+      Điều kiện phức \texttt{onCall \&\& newPayee \&\& watchlistHit}
+      có 3 điều kiện con --- 2 test đủ phủ cả quyết định (T/F),
+      nhưng liệu có ``nhìn thấy'' từng điều kiện con?
+    \end{alertblock}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Buổi hôm nay trả lời 3 câu hỏi}
+    (1) Đo sâu hơn nhánh: điều kiện con, MC/DC.
+    (2) Code phức tạp đến đâu thì cần bao nhiêu test --- cyclomatic.
+    (3) Dữ liệu chảy đúng không --- data flow. Và đo tất cả bằng JaCoCo.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Độ phủ điều kiện và MC/DC}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 6
+%---------------------------------------------------------------------
+\begin{frame}{Decision coverage vs Condition coverage}
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \begin{block}{Độ phủ quyết định (decision)}
+      Mỗi \textbf{quyết định} (toàn bộ biểu thức boolean trong
+      \texttt{if}) nhận giá trị \textbf{true} và \textbf{false}
+      ít nhất một lần.
+    \end{block}
+
+    \column{0.48\textwidth}
+    \begin{block}{Độ phủ điều kiện (condition)}
+      Mỗi \textbf{điều kiện con} (atomic condition) trong quyết định
+      nhận giá trị \textbf{true} và \textbf{false} ít nhất một lần.
+    \end{block}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Ví dụ DigiShield}
+    Quyết định: \texttt{onCall \&\& newPayee \&\& watchlistHit}\\
+    Ba điều kiện con: \texttt{onCall}, \texttt{newPayee},
+    \texttt{watchlistHit}.
+  \end{exampleblock}
+
+  \begin{alertblock}{Lưu ý}
+    Condition coverage \textbf{không} bao hàm decision coverage
+    và ngược lại --- xem phản ví dụ ở slide sau.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 7
+%---------------------------------------------------------------------
+\begin{frame}{Phản ví dụ: condition 100\% nhưng decision 50\% (1/2)}
+  Ký hiệu: $A$ = \texttt{onCall}, $B$ = \texttt{newPayee},
+  $C$ = \texttt{watchlistHit}; quyết định $D = A \land B \land C$.
+
+  \vspace{0.3em}
+  \begin{center}
+  \begin{tabular}{lccccc}
+    \toprule
+    \textbf{Test} & $A$ & $B$ & $C$ & $D$ & \textbf{Kết quả} \\
+    \midrule
+    T1 & T & F & T & F & không PAUSE \\
+    T2 & F & T & F & F & không PAUSE \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Mỗi điều kiện con đều đã nhận cả T và F
+          $\Rightarrow$ \textbf{condition coverage = 100\%}.
+    \item Nhưng $D$ luôn bằng F $\Rightarrow$ nhánh PAUSE
+          \textbf{chưa bao giờ chạy}: decision coverage = 50\%.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 7b
+%---------------------------------------------------------------------
+\begin{frame}{Phản ví dụ: condition 100\% nhưng decision 50\% (2/2)}
+  \begin{alertblock}{Ghi chú Java: short-circuit}
+    Toán tử \texttt{\&\&} là \textit{short-circuit}: với T2, $B$ và $C$
+    không được đánh giá; với T1, $C$ cũng không (vì $A \land B$ đã F).
+    Ở mức \textbf{thực thi} --- mức JaCoCo đo --- $C$ chưa bao giờ được
+    đánh giá; ``100\%'' ở trên chỉ đúng theo bảng giá trị
+    \textbf{lý thuyết}. JaCoCo đo ở bytecode nên ``nhìn thấy'' từng
+    điều kiện con \textit{đã được đánh giá} --- và sẽ báo $C$ chưa phủ.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 8
+%---------------------------------------------------------------------
+\begin{frame}{Multiple condition coverage --- bảng chân trị $2^n$}
+  Phủ \textbf{mọi tổ hợp} giá trị của $n$ điều kiện con: $2^3 = 8$ test
+  cho \texttt{evaluate()}.
+
+  \begin{center}
+  \small
+  \begin{tabular}{cccccl}
+    \toprule
+    \# & \texttt{onCall} & \texttt{newPayee} & \texttt{watchlistHit}
+       & $A \land B \land C$ & \textbf{Quyết định} \\
+    \midrule
+    1 & T & T & T & T & PAUSE \\
+    2 & T & T & F & F & ALLOW \\
+    3 & T & F & T & F & WARN \\
+    4 & T & F & F & F & ALLOW \\
+    5 & F & T & T & F & WARN \\
+    6 & F & T & F & F & ALLOW \\
+    7 & F & F & T & F & WARN \\
+    8 & F & F & F & F & ALLOW \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \begin{itemize}
+    \item Đầy đủ nhất nhưng \textbf{bùng nổ tổ hợp}: $n = 10$ điều kiện
+          $\Rightarrow$ 1024 test. Cần tiêu chí ``vừa đủ mạnh'': MC/DC.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 9
+%---------------------------------------------------------------------
+\begin{frame}{MC/DC --- Modified Condition / Decision Coverage}
+  \begin{block}{Định nghĩa \cite{ammann,istqb}}
+    Bộ test đạt MC/DC khi:
+    \begin{enumerate}
+      \item Mỗi quyết định nhận cả T và F;
+      \item Mỗi điều kiện con nhận cả T và F;
+      \item Mỗi điều kiện con được chứng minh là \textbf{ảnh hưởng
+            độc lập} đến kết quả quyết định: tồn tại \textbf{cặp test}
+            chỉ khác nhau ở điều kiện đó mà kết quả quyết định đổi.
+    \end{enumerate}
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Chi phí}
+    Với $n$ điều kiện con chỉ cần tối thiểu $n + 1$ test
+    (thay vì $2^n$): với $n=3$ là \textbf{4 test} thay vì 8.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 10
+%---------------------------------------------------------------------
+\begin{frame}{Vì sao ngành hàng không (aviation) chọn MC/DC?}
+  \begin{itemize}
+    \item Chuẩn \textbf{DO-178C} \cite{do178c} (phần mềm điều khiển bay)
+          \textbf{bắt buộc} MC/DC cho phần mềm mức A (Level A) --- lỗi có thể
+          gây tai nạn thảm khốc.
+    \item Lý do chọn MC/DC:
+    \begin{itemize}
+      \item Mạnh hơn hẳn decision/condition coverage: phát hiện lỗi
+            ``dây điện đấu nhầm'' trong biểu thức logic
+            (\texttt{\&\&} viết nhầm thành \texttt{||}, thiếu một điều kiện).
+      \item Chi phí tuyến tính $n+1$, khả thi với biểu thức lớn.
+    \end{itemize}
+    \item Ứng dụng khác: ô tô (ISO 26262), y tế, đường sắt.
+  \end{itemize}
+
+  \begin{alertblock}{Liên hệ DigiShield}
+    \texttt{evaluate()} quyết định \textbf{chặn hay cho phép một giao dịch
+    chuyển tiền} --- sai nhánh nghĩa là hoặc chặn nhầm khách hàng,
+    hoặc bỏ lọt giao dịch lừa đảo. Logic ``rẻ mà quan trọng'' như vậy
+    rất đáng đầu tư MC/DC.
+  \end{alertblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 11
+%---------------------------------------------------------------------
+\begin{frame}{MC/DC cho \texttt{onCall \&\& newPayee \&\& watchlistHit}}
+  Tìm cặp dòng (trong bảng chân trị 8 dòng) chứng minh ảnh hưởng
+  độc lập của từng điều kiện --- hai dòng chỉ khác nhau đúng một cột
+  và kết quả $D$ đổi:
+
+  \vspace{0.3em}
+  \begin{center}
+  \small
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{Điều kiện} & \textbf{Cặp dòng} & \textbf{Giá trị} & \textbf{$D$ đổi} \\
+    \midrule
+    \texttt{onCall}       & \#1 vs \#5 & (T,T,T) vs (F,T,T) & T $\to$ F \\
+    \texttt{newPayee}     & \#1 vs \#3 & (T,T,T) vs (T,F,T) & T $\to$ F \\
+    \texttt{watchlistHit} & \#1 vs \#2 & (T,T,T) vs (T,T,F) & T $\to$ F \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Bộ MC/DC tối thiểu}
+    Hợp của các cặp: $\{\#1, \#2, \#3, \#5\}$ --- đúng $n+1 = 4$ test.
+    Dòng \#1 được ``tái sử dụng'' trong cả 3 cặp.
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 12
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Bộ 4 test MC/DC thành test case DigiShield}
+  \begin{center}
+  \small
+  \begin{tabular}{clllll}
+    \toprule
+    \# & \texttt{onCall} & \texttt{newPayee} & \texttt{watchlist} &
+    \textbf{Kỳ vọng} & \textbf{Chứng minh cho} \\
+    \midrule
+    1 & true  & true  & có hit    & PAUSE & (cả ba) \\
+    2 & true  & true  & không hit & ALLOW & \texttt{watchlistHit} \\
+    3 & true  & false & có hit    & WARN  & \texttt{newPayee} \\
+    5 & false & true  & có hit    & WARN  & \texttt{onCall} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+// Test #5: onCall=false -> khong PAUSE, chi WARN
+var req = new EvaluateRequest(userId,
+    new BigDecimal("5000000"), "0123456789",
+    false, true);   // onCall=false, newPayee=true
+// stub watchRepository tra ve hit
+var decision = service.evaluate(req);
+assertThat(decision.decision()).isEqualTo("WARN");
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 13
+%---------------------------------------------------------------------
+\begin{frame}{Nhận xét: MC/DC ``ăn khớp'' với nghiệp vụ}
+  \begin{itemize}
+    \item 4 test MC/DC vô tình phủ cả \textbf{ba} quyết định nghiệp vụ:
+          PAUSE (\#1), ALLOW (\#2), WARN (\#3, \#5).
+    \item Mỗi test trả lời một câu hỏi nghiệp vụ cụ thể:
+    \begin{itemize}
+      \item \#2: ``tài khoản sạch thì dù đang nghe điện thoại vẫn cho chuyển'';
+      \item \#3: ``người nhận quen thuộc thì chỉ cảnh báo, không chặn'';
+      \item \#5: ``không nghe điện thoại thì chỉ cảnh báo, không chặn''.
+    \end{itemize}
+    \item Test class thật \texttt{InterceptionServiceImplTest} hiện có
+          5 test --- đối chiếu xem đã đạt MC/DC chưa là bài thực hành.
+  \end{itemize}
+
+  \begin{block}{Kinh nghiệm}
+    Khi biểu thức boolean phức khó nghĩ test, hãy lập bảng chân trị rồi
+    chọn bộ MC/DC --- vừa ít test, vừa không bỏ sót vai trò của
+    từng điều kiện.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 14
+%---------------------------------------------------------------------
+\begin{frame}{So sánh các tiêu chí độ phủ điều kiện (1/2)}
+  Áp dụng cho \texttt{evaluate()} --- chuỗi \texttt{if / else if / else}
+  chứa quyết định 3 điều kiện con:
+
+  \vspace{0.3em}
+  \begin{center}
+  \small
+  \begin{tabular}{lcl}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{Số test tối thiểu} & \textbf{Phát hiện} \\
+    \midrule
+    Statement coverage           & 3\(^*\) & dòng chưa chạy \\
+    Decision (branch) coverage   & 3\(^*\) & nhánh chưa chạy \\
+    Condition coverage           & 2\(^\dagger\) & điều kiện con chưa lật \\
+    Condition/Decision           & 2\(^\dagger\) & cả hai mức trên \\
+    \textbf{MC/DC}               & \textbf{4}\(^\dagger\) & vai trò từng điều kiện \\
+    Multiple condition           & 8\(^\dagger\) & mọi tổ hợp \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+  {\scriptsize \(^*\) Tính trên \textbf{toàn chuỗi} \texttt{if / else if
+  / else}: 3 lệnh gán / 3 lối ra PAUSE / WARN / ALLOW loại trừ nhau.\\
+  \(^\dagger\) Tính \textbf{riêng trên quyết định phức}
+  \texttt{onCall \&\& newPayee \&\& watchlistHit}; nếu tính trên toàn
+  chuỗi thì Condition/Decision cũng cần $\geq 3$ test (vì bao hàm
+  decision coverage).}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 14b
+%---------------------------------------------------------------------
+\begin{frame}{So sánh các tiêu chí độ phủ điều kiện (2/2)}
+  \begin{exampleblock}{Thứ tự sức mạnh}
+    Multiple condition $\supset$ MC/DC $\supset$ Condition/Decision
+    $\supset$ Decision $\supset$ Statement.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Độ phức tạp cyclomatic}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 15
+%---------------------------------------------------------------------
+\begin{frame}{Độ phức tạp cyclomatic $V(G)$ --- McCabe, 1976}
+  \begin{block}{Định nghĩa \cite{mccabe}}
+    Số \textbf{đường đi độc lập tuyến tính} qua CFG của một hàm ---
+    thước đo mức độ ``rối'' của luồng điều khiển.
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{columns}[T]
+    \column{0.32\textwidth}
+    \begin{exampleblock}{Cách 1}
+      \centering
+      $V(G) = E - N + 2$\\[0.2em]
+      {\small $E$ cạnh, $N$ node của CFG}
+    \end{exampleblock}
+
+    \column{0.32\textwidth}
+    \begin{exampleblock}{Cách 2}
+      \centering
+      $V(G) = P + 1$\\[0.2em]
+      {\small $P$ = số node quyết định\\(if, while, for, case\ldots)}
+    \end{exampleblock}
+
+    \column{0.32\textwidth}
+    \begin{exampleblock}{Cách 3}
+      \centering
+      $V(G) = R$\\[0.2em]
+      {\small $R$ = số miền phẳng khi vẽ CFG (kể cả miền ngoài)}
+    \end{exampleblock}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{itemize}
+    \item Ba cách luôn cho cùng kết quả trên CFG hợp lệ
+          (một lối vào, một lối ra).
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 16
+%---------------------------------------------------------------------
+\begin{frame}{CFG của \texttt{evaluate()} --- đếm $E$, $N$}
+  \begin{center}
+  \begin{tikzpicture}
+    \node[cfgnode] (n1) at (0,0) {1};
+    \node[cfgnode] (n2) at (1.3,0) {2};
+    \node[cfgnode] (n3) at (2.0,1.0) {3};
+    \node[cfgnode] (n4) at (2.7,0) {4};
+    \node[cfgnode] (n5) at (3.4,1.0) {5};
+    \node[cfgnode] (n6) at (4.1,0) {6};
+    \node[cfgnode] (n7) at (4.8,1.0) {7};
+    \node[cfgnode] (n8) at (5.5,0) {8};
+    \node[cfgnode] (n9) at (6.6,1.0) {9};
+    \node[cfgnode] (n10) at (7.0,0) {10};
+    \node[cfgnode] (n11) at (7.8,-1.0) {11};
+    \node[cfgnode] (n12) at (8.5,0) {12};
+    \node[cfgnode] (n13) at (9.9,0) {13};
+    \draw[cfgedge] (n1)--(n2);
+    \draw[cfgedge] (n2)--(n3); \draw[cfgedge] (n2)--(n4);
+    \draw[cfgedge] (n3)--(n4);
+    \draw[cfgedge] (n4)--(n5); \draw[cfgedge] (n4)--(n6);
+    \draw[cfgedge] (n5)--(n6);
+    \draw[cfgedge] (n6)--(n7); \draw[cfgedge] (n6)--(n8);
+    \draw[cfgedge] (n7)--(n8);
+    \draw[cfgedge] (n8)--(n9); \draw[cfgedge] (n8)--(n10);
+    \draw[cfgedge] (n9) to[bend left=22] (n13);
+    \draw[cfgedge] (n10)--(n11); \draw[cfgedge] (n10)--(n12);
+    \draw[cfgedge] (n11) to[bend right=22] (n13);
+    \draw[cfgedge] (n12)--(n13);
+  \end{tikzpicture}
+  \end{center}
+
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \scriptsize
+    1: khởi tạo \texttt{signals} \quad
+    2: \texttt{onCall}? \quad
+    3: add ON\_CALL \quad
+    4: \texttt{newPayee}? \quad
+    5: add NEW\_PAYEE \quad
+    6: tra watchlist, \texttt{hit}? \quad
+    7: add WATCHLIST\_HIT \quad
+    8: cả ba đúng? \quad
+    9: PAUSE \quad
+    10: \texttt{hit}? \quad
+    11: WARN \quad
+    12: ALLOW \quad
+    13: lưu event, return
+
+    \column{0.41\textwidth}
+    \small
+    \begin{itemize}
+      \item $N = 13$, $E = 17$\\
+            $V(G) = 17 - 13 + 2 = \mathbf{6}$
+      \item Node quyết định: 2, 4, 6, 8, 10\\
+            $V(G) = 5 + 1 = \mathbf{6}$
+      \item Miền phẳng: 5 miền kín + 1 miền ngoài $= \mathbf{6}$
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 17
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Tính $V(G)$ cho \texttt{ageLabel()} --- module reporting}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+private String ageLabel(Instant reportedAt,
+                        Instant now) {
+    if (reportedAt == null) {     // Q1
+        return null;
+    }
+    Duration d = Duration
+        .between(reportedAt, now);
+    long mins = Math.max(0, d.toMinutes());
+    if (mins < 60) {              // Q2
+        return mins + "p";
+    }
+    long hours = d.toHours();
+    if (hours < 24) {             // Q3
+        return hours + "h";
+    }
+    return d.toDays() + "d";
+}
+\end{lstlisting}
+
+    \column{0.4\textwidth}
+    \begin{block}{Đếm node quyết định}
+      $P = 3$ (Q1, Q2, Q3)\\
+      $V(G) = 3 + 1 = \mathbf{4}$
+    \end{block}
+
+    \begin{itemize}
+      \item \small 4 đường độc lập = 4 test:
+            \texttt{null}, ``\texttt{Np}'', ``\texttt{Nh}'',
+            ``\texttt{Nd}''.
+      \item \small \texttt{Math.max} là lời gọi hàm, không phải
+            nhánh ở mức mã nguồn (JaCoCo cũng không đếm).
+    \end{itemize}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 18
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Tính $V(G)$ cho \texttt{computeScore()} --- module analytics}
+  \begin{columns}[T]
+    \column{0.58\textwidth}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+private int computeScore(UUID tenantId,
+                         UUID userId) {
+  Instant since = Instant.now()
+      .minus(SCORING_WINDOW);  // 90 ngay
+  int signalWeight = riskSignalRepository
+    .findByTenantIdAndUserIdAndOccurredAtAfter(
+        tenantId, userId, since)
+    .stream()
+    .mapToInt(RiskSignal::getWeight)
+    .sum();
+  return Math.max(MIN_RISK,        // 0
+      Math.min(MAX_RISK,           // 100
+          BASE_RISK + signalWeight));
+}
+\end{lstlisting}
+
+    \column{0.4\textwidth}
+    \begin{block}{Đếm node quyết định}
+      Không có \texttt{if} / vòng lặp\\
+      $V(G) = 0 + 1 = \mathbf{1}$
+    \end{block}
+
+    \vspace{0.1em}
+    {\scriptsize Repo tách phần tính điểm sang class
+    \texttt{RiskScoring}; listing gộp để tiện phân tích.}
+
+    \begin{alertblock}{Nghịch lý}
+      \small $V(G)=1$: một test đủ phủ 100\% đường đi. Nhưng phép
+      \textbf{clamp} 0..100 cần ít nhất 3 test giá trị
+      (âm sâu / giữa / vượt 100)! Độ phủ không thay được
+      phân tích giá trị biên.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 19
+%---------------------------------------------------------------------
+\begin{frame}{Ngưỡng $V(G)$ và số test tối thiểu (1/2)}
+  \begin{center}
+  \small
+  \begin{tabular}{clc}
+    \toprule
+    $V(G)$ & \textbf{Đánh giá (McCabe)} & \textbf{Rủi ro} \\
+    \midrule
+    1--10  & Code đơn giản, dễ test          & Thấp \\
+    11--20 & Phức tạp vừa                    & Trung bình \\
+    21--50 & Phức tạp, khó test              & Cao \\
+    $>50$  & Gần như không thể test đầy đủ   & Rất cao \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{block}{Liên hệ số test case (basis path testing)}
+    $V(G)$ = số đường độc lập tuyến tính = \textbf{số test tối thiểu}
+    để phủ tập đường cơ sở (đủ suy ra 100\% branch coverage).
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 19b
+%---------------------------------------------------------------------
+\begin{frame}{Ngưỡng $V(G)$ và số test tối thiểu (2/2)}
+  \begin{itemize}
+    \item DigiShield: \texttt{evaluate()} $V=6$, \texttt{ageLabel()} $V=4$,
+          \texttt{computeScore()} $V=1$ --- đều $\leq 10$, đạt chuẩn.
+    \item $V > 10$: cân nhắc \textbf{tách hàm} trước khi viết thêm test ---
+          refactor rẻ hơn test một ``hàm quái vật''.
+    \item JaCoCo in sẵn cột \texttt{Cxty} (cyclomatic) trong báo cáo.
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{Kiểm thử luồng dữ liệu}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 20
+%---------------------------------------------------------------------
+\begin{frame}{Vì sao cần kiểm thử luồng dữ liệu?}
+  \begin{alertblock}{Lỗ hổng của độ phủ luồng điều khiển}
+    Branch coverage chỉ hỏi ``nhánh này \textbf{đã chạy} chưa?'' ---
+    không hỏi ``giá trị được gán ở đây có \textbf{đến đúng nơi
+    sử dụng} và \textbf{đúng nội dung} không?''
+  \end{alertblock}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Ví dụ lỗi mà branch coverage bỏ lọt (DigiShield)}
+    Trong \texttt{evaluate()}, giả sử lập trình viên quên
+    \texttt{signals.add("WATCHLIST\_HIT")}: cả 3 nhánh
+    PAUSE/WARN/ALLOW vẫn chạy đủ, test nhánh vẫn xanh ---
+    nhưng event lưu xuống DB \textbf{thiếu tín hiệu}, đội SOC
+    mất dấu vết điều tra.
+  \end{exampleblock}
+
+  \begin{block}{Ý tưởng Data Flow Testing}
+    Theo dấu \textbf{từng biến}: từ nơi được gán (define)
+    đến mọi nơi được dùng (use), và bắt buộc test đi qua các
+    ``đường nối'' đó.
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 21
+%---------------------------------------------------------------------
+\begin{frame}{def, c-use, p-use}
+  \begin{columns}[T]
+    \column{0.31\textwidth}
+    \begin{block}{def (define)}
+      Biến được \textbf{gán giá trị}: khai báo kèm gán, phép gán,
+      tham số vào hàm, đọc từ input.
+    \end{block}
+
+    \column{0.31\textwidth}
+    \begin{block}{c-use}
+      \textit{computation use} --- dùng trong \textbf{tính toán},
+      vế phải phép gán, đối số lời gọi hàm, biểu thức return.
+    \end{block}
+
+    \column{0.31\textwidth}
+    \begin{block}{p-use}
+      \textit{predicate use} --- dùng trong \textbf{điều kiện
+      rẽ nhánh} (if, while, toán tử ba ngôi).
+    \end{block}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Nhận diện nhanh trên \texttt{evaluate()}}
+    \begin{itemize}
+      \item \texttt{watchlistHit = hit.isPresent()} --- def của
+            \texttt{watchlistHit}, c-use của \texttt{hit}.
+      \item \texttt{if (watchlistHit)} --- p-use của \texttt{watchlistHit}.
+      \item \texttt{String.join(",", signals)} --- c-use của \texttt{signals}.
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 22
+%---------------------------------------------------------------------
+\begin{frame}{DU-pair và DU-path}
+  \begin{block}{DU-pair (cặp def--use)}
+    Cặp $(d, u)$: vị trí $d$ định nghĩa biến $x$ và vị trí $u$ sử dụng
+    $x$, sao cho tồn tại đường đi từ $d$ đến $u$ \textbf{không có
+    định nghĩa lại} $x$ ở giữa (đường \textit{definition-clear}).
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{block}{DU-path}
+    Một đường đi definition-clear \textbf{cụ thể} trong CFG
+    từ $d$ đến $u$. Một DU-pair có thể có nhiều DU-path
+    (đi qua các nhánh khác nhau).
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Nếu giữa $d$ và $u$ có một phép gán khác cho $x$ ---
+          def cũ bị \textbf{kill}, cặp $(d,u)$ không còn hiệu lực.
+    \item Test một DU-pair = tạo dữ liệu vào sao cho chương trình
+          \textbf{đi qua} $d$ rồi tới $u$, và \textbf{assert} giá trị tại $u$.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 23
+%---------------------------------------------------------------------
+\begin{frame}{Ba tiêu chí độ phủ luồng dữ liệu}
+  \begin{center}
+  \small
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Tiêu chí} & \textbf{Yêu cầu} & \textbf{Chi phí} \\
+    \midrule
+    all-defs     & mỗi def tới \textbf{ít nhất một} use      & thấp \\
+    all-uses     & mỗi DU-pair được thực thi ít nhất 1 lần    & vừa \\
+    all-DU-paths & \textbf{mọi} DU-path của mọi DU-pair       & cao \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.4em}
+  \begin{columns}[T]
+    \column{0.55\textwidth}
+    \begin{block}{Quan hệ bao hàm}
+      all-DU-paths $\supset$ all-uses $\supset$ all-defs;\\
+      all-uses cũng mạnh hơn branch coverage\\
+      (mọi p-use kéo theo cả hai nhánh).
+    \end{block}
+
+    \column{0.41\textwidth}
+    \begin{exampleblock}{Thực dụng}
+      Trong công nghiệp thường nhắm \textbf{all-uses} cho
+      biến ``quan trọng'' (tiền, quyết định, trạng thái).
+    \end{exampleblock}
+  \end{columns}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 24
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ví dụ 1: biến \texttt{signals} trong \texttt{evaluate()}}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
+List<String> signals = new ArrayList<>();  // d1: DEF
+if (request.onCall())
+    signals.add("ON_CALL");        // d2: c-USE + DEF lai
+if (request.newPayee())
+    signals.add("NEW_PAYEE");      // d3: c-USE + DEF lai
+if (watchlistHit)
+    signals.add("WATCHLIST_HIT");  // d4: c-USE + DEF lai
+// ... quyet dinh PAUSE/WARN/ALLOW ...
+new InterventionEvent(...,
+    String.join(",", signals), ...);       // u1: c-USE
+return new InterventionDecision(
+    decision.name(), signals, message);    // u2: c-USE
+\end{lstlisting}
+
+  \begin{itemize}
+    \item \texttt{signals} \textbf{không có p-use} --- không bao giờ
+          xuất hiện trong điều kiện.
+    \item Mỗi \texttt{add()} vừa dùng (c-use) vừa làm thay đổi trạng thái
+          (def lại) --- quy ước đơn giản hóa cho biến tập hợp.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 25
+%---------------------------------------------------------------------
+\begin{frame}{DU-pairs của \texttt{signals} $\to$ test case}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{3.5pt}
+  \begin{tabular}{llll}
+    \toprule
+    \textbf{DU-pair} & \textbf{Đường def-clear} & \textbf{Test case} & \textbf{Assert tại use} \\
+    \midrule
+    $(d1, u1/u2)$ & không add nào chạy & ALLOW ``sạch'' & \texttt{signals} rỗng \\
+    $(d2, u1/u2)$ & chỉ \texttt{onCall} & ALLOW + ON\_CALL & chỉ chứa \texttt{ON\_CALL} \\
+    $(d3, u1/u2)$ & chỉ \texttt{newPayee} & ALLOW + NEW\_PAYEE & chỉ chứa \texttt{NEW\_PAYEE} \\
+    $(d4, u1/u2)$ & chỉ \texttt{hit} & WARN & chứa \texttt{WATCHLIST\_HIT} \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item $u1$ = chuỗi lưu vào \texttt{InterventionEvent} (DB);
+          $u2$ = danh sách trả về cho client. \textbf{Phải assert cả hai} ---
+          chúng có thể lệch nhau nếu code sửa một nơi quên nơi kia.
+    \item Test thật dùng \texttt{ArgumentCaptor<InterventionEvent>}
+          để bắt $u1$ --- xem slide ``Cài đặt data flow test bằng
+          ArgumentCaptor'' ngay sau.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 26
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ví dụ 2: \texttt{safePage}, \texttt{safeSize} trong \texttt{listInterventions()}}
+  \setbeamerfont{itemize/enumerate body}{size=\footnotesize}
+  \vspace*{-0.45em}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+public List<InterventionEventView>
+        listInterventions(int page, int size) {
+    UUID tenantId = TenantContext.requireUuid();
+    int safePage = Math.max(page, 1);      // DEF safePage
+    int safeSize = Math.min(
+        Math.max(size, 1), 100);           // DEF safeSize
+    Pageable pageable = PageRequest.of(
+        safePage - 1, safeSize);   // c-USE ca hai bien
+    return eventRepository
+        .findByTenantIdOrderByTsDesc(
+            tenantId, pageable)    // c-USE pageable
+        .stream().map(...).toList();
+}
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Mỗi biến chỉ có \textbf{một} DU-pair (def $\to$ PageRequest),
+          nhưng \textbf{giá trị} def là hàm clamp phi tuyến của input.
+    \item Data flow nói ``test cặp def--use''; BVA (buổi 8) nói
+          \textbf{giá trị nào}: \texttt{size} $\in \{0, 1, 2, 99, 100, 101\}$.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 27
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cài đặt data flow test bằng ArgumentCaptor}
+  \begin{block}{Từ \texttt{InterceptionServiceImplTest} (test thật, rút gọn)}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Captor
+ArgumentCaptor<InterventionEvent> eventCaptor;
+
+@Test
+void warnKhiChiCoWatchlistHit() {
+    // ... stub watchRepository co hit ...
+    service.evaluate(new EvaluateRequest(
+        userId, amount, "0123456789",
+        false, false));  // onCall=F, newPayee=F
+
+    verify(eventRepository).save(
+        eventCaptor.capture());
+    // Assert tai diem USE: du lieu luu DB dung
+    assertThat(eventCaptor.getValue().getSignals())
+        .isEqualTo("WATCHLIST_HIT");
+}
+\end{lstlisting}
+  \end{block}
+  Captor ``chụp'' giá trị tại điểm use --- đúng tinh thần data flow:
+  kiểm tra \textbf{dữ liệu đến nơi}, không chỉ ``hàm được gọi''.
+\end{frame}
+
+%=====================================================================
+\section{Bài tập: DU-pairs trong computeScore}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 28
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Bài tập trên lớp: phân tích \texttt{computeScore()}}
+  \begin{block}{Đề bài (làm theo cặp, 10 phút)}
+    \small Đánh số dòng, lập bảng def / c-use / p-use cho \textbf{mọi biến cục bộ},
+    liệt kê các DU-pair và đề xuất test case cho từng cặp.
+  \end{block}
+
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+private int computeScore(UUID tenantId,
+                         UUID userId) {
+  Instant since = Instant.now()
+      .minus(SCORING_WINDOW);              // L1
+  int signalWeight = riskSignalRepository
+      .findByTenantIdAndUserIdAndOccurredAtAfter(
+          tenantId, userId, since)         // L2
+      .stream()
+      .mapToInt(RiskSignal::getWeight)
+      .sum();                              // L3
+  return Math.max(MIN_RISK,
+      Math.min(MAX_RISK,
+          BASE_RISK + signalWeight));      // L4
+}
+\end{lstlisting}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 29
+%---------------------------------------------------------------------
+\begin{frame}{Lời giải: bảng def / use theo dòng}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lllll}
+    \toprule
+    \textbf{Biến} & \textbf{def} & \textbf{c-use} & \textbf{p-use} & \textbf{DU-pair} \\
+    \midrule
+    \texttt{since}        & L1 & L2 (đối số truy vấn) & --- & (L1, L2) \\
+    \texttt{signalWeight} & L3 & L4 (biểu thức return) & --- & (L3, L4) \\
+    \texttt{tenantId}     & tham số & L2 & --- & (vào, L2) \\
+    \texttt{userId}       & tham số & L2 & --- & (vào, L2) \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Không biến nào có p-use --- khớp với $V(G) = 1$.
+    \item \texttt{BASE\_RISK}, \texttt{MIN\_RISK}, \texttt{MAX\_RISK}
+          là hằng số (\texttt{static final}) --- def một lần lúc nạp class.
+    \item DU-pair (L1, L2) kiểm chứng \textbf{cửa sổ 90 ngày}:
+          tín hiệu cũ hơn \texttt{since} không được tính.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 30
+%---------------------------------------------------------------------
+\begin{frame}{Lời giải: từ DU-pairs đến test case}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{DU-pair} & \textbf{Test case} & \textbf{Kỳ vọng} \\
+    \midrule
+    (L1, L2) & stub repo, verify đối số \texttt{since} & $\approx$ now $-$ 90 ngày \\
+    (L3, L4) tổng dương vừa & signals nặng $+20$ & score $= 5 + 20 = 25$ \\
+    (L3, L4) tổng âm sâu    & signals $-30$ & clamp về $0$ \\
+    (L3, L4) tổng rất lớn   & signals $+200$ & clamp về $100$ \\
+    (L3, L4) không signal   & repo trả list rỗng & score $=$ BASE\_RISK $= 5$ \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{exampleblock}{Nhận xét}
+    Một DU-pair (L3, L4) sinh ra \textbf{4 test} vì giá trị tại use có
+    3 miền (dưới 0 / trong / trên 100) + trường hợp mặc định.
+    Data flow chỉ ra \textbf{chỗ} phải test; EP/BVA chỉ ra
+    \textbf{giá trị} --- hai kỹ thuật bổ sung nhau.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Anomaly luồng dữ liệu}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 31
+%---------------------------------------------------------------------
+\begin{frame}{Ba loại anomaly luồng dữ liệu}
+  Anomaly = chuỗi def/use \textbf{bất thường}, thường là triệu chứng
+  của bug hoặc code thừa:
+
+  \vspace{0.3em}
+  \begin{center}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{>{\raggedright\arraybackslash}p{3.1cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{4.0cm}}
+    \toprule
+    \textbf{Loại} & \textbf{Mẫu} & \textbf{Triệu chứng của} \\
+    \midrule
+    define--define (dd) & gán rồi gán đè, chưa hề dùng & quên dùng giá trị đầu; sai thứ tự lệnh \\
+    define--kill (dk)   & gán rồi ra khỏi scope, không dùng & biến thừa; logic bị xóa dở \\
+    use-before-define (ud) & dùng khi chưa chắc đã gán & thiếu nhánh khởi tạo; NPE \\
+    \bottomrule
+  \end{tabular}
+  \end{center}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Anomaly phát hiện được bằng \textbf{phân tích tĩnh} ---
+          không cần chạy chương trình.
+    \item Java: compiler chặn ``dùng biến local chưa gán'', nhưng
+          \textbf{không} chặn field/đối tượng \texttt{null} --- vẫn cần soi.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 32
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Ví dụ anomaly và công cụ phát hiện}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+// 1. dd: gan de len khi chua dung -> mat gia tri
+int score = computeScore(tenantId, userId);
+score = 0;                    // bug? hay co y?
+
+// 2. dk: dinh nghia roi khong ai dung
+int unused = scores.size();   // code chet
+
+// 3. ud: dung khi co the chua gan
+Integer risk = null;
+if (highRisk) { risk = 90; }
+return risk + 5;   // NPE khi highRisk = false
+\end{lstlisting}
+
+  \begin{itemize}
+    \item IDE (IntelliJ) cảnh báo ngay: \textit{unused assignment},
+          \textit{variable is never used}, \textit{unboxing may produce NPE}.
+    \item CI của DigiShield chạy \textbf{Checkstyle} (buildSrc convention);
+          có thể bổ sung SpotBugs / ErrorProne để bắt anomaly sâu hơn.
+    \item Bài học: đọc warning của IDE = data flow analysis miễn phí.
+  \end{itemize}
+\end{frame}
+
+%=====================================================================
+\section{JaCoCo trong DigiShield}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 33
+%---------------------------------------------------------------------
+\begin{frame}{JaCoCo --- Java Code Coverage}
+  \begin{block}{Cách hoạt động \cite{jacoco}}
+    JaCoCo gắn một \textbf{Java agent} vào JVM khi chạy test; agent
+    \textit{instrument} bytecode để đếm mỗi instruction / nhánh đã
+    thực thi, rồi xuất báo cáo HTML + XML.
+  \end{block}
+
+  \vspace{0.3em}
+  \begin{itemize}
+    \item Đo ở mức \textbf{bytecode} $\Rightarrow$ thấy được từng
+          điều kiện con của \texttt{\&\&} / \texttt{||}
+          (liên hệ condition coverage).
+    \item Tích hợp sẵn với Gradle qua plugin \texttt{jacoco} ---
+          DigiShield đã bật cho \textbf{mọi module} qua convention plugin
+          trong \texttt{buildSrc}.
+    \item File cấu hình thật:\\
+          {\small\texttt{buildSrc/src/main/kotlin/}\\
+          \texttt{digishield.spring-module-conventions.gradle.kts}}
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 34
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cấu hình thật (1): plugin và report}
+  \begin{block}{Trích \texttt{digishield.spring-module-conventions.gradle.kts}}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+plugins {
+    `java-library`
+    checkstyle
+    jacoco                    // bat coverage moi module
+    id("io.spring.dependency-management")
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)   // cho CI/SonarQube
+        html.required.set(true)  // cho nguoi doc
+    }
+}
+
+tasks.test {
+    finalizedBy(tasks.jacocoTestReport)
+    // chay test xong tu dong sinh report
+}
+\end{lstlisting}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 35
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cấu hình thật (2): ngưỡng coverage gắn vào \texttt{check}}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                // TODO raise threshold as coverage
+                // grows (target 0.50).
+                minimum = "0.10".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn(tasks.jacocoTestCoverageVerification)
+}
+\end{lstlisting}
+
+  {\small \texttt{./gradlew check} \textbf{fail} nếu line coverage của module
+  xuống dưới 10\% --- chạy trong CI cho mọi pull request.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 36
+%---------------------------------------------------------------------
+\begin{frame}{Thảo luận: vì sao ngưỡng chỉ 0.10?}
+  \setbeamerfont{itemize/enumerate body}{size=\small}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Chiến lược ``ratchet'' (bánh cóc)}
+      \begin{enumerate}
+        \item Đặt ngưỡng \textbf{thấp hơn hiện trạng} một chút
+              $\Rightarrow$ build luôn xanh.
+        \item Ngưỡng chặn \textbf{tụt lùi}: code mới không test
+              sẽ kéo tỉ lệ xuống và fail.
+        \item Coverage tăng dần $\Rightarrow$ \textbf{nâng ngưỡng theo}
+              (TODO trong code: 0.50).
+      \end{enumerate}
+    \end{block}
+
+    \column{0.46\textwidth}
+    \begin{alertblock}{Vì sao không đặt 0.80 ngay?}
+      \begin{itemize}
+        \item Dự án đang phát triển, 176 test / 9 module ---
+              ép 80\% ngay là \textbf{chặn mọi PR}.
+        \item Đội sẽ viết test đối phó (không assertion)
+              chỉ để qua cổng --- phản tác dụng.
+      \end{itemize}
+    \end{alertblock}
+  \end{columns}
+
+  \vspace{0.1em}
+  \begin{exampleblock}{Câu hỏi thảo luận}
+    \small Nên nâng ngưỡng theo lịch (mỗi sprint +5\%) hay theo hiện trạng
+    (ngưỡng = coverage hiện tại $-$ 2\%)? Ưu nhược của từng cách?
+  \end{exampleblock}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 37
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Cấu hình thật (3): loại trừ khỏi coverage}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
+val jacocoExclusions = listOf(
+    "**/*Application*",   // main class
+    "**/config/**",       // Spring @Configuration
+    "**/*Config*",
+    "**/package-info*",
+)
+\end{lstlisting}
+
+  \begin{columns}[T]
+    \column{0.48\textwidth}
+    \textbf{Loại trừ vì:}
+    \begin{itemize}
+      \item \small Config/Application là code khai báo,
+            unit test không có gì để assert.
+      \item \small Giữ lại sẽ ``pha loãng'' tỉ lệ, che mất
+            class nghiệp vụ thiếu test.
+    \end{itemize}
+
+    \column{0.48\textwidth}
+    \textbf{Cố tình giữ lại:}
+    \begin{itemize}
+      \item \small \texttt{application/**} (các \texttt{*ServiceImpl}) ---
+            nơi chứa nghiệp vụ, chính là chỗ cần đo.
+      \item \small Comment trong file thật ghi rõ điều này.
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.2em}
+  {\small \textbf{Nguyên tắc}: chỉ loại trừ code \textbf{không thể} unit test
+  có ý nghĩa; không loại trừ để ``làm đẹp số''.}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 38
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Chạy và tìm báo cáo}
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\footnotesize]
+# Test 1 module -> report tu sinh (finalizedBy)
+./gradlew :modules:interception:test
+
+# Report HTML cua module:
+# modules/interception/build/reports/jacoco/
+#   test/html/index.html
+
+# Report tong hop toan he thong:
+./gradlew testCodeCoverageReport
+# build/reports/jacoco/
+#   testCodeCoverageReport/html/index.html
+
+# Cong chat luong (fail neu LINE < 10%):
+./gradlew check
+\end{lstlisting}
+
+  \begin{itemize}
+    \item Mỗi module một report riêng + một report gộp cho cả hệ thống ---
+          BTL dùng report \textbf{module nhóm mình}.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 39
+%---------------------------------------------------------------------
+\begin{frame}{Đọc báo cáo JaCoCo}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \textbf{Các cột trong report:}
+    \begin{itemize}
+      \item \small \textbf{Instructions}: bytecode đã chạy / tổng
+      \item \small \textbf{Branches}: nhánh (if, \texttt{\&\&}, switch)
+      \item \small \textbf{Cxty}: độ phức tạp cyclomatic!
+      \item \small \textbf{Lines}: dòng nguồn --- cột mà
+            ngưỡng 0.10 đang đo
+      \item \small \textbf{Methods / Classes}: đã được gọi / nạp
+    \end{itemize}
+
+    \column{0.46\textwidth}
+    \textbf{Màu trong source view:}
+    \begin{itemize}
+      \item \small \textcolor{green!50!black}{\textbf{Xanh lá}}:
+            phủ hoàn toàn
+      \item \small \textcolor{orange!80!black}{\textbf{Vàng}}:
+            nhánh phủ \textbf{một phần} --- ví dụ \texttt{\&\&} 3 điều kiện
+            mới lật được 4/6 nhánh bytecode
+      \item \small \textcolor{red!70!black}{\textbf{Đỏ}}: chưa chạy lần nào
+    \end{itemize}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Kim chỉ nam đọc report}
+    Vào package \texttt{application} $\to$ sắp xếp theo
+    \textbf{Missed Branches} giảm dần $\to$ dòng \textbf{vàng} là mỏ vàng:
+    thường là điều kiện phức thiếu test MC/DC.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Demo: nâng coverage module interception}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 40
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Kịch bản demo: ``đục lỗ'' rồi vá nhánh WARN}
+  \texttt{InterceptionServiceImplTest} có sẵn 5 test phủ đủ 3 nhánh.
+  Ta \textbf{tạm tắt} test nhánh WARN để thấy report đổi màu:
+
+  \vspace{0.2em}
+  \begin{block}{Bước 1--3: tạo lỗ hổng coverage}
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\footnotesize]
+# B1. Chay test, mo report -> evaluate() xanh het
+./gradlew :modules:interception:test
+open modules/interception/build/reports/\
+jacoco/test/html/index.html
+
+# B2. Trong InterceptionServiceImplTest.java:
+#     them @Disabled vao test cua nhanh WARN
+
+# B3. Chay lai
+./gradlew :modules:interception:test --rerun-tasks
+\end{lstlisting}
+  \end{block}
+
+  Quan sát sau B3: dòng \texttt{else if (watchlistHit)} chuyển
+  \textbf{vàng/đỏ}; cột Branches của \texttt{evaluate()} giảm;
+  message WARN thành dòng \textbf{đỏ}.
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 41
+%---------------------------------------------------------------------
+\begin{frame}{Kịch bản demo: vá lại và đối chiếu}
+  \begin{block}{Bước 4--5: vá và kiểm chứng}
+    \begin{enumerate}
+      \item[B4.] Bỏ \texttt{@Disabled}, chạy lại
+            \texttt{./gradlew :modules:interception:test --rerun-tasks}
+            $\to$ nhánh WARN xanh trở lại.
+      \item[B5.] Mở class \texttt{InterceptionServiceImpl} trong report:
+            đối chiếu cột \textbf{Cxty} của \texttt{evaluate()} với
+            $V(G) = 6$ ta tính tay (JaCoCo tính trên bytecode nên có thể
+            lệch nhẹ --- giải thích vì sao).
+    \end{enumerate}
+  \end{block}
+
+  \vspace{0em}
+  \begin{exampleblock}{Điều cần rút ra}
+    \begin{itemize}
+      \item Report là \textbf{la bàn}: nhìn màu là biết viết test gì tiếp.
+      \item Xóa 1 test $\Rightarrow$ mất hẳn 1 nhánh nghiệp vụ (WARN):
+            mỗi test đang ``gác'' một hành vi thật.
+      \item \texttt{--rerun-tasks} ép Gradle chạy lại dù không đổi code
+            (Gradle cache kết quả test).
+    \end{itemize}
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Giới hạn của độ phủ}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 42
+%---------------------------------------------------------------------
+\begin{frame}{100\% coverage $\neq$ hết lỗi}
+  \begin{block}{Nguyên tắc ISTQB (buổi 1) \cite{istqb}}
+    \#1 --- Kiểm thử chỉ chứng minh \textbf{sự hiện diện} của lỗi,
+    không chứng minh sự vắng mặt. \#2 --- Kiểm thử vét cạn là
+    \textbf{bất khả thi}. Coverage 100\% vẫn chỉ là một mẫu rất nhỏ
+    của không gian input.
+  \end{block}
+
+  \vspace{0.3em}
+  \textbf{Ba kiểu lỗi ``miễn nhiễm'' với coverage --- ví dụ DigiShield:}
+  \begin{itemize}
+    \item \small \textbf{Lỗi giá trị}: \texttt{computeScore()} coverage
+          100\% với 1 test, nhưng nếu ai đổi \texttt{MAX\_RISK} thành 1000
+          thì clamp sai mà test dòng lệnh vẫn xanh.
+    \item \small \textbf{Lỗi thiếu code}: quên
+          \texttt{signals.add("WATCHLIST\_HIT")} --- code không tồn tại
+          thì không có dòng nào để ``chưa phủ''.
+    \item \small \textbf{Test không assert}: gọi \texttt{evaluate()}
+          mà không \texttt{assertThat} --- coverage tăng, giá trị bằng 0.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 43
+%---------------------------------------------------------------------
+\begin{frame}{Coverage là bản đồ, không phải đích đến}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Dùng đúng}
+      \begin{itemize}
+        \item \small Tìm \textbf{chỗ chưa test}: class đỏ,
+              nhánh vàng.
+        \item \small Chặn \textbf{tụt lùi} qua cổng \texttt{check}.
+        \item \small So sánh \textbf{xu hướng} giữa các sprint.
+      \end{itemize}
+    \end{block}
+
+    \column{0.46\textwidth}
+    \begin{alertblock}{Dùng sai}
+      \begin{itemize}
+        \item \small KPI ``phải đạt 90\%'' $\to$ test rác,
+              assert hời hợt.
+        \item \small Khoe con số thay vì chất lượng assertion.
+      \end{itemize}
+    \end{alertblock}
+  \end{columns}
+
+  \vspace{0.4em}
+  \begin{exampleblock}{Định luật Goodhart}
+    ``Khi một thước đo trở thành mục tiêu, nó không còn là thước đo
+    tốt nữa.'' Coverage đo \textit{code đã chạy}, không đo
+    \textit{hành vi đã được kiểm chứng}. Mutation testing (PIT)
+    là bước kiểm tra chất lượng test --- giới thiệu ở buổi 12.
+  \end{exampleblock}
+\end{frame}
+
+%=====================================================================
+\section{Thực hành}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 44
+%---------------------------------------------------------------------
+\begin{frame}[fragile]{Thực hành trên lớp: săn nhánh thiếu trong analytics}
+  \begin{block}{Nhiệm vụ (30 phút, làm theo cặp)}
+    \begin{enumerate}
+      \item Chạy test + sinh report cho module analytics:
+\begin{lstlisting}[language=bash,basicstyle=\ttfamily\footnotesize]
+./gradlew :modules:analytics:test
+open modules/analytics/build/reports/\
+jacoco/test/html/index.html
+\end{lstlisting}
+      \item Vào package \texttt{com.digishield.analytics.application},
+            mở \texttt{AnalyticsServiceImpl}, sắp xếp theo
+            \textbf{Missed Branches}.
+      \item Ghi lại: method nào có branch coverage \textbf{thấp nhất}?
+            Nhánh nào đang vàng/đỏ?
+      \item Viết \textbf{2 test mới} trong
+            \texttt{AnalyticsServiceImplTest} để phủ các nhánh đó,
+            chạy lại và chụp màn hình trước / sau.
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 45
+%---------------------------------------------------------------------
+\begin{frame}{Gợi ý: các nhánh hay bị bỏ sót trong \texttt{AnalyticsServiceImpl}}
+  \setbeamerfont{itemize/enumerate body}{size=\footnotesize}
+  \begin{itemize}
+    \item \texttt{benchmark(scope)}: nhánh \texttt{scores.isEmpty()}
+          trả về 0 --- đã có test chưa?
+    \item \texttt{riskFor(scope, scopeId)}: hai nhánh
+          \texttt{scopeId != null} / \texttt{null} \textbf{và}
+          nhánh \texttt{latest == null} --- tổ hợp nào còn thiếu?
+    \item \texttt{orgPhishPronePct(...)}: lấy \texttt{phishPronePct}
+          gần nhất từ lịch sử rollup, nhánh \texttt{orElse(0.0)} khi chưa có
+          --- nhánh private, phủ gián tiếp qua
+          \texttt{dashboard()} hoặc \texttt{benchmarkRates()}.
+  \end{itemize}
+
+  \vspace{0.2em}
+  \begin{alertblock}{Tiêu chí nghiệm thu 2 test mới}
+    \small (1) Có assertion \textbf{giá trị} (không chỉ verify gọi hàm);
+    (2) tên test nói rõ nhánh nào (vd:
+    \texttt{benchmarkTraVe0KhiChuaCoDiemNao});
+    (3) Missed Branches của method giảm thật trong report.
+  \end{alertblock}
+
+  \vspace{0.1em}
+  {\small Nhắc lại buổi 3: dựng test theo mẫu \texttt{MockitoExtension} +
+  \texttt{@Mock} repository + \texttt{TenantContext} như các test có sẵn.}
+\end{frame}
+
+%=====================================================================
+\section{Bài nộp}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 46
+%---------------------------------------------------------------------
+\begin{frame}{Bài nộp (theo nhóm BTL --- hạn: trước buổi 5)}
+  \begin{block}{Báo cáo độ phủ module nhóm phụ trách (PDF, 3--5 trang)}
+    \begin{enumerate}
+      \item \textbf{Hiện trạng}: bảng Line / Branch coverage theo class
+            (chụp từ report JaCoCo của module nhóm), nêu 3 class
+            thấp nhất.
+      \item \textbf{Phân tích trắng}: chọn 2 method phức tạp nhất ---
+            tính $V(G)$ (ghi rõ cách tính), lập bảng DU-pairs cho
+            1 biến quan trọng của mỗi method.
+      \item \textbf{Kế hoạch nâng}: danh sách test case sẽ viết
+            (tên + nhánh/DU-pair nhắm tới) để đưa Line coverage
+            của module lên $\geq 50\%$; ước lượng số test.
+      \item \textbf{Đã làm}: commit 2 test của bài thực hành
+            (analytics hoặc module nhóm) kèm ảnh coverage trước / sau.
+    \end{enumerate}
+  \end{block}
+
+  \begin{itemize}
+    \item Nộp: push nhánh \texttt{btl/nhom-XX} + PDF lên LMS.
+    \item Báo cáo này là \textbf{mục 3 của BTL} (thiết kế test hộp trắng)
+          --- sẽ chấm trong 30\% điểm BTL.
+  \end{itemize}
+\end{frame}
+
+%---------------------------------------------------------------------
+% SLIDE 47
+%---------------------------------------------------------------------
+\begin{frame}{Tổng kết buổi 4 --- khép lại Chương 3}
+  \begin{columns}[T]
+    \column{0.5\textwidth}
+    \begin{block}{Hôm nay}
+      \begin{itemize}
+        \item \small Condition / MC/DC: 4 test ``soi'' đủ 3 điều kiện
+              của \texttt{evaluate()}
+        \item \small $V(G)$: 3 cách tính; evaluate = 6,
+              ageLabel = 4, computeScore = 1
+        \item \small Data flow: def / c-use / p-use, DU-pair,
+              all-defs / all-uses / all-DU-paths, anomaly
+        \item \small JaCoCo: convention plugin, ngưỡng 0.10,
+              đọc màu và cột report
+      \end{itemize}
+    \end{block}
+
+    \column{0.46\textwidth}
+    \begin{block}{Buổi 5 (Chương 4)}
+      \begin{itemize}
+        \item \small JUnit 5 chuyên sâu: lifecycle, assertions,
+              AssertJ, parameterized test
+        \item \small Biến các thiết kế test hôm nay thành code chạy được
+      \end{itemize}
+    \end{block}
+
+    \begin{alertblock}{Mang theo}
+      \small Laptop đã chạy được \texttt{./gradlew test}
+      và report JaCoCo của module nhóm.
+    \end{alertblock}
+  \end{columns}
+\end{frame}
+
+%=====================================================================
+\section{Tài liệu tham khảo}
+%=====================================================================
+
+%---------------------------------------------------------------------
+% SLIDE 48
+%---------------------------------------------------------------------
+\begin{frame}{Tài liệu tham khảo}
+  \vspace*{-0.4em}
+  \setbeamertemplate{bibliography item}{[\theenumiv]}
+  \footnotesize
+  \begin{thebibliography}{9}
+    \bibitem{slides}
+    Slide bài giảng điện tử --- Bộ môn Công nghệ Phần mềm.
+
+    \bibitem{ammann}
+    Paul Ammann \& Jeff Offutt. \textit{Introduction to Software Testing}.
+    Cambridge University Press, 2008 --- Ch.~7 (Graph Coverage),
+    Ch.~8 (Logic Coverage / MC-DC).
+
+    \bibitem{myers}
+    Glenford J. Myers. \textit{The Art of Software Testing}, 2nd ed.,
+    Wiley, 2004 --- Ch.~4 (Test-Case Design).
+
+    \bibitem{istqb}
+    ISTQB Foundation Level Syllabus, version 4.0, 2023.
+    \url{https://istqb.org/}
+
+    \bibitem{mccabe}
+    T. J. McCabe. ``A Complexity Measure''.
+    \textit{IEEE Trans.\ on Software Engineering}, SE-2(4), 1976.
+
+    \bibitem{jacoco}
+    JaCoCo Documentation. \url{https://www.jacoco.org/jacoco/trunk/doc/}
+    (counters, Gradle plugin).
+
+    \bibitem{do178c}
+    RTCA DO-178C. \textit{Software Considerations in Airborne Systems and
+    Equipment Certification} (bối cảnh MC/DC).
+  \end{thebibliography}
+\end{frame}
+
+%=====================================================================
+\end{document}
+%=====================================================================

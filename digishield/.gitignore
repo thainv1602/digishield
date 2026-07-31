@@ -57,5 +57,11 @@ Thumbs.db
 .env
 *.local
 
-# Personal coursework material (not part of the application)
-Software Testing Slide/
+# Course slide scratch renders (LaTeX sources and PDFs are tracked)
+Software Testing Slide/render/
+Software Testing Slide/*.aux
+Software Testing Slide/*.log
+Software Testing Slide/*.nav
+Software Testing Slide/*.out
+Software Testing Slide/*.snm
+Software Testing Slide/*.toc
