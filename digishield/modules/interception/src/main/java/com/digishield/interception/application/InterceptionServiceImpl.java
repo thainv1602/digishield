@@ -23,8 +23,10 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Implementation of {@link InterceptionService} with sample logic.
@@ -107,8 +109,14 @@ public class InterceptionServiceImpl implements InterceptionService {
     public AccountWatchEntryView addWatchEntry(AccountWatchEntryView request) {
         UUID tenantId = TenantContext.requireUuid();
 
-        WatchType type = WatchType.valueOf(request.type().trim().toUpperCase(Locale.ROOT));
-        RiskLevel riskLevel = RiskLevel.valueOf(request.riskLevel().trim().toUpperCase(Locale.ROOT));
+        // Validated rather than dereferenced: a body that omits risk_level used to
+        // NPE inside valueOf and surface as a 500, blaming the server for a
+        // malformed request.
+        WatchType type = requiredEnum(WatchType.class, request.type(), "type");
+        RiskLevel riskLevel = requiredEnum(RiskLevel.class, request.riskLevel(), "risk_level");
+        if (request.value() == null || request.value().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "value is required");
+        }
         UUID id = request.id() != null ? request.id() : UUID.randomUUID();
         Instant addedAt = request.addedAt() != null ? request.addedAt() : Instant.now();
 
@@ -137,6 +145,26 @@ public class InterceptionServiceImpl implements InterceptionService {
                 entry.getRiskLevel().name().toLowerCase(Locale.ROOT),
                 entry.getSource(),
                 entry.getAddedAt());
+    }
+
+    /**
+     * Parses a required enum field of the request body, case-insensitively.
+     *
+     * @throws ResponseStatusException {@code 400} when the field is absent, blank
+     *     or outside the enum — all of them caller mistakes, not server faults
+     */
+    private static <E extends Enum<E>> E requiredEnum(Class<E> type, String raw, String field) {
+        if (raw == null || raw.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, field + " is required");
+        }
+        try {
+            return Enum.valueOf(type, raw.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    field + " must be one of " + Arrays.stream(type.getEnumConstants())
+                            .map(c -> c.name().toLowerCase(Locale.ROOT))
+                            .toList());
+        }
     }
 
     private static InterventionEventView toView(InterventionEvent event) {

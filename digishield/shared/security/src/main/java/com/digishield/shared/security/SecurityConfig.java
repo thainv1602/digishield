@@ -1,5 +1,10 @@
 package com.digishield.shared.security;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.jwk.source.JWKSource;
+import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
+import com.nimbusds.jose.proc.JWSVerificationKeySelector;
+import com.nimbusds.jose.proc.SecurityContext;
 import jakarta.servlet.DispatcherType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,11 +28,18 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * Production security configuration for the business modules:
@@ -64,6 +76,16 @@ import java.util.Locale;
 public class SecurityConfig {
 
     private static final Logger LOG = LoggerFactory.getLogger(SecurityConfig.class);
+
+    /**
+     * How long the last known good JWK set keeps validating tokens while the
+     * identity provider is unreachable. Long enough to ride out a link outage,
+     * short enough that a revoked signing key cannot be honoured indefinitely.
+     */
+    private static final Duration OUTAGE_TOLERANCE = Duration.ofHours(1);
+
+    /** Bound on the one-off OpenID discovery call, so a hung provider cannot stall startup. */
+    private static final Duration DISCOVERY_TIMEOUT = Duration.ofSeconds(10);
 
     private final String issuerUri;
     private final String audience;
@@ -204,9 +226,24 @@ public class SecurityConfig {
     /**
      * Decoder that resolves the issuer's JWKS and validates signature + issuer +
      * expiry, plus an optional audience/{@code client_id} check.
+     *
+     * <p>The JWK source is built explicitly rather than left to the Spring
+     * defaults, which cache the key set for five minutes but disable both
+     * refresh-ahead and outage tolerance. That combination puts a blocking call
+     * to the identity provider on the request path every time the cache expires,
+     * and turns any failure of that call into a 500 for a request whose token was
+     * perfectly valid — observed on the Jetson cluster, whose link to Cognito is
+     * slow enough to time out. Refresh-ahead moves the refetch onto a background
+     * thread before expiry, and outage tolerance keeps serving the last known good
+     * key set while the provider is unreachable. Unknown-{@code kid} tokens still
+     * force an immediate refresh, so key rotation is unaffected.
      */
     private NimbusJwtDecoder jwtDecoder() {
-        NimbusJwtDecoder decoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
+        NimbusJwtDecoder decoder = NimbusJwtDecoder.withIssuerLocation(issuerUri)
+                .jwtProcessorCustomizer(processor ->
+                        processor.setJWSKeySelector(new JWSVerificationKeySelector<>(
+                                JWSAlgorithm.RS256, resilientJwkSource())))
+                .build();
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
         validators.add(JwtValidators.createDefaultWithIssuer(issuerUri));
         if (StringUtils.hasText(audience)) {
@@ -214,6 +251,49 @@ public class SecurityConfig {
         }
         decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
         return decoder;
+    }
+
+    /**
+     * JWK source that refreshes ahead of expiry and survives a provider outage.
+     *
+     * @throws IllegalStateException when the issuer's JWKS location cannot be
+     *     resolved — the same startup failure the Spring default produces, kept so
+     *     a misconfigured issuer is loud rather than silently unauthenticated
+     */
+    private JWKSource<SecurityContext> resilientJwkSource() {
+        URL jwkSetUrl;
+        try {
+            jwkSetUrl = URI.create(jwkSetUri(issuerUri)).toURL();
+        } catch (MalformedURLException e) {
+            throw new IllegalStateException("Issuer " + issuerUri + " advertises an unusable jwks_uri", e);
+        }
+        return JWKSourceBuilder.create(jwkSetUrl)
+                .refreshAheadCache(true)
+                .outageTolerant(OUTAGE_TOLERANCE.toMillis())
+                .retrying(true)
+                .build();
+    }
+
+    /**
+     * Reads {@code jwks_uri} from the issuer's OpenID configuration.
+     *
+     * <p>Discovery runs once at startup, exactly as the Spring default does, so an
+     * unreachable provider fails the context rather than producing a decoder that
+     * rejects every token.
+     */
+    private static String jwkSetUri(String issuerUri) {
+        String metadataUri = issuerUri.replaceAll("/+$", "") + "/.well-known/openid-configuration";
+        RestTemplate restTemplate = new RestTemplate();
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(DISCOVERY_TIMEOUT);
+        requestFactory.setReadTimeout(DISCOVERY_TIMEOUT);
+        restTemplate.setRequestFactory(requestFactory);
+        Map<?, ?> metadata = restTemplate.getForObject(metadataUri, Map.class);
+        Object jwksUri = metadata == null ? null : metadata.get("jwks_uri");
+        if (!(jwksUri instanceof String uri) || uri.isBlank()) {
+            throw new IllegalStateException("No jwks_uri in the OpenID configuration at " + metadataUri);
+        }
+        return uri;
     }
 
     /**

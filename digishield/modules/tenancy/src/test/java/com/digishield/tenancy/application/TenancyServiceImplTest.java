@@ -20,16 +20,20 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -102,6 +106,48 @@ class TenancyServiceImplTest {
         assertThat(view.tier()).isEqualTo("SILO");
         assertThat(view.dataRegion()).isEqualTo("eu-west-1");
         assertThat(view.status()).isEqualTo("PROVISIONING");
+    }
+
+    @Test
+    void createTenant_acceptsALowercaseTierFromTheWireContract() {
+        // Arrange
+        authenticateAsSuperAdmin();
+        when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        TenantView view = tenancyService.createTenant(
+                new CreateTenantCommand("Acme Corp", "pool", "eu-west-1"));
+
+        // Assert
+        assertThat(view.tier()).isEqualTo("POOL");
+    }
+
+    @Test
+    void createTenant_whenTierOutsideTheEnum_isRejectedAsBadRequestAndNothingIsWritten() {
+        // Arrange: "basic" is not a tier — this used to surface as a 500.
+        authenticateAsSuperAdmin();
+        CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "basic", "eu-west-1");
+
+        // Act + Assert
+        assertThatThrownBy(() -> tenancyService.createTenant(command))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("tier")
+                .extracting(e -> ((ResponseStatusException) e).getStatusCode())
+                .isEqualTo(HttpStatus.BAD_REQUEST);
+        verify(tenantRepository, never()).save(any());
+    }
+
+    @Test
+    void createTenant_whenNameMissing_isRejectedAsBadRequestAndNothingIsWritten() {
+        // Arrange
+        authenticateAsSuperAdmin();
+        CreateTenantCommand command = new CreateTenantCommand("  ", "POOL", "eu-west-1");
+
+        // Act + Assert
+        assertThatThrownBy(() -> tenancyService.createTenant(command))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("name");
+        verify(tenantRepository, never()).save(any());
     }
 
     @Test
