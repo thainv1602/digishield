@@ -281,7 +281,8 @@ function doLogin(e) {
                font=\small,align=center},
     arr/.style={-{Stealth[length=4pt]},darkgray,thick}
   ]
-    \draw[arr] (0,0) -- (12.3,0) node[below left,font=\scriptsize]{thời gian};
+    \draw[arr] (0,0) -- (12.3,0) node[font=\scriptsize,anchor=north west,
+      xshift=-0.65cm,yshift=-2pt]{thời gian};
     \foreach \x/\t in {0.5/0ms, 4.0/50ms, 8.0/600ms, 11.0/700ms}{
       \draw[darkgray] (\x,-0.08) -- (\x,0.08);
       \node[font=\scriptsize,below] at (\x,-0.1) {\t};
@@ -319,18 +320,18 @@ assertTrue(driver.getCurrentUrl()
 \end{lstlisting}
 
   \begin{alertblock}{Vì sao TUYỆT ĐỐI tránh \texttt{Thread.sleep}?}
+    \small
     \begin{itemize}
       \item \textbf{Chậm}: luôn đợi đủ 3s dù trang xong sau 0.7s
             --- 100 test $\times$ 3s = 5 phút lãng phí
       \item \textbf{Vẫn flaky}: máy CI chậm, trang mất 3.5s
             $\Rightarrow$ vẫn fail
       \item Không diễn đạt \textbf{ý định}: đợi cái gì? vì sao 3s?
-      \item Cộng dồn: mỗi lần fail lại tăng số giây $\Rightarrow$
-            suite E2E phình to vô hạn
+      \item \textbf{Cộng dồn}: mỗi lần fail lại tăng số giây
+            $\Rightarrow$ suite E2E phình to
     \end{itemize}
   \end{alertblock}
 
-  \vspace{-0.45em}
   \begin{block}{Nguyên tắc}
     Chờ theo \textbf{điều kiện} (condition-based), không chờ theo
     \textbf{thời gian cố định} (time-based).
@@ -1078,8 +1079,8 @@ public class LoginPageF {
     \node[bx] (fe) at (9.6,4.0) {Frontend React\\:5173};
     \node[bx] (api) at (9.6,1.7) {Backend Spring\\:8080 (H2 seed)};
 
-    \draw[arr] (test) -- node[above,font=\scriptsize,sloped]
-      {Selenium WebDriver} (chrome);
+    \draw[arr] (test) -- node[above,font=\scriptsize,sloped,
+      align=center,pos=0.45]{Selenium\\WebDriver} (chrome);
     \draw[arr] (chrome) -- node[above,font=\scriptsize]{HTTP} (fe);
     \draw[arr] (fe) -- node[right,font=\scriptsize]
       {\texttt{/api/v1}} (api);

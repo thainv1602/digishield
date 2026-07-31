@@ -311,14 +311,14 @@
   \begin{tikzpicture}[
     bx/.style={rectangle,draw=darkgray,fill=lightgray,rounded corners=2pt,
                minimum height=0.8cm,font=\small,align=center},
-    top/.style={bx,minimum width=3.3cm},
+    top/.style={bx,minimum width=3.3cm,text width=3.0cm},
     arr/.style={-{Stealth[length=4pt]},darkgray}
   ]
     \node[bx,minimum width=11cm,fill=darkgray,text=white] (platform) at (0,0)
       {\textbf{JUnit Platform} --- nền tảng khởi chạy test (launcher, engine API)};
-    \node[top] (jupiter) at (-3.9,1.4) {\textbf{JUnit Jupiter}\\API viết test mới};
-    \node[top] (vintage) at (0,1.4) {\textbf{JUnit Vintage}\\chạy test JUnit 3/4 cũ};
-    \node[top] (third) at (3.9,1.4) {\textbf{Engine khác}\\Spock, Cucumber, \dots};
+    \node[top] (jupiter) at (-3.8,1.4) {\textbf{JUnit Jupiter}\\API viết test mới};
+    \node[top] (vintage) at (0,1.4) {\textbf{JUnit Vintage}\\chạy test JUnit 3/4};
+    \node[top] (third) at (3.8,1.4) {\textbf{Engine khác}\\Spock, Cucumber, \dots};
     \node[bx,minimum width=11cm] (tools) at (0,-1.4)
       {IDE (IntelliJ, Eclipse) \quad Build tool (Gradle, Maven) \quad CI/CD};
 

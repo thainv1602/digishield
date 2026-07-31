@@ -1201,7 +1201,7 @@ eventRepository.save(event);     // luon ghi log
     \node[st,draw=darkgray,dashed,fill=white] (tri) at (0,-2.4) {TRIAGING\\\scriptsize(?)};
 
     \draw[arr] (init) -- (sub)
-      node[midway,above,lbl]{POST /reports/phishing};
+      node[midway,above=0.55cm,lbl]{POST /reports/phishing};
     \draw[arr] (sub) -- (conf)
       node[midway,above,sloped,lbl]{triage(true)\\/ publish event};
     \draw[arr] (sub) -- (dis)
@@ -1289,9 +1289,9 @@ eventRepository.save(event);     // luon ghi log
   ]
     \node[circle,fill=darkgray,inner sep=4pt] (init) at (-3.2,0) {};
     \node[st] (draft) at (0,0) {DRAFT};
-    \node[st,fill=darkgray,text=white] (appr) at (4.6,0) {APPROVED};
+    \node[st,fill=darkgray,text=white] (appr) at (5.4,0) {APPROVED};
     \draw[arr] (init) -- (draft)
-      node[midway,above,lbl]{generate /\\create(approved=false)};
+      node[midway,above=0.55cm,lbl]{generate /\\create(approved=false)};
     \draw[arr] (draft) -- (appr)
       node[midway,above,lbl]{submit\\(CONTENT\_EDITOR)};
     \draw[arr] (init) to[out=-35,in=-145]
