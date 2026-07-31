@@ -388,8 +388,8 @@
     arr/.style={-{Stealth[length=4pt]},darkgray,thick}
   ]
     \node[it] (i1) {\textbf{Vòng lặp 1}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
-    \node[it,right=0.8cm of i1] (i2) {\textbf{Vòng lặp 2}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
-    \node[it,right=0.8cm of i2] (i3) {\textbf{Vòng lặp 3}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
+    \node[it,right=1.8cm of i1] (i2) {\textbf{Vòng lặp 2}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
+    \node[it,right=1.8cm of i2] (i3) {\textbf{Vòng lặp 3}\\Yêu cầu $\to$ Thiết kế\\$\to$ Code $\to$ \textbf{Test}};
     \draw[arr] (i1) -- node[above,font=\scriptsize]{tăng trưởng} (i2);
     \draw[arr] (i2) -- node[above,font=\scriptsize]{tăng trưởng} (i3);
   \end{tikzpicture}
@@ -1178,19 +1178,19 @@ class InterceptionServiceImplTest {
   \begin{columns}[T]
     \column{0.44\textwidth}
     \begin{center}
-    \begin{tikzpicture}[scale=0.55]
+    \begin{tikzpicture}[scale=1.0]
       % Manual (big top)
       \fill[darkgray!80] (0,4.4) -- (5,4.4) -- (4.3,3.2) -- (0.7,3.2) -- cycle;
-      \node[white,font=\small\bfseries] at (2.5,3.8) {Manual Test};
+      \node[white,font=\normalsize\bfseries] at (2.5,3.8) {Manual Test};
       % E2E
       \fill[darkgray!55] (0.7,3.2) -- (4.3,3.2) -- (3.6,2.0) -- (1.4,2.0) -- cycle;
-      \node[font=\small\bfseries] at (2.5,2.6) {E2E / UI};
+      \node[font=\normalsize\bfseries] at (2.5,2.6) {E2E / UI};
       % Integration
       \fill[darkgray!35] (1.4,2.0) -- (3.6,2.0) -- (3.0,0.9) -- (2.0,0.9) -- cycle;
       \node[font=\scriptsize\bfseries] at (2.5,1.45) {Integration};
       % Unit (tiny tip)
       \fill[darkgray!20] (2.0,0.9) -- (3.0,0.9) -- (2.5,0.1) -- cycle;
-      \node[font=\tiny\bfseries] at (2.5,0.68) {Unit};
+      \node[font=\scriptsize\bfseries] at (2.5,0.68) {Unit};
       \draw[darkgray] (0,4.4) -- (5,4.4) -- (2.5,0.1) -- cycle;
       \draw[darkgray] (0.7,3.2) -- (4.3,3.2);
       \draw[darkgray] (1.4,2.0) -- (3.6,2.0);
@@ -1420,9 +1420,9 @@ class InterceptionServiceImplTest {
     \node[st,right=0.75cm of fix] (ver) {Verified};
     \node[st,right=0.75cm of ver] (clo) {Closed};
 
-    \draw[arr] (new) -- node[above,font=\scriptsize]{lead duyệt} (asg);
-    \draw[arr] (asg) -- node[above,font=\scriptsize]{dev sửa} (fix);
-    \draw[arr] (fix) -- node[above,font=\scriptsize]{tester re-test} (ver);
+    \draw[arr] (new) -- node[above=0.32cm,font=\scriptsize]{lead duyệt} (asg);
+    \draw[arr] (asg) -- node[above=0.32cm,font=\scriptsize]{dev sửa} (fix);
+    \draw[arr] (fix) -- node[above=0.32cm,font=\scriptsize]{tester re-test} (ver);
     \draw[arr] (ver) -- (clo);
     \draw[arr,dashed] (fix.south) to[out=-40,in=-140]
       node[below,font=\scriptsize]{re-test fail $\to$ Reopened} (asg.south);
