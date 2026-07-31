@@ -64,6 +64,7 @@ jobs:
           filters: |
             backend:
               - 'digishield/**'
+              - '!digishield/Software Testing Slide/**'
               - '!**/*.md'
             frontend:
               - 'frontend/**'
