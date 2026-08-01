@@ -1090,11 +1090,11 @@ public class LoginPageF {
   \end{center}
 
   \begin{block}{Vì sao bước ``thêm entry'' đi qua API?}
-    Trên UI thật, nút ``+ Thêm thủ công'' của \texttt{WatchlistPage.tsx}
-    hiện mới là stub (chỉ hiện toast) $\Rightarrow$ test \textbf{chèn dữ
-    liệu qua API} rồi \textbf{kiểm chứng qua UI}. Đây là kỹ thuật chuẩn:
-    \emph{setup bằng API --- nhanh, ổn định; quan sát bằng UI --- đúng
-    trải nghiệm người dùng.} (Ghi nhận stub này vào báo cáo BTL!)
+    Không phải vì UI thiếu --- nút ``+ Thêm thủ công'' của
+    \texttt{WatchlistPage.tsx} mở drawer và gọi \texttt{POST /blacklist}
+    thật. Test vẫn \textbf{chèn dữ liệu qua API} rồi \textbf{kiểm chứng
+    qua UI} vì đây là kỹ thuật chuẩn: \emph{setup bằng API --- nhanh, ổn
+    định; quan sát bằng UI --- đúng trải nghiệm người dùng.}
   \end{block}
 \end{frame}
 
@@ -1118,9 +1118,10 @@ public class LoginPageF {
 
   \begin{alertblock}{Phát hiện khi khảo sát backend}
     \texttt{BlacklistType} \textbf{không có} \texttt{BANK} (chỉ
-    DOMAIN/URL/EMAIL/IP/PHONE/HASH) trong khi UI có nhóm ``Tài khoản
-    ngân hàng'' --- \texttt{type="bank"} gây lỗi server. Khoảng hở FE/BE
-    đáng ghi vào báo cáo; demo dùng \texttt{type="phone"}.
+    DOMAIN/URL/EMAIL/IP/PHONE/HASH) trong khi UI có nhóm hiển thị ``Tài
+    khoản ngân hàng'' --- form thêm chỉ cho phone/domain/url/email/ip nên
+    nhóm này \textbf{luôn rỗng}. Khoảng hở FE/BE đáng ghi vào báo cáo;
+    demo dùng \texttt{type="phone"}.
   \end{alertblock}
 \end{frame}
 
@@ -1429,9 +1430,9 @@ class AnalystBlocksAccountE2E { ... }
             mong đợi --- khuôn mẫu buổi 9)
       \item Sơ đồ POM: trang nào, class nào, method nào
       \item Kết quả chạy: ảnh HTML report + screenshot minh chứng
-      \item Lỗi/khoảng hở phát hiện được (vd nút ``+ Thêm thủ công''
-            là stub; thiếu \texttt{data-testid};
-            \texttt{BlacklistType} thiếu \texttt{BANK})
+      \item Lỗi/khoảng hở phát hiện được (vd nhóm ``Tài khoản ngân
+            hàng'' luôn rỗng vì \texttt{BlacklistType} thiếu
+            \texttt{BANK}; thiếu \texttt{data-testid})
     \end{enumerate}
   \end{exampleblock}
 \end{frame}
