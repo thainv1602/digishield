@@ -24,6 +24,8 @@ import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtValidators;
+import org.springframework.security.oauth2.jwt.BadJwtException;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
@@ -177,7 +179,12 @@ public class SecurityConfig {
                             .requestMatchers("/ws/**").permitAll()
                             .anyRequest().authenticated())
                     .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                            .decoder(jwtDecoder())
+                            // Deferred: building the decoder fetches the issuer's
+                            // OpenID discovery document, and doing that here made
+                            // every context boot — including the Flyway migration
+                            // job's — depend on the IdP being reachable (crashed
+                            // the ArgoCD PreSync hook on the Jetson cluster).
+                            .decoder(lazyJwtDecoder())
                             .jwtAuthenticationConverter(jwtAuthenticationConverter())));
         } else {
             LOG.warn("No JWT issuer configured (AUTH_JWT_ISSUER_URI unset) in a non-dev profile — "
@@ -224,6 +231,46 @@ public class SecurityConfig {
     }
 
     /**
+     * Defers {@link #jwtDecoder()} to the first bearer token, so context startup
+     * (notably the Flyway migration job's) never touches the network.
+     *
+     * <p>Fails closed while the issuer is unreachable: the build error is wrapped
+     * in a {@link BadJwtException}, which the resource server converts to a plain
+     * 401 — not the 500 a raw {@code JwtDecoderInitializationException} produces
+     * (Spring Security's own {@code SupplierJwtDecoder} was observed doing exactly
+     * that). Nothing is memoized on failure, so the next request retries; the
+     * first successful build is reused for the life of the context, and from then
+     * on outages are absorbed by the JWK source's outage tolerance instead.
+     */
+    private JwtDecoder lazyJwtDecoder() {
+        return new JwtDecoder() {
+            private volatile JwtDecoder delegate;
+
+            @Override
+            public Jwt decode(String token) {
+                JwtDecoder decoder = delegate;
+                if (decoder == null) {
+                    synchronized (this) {
+                        if (delegate == null) {
+                            try {
+                                delegate = jwtDecoder();
+                            } catch (RuntimeException e) {
+                                LOG.warn("Could not initialise JWT decoder from issuer '{}' ({}); "
+                                        + "rejecting bearer tokens until the issuer becomes reachable",
+                                        issuerUri, e.getMessage());
+                                throw new BadJwtException(
+                                        "JWT validation unavailable: issuer unreachable", e);
+                            }
+                        }
+                        decoder = delegate;
+                    }
+                }
+                return decoder.decode(token);
+            }
+        };
+    }
+
+    /**
      * Decoder that resolves the issuer's JWKS and validates signature + issuer +
      * expiry, plus an optional audience/{@code client_id} check.
      *
@@ -237,6 +284,10 @@ public class SecurityConfig {
      * thread before expiry, and outage tolerance keeps serving the last known good
      * key set while the provider is unreachable. Unknown-{@code kid} tokens still
      * force an immediate refresh, so key rotation is unaffected.
+     *
+     * <p>Called lazily (via {@link #lazyJwtDecoder()}) on the first bearer token,
+     * never during context startup: construction performs the OpenID discovery
+     * calls, and startup must not depend on the IdP being reachable.
      */
     private NimbusJwtDecoder jwtDecoder() {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withIssuerLocation(issuerUri)
@@ -257,8 +308,10 @@ public class SecurityConfig {
      * JWK source that refreshes ahead of expiry and survives a provider outage.
      *
      * @throws IllegalStateException when the issuer's JWKS location cannot be
-     *     resolved — the same startup failure the Spring default produces, kept so
-     *     a misconfigured issuer is loud rather than silently unauthenticated
+     *     resolved. Surfaced by {@link #lazyJwtDecoder()} as a per-request 401
+     *     and a warning in the logs, retried on the next request — so a
+     *     misconfigured issuer is loud without an unreachable one taking the
+     *     whole context down.
      */
     private JWKSource<SecurityContext> resilientJwkSource() {
         URL jwkSetUrl;
@@ -277,9 +330,10 @@ public class SecurityConfig {
     /**
      * Reads {@code jwks_uri} from the issuer's OpenID configuration.
      *
-     * <p>Discovery runs once at startup, exactly as the Spring default does, so an
-     * unreachable provider fails the context rather than producing a decoder that
-     * rejects every token.
+     * <p>Discovery runs when the decoder is first built — on the first bearer
+     * token, not at startup. While the provider is unreachable every token is
+     * rejected (401) and the next request retries; startup and the Flyway
+     * migration job stay independent of the IdP.
      */
     private static String jwkSetUri(String issuerUri) {
         String metadataUri = issuerUri.replaceAll("/+$", "") + "/.well-known/openid-configuration";
