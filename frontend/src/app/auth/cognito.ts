@@ -2,8 +2,9 @@
  * AWS Cognito OIDC wiring (authorization-code + PKCE via the hosted UI).
  *
  * Enabled only when VITE_COGNITO_AUTHORITY + VITE_COGNITO_CLIENT_ID are set
- * (i.e. the deployed build). When unset (local dev / tests) `cognitoEnabled` is
- * false and the app keeps its demo login. The issuer (authority) is the Cognito
+ * (i.e. the deployed build). When unset (local dev / CI / E2E) `cognitoEnabled`
+ * is false and /login renders the dev sign-in form instead. The issuer
+ * (authority) is the Cognito
  * user-pool URL; oidc-client-ts reads its discovery doc for the hosted-UI
  * authorize/token endpoints.
  */

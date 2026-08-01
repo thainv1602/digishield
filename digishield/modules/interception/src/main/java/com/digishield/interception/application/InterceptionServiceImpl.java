@@ -62,7 +62,7 @@ public class InterceptionServiceImpl implements InterceptionService {
             signals.add("NEW_PAYEE");
         }
 
-        Optional<AccountWatchEntry> hit = watchRepository.findByTenantIdAndValue(tenantId, request.destAccount());
+        Optional<AccountWatchEntry> hit = watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(tenantId, request.destAccount());
         boolean watchlistHit = hit.isPresent();
         if (watchlistHit) {
             signals.add("WATCHLIST_HIT");
@@ -93,7 +93,7 @@ public class InterceptionServiceImpl implements InterceptionService {
     @Override
     public Optional<AccountWatchEntry> checkAccount(String value) {
         UUID tenantId = TenantContext.requireUuid();
-        return watchRepository.findByTenantIdAndValue(tenantId, value);
+        return watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(tenantId, value);
     }
 
     @Override

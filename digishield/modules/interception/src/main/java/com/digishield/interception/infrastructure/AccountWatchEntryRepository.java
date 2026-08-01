@@ -11,7 +11,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface AccountWatchEntryRepository extends JpaRepository<AccountWatchEntry, UUID> {
 
-    Optional<AccountWatchEntry> findByTenantIdAndValue(UUID tenantId, String value);
+    /**
+     * The most recent entry for a value. Duplicates are legal — there is no
+     * unique constraint on (tenant_id, value) and POST /account-watchlist may
+     * insert the same value twice — so lookups must not assume uniqueness
+     * (a plain findBy throws NonUniqueResultException and turns into a 500).
+     */
+    Optional<AccountWatchEntry> findFirstByTenantIdAndValueOrderByAddedAtDesc(UUID tenantId, String value);
 
     List<AccountWatchEntry> findByTenantIdOrderByAddedAtDesc(UUID tenantId);
 
