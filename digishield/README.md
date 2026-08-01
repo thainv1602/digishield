@@ -96,6 +96,25 @@ permissive security so the React frontend (Vite dev server at
 
 This serves the API at **`http://localhost:8080/api/v1`**.
 
+**No Cognito / AWS account is needed in dev.** The production JWT resource
+server (`SecurityConfig`, `@Profile("!dev")`) is replaced by `DevSecurityConfig`
+(`permitAll()`), identity comes from the auth module's `StubAuthProvider`, and
+the frontend signs in through its dev login form (role + email picker) instead
+of the Cognito OAuth redirect. Cognito only becomes mandatory for the non-dev
+profiles (`api`, `pgdemo`, ...), where `SecurityConfig` needs a reachable
+`issuer-uri`.
+
+To run the same dev experience against a **real PostgreSQL + Flyway** stack
+instead of H2, add the `pgdemo` profile (expects Postgres at
+`localhost:5432/digishield`, override with `DB_URL`; still no Cognito):
+
+```bash
+./gradlew bootRun --args='--spring.profiles.active=dev,pgdemo'
+```
+
+or use the prod-like Docker Compose stack (see
+[Prod-like (real Postgres + Flyway)](#prod-like-real-postgres--flyway)).
+
 What the `dev` profile turns on (everything else — prod — is unchanged):
 
 | Concern | dev | default / prod |
