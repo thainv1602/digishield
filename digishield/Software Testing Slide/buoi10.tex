@@ -224,16 +224,18 @@
 
 %--- SLIDE 4b ---------------------------------------------------------
 \begin{frame}{Hành trình kiểm thử DigiShield đến hôm nay (2/2)}
-  \begin{block}{Mảnh ghép còn thiếu}
+  \begin{block}{Mảnh ghép cuối cùng}
     Ta đã test \textbf{logic} (unit), \textbf{tích hợp} (integration) và
-    \textbf{HTTP endpoint} (API). Nhưng chưa có gì đảm bảo
-    \textbf{người dùng thật} mở browser, gõ email, bấm nút
-    \emph{Đăng nhập}\ldots{} thì hệ thống hoạt động đúng.
+    \textbf{HTTP endpoint} (API). Tầng còn lại: mô phỏng
+    \textbf{người dùng thật} mở browser, chọn vai trò, bấm nút
+    \emph{Đăng nhập}\ldots{} và kiểm tra hệ thống hoạt động đúng.
   \end{block}
 
   \begin{alertblock}{Thực trạng DigiShield}
-    Frontend React có unit test Vitest nhưng \textbf{chưa có E2E test} ---
-    đây chính là phần sinh viên sẽ bổ sung.
+    Repo đã có module \texttt{:e2e} (Selenium, 1 kịch bản
+    \texttt{AnalystBlocksAccountE2E}) chạy như \textbf{cổng chặn} trong CI
+    --- nhưng để \textbf{đọc hiểu và mở rộng} nó (yêu cầu BTL), hôm nay ta
+    học Selenium từ số 0, tự viết lại bộ test đăng nhập.
   \end{alertblock}
 \end{frame}
 
@@ -328,7 +330,7 @@
 
   \vspace{0.3em}
   \begin{exampleblock}{Với DigiShield}
-    Buổi này: luồng \textbf{đăng nhập} (cửa ngõ của mọi persona).
+    Buổi này: luồng \textbf{đăng nhập} (cửa ngõ của mọi vai trò).
     Buổi 11: kịch bản E2E nhiều bước (analyst xử lý báo cáo, watchlist).
   \end{exampleblock}
 \end{frame}
@@ -638,8 +640,8 @@ class FirstSeleniumTest {
     \item Profile \textbf{dev}: H2 in-memory, \textbf{không cần Docker},
           dữ liệu demo tự seed
     \item API sẵn sàng tại \texttt{http://localhost:8080/api/v1}
-    \item Tài khoản demo: \texttt{admin@coquan.gov.vn} / \texttt{demo1234}
-          (ngoài ra \texttt{analyst@}, \texttt{learner@}, \texttt{manager@}\ldots)
+    \item Dev profile \texttt{permitAll} --- \textbf{không cần tài khoản};
+          đăng nhập ở frontend chỉ chọn vai trò (slide sau)
   \end{itemize}
 
   \begin{block}{Nguyên tắc E2E}
@@ -653,20 +655,20 @@ class FirstSeleniumTest {
   \setbeamerfont{itemize/enumerate body}{size=\small}
   \begin{exampleblock}{Terminal 2 --- trong thư mục \texttt{frontend/}}
 \begin{lstlisting}[language={}]
-git switch --detach b403e67~1  # ban demo-login
 npm install     # lan dau
 npm run dev     # Vite dev server, port 5173
 \end{lstlisting}
   \end{exampleblock}
 
-  {\scriptsize \textbf{Ghi chú}: \texttt{main} nay dùng Cognito --- lệnh
-  \texttt{git switch} trên đưa repo về bản demo-login.}
+  {\scriptsize \textbf{Ghi chú}: bản deploy dùng Cognito; \texttt{npm run dev}
+  không đặt \texttt{VITE\_COGNITO\_*} nên \texttt{/login} hiện
+  \textbf{dev sign-in form} --- chính là thứ ta sẽ test.}
   \vspace{-0.4em}
 
   \begin{itemize}
     \item Mở thử bằng tay: \texttt{http://localhost:5173/login}
-    \item React 18 + Vite; trang đăng nhập đã \textbf{prefill}
-          \texttt{admin@coquan.gov.vn} / \texttt{demo1234}
+    \item Ô email \textbf{tự điền} theo vai trò đang chọn
+          (\texttt{learner@dev\ldots})
   \end{itemize}
 
   \begin{alertblock}{Checklist trước khi viết test}
@@ -684,13 +686,12 @@ npm run dev     # Vite dev server, port 5173
     \column{0.52\textwidth}
     \begin{block}{Các thành phần trên trang (LoginPage.tsx)}
       \begin{itemize}
-        \item \textbf{Segmented control} 4 nút chọn persona:
-              Admin / Learner / Analyst / Super
-        \item Ô \textbf{Email công việc} --- prefill \texttt{admin@coquan.gov.vn}
-        \item Ô \textbf{Mật khẩu} --- prefill \texttt{demo1234}
-        \item Nút \textbf{Đăng nhập} (submit); khi bấm đổi thành
-              ``Đang đăng nhập\ldots'' và bị disable
-        \item Link \emph{Quên mật khẩu?}, nút \emph{SSO}
+        \item Dropdown \textbf{Vai trò} --- 6 role RBAC
+              (mặc định \texttt{learner})
+        \item Ô \textbf{Email} --- \textbf{tự điền theo vai trò}
+              (\texttt{analyst@dev\ldots}); gõ tay thì thôi tự điền
+        \item Nút \textbf{Đăng nhập (dev)} (submit) --- không kiểm tra
+              mật khẩu; chỉ xuất hiện khi chưa cấu hình Cognito
       \end{itemize}
     \end{block}
 
@@ -699,12 +700,12 @@ npm run dev     # Vite dev server, port 5173
       \small
       \begin{tabular}{ll}
         \toprule
-        \textbf{Persona} & \textbf{Trang đích} \\
+        \textbf{Vai trò} & \textbf{Trang đích} \\
         \midrule
-        Admin & \texttt{/dashboard} \\
         Learner & \texttt{/learn} \\
         Analyst & \texttt{/soc/inbox} \\
-        Super & \texttt{/super/tenants} \\
+        Super Admin & \texttt{/super/tenants} \\
+        3 role còn lại & \texttt{/dashboard} \\
         \bottomrule
       \end{tabular}
     \end{block}
@@ -717,26 +718,28 @@ npm run dev     # Vite dev server, port 5173
 %--- SLIDE 22 ---------------------------------------------------------
 \begin{frame}[fragile]{Nhìn vào DOM của trang login (rút gọn)}
 \begin{lstlisting}[language=xml,basicstyle=\ttfamily\scriptsize]
-<!-- 4 nut persona: KHONG co id -->
-<button type="button">Admin</button>
-<button type="button">Learner</button>
-<button type="button">Analyst</button>
-<button type="button">Super</button>
-
 <form>
-  <label for="login-email">(*@{\normalfont\scriptsize\smash{Email công việc}}@*)</label>
-  <input id="login-email" type="email"
-         value="admin@coquan.gov.vn" />
-  <label for="login-pw">(*@{\normalfont\scriptsize\smash{Mật khẩu}}@*)</label>
-  <input id="login-pw" type="password"
-         value="demo1234" />
-  <button type="submit">(*@{\normalfont\scriptsize\smash{Đăng nhập}}@*)</button>
+  <label for="login-role">(*@{\normalfont\scriptsize\smash{Vai trò}}@*)</label>
+  <select id="login-role">
+    <option value="super_admin">Super Admin</option>
+    ...
+    <option value="analyst">Analyst</option>
+    <option value="learner" selected>Learner</option>
+  </select>
+  <label for="login-email">Email</label>
+  <input id="login-email" type="email" required
+         value="learner@dev.digishield.local" />
+  <button id="login-submit" type="submit">
+    (*@{\normalfont\scriptsize\smash{Đăng nhập (dev)}}@*)</button>
 </form>
 \end{lstlisting}
 
   \begin{itemize}
-    \item Hai input có \textbf{id ổn định}: \texttt{login-email}, \texttt{login-pw} --- quà quý cho tester!
-    \item Nút persona và nút submit \textbf{không có id} $\to$ cần CSS/XPath
+    \item Cả 3 element có \textbf{id ổn định}: \texttt{login-role},
+          \texttt{login-email}, \texttt{login-submit} --- ``hợp đồng''
+          mà module \texttt{:e2e} cũng bám vào
+    \item \texttt{value} của \texttt{option} là \textbf{mã role}
+          (\texttt{analyst}) --- bền hơn text hiển thị
   \end{itemize}
 \end{frame}
 
@@ -809,9 +812,9 @@ WebElement email =
 
 // Danh sach element - khong nem exception,
 // tra ve list rong neu khong co gi khop
-List<WebElement> buttons =
-    driver.findElements(By.tagName("button"));
-// Trang login co 4 nut persona + submit + SSO
+List<WebElement> options =
+    driver.findElements(By.tagName("option"));
+// Dropdown vai tro co 6 option (6 role RBAC)
 \end{lstlisting}
 
   \begin{itemize}
@@ -829,12 +832,12 @@ List<WebElement> buttons =
     \toprule
     \textbf{Locator} & \textbf{Tìm theo} & \textbf{Ví dụ trên DigiShield} \\
     \midrule
-    \texttt{By.id} & Thuộc tính \texttt{id} & \texttt{login-email}, \texttt{login-pw} \\
+    \texttt{By.id} & Thuộc tính \texttt{id} & \texttt{login-role}, \texttt{login-email}, \texttt{login-submit} \\
     \texttt{By.name} & Thuộc tính \texttt{name} & (trang login không đặt \texttt{name}) \\
-    \texttt{By.cssSelector} & Cú pháp CSS & \texttt{button[type='submit']} \\
-    \texttt{By.xpath} & Biểu thức XPath & nút theo text ``Đăng nhập'' \\
-    \texttt{By.linkText} / \texttt{partialLinkText} & Text của thẻ \texttt{<a>} & (login dùng \texttt{<span>}, không khớp!) \\
-    \texttt{By.tagName} & Tên thẻ & \texttt{form}, \texttt{button} \\
+    \texttt{By.cssSelector} & Cú pháp CSS & \texttt{option[value='analyst']} \\
+    \texttt{By.xpath} & Biểu thức XPath & nút theo text ``Đăng nhập (dev)'' \\
+    \texttt{By.linkText} / \texttt{partialLinkText} & Text của thẻ \texttt{<a>} & (trang login không có \texttt{<a>} nào!) \\
+    \texttt{By.tagName} & Tên thẻ & \texttt{form}, \texttt{select}, \texttt{option} \\
     \texttt{By.className} & Thuộc tính \texttt{class} & (DigiShield style inline, ít class) \\
     \bottomrule
   \end{tabular}
@@ -842,8 +845,8 @@ List<WebElement> buttons =
 
   {\small \textbf{Nhận xét từ hệ thống thật}: không phải locator nào ``trong
   sách'' cũng dùng được --- DigiShield không đặt \texttt{name}, ít
-  \texttt{class}, link là \texttt{span} có \texttt{onClick}; tester phải
-  \textbf{đọc DOM thật} rồi mới chọn locator.}
+  \texttt{class}, ``link'' nhiều nơi là \texttt{span} có \texttt{onClick};
+  tester phải \textbf{đọc DOM thật} rồi mới chọn locator.}
 \end{frame}
 
 %--- SLIDE 27 ---------------------------------------------------------
@@ -851,10 +854,10 @@ List<WebElement> buttons =
 \begin{lstlisting}[language=java]
 // Trang login la trang hiem hoi cua DigiShield
 // co san id on dinh:
+WebElement role =
+    driver.findElement(By.id("login-role"));
 WebElement email =
     driver.findElement(By.id("login-email"));
-WebElement password =
-    driver.findElement(By.id("login-pw"));
 
 // Cung tim duoc bang tagName (kem chinh xac hon)
 WebElement form =
@@ -904,8 +907,9 @@ WebElement form =
 driver.findElement(
     By.cssSelector("button[type='submit']"));
 
-// Tuong duong By.id
-driver.findElement(By.cssSelector("#login-email"));
+// Mot option cu the trong dropdown vai tro
+driver.findElement(By.cssSelector(
+    "#login-role option[value='analyst']"));
 
 // Trang Watchlist (/soc/watchlist): o Quick Check
 // khong co id, nhung co placeholder dac trung
@@ -932,11 +936,11 @@ driver.findElement(By.cssSelector(
     \textbf{Cú pháp} & \textbf{Ý nghĩa} \\
     \midrule
     \texttt{//button} & Mọi \texttt{button} ở bất kỳ đâu \\
-    \texttt{//input[@id='login-pw']} & \texttt{input} có thuộc tính id \\
-    \texttt{//button[text()='Admin']} & Text \textbf{bằng đúng} ``Admin'' \\
+    \texttt{//input[@id='login-email']} & \texttt{input} có thuộc tính id \\
+    \texttt{//option[text()='Analyst']} & Text \textbf{bằng đúng} ``Analyst'' \\
     \texttt{//button[contains(text(),'Đăng')]} & Text \textbf{chứa} chuỗi con \\
     \texttt{//form//button} & \texttt{button} bên trong \texttt{form} \\
-    \texttt{//label[@for='login-pw']/..} & Đi \textbf{ngược lên} cha (CSS không làm được) \\
+    \texttt{//label[@for='login-role']/..} & Đi \textbf{ngược lên} cha (CSS không làm được) \\
     \texttt{(//button)[2]} & Nút thứ 2 trong kết quả (dễ vỡ!) \\
     \bottomrule
   \end{tabular}
@@ -955,18 +959,19 @@ driver.findElement(By.cssSelector(
 driver.findElement(By.xpath(
     "//button[contains(text(),'(*@{\normalfont\scriptsize Đăng nhập}@*)')]"));
 
-// Chon persona tren segmented control
-// (nhan cac nut la 'Admin', 'Learner',
-//  'Analyst', 'Super' - khong dau)
+// Option theo text hien thi (nhan tieng Anh:
+// 'Super Admin', 'Analyst', 'Learner'...)
 driver.findElement(By.xpath(
-    "//button[text()='Analyst']"));
+    "//option[text()='Analyst']"));
 \end{lstlisting}
 
   \begin{alertblock}{Ba cái bẫy khi tìm theo text trên DigiShield}
     \begin{enumerate}
       \item Text có \textbf{dấu tiếng Việt} --- file test phải lưu UTF-8, gõ đúng dấu
-      \item Khi đang submit, nút đổi text thành ``Đang đăng nhập\ldots'' $\to$ locator theo text \textbf{mất dấu} element
-      \item DigiShield có i18n (\texttt{t('Đăng nhập')}) --- đổi ngôn ngữ giao diện là test vỡ
+      \item Cùng trang \texttt{/login}, \textbf{hai chế độ}: bản dev nút ghi
+            ``Đăng nhập (dev)'', bản Cognito ghi ``Đăng nhập'' --- text khác,
+            \texttt{id} mới là chỗ bám bền
+      \item DigiShield có i18n (\texttt{t('Đăng nhập (dev)')}) --- đổi ngôn ngữ giao diện là test vỡ
     \end{enumerate}
   \end{alertblock}
 \end{frame}
@@ -997,7 +1002,9 @@ driver.findElement(By.xpath(
 \begin{frame}{Thực trạng DigiShield --- khi hệ thống ``không chiều'' tester}
   \begin{block}{Quan sát từ mã nguồn frontend}
     \begin{itemize}
-      \item Chỉ trang login có \texttt{id} ổn định (\texttt{login-email}, \texttt{login-pw})
+      \item Trang login có \texttt{id} ổn định đủ bộ
+            (\texttt{login-role/-email/-submit}); Alert Center có vài
+            \texttt{id} lẻ (\texttt{alert-severity}, \texttt{alert-message})
       \item Đa số trang khác (Dashboard, SOC Inbox, Watchlist\ldots):
             input dùng \textbf{style inline}, \textbf{không id}, \textbf{không name}, ít class
       \item Nút bấm chỉ phân biệt được bằng text hoặc vị trí
@@ -1021,19 +1028,18 @@ driver.findElement(By.xpath(
 
 %--- SLIDE 34 ---------------------------------------------------------
 \begin{frame}[fragile]{\texttt{data-testid} --- best practice hợp tác dev--tester}
-  \begin{exampleblock}{Đề xuất pull request cho LoginPage.tsx / các trang SOC}
+  \begin{exampleblock}{Đề xuất pull request cho các trang SOC (chưa có id)}
 \begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
-<input  id="login-email"
-        data-testid="login-email" ... />
-<button type="submit"
-        data-testid="login-submit">
+<input  placeholder="Nhap so tai khoan..."
+        data-testid="watchlist-quick-check" />
+<button data-testid="watchlist-add">
 \end{lstlisting}
   \end{exampleblock}
 
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 // Trong test: chi bam vao "hop dong" testid
-driver.findElement(
-    By.cssSelector("[data-testid='login-submit']"));
+driver.findElement(By.cssSelector(
+    "[data-testid='watchlist-quick-check']"));
 \end{lstlisting}
 
   {\small \textbf{Vì sao đáng làm?} (1) Tách locator khỏi style/text: refactor
@@ -1052,56 +1058,52 @@ driver.findElement(
 WebElement email =
     driver.findElement(By.id("login-email"));
 
-// CAN THAN: form login da prefill san
-// admin@coquan.gov.vn. sendKeys chi GO THEM
-// vao noi dung cu -> phai clear() truoc!
+// CAN THAN: o email da duoc tu dien san
+// (learner@dev.digishield.local). sendKeys
+// chi GO THEM vao noi dung cu
+// -> phai clear() truoc!
 email.clear();
-email.sendKeys("analyst@coquan.gov.vn");
-
-WebElement pw =
-    driver.findElement(By.id("login-pw"));
-pw.clear();
-pw.sendKeys("demo1234");
+email.sendKeys("tester@digishield.vn");
 \end{lstlisting}
 
   \begin{alertblock}{Lỗi kinh điển với form có prefill}
     Quên \texttt{clear()} $\to$ ô email thành
-    \texttt{admin@coquan.gov.vnanalyst@coquan.gov.vn} --- test fail khó hiểu.
+    \texttt{learner@dev.digishield.localtester@digishield.vn}
+    --- test fail khó hiểu.
   \end{alertblock}
 \end{frame}
 
 %--- SLIDE 36 ---------------------------------------------------------
-\begin{frame}[fragile]{Kích hoạt --- \texttt{click} và \texttt{submit}}
+\begin{frame}[fragile]{Kích hoạt --- \texttt{click} và \texttt{Select} cho dropdown}
 \begin{lstlisting}[language=java]
-// Cach 1: click nut submit (khuyen dung -
-// giong het hanh vi nguoi dung)
-driver.findElement(
-    By.cssSelector("button[type='submit']")).click();
+// Click nut submit (khuyen dung - giong het
+// hanh vi nguoi dung)
+driver.findElement(By.id("login-submit")).click();
 
-// Cach 2: goi submit() tren element trong form
-driver.findElement(By.id("login-email")).submit();
-
-// Click chon persona (nut type="button")
-driver.findElement(
-    By.xpath("//button[text()='Analyst']")).click();
+// Dropdown KHONG click nhu nut - dung lop Select:
+Select role = new Select(
+    driver.findElement(By.id("login-role")));
+role.selectByValue("analyst");        // theo ma role
+role.selectByVisibleText("Analyst");  // theo nhan
 \end{lstlisting}
 
   \begin{itemize}
     \item \texttt{click()} yêu cầu element \textbf{nhìn thấy được và không bị che};
           bị che thì ném \texttt{ElementClickInterceptedException}
-    \item \texttt{submit()} đi ``đường tắt'' sự kiện submit của form ---
-          ưu tiên \texttt{click()} để giống người dùng thật
+    \item \texttt{Select} (gói \texttt{support.ui}) là API riêng cho
+          \texttt{<select>}; ưu tiên \texttt{selectByValue} --- mã role
+          không đổi khi giao diện đổi nhãn/ngôn ngữ
   \end{itemize}
 \end{frame}
 
 %--- SLIDE 37 ---------------------------------------------------------
 \begin{frame}[fragile]{Đọc thông tin --- \texttt{getText} và \texttt{getAttribute}}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
-WebElement submit = driver.findElement(
-    By.cssSelector("button[type='submit']"));
+WebElement submit =
+    driver.findElement(By.id("login-submit"));
 
 String label = submit.getText();
-// -> chu hien thi tren nut
+// -> "Dang nhap (dev)"
 String type = submit.getAttribute("type");
 // -> "submit"
 
@@ -1110,12 +1112,12 @@ WebElement email =
 // Voi <input>, noi dung go vao KHONG nam
 // trong getText() ma trong thuoc tinh value:
 String value = email.getAttribute("value");
-// -> "admin@coquan.gov.vn" (gia tri prefill)
+// -> "learner@dev.digishield.local" (tu dien)
 \end{lstlisting}
 
   \begin{block}{Ghi nhớ}
     \texttt{getText()} = text \textbf{hiển thị} bên trong thẻ (nút submit trả về
-    ``Đăng nhập''); còn giá trị của \texttt{<input>} phải đọc qua
+    ``Đăng nhập (dev)''); còn giá trị của \texttt{<input>} phải đọc qua
     \texttt{getAttribute("value")}.
   \end{block}
 \end{frame}
@@ -1136,17 +1138,22 @@ String value = email.getAttribute("value");
   \end{center}
 
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
-WebElement submit = driver.findElement(
-    By.cssSelector("button[type='submit']"));
-submit.isEnabled();   // true - truoc khi bam
-submit.click();
-// Trong luc submit, LoginPage dat
-// disabled={submitting} -> nut bi khoa:
-submit.isEnabled();   // false (trong ~600ms)
+// isSelected: dung chuan cho <option>
+new Select(driver.findElement(
+    By.id("login-role"))).selectByValue("analyst");
+
+WebElement analystOpt = driver.findElement(
+    By.cssSelector("option[value='analyst']"));
+analystOpt.isSelected();  // true - vua chon xong
+
+WebElement learnerOpt = driver.findElement(
+    By.cssSelector("option[value='learner']"));
+learnerOpt.isSelected();  // false
 \end{lstlisting}
 
-  {\small \textbf{Ứng dụng}: assert nút bị khóa khi đang xử lý = kiểm tra
-  hệ thống \textbf{chống double-click} gửi hai lần.}
+  {\small \textbf{Ứng dụng}: assert \textbf{trạng thái form} trước khi submit
+  --- chọn nhầm role thì fail ngay tại đây, thay vì fail khó hiểu ở bước
+  assert URL phía sau.}
 \end{frame}
 
 %=====================================================================
@@ -1162,10 +1169,10 @@ submit.isEnabled();   // false (trong ~600ms)
     \toprule
     \textbf{Mã} & \textbf{Mục tiêu} & \textbf{Dữ liệu} & \textbf{Kết quả mong đợi} \\
     \midrule
-    TC-L01 & Đăng nhập Admin thành công & \texttt{admin@coquan.gov.vn} / \texttt{demo1234} & Điều hướng sang \texttt{/dashboard} \\
-    TC-L02 & Đăng nhập persona Analyst & chọn pill Analyst, tài khoản demo & Điều hướng sang \texttt{/soc/inbox} \\
+    TC-L01 & Đăng nhập Org Admin & role \texttt{org\_admin}, email tự điền & Sang \texttt{/dashboard} \\
+    TC-L02 & Analyst \textbf{thấy} hộp báo cáo & role \texttt{analyst} & \texttt{/soc/inbox} + tab THREAT \\
     TC-L03 & Email sai định dạng & \texttt{khong-phai-email} & Ở lại \texttt{/login} \\
-    TC-L04 & Mật khẩu rỗng & email hợp lệ, pw rỗng & Ở lại \texttt{/login}? (xem slide sau!) \\
+    TC-L04 & F5 sau khi đăng nhập & đăng nhập rồi F5 & Giữ phiên? (slide sau!) \\
     \bottomrule
   \end{tabular}
   \end{center}
@@ -1201,52 +1208,52 @@ class LoginTest {
 \end{frame}
 
 %--- SLIDE 41 ---------------------------------------------------------
-\begin{frame}[fragile]{Bước 3 --- TC-L01: đăng nhập Admin (bản đầu tiên)}
+\begin{frame}[fragile]{Bước 3 --- TC-L01: đăng nhập Org Admin}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void dangNhapAdmin_veDashboard() {
-  WebElement email =
-      driver.findElement(By.id("login-email"));
-  email.clear();
-  email.sendKeys("admin@coquan.gov.vn");
+void dangNhapOrgAdmin_veDashboard() {
+  new Select(driver.findElement(
+      By.id("login-role")))
+      .selectByValue("org_admin");
+  // email da tu dien theo role - khong can go
 
-  WebElement pw =
-      driver.findElement(By.id("login-pw"));
-  pw.clear();
-  pw.sendKeys("demo1234");
-
-  driver.findElement(
-      By.cssSelector("button[type='submit']")).click();
+  driver.findElement(By.id("login-submit")).click();
 
   assertTrue(driver.getCurrentUrl()
-      .contains("/dashboard"));   // FAIL ?!
+      .contains("/dashboard"));   // XANH ngay!
 }
 \end{lstlisting}
+
+  \begin{block}{Vì sao assert URL ngay sau \texttt{click()} vẫn xanh?}
+    Handler submit của React gọi \texttt{navigate()} \textbf{đồng bộ} ngay
+    trong sự kiện click --- URL đã đổi trước khi \texttt{click()} trả về.
+    Nhưng đừng vội mừng\ldots{} URL không phải là tất cả (slide sau).
+  \end{block}
 \end{frame}
 
 %--- SLIDE 42 ---------------------------------------------------------
-\begin{frame}[fragile]{Chạy thử: ĐỎ! --- vì sao assert ngay lại fail?}
-  \begin{alertblock}{Kết quả chạy}
-    \texttt{AssertionFailedError: expected true} ---
-    URL lúc assert vẫn là \texttt{http://localhost:5173/login}
-  \end{alertblock}
+\begin{frame}[fragile]{TC-L02: lúc ĐỎ lúc XANH?! --- test ``chập chờn''}
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+@Test
+void dangNhapAnalyst_thayHopBaoCao() {
+  new Select(driver.findElement(By.id("login-role")))
+      .selectByValue("analyst");
+  driver.findElement(By.id("login-submit")).click();
 
-  \begin{exampleblock}{Nhìn vào mã nguồn thật --- LoginPage.tsx}
-\begin{lstlisting}[language={},basicstyle=\ttfamily\scriptsize]
-function doLogin(e) {
-  e?.preventDefault();
-  setSubmitting(true);
-  setTimeout(() => {
-    login({ ... }, 'demo-token');
-    navigate(defaultRouteForPersona(persona));
-  }, 600);   // <-- cho 600ms roi MOI chuyen trang
+  assertTrue(driver.getCurrentUrl()
+      .contains("/soc/inbox"));       // luon XANH
+  driver.findElement(By.xpath(
+      "//button[@role='tab'][contains(.,'THREAT')]"));
+  // lan dau: NoSuchElementException - DO
+  // chay lai: co khi lai XANH ?!
 }
 \end{lstlisting}
-  \end{exampleblock}
 
   \begin{itemize}
-    \item \texttt{click()} trả về \textbf{ngay}; điều hướng xảy ra \textbf{600ms sau}
-    \item Test assert khi trang \textbf{chưa kịp} chuyển --- kinh điển của kiểm thử web bất đồng bộ
+    \item URL đổi \textbf{đồng bộ}; nội dung trang đích
+          (\texttt{lazy(() => import\ldots)} + gọi API) đến \textbf{sau}
+    \item Test \textbf{đua} với trang render: thắng xanh, thua đỏ ---
+          \emph{flaky test}, nguy hiểm hơn test đỏ hẳn (buổi 11)
   \end{itemize}
 \end{frame}
 
@@ -1254,18 +1261,18 @@ function doLogin(e) {
 \begin{frame}[fragile]{Giải pháp tạm thời --- và vấn đề để lại cho buổi 11 (1/2)}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void dangNhapAdmin_veDashboard()
+void dangNhapAnalyst_thayHopBaoCao()
     throws InterruptedException {  // <-- nho them throws!
-  // ... dien email / mat khau nhu slide truoc ...
-
-  driver.findElement(
-      By.cssSelector("button[type='submit']")).click();
+  new Select(driver.findElement(By.id("login-role")))
+      .selectByValue("analyst");
+  driver.findElement(By.id("login-submit")).click();
 
   // TAM THOI: cho "cung" 1.5 giay
   Thread.sleep(1500);
 
-  assertTrue(driver.getCurrentUrl()
-      .contains("/dashboard"));   // XANH
+  driver.findElement(By.xpath(
+      "//button[@role='tab'][contains(.,'THREAT')]"));
+  // tim thay -> XANH
 }
 \end{lstlisting}
 \end{frame}
@@ -1281,32 +1288,34 @@ void dangNhapAdmin_veDashboard()
   \end{alertblock}
 
   \begin{exampleblock}{Câu hỏi treo cho Buổi 11}
-    Làm sao chờ \textbf{đúng sự kiện} ``URL đã đổi'' thay vì chờ thời gian?
+    Làm sao chờ \textbf{đúng sự kiện} ``element đã xuất hiện'' thay vì chờ
+    thời gian?
     $\to$ \texttt{WebDriverWait} + \texttt{ExpectedConditions} (explicit wait).
   \end{exampleblock}
 \end{frame}
 
 %--- SLIDE 44 ---------------------------------------------------------
-\begin{frame}[fragile]{TC-L02 --- đăng nhập persona Analyst}
+\begin{frame}[fragile]{Gom điểm chung --- helper \texttt{dangNhap(role)}}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
+void dangNhap(String role) {
+  new Select(driver.findElement(By.id("login-role")))
+      .selectByValue(role);
+  driver.findElement(By.id("login-submit")).click();
+}
+
 @Test
-void dangNhapAnalyst_veSocInbox()
+void dangNhapLearner_veLearn()
     throws InterruptedException {
-  // 1. Chon persona tren segmented control
-  driver.findElement(
-      By.xpath("//button[text()='Analyst']")).click();
-
-  // 2. Giu email/password prefill, submit luon
-  driver.findElement(
-      By.cssSelector("button[type='submit']")).click();
-
+  dangNhap("learner");
   Thread.sleep(1500);
-
-  // 3. Analyst duoc dua ve SOC Inbox
   assertTrue(driver.getCurrentUrl()
-      .contains("/soc/inbox"));
+      .contains("/learn"));
 }
 \end{lstlisting}
+
+  {\small Mỗi role một dòng \texttt{dangNhap("...")} --- hết lặp code.
+  Đây chính là bước đệm cho \textbf{Page Object Model} (buổi 11): gom
+  locator + thao tác của một trang vào một class.}
 \end{frame}
 
 %--- SLIDE 45 ---------------------------------------------------------
@@ -1319,10 +1328,8 @@ void emailSaiDinhDang_oLaiTrangLogin()
       driver.findElement(By.id("login-email"));
   email.clear();
   email.sendKeys("khong-phai-email");
-
-  driver.findElement(
-      By.cssSelector("button[type='submit']")).click();
-  Thread.sleep(1000);
+  driver.findElement(By.id("login-submit")).click();
+  Thread.sleep(500);
 
   assertTrue(driver.getCurrentUrl()
       .contains("/login"));   // XANH
@@ -1330,34 +1337,36 @@ void emailSaiDinhDang_oLaiTrangLogin()
 \end{lstlisting}
 
   \begin{block}{Vì sao vẫn ở \texttt{/login}?}
-    Ô email khai báo \texttt{type="email"} $\to$ \textbf{HTML5 constraint validation}
-    của browser chặn submit; hàm \texttt{doLogin} không hề chạy.
+    \texttt{type="email" required} $\to$ \textbf{HTML5 constraint validation}
+    chặn submit; handler React không chạy. Message (đọc qua
+    \texttt{getAttribute("validationMessage")}) do browser sinh --- đừng
+    assert nội dung!
   \end{block}
 \end{frame}
 
 %--- SLIDE 46 ---------------------------------------------------------
-\begin{frame}[fragile]{TC-L04 --- mật khẩu rỗng: test tìm ra ``chuyện thú vị''}
+\begin{frame}[fragile]{TC-L04 --- F5 sau đăng nhập: test tìm ra ``chuyện thú vị''}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void passwordRong_khongDuocDangNhap()
+void f5SauDangNhap_giuPhien()
     throws InterruptedException {
-  driver.findElement(By.id("login-pw")).clear();
-  driver.findElement(
-      By.cssSelector("button[type='submit']")).click();
+  dangNhap("analyst");
   Thread.sleep(1500);
-  // Ky vong: van o /login.  Thuc te: DO!
+
+  driver.navigate().refresh();   // F5
+  Thread.sleep(1000);
+  // Ky vong: van o /soc/inbox.  Thuc te: DO!
   assertTrue(driver.getCurrentUrl()
-      .contains("/login"));
+      .contains("/soc/inbox"));  // dang o /login
 }
 \end{lstlisting}
 
-  {\small \textbf{Test fail --- nhưng đó là phát hiện giá trị}: bản dev đăng
-  nhập \textbf{mô phỏng phía client} --- \texttt{doLogin} không hề kiểm tra
-  mật khẩu, pw rỗng vẫn vào \texttt{/dashboard}! Ô password cũng không có
-  \texttt{required}.\\[0.25em]
-  \textbf{Việc của tester}: ghi bug report (buổi 2) --- môi trường dev chấp
-  nhận (by design, bản deploy dùng AWS Cognito) nhưng phải \textbf{ghi nhận
-  rõ} + đề xuất thêm \texttt{required}.}
+  {\small \textbf{Test fail --- nhưng là phát hiện giá trị}: phiên dev nằm
+  \textbf{trong bộ nhớ JS} --- F5 là mất, app về \texttt{/login}. By design:
+  bản Cognito lưu phiên trong \texttt{localStorage}, F5 \textbf{giữ} phiên.\\[0.25em]
+  \textbf{Luật rút ra}: giữa kịch bản \textbf{không} \texttt{driver.get()}
+  (= reload = văng phiên) --- điều hướng \textbf{qua UI}. Đây là lý do POM
+  của module \texttt{:e2e} click sidebar (buổi 11).}
 \end{frame}
 
 %=====================================================================
@@ -1426,7 +1435,7 @@ System.out.println(
     Vòng đời & \texttt{new ChromeDriver()}, \texttt{quit()} (so với \texttt{close()}) \\
     Điều khiển browser & \texttt{get}, \texttt{getTitle}, \texttt{getCurrentUrl}, \texttt{navigate()}, \texttt{manage().window()} \\
     Tìm element & \texttt{findElement(s)} + \texttt{By.id / cssSelector / xpath / tagName\ldots} \\
-    Thao tác & \texttt{sendKeys}, \texttt{clear}, \texttt{click}, \texttt{submit} \\
+    Thao tác & \texttt{sendKeys}, \texttt{clear}, \texttt{click}, \texttt{Select.selectByValue} \\
     Đọc / kiểm tra & \texttt{getText}, \texttt{getAttribute}, \texttt{isDisplayed}, \texttt{isEnabled} \\
     Debug & \texttt{TakesScreenshot}, \texttt{getPageSource}, DevTools \\
     \bottomrule
@@ -1445,15 +1454,17 @@ System.out.println(
 %--- SLIDE 50 ---------------------------------------------------------
 \begin{frame}{Thực hành trên lớp}
   \begin{block}{Bài 1 --- Dựng và chạy bộ test đăng nhập (bắt buộc)}
-    Tạo project \texttt{digishield-e2e} (Maven hoặc Gradle), chạy backend dev +
-    frontend, hoàn thiện \texttt{LoginTest} với 3 test \textbf{xanh}:
-    đăng nhập Admin (TC-L01), Analyst (TC-L02), email sai định dạng (TC-L03).
+    Tạo project \texttt{digishield-e2e-btl} (Maven hoặc Gradle), chạy backend
+    dev + frontend, hoàn thiện \texttt{LoginTest} với 3 test \textbf{xanh}:
+    Org Admin (TC-L01), Analyst + tab THREAT (TC-L02), email sai định dạng
+    (TC-L03) --- và TC-L04 kèm \textbf{nhận xét} vì sao đỏ.
   \end{block}
 
-  \begin{block}{Bài 2 --- Mở rộng persona}
-    Viết thêm 2 test: persona \textbf{Learner} $\to$ \texttt{/learn},
-    persona \textbf{Super} $\to$ \texttt{/super/tenants}.
-    Gợi ý: nhân tiện rút phần trùng lặp thành method \texttt{dangNhap(persona)}.
+  \begin{block}{Bài 2 --- Mở rộng vai trò}
+    Dùng helper \texttt{dangNhap(role)}, viết thêm 3 test:
+    \texttt{learner} $\to$ \texttt{/learn},
+    \texttt{super\_admin} $\to$ \texttt{/super/tenants},
+    \texttt{content\_editor} $\to$ \texttt{/dashboard}.
   \end{block}
 
   \begin{block}{Bài 3 --- Trinh sát locator cho buổi 11}
