@@ -1,6 +1,5 @@
 package com.digishield.e2e.pages;
 
-import com.digishield.e2e.support.DriverFactory;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
@@ -11,10 +10,12 @@ import java.time.Duration;
 
 /**
  * Page Object for the Watchlist page {@code /soc/watchlist}.
+ *
+ * <p>Reached via SPA navigation (sidebar link) — never {@code driver.get()},
+ * because a full page load drops the in-memory dev session and bounces back
+ * to /login.
  */
 public class WatchlistPage {
-
-    private static final String URL = DriverFactory.baseUrl() + "/soc/watchlist";
 
     private final WebDriver driver;
     private final WebDriverWait wait;
@@ -27,8 +28,8 @@ public class WatchlistPage {
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(15));
     }
 
-    public WatchlistPage open() {
-        driver.get(URL);
+    /** Wait until the page (its Quick Check form) is rendered. */
+    public WatchlistPage awaitLoaded() {
         wait.until(ExpectedConditions.visibilityOfElementLocated(quickCheckInput));
         return this;
     }

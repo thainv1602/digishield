@@ -87,7 +87,7 @@ class InterceptionServiceImplTest {
         AccountWatchEntry watchHit = new AccountWatchEntry(
                 UUID.randomUUID(), TENANT_ID, WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
                 RiskLevel.CONFIRMED, "fraud-feed");
-        when(watchRepository.findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
                 .thenReturn(Optional.of(watchHit));
         EvaluateRequest request = new EvaluateRequest(
                 userId, new BigDecimal("5000000"), DEST_ACCOUNT, true, true);
@@ -118,7 +118,7 @@ class InterceptionServiceImplTest {
         AccountWatchEntry watchHit = new AccountWatchEntry(
                 UUID.randomUUID(), TENANT_ID, WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
                 RiskLevel.HIGH, "fraud-feed");
-        when(watchRepository.findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
                 .thenReturn(Optional.of(watchHit));
         EvaluateRequest request = new EvaluateRequest(
                 userId, new BigDecimal("100"), DEST_ACCOUNT, false, false);
@@ -139,7 +139,7 @@ class InterceptionServiceImplTest {
     void evaluate_whenOnCallAndNewPayeeButNoWatchlistHit_warnsIsNotTriggeredAndAllows() {
         // Arrange: high-risk behavioural signals but the destination is clean
         UUID userId = UUID.randomUUID();
-        when(watchRepository.findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
                 .thenReturn(Optional.empty());
         EvaluateRequest request = new EvaluateRequest(
                 userId, new BigDecimal("9999"), DEST_ACCOUNT, true, true);
@@ -159,7 +159,7 @@ class InterceptionServiceImplTest {
     void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
         // Arrange
         UUID userId = UUID.randomUUID();
-        when(watchRepository.findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
                 .thenReturn(Optional.empty());
         EvaluateRequest request = new EvaluateRequest(
                 userId, new BigDecimal("10"), DEST_ACCOUNT, false, false);
@@ -247,7 +247,7 @@ class InterceptionServiceImplTest {
         AccountWatchEntry entry = new AccountWatchEntry(
                 UUID.randomUUID(), TENANT_ID, WatchType.PHONE, "+84900000000",
                 RiskLevel.WATCH, "user-report");
-        when(watchRepository.findByTenantIdAndValue(TENANT_ID, "+84900000000"))
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, "+84900000000"))
                 .thenReturn(Optional.of(entry));
 
         // Act
@@ -255,6 +255,6 @@ class InterceptionServiceImplTest {
 
         // Assert
         assertThat(result).containsSame(entry);
-        verify(watchRepository).findByTenantIdAndValue(TENANT_ID, "+84900000000");
+        verify(watchRepository).findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, "+84900000000");
     }
 }

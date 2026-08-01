@@ -35,7 +35,14 @@ public class SocInboxPage {
         return driver.findElements(rows).size();
     }
 
+    /**
+     * Navigate via the sidebar link — an in-app (SPA) navigation. A
+     * {@code driver.get()} here would reload the page and drop the dev
+     * session, which lives in memory only.
+     */
     public WatchlistPage gotoWatchlist() {
-        return new WatchlistPage(driver).open();
+        wait.until(ExpectedConditions.elementToBeClickable(
+                By.cssSelector("a[href='/soc/watchlist']"))).click();
+        return new WatchlistPage(driver).awaitLoaded();
     }
 }

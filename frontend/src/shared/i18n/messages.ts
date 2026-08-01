@@ -57,7 +57,6 @@ export const EN: Record<string, string> = {
   'Chưa có tenant nào.': 'No tenants yet.',
   'Chưa có thành viên nào.': 'No members yet.',
   'Chưa có tệp đính kèm.': 'No attachments yet.',
-  'Chưa cấu hình đăng nhập. Đặt VITE_COGNITO_AUTHORITY và VITE_COGNITO_CLIENT_ID rồi build lại.': 'Login is not configured. Set VITE_COGNITO_AUTHORITY and VITE_COGNITO_CLIENT_ID, then rebuild.',
   'Chưa kết nối': 'Not connected',
   'Chưa đồng bộ lần nào': 'Never synced',
   'Chạy AIDA ngay': 'Run AIDA now',
@@ -104,6 +103,8 @@ export const EN: Record<string, string> = {
     'The link was sent to recipients over the campaign channel (email/SMS). If no provider is configured the system runs in simulation — open a link/QR below to test recording a Click.',
   'Chưa nối máy chủ email thật — mở liên kết bên dưới để mô phỏng người nhận bấm vào (ghi nhận sự kiện Bấm).':
     'No real mail server is wired — open a link below to simulate a recipient clicking (records a Click event).',
+  'Dev sign-in — Cognito chưa cấu hình (chỉ dành cho môi trường dev/E2E).':
+    'Dev sign-in — Cognito is not configured (dev/E2E environments only).',
   'Doanh nghiệp (enterprise)': 'Enterprise',
   'Dễ': 'Easy',
   'Dữ liệu được lưu trữ tại datacenter trong lãnh thổ Việt Nam, tuân thủ Nghị định 13/2023/NĐ-CP.': 'Data is stored in data centers within Vietnam, compliant with Decree 13/2023/NĐ-CP.',
@@ -460,6 +461,7 @@ export const EN: Record<string, string> = {
 
   // --- Login ---
   'Đăng nhập': 'Sign in',
+  'Đăng nhập (dev)': 'Sign in (dev)',
   'Đang đăng nhập…': 'Signing in…',
   'Quên mật khẩu?': 'Forgot password?',
   'Nền tảng nhận thức an ninh số': 'Digital Security Awareness Platform',

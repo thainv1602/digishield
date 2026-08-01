@@ -18,10 +18,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * E2E-WL-01 - an Analyst blocks a scam account, end to end across UI -> API -> DB.
  *
- * <p><b>Reference template.</b> Selectors and flow follow the real frontend, but the
- * scenario still needs to be hardened against the live UI (timing, lazy-loaded routes)
- * before it can be a blocking gate. In automation-ci it runs non-blocking
- * ({@code continue-on-error}) and uploads a screenshot on failure.
+ * <p>Signs in through the dev sign-in form (rendered when Cognito is not
+ * configured), so the whole flow is hermetic: frontend + backend (dev profile)
+ * + this test, no external identity provider. A blocking gate in automation-ci.
  *
  * <p>GUARDED: runs only with {@code -De2e.enabled=true} and a running frontend
  * (:5173) + backend (:8080, dev profile). In unit CI (no app) this class is
@@ -32,7 +31,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AnalystBlocksAccountE2E {
 
     static WebDriver driver;
-    static final String VALUE = "0909123456";
+    /** Unique per run, so reruns against a long-lived dev backend never collide. */
+    static final String VALUE = "0909" + (System.currentTimeMillis() % 1_000_000);
 
     @BeforeAll
     static void startBrowser() {
@@ -46,13 +46,13 @@ class AnalystBlocksAccountE2E {
 
     @Test
     void analystBlocksScamAccountEndToEnd() throws Exception {
-        // (1) Log in as the Analyst persona (the 600ms wait is encapsulated in LoginPage)
+        // (1) Sign in with the analyst role via the dev sign-in form
         SocInboxPage inbox = new LoginPage(driver)
                 .open()
-                .loginAsAnalyst("analyst@coquan.gov.vn", "demo1234");
+                .loginAsAnalyst("analyst@dev.digishield.local");
         assertThat(inbox.filterBy("THREAT").reportCount()).isGreaterThanOrEqualTo(0);
 
-        // (2) Block the account via API (the UI "+ Add manually" button is a stub)
+        // (2) Block the account via API (setup by API, observe through the UI)
         ApiHelper.blockAccount(VALUE);
 
         // (3) UI: the new entry shows up in the watchlist table

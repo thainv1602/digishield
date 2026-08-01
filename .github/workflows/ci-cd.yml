@@ -315,7 +315,6 @@ jobs:
           npm install
           npm run test:api
       - name: E2E tests (Selenium headless)
-        continue-on-error: true
         working-directory: digishield
         run: ./gradlew :e2e:test -De2e.enabled=true -Dselenium.headless=true --no-daemon
       - name: Upload automation reports

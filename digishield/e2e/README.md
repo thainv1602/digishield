@@ -41,11 +41,17 @@ The dev profile is intentionally permissive (`SecurityConfig` / `MethodSecurityC
 input-level negatives (400/404). Role/tenant enforcement (401/403, RLS) is covered by the
 integration tests (`TenantIsolationIT`, `RlsCoverageIT`) which run under a secured profile.
 
+## How the E2E signs in
+The frontend renders a **dev sign-in form** on `/login` whenever Cognito is not configured
+(no `VITE_COGNITO_*` env — the local/CI setup). It exposes stable ids `login-role`,
+`login-email`, `login-submit`; no credentials are checked (the dev backend is permitAll).
+`LoginPage` (POM) drives this form, so the E2E run is hermetic — no external identity
+provider. Deployed builds set the Cognito env and never show this form.
+
 ## Status of the sample scenario
-`AnalystBlocksAccountE2E` is a **reference template**. In `automation-ci` its E2E step is
-`continue-on-error: true` (runs, uploads a failure screenshot, but does not fail the pipeline)
-because it must be hardened against the live UI first. Once a group has a verified-green
-scenario, remove `continue-on-error` to make E2E a real gate.
+`AnalystBlocksAccountE2E` is a **blocking gate** in `automation-ci`: it runs on every
+merge to `main` and fails the pipeline when red (a failure screenshot is uploaded as an
+artifact). BTL groups extend it with their own scenarios under the same gate.
 
 ## How BTL groups extend this
 - Add a Page Object for the new screen under `pages/`, a new scenario under `scenarios/`.
