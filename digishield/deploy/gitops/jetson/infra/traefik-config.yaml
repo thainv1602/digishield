@@ -15,3 +15,14 @@ spec:
       externalIPs:
         - 192.168.1.50
         - 192.168.1.205
+    # Without servicelb the traefik Service never gets status.loadBalancer, so
+    # the default publishedService ingress endpoint copies an empty status into
+    # every Ingress: ADDRESS stays blank and Argo CD reports the Ingress (and
+    # the app) as Progressing forever. Publish the node IP statically instead,
+    # mirroring the externalIPs above.
+    providers:
+      kubernetesIngress:
+        publishedService:
+          enabled: false
+    additionalArguments:
+      - "--providers.kubernetesingress.ingressendpoint.ip=192.168.1.50"
