@@ -47,6 +47,41 @@ data:
           - source_labels: [__meta_kubernetes_pod_name]
             target_label: pod
 
+      # The nodes themselves. node-exporter runs with hostNetwork, so the pod IP
+      # discovered here is already the node IP — no separate node role needed,
+      # and no extra RBAC beyond the pod list this ServiceAccount already has.
+      - job_name: node-exporter
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [digishield]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            regex: node-exporter
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+      # The state of the Kubernetes objects. Keeping only the port *named*
+      # http-metrics avoids scraping 8081 as well, which serves this exporter's
+      # own internals rather than the cluster's.
+      - job_name: kube-state-metrics
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [digishield]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
+            regex: kube-state-metrics
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            regex: http-metrics
+            action: keep
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
       - job_name: prometheus
         static_configs:
           - targets: [localhost:9090]
