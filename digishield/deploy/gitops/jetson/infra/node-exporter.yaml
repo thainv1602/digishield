@@ -62,8 +62,11 @@ spec:
             - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/kubelet/.+|var/lib/docker/.+|var/lib/rancher/.+)($|/)
             - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
           ports:
+            # No hostPort. With hostNetwork the container already shares the
+            # node's network namespace, so binding :9100 here *is* binding it on
+            # the node; hostPort would be redundant and only widens what a
+            # policy scanner has to forgive.
             - containerPort: 9100
-              hostPort: 9100
               name: metrics
           readinessProbe:
             httpGet:
