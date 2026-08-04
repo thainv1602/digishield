@@ -49,6 +49,18 @@ Platform operations are `SUPER_ADMIN`-only. Tenant self-service uses
 | `GET/POST /sim/campaigns**` | MANAGER |
 | `POST /sim/events` | authenticated |
 
+## Failure semantics: 401 vs 503
+`401` means **this token was rejected** — missing, expired, malformed, wrong issuer
+or audience. It is the client's cue to discard the session (the SPA logs out and
+redirects to `/login` on any 401 that carried a token).
+
+`503` + `Retry-After` means **the API could not validate any token** — the JWT
+decoder could not be built because the issuer is unreachable. The token was never
+judged, so reporting 401 would blame a session that may be perfectly good.
+`JwtUnavailableEntryPoint` draws the line; `JwtWsHandshakeInterceptor` mirrors it
+for WebSocket upgrades. Clients should retry rather than sign the user out —
+nothing is memoized on failure, so recovery takes effect on the next request.
+
 ## Notes / assumptions (review these)
 - **Pre-auth auth endpoints** (`/auth/login`, `/refresh`, `/sso/callback`, `/forgot-password`, `/reset-password`, `/mfa/**`) are **not** annotated — they are the dev-stub login path and are reachable only via the URL rules in `SecurityConfig`/Cognito. Wiring real login is separate (AuthServiceImpl work).
 - **Ingestion endpoints** `POST /interventions/evaluate`, `GET /account-watchlist/check`, `POST /sim/events` are left at `authenticated()` rather than role-gated, since they may be driven by a real-time integration or click-tracking. Tighten once the caller identity is settled.

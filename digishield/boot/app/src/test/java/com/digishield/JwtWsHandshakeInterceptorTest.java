@@ -28,8 +28,12 @@ class JwtWsHandshakeInterceptorTest {
                 .doesNotThrowAnyException();
     }
 
+    /**
+     * 503, not 401: the token was never judged, so blaming it would be wrong —
+     * the same distinction the REST chain draws via {@code JwtUnavailableEntryPoint}.
+     */
     @Test
-    void handshakeDeniedWhileIssuerUnreachable() {
+    void handshakeUnavailableWhileIssuerUnreachable() {
         var interceptor = new JwtWsHandshakeInterceptor(UNREACHABLE_ISSUER);
         var response = new MockHttpServletResponse();
 
@@ -37,7 +41,7 @@ class JwtWsHandshakeInterceptorTest {
                 requestWithToken(), new ServletServerHttpResponse(response), null, new HashMap<>());
 
         assertThat(allowed).isFalse();
-        assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+        assertThat(response.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
     }
 
     @Test

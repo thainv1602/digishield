@@ -46,12 +46,37 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * True when the failing request actually presented a bearer token.
+ *
+ * <p>A 401 on a request that carried no token says nothing about the session —
+ * it is just an anonymous call to a protected endpoint. Logging out on those
+ * would drag a user who is signing in, or who is sitting on a public page, off
+ * to /login for a request that was never theirs.
+ */
+function carriedToken(config: AxiosRequestConfig | undefined): boolean {
+  // AxiosHeaders normalizes case and exposes a case-insensitive get(); a plain
+  // object (hand-built configs, tests) has neither, so read it both ways.
+  const headers = config?.headers as
+    | { get?: (name: string) => unknown; Authorization?: unknown; authorization?: unknown }
+    | undefined;
+  const auth =
+    typeof headers?.get === 'function'
+      ? headers.get('Authorization')
+      : (headers?.Authorization ?? headers?.authorization);
+  return typeof auth === 'string' && auth.startsWith('Bearer ');
+}
+
 // ---- Response interceptor: 401 handling ----
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Token missing/expired/invalid — clear auth and bounce to login.
+    // 401 means *this token* was rejected — expired, malformed, wrong issuer.
+    // It deliberately does not cover "the API cannot validate tokens right now":
+    // that answers 503 (JwtUnavailableEntryPoint), which TanStack Query retries
+    // with the session left intact. Conflating the two is what turned a Cognito
+    // outage into "sign in, get bounced straight back to the login screen".
+    if (error.response?.status === 401 && carriedToken(error.config)) {
       handleUnauthorized();
     }
     return Promise.reject(error);
