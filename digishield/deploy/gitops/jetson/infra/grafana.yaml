@@ -1,13 +1,21 @@
 # Grafana — somewhere to look at the metrics and logs now that both are kept.
 #
-# Deliberately not published through the Ingress. Everything this cluster exposes
-# goes to the public internet through the Tailscale Funnel, and that is how
-# /actuator/prometheus ended up readable by anyone (#132). Reach it instead with:
+# Deliberately not published through the Traefik Ingress. Everything Traefik
+# serves on this cluster goes to the public internet through the Tailscale
+# Funnel on ubuntu.tail761165.ts.net, and that is how /actuator/prometheus
+# ended up readable by anyone (#132).
+#
+# It is published to the tailnet instead, through the Tailscale operator (see
+# apps/tailscale.yaml). That is the deliberate decision this comment used to
+# defer: reachable from any machine on the tailnet without a kubectl, and from
+# nowhere else.
+#
+#   https://grafana.<tailnet>.ts.net
+#
+# The port-forward still works and stays the fallback when the operator is down
+# or the tailnet is not joined:
 #
 #   kubectl -n digishield port-forward svc/grafana 3000:3000
-#
-# An Ingress can be added later if it is wanted, as a deliberate decision rather
-# than a side effect of the default.
 #
 # The admin password is NOT in git, and is not chosen by hand either. Same shape
 # as ArgoCD's initial admin secret: generate a random one into a Secret once, then
@@ -65,6 +73,35 @@ spec:
   selector:
     app.kubernetes.io/name: grafana
 ---
+# Tailnet-only Ingress. `ingressClassName: tailscale` routes around Traefik
+# altogether: the operator gives this Service its own tailnet device and its own
+# Let's Encrypt certificate, served on https://grafana.<tailnet>.ts.net.
+#
+# The hostname comes from tls.hosts[0], NOT from a rules[].host — that is the
+# operator's convention, and the name is the device name on the tailnet.
+#
+# No `tailscale.com/funnel: "true"` annotation, so this is NOT on the public
+# internet. Adding that annotation is the one-line change that would put Grafana
+# — and with it every metric and every application log Loki holds — in front of
+# a single generated admin password with no MFA. Do not add it casually.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: grafana
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: grafana
+      port:
+        number: 3000
+  tls:
+    - hosts:
+        - grafana
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -113,12 +150,16 @@ spec:
                 secretKeyRef:
                   name: grafana-admin
                   key: admin-password
-            # No sign-up, and no anonymous access even though this is only
-            # reachable through a port-forward today.
+            # No sign-up, and no anonymous access. The tailnet is the first gate
+            # and the admin password is the second; neither is worth giving up.
             - name: GF_USERS_ALLOW_SIGN_UP
               value: "false"
             - name: GF_AUTH_ANONYMOUS_ENABLED
               value: "false"
+            # GF_SERVER_ROOT_URL is left unset on purpose. Grafana serves fine
+            # at the root of any host without it, and pinning it to the ts.net
+            # name would make the port-forward fallback emit links back to a
+            # host the browser may not be able to reach.
           ports:
             - containerPort: 3000
               name: http
