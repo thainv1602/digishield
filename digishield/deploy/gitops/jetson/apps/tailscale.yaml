@@ -1,0 +1,88 @@
+# Tailscale Kubernetes operator — puts Grafana (and anything else worth reaching
+# by hand) on the tailnet without putting it on the public internet.
+#
+# Why this and not the Traefik Ingress: everything Traefik serves on this
+# cluster is behind the Tailscale Funnel on ubuntu.tail761165.ts.net, which is
+# public. That is how /actuator/prometheus ended up readable by anyone (#132).
+# An Ingress with `ingressClassName: tailscale` bypasses Traefik entirely: the
+# operator gives the backing Service its own tailnet device, its own MagicDNS
+# name and its own certificate, reachable only from the tailnet. Funnel stays
+# off unless an Ingress explicitly asks for it with the
+# `tailscale.com/funnel: "true"` annotation, so public exposure has to be a
+# decision someone writes down rather than the default.
+#
+# The OAuth credentials are NOT in git. Create them once, the same way the
+# Grafana admin password and the app secrets are created:
+#
+#   1. In the Tailscale admin console, add the tags to the ACL policy — the
+#      OAuth client can only issue keys for tags it owns:
+#
+#        "tagOwners": {
+#          "tag:k8s-operator": [],
+#          "tag:k8s":          ["tag:k8s-operator"],
+#        }
+#
+#   2. Settings -> OAuth clients -> Generate: scope `Devices: Core` (write),
+#      tag `tag:k8s-operator`. Copy the client ID and secret once; the secret
+#      is shown only at creation.
+#
+#   3. Hand them to the cluster:
+#
+#        kubectl create namespace tailscale
+#        kubectl -n tailscale create secret generic operator-oauth \
+#          --from-literal=client_id="<id>" \
+#          --from-literal=client_secret="<secret>"
+#
+# Without that Secret the operator Pod stays unable to start with a clear
+# reason, which is the failure mode to want — the same shape as Grafana
+# without grafana-admin.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-operator
+  namespace: argocd
+  annotations:
+    # Ahead of the infra app (-1) and the app itself: the tailscale IngressClass
+    # has to exist before Grafana's Ingress referencing it is applied.
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://pkgs.tailscale.com/helmcharts
+    chart: tailscale-operator
+    targetRevision: 1.98.9
+    helm:
+      valuesObject:
+        # oauth.clientId/clientSecret left unset on purpose: the chart then
+        # mounts the pre-created `operator-oauth` Secret instead of templating
+        # the credentials through git.
+        operatorConfig:
+          hostname: digishield-k8s-operator
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+        proxyConfig:
+          # Tags the per-Ingress proxy devices. tag:k8s must be owned by
+          # tag:k8s-operator in the ACL policy (see the header).
+          defaultTags: "tag:k8s"
+        apiServerProxyConfig:
+          # No tailnet access to the Kubernetes API — kubectl stays on the LAN.
+          mode: "false"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      # The tailscale.com CRDs (ProxyClass, ProxyGroup, Connector) are far past
+      # the 256 KB last-applied-configuration annotation limit that client-side
+      # apply writes, so they must go through server-side apply.
+      - ServerSideApply=true

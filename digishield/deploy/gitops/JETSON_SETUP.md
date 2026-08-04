@@ -139,6 +139,49 @@ the `github-actions[bot]` to bypass it, or switch the bump to a PR flow.
 - **Memory budget** (per 8 GB node): k3s ~0.6 GB, ArgoCD ~0.7 GB, app pods
   capped by chart limits (api 1 Gi ×2, worker 1 Gi, scheduler 0.5 Gi),
   infra ~2 Gi total — comfortable across two nodes.
-- **LAN-only for now**: no TLS/ingress hostname. To expose publicly later,
-  reuse the dev pattern (DuckDNS + Let's Encrypt) but terminate on Traefik.
+- **LAN-only for now**: no TLS/ingress hostname on Traefik. To expose publicly
+  later, reuse the dev pattern (DuckDNS + Let's Encrypt) but terminate on
+  Traefik.
 - **RabbitMQ UI**: `kubectl -n digishield port-forward svc/rabbitmq 15672:15672`.
+
+## 7. Grafana on the tailnet
+
+Grafana is the one component reachable without a kubectl, through the Tailscale
+operator rather than through Traefik. Traefik is behind the Funnel and therefore
+public — that is how `/actuator/prometheus` was exposed in #132 — so the
+operator gives Grafana its own tailnet device instead, visible to the tailnet
+and to nothing else.
+
+Two things have to exist before ArgoCD can bring it up, both once and neither in
+git (full detail in the header of `jetson/apps/tailscale.yaml`):
+
+1. Tag ownership in the tailnet ACL policy — `tag:k8s-operator` owned by you,
+   `tag:k8s` owned by `tag:k8s-operator`.
+2. An OAuth client (scope `Devices: Core` write, tag `tag:k8s-operator`), handed
+   to the cluster as a Secret:
+
+   ```bash
+   kubectl create namespace tailscale
+   kubectl -n tailscale create secret generic operator-oauth \
+     --from-literal=client_id="<id>" \
+     --from-literal=client_secret="<secret>"
+   ```
+
+Then ArgoCD syncs `tailscale-operator` (sync-wave `-2`, ahead of the infra app
+so the `tailscale` IngressClass exists before Grafana's Ingress references it),
+and the address appears on the Ingress:
+
+```bash
+kubectl -n digishield get ingress grafana   # ADDRESS = grafana.<tailnet>.ts.net
+kubectl -n digishield get secret grafana-admin \
+  -o jsonpath='{.data.admin-password}' | base64 -d; echo
+```
+
+Open `https://grafana.<tailnet>.ts.net` as `admin`. The port-forward
+(`kubectl -n digishield port-forward svc/grafana 3000:3000`) still works and is
+the fallback when the operator is down or the machine has not joined the
+tailnet.
+
+Grafana is **not** funnelled. The `tailscale.com/funnel: "true"` annotation
+would make it public, and with it every metric and every application log in
+Loki, behind one password and no MFA.
