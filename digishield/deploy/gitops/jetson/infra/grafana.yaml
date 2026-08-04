@@ -49,12 +49,18 @@ data:
   datasources.yaml: |
     apiVersion: 1
     datasources:
+      # The uids are pinned. Left unset, Grafana generates a random one per
+      # install, and a provisioned dashboard referencing it would point at a
+      # datasource that does not exist on any other cluster (or after the PVC is
+      # recreated). grafana-dashboards.yaml refers to these two names.
       - name: Prometheus
+        uid: prometheus
         type: prometheus
         access: proxy
         url: http://prometheus:9090
         isDefault: true
       - name: Loki
+        uid: loki
         type: loki
         access: proxy
         url: http://loki:3100
@@ -179,6 +185,12 @@ spec:
           volumeMounts:
             - name: datasources
               mountPath: /etc/grafana/provisioning/datasources
+            - name: dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+            # Not under /var/lib/grafana: that path is the PVC, and a ConfigMap
+            # mounted inside it would be shadowed by the volume.
+            - name: dashboards
+              mountPath: /etc/grafana/dashboards
             - name: tmp
               mountPath: /tmp
             - name: data
@@ -189,6 +201,12 @@ spec:
         - name: datasources
           configMap:
             name: grafana-datasources
+        - name: dashboard-provider
+          configMap:
+            name: grafana-dashboard-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboards
         - name: data
           persistentVolumeClaim:
             claimName: grafana-data
