@@ -178,14 +178,21 @@ public class SecurityConfig {
                             // JwtWsHandshakeInterceptor validates it and fails closed.
                             .requestMatchers("/ws/**").permitAll()
                             .anyRequest().authenticated())
-                    .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                            // Deferred: building the decoder fetches the issuer's
-                            // OpenID discovery document, and doing that here made
-                            // every context boot — including the Flyway migration
-                            // job's — depend on the IdP being reachable (crashed
-                            // the ArgoCD PreSync hook on the Jetson cluster).
-                            .decoder(lazyJwtDecoder())
-                            .jwtAuthenticationConverter(jwtAuthenticationConverter())));
+                    .oauth2ResourceServer(oauth2 -> oauth2
+                            // Separates "we cannot validate tokens" (503) from
+                            // "your token was rejected" (401). The SPA logs out
+                            // on any 401, so answering 401 during an IdP outage
+                            // turned every sign-in into an immediate bounce back
+                            // to the login screen.
+                            .authenticationEntryPoint(new JwtUnavailableEntryPoint())
+                            .jwt(jwt -> jwt
+                                    // Deferred: building the decoder fetches the issuer's
+                                    // OpenID discovery document, and doing that here made
+                                    // every context boot — including the Flyway migration
+                                    // job's — depend on the IdP being reachable (crashed
+                                    // the ArgoCD PreSync hook on the Jetson cluster).
+                                    .decoder(lazyJwtDecoder())
+                                    .jwtAuthenticationConverter(jwtAuthenticationConverter())));
         } else {
             LOG.warn("No JWT issuer configured (AUTH_JWT_ISSUER_URI unset) in a non-dev profile — "
                     + "API is locked down (actuator only). Set the issuer to enable authentication.");
@@ -235,12 +242,15 @@ public class SecurityConfig {
      * (notably the Flyway migration job's) never touches the network.
      *
      * <p>Fails closed while the issuer is unreachable: the build error is wrapped
-     * in a {@link BadJwtException}, which the resource server converts to a plain
-     * 401 — not the 500 a raw {@code JwtDecoderInitializationException} produces
-     * (Spring Security's own {@code SupplierJwtDecoder} was observed doing exactly
-     * that). Nothing is memoized on failure, so the next request retries; the
-     * first successful build is reused for the life of the context, and from then
-     * on outages are absorbed by the JWK source's outage tolerance instead.
+     * in a {@link JwtValidationUnavailableException}, a {@link BadJwtException}
+     * that keeps the resource server off the 500 path a raw
+     * {@code JwtDecoderInitializationException} produces (Spring Security's own
+     * {@code SupplierJwtDecoder} was observed doing exactly that), while
+     * {@link JwtUnavailableEntryPoint} renders it as {@code 503} rather than a
+     * {@code 401} that would blame the caller's token. Nothing is memoized on
+     * failure, so the next request retries; the first successful build is reused
+     * for the life of the context, and from then on outages are absorbed by the
+     * JWK source's outage tolerance instead.
      */
     private JwtDecoder lazyJwtDecoder() {
         return new JwtDecoder() {
@@ -256,9 +266,9 @@ public class SecurityConfig {
                                 delegate = jwtDecoder();
                             } catch (RuntimeException e) {
                                 LOG.warn("Could not initialise JWT decoder from issuer '{}' ({}); "
-                                        + "rejecting bearer tokens until the issuer becomes reachable",
+                                        + "answering 503 for bearer tokens until the issuer becomes reachable",
                                         issuerUri, e.getMessage());
-                                throw new BadJwtException(
+                                throw new JwtValidationUnavailableException(
                                         "JWT validation unavailable: issuer unreachable", e);
                             }
                         }

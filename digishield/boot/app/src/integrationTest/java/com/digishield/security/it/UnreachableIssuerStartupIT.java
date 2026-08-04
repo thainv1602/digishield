@@ -1,6 +1,7 @@
 package com.digishield.security.it;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.Test;
@@ -25,9 +26,12 @@ import org.testcontainers.containers.PostgreSQLContainer;
  *
  * <p>Unlike {@code SecurityHeadersIT} this configures an issuer (pointing at a
  * closed port, so any fetch fails fast) and supplies no mock decoder: the point
- * is that the real decoder path is deferred. While the issuer stays
- * unreachable the chain fails closed — anonymous and bearer requests are both
- * rejected, never a 5xx.
+ * is that the real decoder path is deferred. While the issuer stays unreachable
+ * the chain fails closed, and it says which failure it is: an anonymous request
+ * is 401, while a bearer token gets 503 — the token was never judged, so calling
+ * it unauthorized would be a lie. It matters because the SPA logs the user out on
+ * any 401, which turned an IdP outage into "sign in, bounce straight back to the
+ * login screen".
  *
  * <p>Requires Docker.
  */
@@ -75,10 +79,16 @@ class UnreachableIssuerStartupIT {
                 .andExpect(status().isUnauthorized());
     }
 
+    /**
+     * 503, not 401: the decoder could not be built, so the token was never
+     * judged. A 401 here would tell the client to discard a session that may be
+     * perfectly valid.
+     */
     @Test
-    void bearerTokenIsRejectedNotErroredWhileIssuerIsDown() throws Exception {
+    void bearerTokenGetsServiceUnavailableWhileIssuerIsDown() throws Exception {
         mockMvc.perform(get("/api/v1/orgs")
                         .header("Authorization", "Bearer not-a-real-token"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(header().exists("Retry-After"));
     }
 }

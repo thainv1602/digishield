@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import com.digishield.shared.security.JwtValidationUnavailableException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.socket.WebSocketHandler;
@@ -33,7 +34,9 @@ import org.springframework.web.socket.server.HandshakeInterceptor;
  * or the token is missing/invalid/without a {@code tid} claim, the handshake is
  * rejected with {@code 401} and no session is established. Because the endpoint
  * is otherwise {@code permitAll} in the security chain, this interceptor is the
- * sole gate for the stream in production.
+ * sole gate for the stream in production. When the issuer is configured but
+ * unreachable the upgrade is refused with {@code 503} instead — mirroring the
+ * REST chain, which must not report an outage as a rejected token.
  *
  * <p><b>Lazy decoder.</b> Building the decoder fetches the issuer's OIDC
  * discovery document over HTTP, so it must not happen in the constructor:
@@ -69,26 +72,33 @@ public class JwtWsHandshakeInterceptor implements HandshakeInterceptor {
     @Override
     public boolean beforeHandshake(ServerHttpRequest request, ServerHttpResponse response,
                                    WebSocketHandler wsHandler, Map<String, Object> attributes) {
-        JwtDecoder decoder = jwtDecoder();
-        if (decoder == null) {
-            return deny(response);
+        if (issuerUri == null) {
+            return deny(response, HttpStatus.UNAUTHORIZED);
+        }
+        JwtDecoder decoder;
+        try {
+            decoder = jwtDecoder();
+        } catch (JwtValidationUnavailableException e) {
+            // Same distinction the REST chain draws: the upgrade failed because
+            // nothing can be validated right now, not because this token is bad.
+            return deny(response, HttpStatus.SERVICE_UNAVAILABLE);
         }
         String token = tokenFrom(request);
         if (token == null) {
-            return deny(response);
+            return deny(response, HttpStatus.UNAUTHORIZED);
         }
         try {
             Jwt jwt = decoder.decode(token);
             String tenantId = jwt.getClaimAsString(TENANT_CLAIM);
             if (!StringUtils.hasText(tenantId)) {
                 LOG.debug("WS handshake rejected: token has no '{}' claim", TENANT_CLAIM);
-                return deny(response);
+                return deny(response, HttpStatus.UNAUTHORIZED);
             }
             attributes.put(NotificationWebSocketHandler.ATTR_TENANT, tenantId);
             return true;
         } catch (JwtException e) {
             LOG.debug("WS handshake rejected: invalid token ({})", e.getMessage());
-            return deny(response);
+            return deny(response, HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -99,14 +109,14 @@ public class JwtWsHandshakeInterceptor implements HandshakeInterceptor {
     }
 
     /**
-     * Returns the memoized decoder, building it on first use. Returns null when no
-     * issuer is configured or the issuer's discovery document cannot be fetched —
-     * the caller then denies the handshake and a later handshake retries.
+     * Returns the memoized decoder, building it on first use.
+     *
+     * @throws JwtValidationUnavailableException when the issuer's discovery
+     *     document cannot be fetched. Nothing is memoized on failure, so the next
+     *     handshake retries; the caller answers 503 rather than 401 so the outage
+     *     is not reported as a bad token. Only called with an issuer configured.
      */
     private JwtDecoder jwtDecoder() {
-        if (issuerUri == null) {
-            return null;
-        }
         JwtDecoder existing = decoder;
         if (existing != null) {
             return existing;
@@ -116,10 +126,11 @@ public class JwtWsHandshakeInterceptor implements HandshakeInterceptor {
                 try {
                     decoder = NimbusJwtDecoder.withIssuerLocation(issuerUri).build();
                 } catch (RuntimeException e) {
-                    LOG.warn("Could not initialise JWT decoder from issuer '{}' ({}); rejecting "
-                            + "WebSocket upgrades until the issuer becomes reachable", issuerUri,
+                    LOG.warn("Could not initialise JWT decoder from issuer '{}' ({}); answering 503 "
+                            + "for WebSocket upgrades until the issuer becomes reachable", issuerUri,
                             e.getMessage());
-                    return null;
+                    throw new JwtValidationUnavailableException(
+                            "JWT validation unavailable: issuer unreachable", e);
                 }
             }
             return decoder;
@@ -137,8 +148,8 @@ public class JwtWsHandshakeInterceptor implements HandshakeInterceptor {
         return null;
     }
 
-    private static boolean deny(ServerHttpResponse response) {
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+    private static boolean deny(ServerHttpResponse response, HttpStatus status) {
+        response.setStatusCode(status);
         return false;
     }
 }

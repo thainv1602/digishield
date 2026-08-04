@@ -12,4 +12,8 @@ dependencies {
 
     // TenantContext, for the @PreAuthorize tenant-match guard (hybrid tenancy authz).
     implementation(project(":shared:tenant-context"))
+
+    // MockHttpServletResponse (spring-test) implements the servlet API, which is
+    // only compileOnly above — the entry-point test needs it on the classpath.
+    testImplementation("jakarta.servlet:jakarta.servlet-api")
 }
