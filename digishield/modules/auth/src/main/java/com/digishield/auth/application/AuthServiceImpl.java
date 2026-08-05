@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import com.digishield.auth.api.ImportResult;
 import com.digishield.auth.api.MfaSetupView;
 import com.digishield.auth.api.TokenPair;
+import com.digishield.auth.api.UserDirectory;
 import com.digishield.auth.api.UserUpsert;
 import com.digishield.auth.api.UserView;
 import com.digishield.auth.domain.AppUser;
@@ -27,9 +28,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -51,11 +55,14 @@ public class AuthServiceImpl implements AuthService {
     /** Optional: absent in slices that do not wire the application shell. */
     private final ObjectProvider<AuditRecorder> auditRecorder;
     private final AuthProvider authProvider;
+    private final UserDirectory userDirectory;
 
     public AuthServiceImpl(AppUserRepository userRepository, AuthProvider authProvider,
+                           UserDirectory userDirectory,
                            ObjectProvider<AuditRecorder> auditRecorder) {
         this.userRepository = userRepository;
         this.authProvider = authProvider;
+        this.userDirectory = userDirectory;
         this.auditRecorder = auditRecorder;
     }
 
@@ -223,21 +230,37 @@ public class AuthServiceImpl implements AuthService {
         AppUser existing = userRepository.findByTenantIdAndEmail(tenantId, email).orElse(null);
         if (existing != null) {
             // Idempotent in dev: update the existing user rather than failing.
+            assertMayAdminister(existing, input);
             applyChanges(existing, input);
             return toUserView(userRepository.save(existing));
         }
+        Role role = input.role() != null ? Role.fromWireName(input.role()) : Role.LEARNER;
+        // Creating a user now hands out a real sign-in account in that role's group,
+        // so the same ceiling that guards an edit has to guard a create: without it
+        // an org admin could mint themselves a super admin by adding one.
+        assertMayGrant(role);
+        // Provision the sign-in account before the row exists. The other order leaves
+        // a user who shows up on the Users screen and can never log in; this one, at
+        // worst, leaves an account nobody is pointing at, and the directory adopts it
+        // on the retry.
+        UUID subject = userDirectory.createUser(email, role.wireName()).orElse(null);
         AppUser user = new AppUser(
-                UUID.randomUUID(),
+                // The directory's subject is what the token will carry, so the row is
+                // keyed by it when we know it — that is the id currentUser() looks up
+                // first, before falling back to matching on email.
+                subject != null ? subject : UUID.randomUUID(),
                 tenantId,
                 email,
-                input.role() != null ? Role.fromWireName(input.role()) : Role.LEARNER,
+                role,
                 UserStatus.PENDING,
                 deriveName(email),
                 null,
                 0);
         user.setDepartmentId(input.departmentId());
         user.setLocale(input.locale() != null ? input.locale() : "vi");
-        return toUserView(userRepository.save(user));
+        UserView saved = toUserView(userRepository.save(user));
+        audit("user.create", "user:" + email, AuditRecorder.Severity.CRITICAL);
+        return saved;
     }
 
     @Override
@@ -247,12 +270,24 @@ public class AuthServiceImpl implements AuthService {
         AppUser user = userRepository.findByTenantIdAndId(tenantId, userId)
                 .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
         assertMayAdminister(user, changes);
-        Role before = user.getRole();
+        String before = groupOf(user.getRole());
+        // The account was created under the address the row held at the time, and
+        // that address is its username at the provider. Editing the row's email
+        // does not rename it, so the lookup has to use the old one.
+        String username = user.getEmail();
         applyChanges(user, changes);
+        String after = groupOf(user.getRole());
+        boolean roleChanged = !Objects.equals(before, after);
+        if (roleChanged) {
+            // Before the row is written, for the same reason a create provisions
+            // first: authority lives in the token's groups, so a row saved without
+            // the group move is a role change that only looks like it happened.
+            userDirectory.setRole(username, after, otherGroups(user.getRole()));
+        }
         UserView saved = toUserView(userRepository.save(user));
         // A role change decides what someone may do; it is the entry an
         // investigation looks for, so it is called out from a plain edit.
-        if (before != user.getRole()) {
+        if (roleChanged) {
             audit("user.role_change", "user:" + userId, AuditRecorder.Severity.CRITICAL);
         } else {
             audit("user.update", "user:" + userId, AuditRecorder.Severity.SENSITIVE);
@@ -260,6 +295,40 @@ public class AuthServiceImpl implements AuthService {
         return saved;
     }
 
+    /** The provider's group name for a role, or {@code null} for no role at all. */
+    private static String groupOf(Role role) {
+        return role != null ? role.wireName() : null;
+    }
+
+    /**
+     * Every group that is a role other than this one — what a move has to revoke.
+     *
+     * <p>By group name, not by enum constant: {@code TENANT_ADMIN} is the legacy
+     * spelling of {@code ORG_ADMIN} and shares its group, so revoking "the others"
+     * by constant would revoke the very group being granted.
+     */
+    private static Set<String> otherGroups(Role role) {
+        String keep = groupOf(role);
+        Set<String> others = new LinkedHashSet<>();
+        for (Role candidate : Role.values()) {
+            String group = candidate.wireName();
+            if (!group.equals(keep)) {
+                others.add(group);
+            }
+        }
+        return others;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Every accepted row goes through {@link #createUser}, so a bulk import
+     * provisions that many sign-in accounts and sends that many invitations —
+     * enough to reach an identity provider's rate limit or daily mail cap. When
+     * one row fails the transaction rolls back and no application rows are
+     * written, but the accounts created before it stay; re-running the import
+     * adopts them rather than duplicating them.
+     */
     @Override
     @Transactional
     public ImportResult importUsers(List<UserUpsert> users) {
@@ -396,11 +465,20 @@ public class AuthServiceImpl implements AuthService {
                     "Cannot modify a user whose role outranks yours");
         }
         if (changes != null && changes.role() != null && !changes.role().isBlank()) {
-            Role wanted = Role.fromWireName(changes.role());
-            if (!actor.outranksOrEquals(wanted)) {
-                throw new AccessDeniedException(
-                        "Cannot grant a role above your own");
-            }
+            assertMayGrant(Role.fromWireName(changes.role()));
+        }
+    }
+
+    /**
+     * Refuses handing out authority the caller does not hold.
+     *
+     * <p>Empty caller role means no authenticated role at all — the {@code dev}
+     * profile permits everything and sets no authentication.
+     */
+    private void assertMayGrant(Role wanted) {
+        Optional<Role> caller = callerRole();
+        if (caller.isPresent() && !caller.get().outranksOrEquals(wanted)) {
+            throw new AccessDeniedException("Cannot grant a role above your own");
         }
     }
 

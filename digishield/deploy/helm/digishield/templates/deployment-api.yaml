@@ -56,6 +56,8 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- include "digishield.notificationsEnv" . | nindent 12 }}
+            {{- include "digishield.userDirectoryEnv" . | nindent 12 }}
+            {{- include "digishield.awsCredsEnv" (dict "ctx" . "directory" true) | nindent 12 }}
             {{- with .Values.cors.origins }}
             # Browser origins (patterns allowed) the API accepts — needed when
             # the FE is served from a public hostname (tunnel) while TLS is

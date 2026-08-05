@@ -177,6 +177,12 @@ aws cognito-idp update-user-pool --user-pool-id "$POOL_ID" \
 
 ## 7. Create a user and assign a role
 
+This is the bootstrap path — the first admin, and any account created while the
+app is down. Everyday user creation belongs on the app's Users screen: with
+`auth.cognito.directory.enabled` on in the chart, adding a user there calls the
+same three APIs and lets Cognito email the invitation, instead of an operator
+handing a password over out of band. See section 9.
+
 The password is generated, never chosen and never written down here. A password
 in a guide is a password in everyone's git history: this file used to set
 `ChangeMe#2026`, and the accounts created from it stayed reachable long after
@@ -228,7 +234,82 @@ echo "          VITE_TENANT_ID=$TENANT_ID"
   must equal `$APP_URL` and be one of the registered callback URLs. `VITE_TENANT_ID`
   must equal the Lambda's `tid` so the FE's tenant matches the token.
 
-## 9. Verify `tid` is in the token
+## 9. Let the app create users
+
+Without this the Users screen writes an application row and nothing else: the
+person appears in the list, receives no mail, and has no account to sign in
+with — and changing their role changes a database column that authorises
+nothing. Turning it on makes
+
+- `POST /users` call `AdminCreateUser` (Cognito emails the temporary password),
+  then `AdminAddUserToGroup` for the chosen role, and
+- `PATCH /users/{id}` move the account between groups when the role changes:
+  the old group is revoked before the new one is granted, so an interrupted
+  change leaves the account with no role rather than with both.
+
+1. Attach the policy terraform created to the principal the API runs as — the
+   IAM user whose keys are in the `digishield-aws` Secret on Jetson, or the app's
+   IRSA role on EKS:
+
+   ```bash
+   POLICY_ARN=$(terraform -chdir=cognito output -raw cognito_user_directory_policy_arn)
+   aws iam attach-user-policy --user-name <the app's IAM user> --policy-arn "$POLICY_ARN"
+   ```
+
+   It grants `AdminCreateUser`, `AdminGetUser`, `AdminAddUserToGroup`,
+   `AdminListGroupsForUser`, `AdminRemoveUserFromGroup` and
+   `AdminUserGlobalSignOut`, scoped to this pool.
+
+2. Turn it on in `digishield/deploy/helm/digishield/values-jetson.yaml`:
+
+   ```yaml
+   auth:
+     cognito:
+       userPoolId: "us-east-1_xxxxxxxxx"
+       region: "us-east-1"
+       directory:
+         enabled: true
+   ```
+
+   The credentials come from the same `notifications.aws.existingSecret` the SES
+   and SNS gateways use — k3s has no IRSA.
+
+The pool's built-in mailer sends the invitation, capped at **50 messages a day**;
+past that, `AdminCreateUser` starts failing and the API returns 503. Point the
+pool at SES (Messaging → Email → *Send email with Amazon SES*) if that binds.
+
+Roles still live in the groups, not in `app_user.role` — the app writes both, but
+only the group reaches the token that authorises anything. A user created before
+the directory was enabled has no account to move, so editing their role returns
+409: create it with section 7 first.
+
+A role change ends the account's sessions (`AdminUserGlobalSignOut`), which is
+worth reading precisely:
+
+- Refresh tokens are invalidated, so the user cannot mint a new token carrying
+  the old group. Their next refresh fails and the app signs them out.
+- An **access token already issued keeps working** until it expires. The API
+  validates tokens offline against the pool's JWKS — signature, issuer, expiry —
+  and asks Cognito nothing, so revocation is invisible to it.
+
+So the exposure after a demotion is one access-token lifetime. The module sets
+that to **15 minutes** (`access_token_validity`, with the id token to match)
+rather than Cognito's default hour, since that number *is* the window. The cost
+is a silent refresh four times an hour, which the frontend already does on its
+own (`automaticSilentRenew`). Closing the window entirely would mean the API
+checking every request against the provider, or against a per-user "signed out
+at" timestamp; neither is in place today.
+
+> Pools created before this was set keep the hour until `terraform apply` runs.
+> Change it there, not in the Console or with `update-user-pool-client` — a
+> partial CLI update silently wipes the callback URLs and OAuth settings off the
+> client.
+
+If ending the sessions fails, the role change still stands — the group move is
+the change that matters and it has already been applied. The failure is logged
+at ERROR: search for `sessions could not be ended`.
+
+## 10. Verify `tid` is in the token
 
 Sign in through the hosted UI, grab the **access token**, and decode the payload:
 

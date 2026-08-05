@@ -84,6 +84,21 @@ externalSecrets:
 auth:
   # Cognito user pool issuer — the app validates JWTs against this OIDC issuer.
   issuerUri: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_8nUpkhk0s"
+  cognito:
+    userPoolId: "us-east-1_8nUpkhk0s" # the pool behind issuerUri, above
+    region: "us-east-1"
+    directory:
+      # On: adding a user on the Users screen creates their Cognito account and
+      # Cognito emails them the temporary password; changing a role moves the
+      # account's group and ends its sessions. Both reach real people, which is
+      # the point — off, the screen quietly produced users who could not log in.
+      #
+      # The credentials are digishield-aws (notifications.aws below), whose IAM
+      # user holds only the pool's admin-user actions.
+      #
+      # Cognito's built-in mailer sends the invitation, capped at 50 messages a
+      # day; point the pool at SES if that ever binds.
+      enabled: true
 
 # Public tunnels terminate TLS before Traefik, so the API sees http while the
 # browser Origin is https — no longer same-origin. Allow the tunnel hostnames

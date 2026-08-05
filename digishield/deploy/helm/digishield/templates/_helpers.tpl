@@ -88,22 +88,53 @@ would otherwise silently run with tenant isolation off. */}}
 - name: PUBLIC_BASE_URL
   value: {{ .Values.notifications.publicBaseUrl | quote }}
 {{- end }}
-{{- if or .Values.notifications.email.ses.enabled .Values.notifications.sms.sns.enabled }}
-{{- if .Values.notifications.aws.region }}
+{{- end -}}
+
+{{/* AWS credentials env — shared by every feature that calls AWS (SES, SNS, the
+     Cognito user directory). A Jetson k3s cluster has no IRSA, so the keys come
+     from a Secret; on EKS leave existingSecret empty and let IRSA supply them.
+
+     Call with (dict "ctx" . "directory" true) from the workload that serves the
+     Users screen, and "directory" false everywhere else. The keys are what
+     actually grant access, so a workload that cannot reach the feature should
+     not be handed them — rendering them anyway would make the API-only scoping
+     of userDirectoryEnv decorative. */}}
+{{- define "digishield.awsCredsEnv" -}}
+{{- $ctx := .ctx -}}
+{{- $aws := $ctx.Values.notifications.aws -}}
+{{- if or $ctx.Values.notifications.email.ses.enabled $ctx.Values.notifications.sms.sns.enabled (and .directory $ctx.Values.auth.cognito.directory.enabled) }}
+{{- if $aws.region }}
 - name: AWS_REGION
-  value: {{ .Values.notifications.aws.region | quote }}
+  value: {{ $aws.region | quote }}
 {{- end }}
-{{- if .Values.notifications.aws.existingSecret }}
+{{- if $aws.existingSecret }}
 - name: AWS_ACCESS_KEY_ID
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.notifications.aws.existingSecret }}
-      key: {{ .Values.notifications.aws.accessKeyIdKey }}
+      name: {{ $aws.existingSecret }}
+      key: {{ $aws.accessKeyIdKey }}
 - name: AWS_SECRET_ACCESS_KEY
   valueFrom:
     secretKeyRef:
-      name: {{ .Values.notifications.aws.existingSecret }}
-      key: {{ .Values.notifications.aws.secretAccessKeyKey }}
+      name: {{ $aws.existingSecret }}
+      key: {{ $aws.secretAccessKeyKey }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/* User-directory env — API only. When on, creating a user on the Users screen
+     also creates the Cognito account (Cognito mails the temporary password) and
+     puts it in the role's group. Only the API serves that screen, so worker /
+     scheduler / flyway are left without the credentials to administer a pool. */}}
+{{- define "digishield.userDirectoryEnv" -}}
+{{- if .Values.auth.cognito.directory.enabled }}
+- name: AUTH_COGNITO_DIRECTORY_ENABLED
+  value: "true"
+- name: AUTH_COGNITO_USER_POOL_ID
+  value: {{ required "auth.cognito.userPoolId is required when auth.cognito.directory.enabled" .Values.auth.cognito.userPoolId | quote }}
+{{- with .Values.auth.cognito.region }}
+- name: AUTH_COGNITO_REGION
+  value: {{ . | quote }}
 {{- end }}
 {{- end }}
 {{- end -}}

@@ -112,6 +112,17 @@ digishield:
       region: ${AUTH_COGNITO_REGION:}
       client-id: ${AUTH_COGNITO_CLIENT_ID:}
       client-secret: ${AUTH_COGNITO_CLIENT_SECRET:}
+      # Pool the admin API administers (not the same switch as `enabled`, which is
+      # about signing in: a deployment can log users in through the hosted UI and
+      # still want the Users screen to create the accounts).
+      user-pool-id: ${AUTH_COGNITO_USER_POOL_ID:}
+      directory:
+        # On: creating a user on the Users screen also creates the Cognito account
+        # (Cognito emails the temporary password) and adds it to the role's group.
+        # Off (default) → LoggingUserDirectory: the app row is created and nobody
+        # can sign in as it. Needs user-pool-id plus cognito-idp:AdminCreateUser /
+        # AdminAddUserToGroup / AdminGetUser on that pool.
+        enabled: ${AUTH_COGNITO_DIRECTORY_ENABLED:false}
     jwt:
       issuer-uri: ${AUTH_JWT_ISSUER_URI:}
       audience: ${AUTH_JWT_AUDIENCE:}
