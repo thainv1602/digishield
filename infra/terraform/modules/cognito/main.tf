@@ -60,6 +60,27 @@ resource "aws_cognito_user_pool_client" "spa" {
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
   ]
+
+  # Short access tokens, because they are the ceiling on how long a demotion
+  # takes to bite. The API validates tokens offline against the pool's JWKS, so
+  # it cannot see that Cognito revoked one when the Users screen changed a role;
+  # the old role survives until the token expires. Cognito's default hour was
+  # that whole hour. Fifteen minutes costs a silent refresh four times an hour —
+  # oidc-client-ts renews on `expires_in` with automaticSilentRenew, so nobody
+  # sees a login screen for it.
+  #
+  # The id token matches: it is what the frontend reads `cognito:groups` from to
+  # decide which screens to draw, and a stale menu that 403s is worse than a
+  # menu that has caught up.
+  access_token_validity  = 15
+  id_token_validity      = 15
+  refresh_token_validity = 30 # days — Cognito's default, and what bounds a session
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
 }
 
 # Hosted UI domain (Cognito-provided *.auth.<region>.amazoncognito.com).

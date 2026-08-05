@@ -292,12 +292,18 @@ worth reading precisely:
   validates tokens offline against the pool's JWKS — signature, issuer, expiry —
   and asks Cognito nothing, so revocation is invisible to it.
 
-So the exposure after a demotion is one access-token lifetime, **60 minutes** on
-this pool's default. Shorten it if that is too long — Cognito → app client →
-*Token expiration* → **Access token expiration**; 15 minutes costs nothing but a
-more frequent (silent) refresh. Closing the window entirely would mean the API
-checking each token against the provider, or against a per-user "signed out at"
-timestamp, on every request; neither is in place today.
+So the exposure after a demotion is one access-token lifetime. The module sets
+that to **15 minutes** (`access_token_validity`, with the id token to match)
+rather than Cognito's default hour, since that number *is* the window. The cost
+is a silent refresh four times an hour, which the frontend already does on its
+own (`automaticSilentRenew`). Closing the window entirely would mean the API
+checking every request against the provider, or against a per-user "signed out
+at" timestamp; neither is in place today.
+
+> Pools created before this was set keep the hour until `terraform apply` runs.
+> Change it there, not in the Console or with `update-user-pool-client` — a
+> partial CLI update silently wipes the callback URLs and OAuth settings off the
+> client.
 
 If ending the sessions fails, the role change still stands — the group move is
 the change that matters and it has already been applied. The failure is logged
