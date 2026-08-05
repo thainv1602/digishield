@@ -7,6 +7,17 @@ image:
 # present or pulled anonymously); set per env (e.g. ghcr-pull) in values-dev/prod.
 imagePullSecrets: []
 
+# How many superseded ReplicaSets each Deployment keeps. Kubernetes defaults to
+# 10, which on a repo that pins a new image sha per merge means ten empty
+# ReplicaSets per workload cluttering the ArgoCD tree — they hold no pods and
+# cost nothing but a row each, yet they bury the one that matters.
+#
+# Three is enough here because rollback is a git revert that ArgoCD syncs, not
+# `kubectl rollout undo`: with selfHeal on, an undo would be pulled straight back
+# to whatever the deploy branch says. The kept revisions are for reading history,
+# not for driving it.
+revisionHistoryLimit: 3
+
 api:
   replicaCount: 2
   profile: api
