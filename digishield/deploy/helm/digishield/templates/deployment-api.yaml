@@ -32,10 +32,19 @@ spec:
       # ScheduleAnyway, not DoNotSchedule: on a two-node cluster, draining one for
       # maintenance would otherwise leave the second replica Pending rather than
       # merely doubled up. Availability now beats tidiness later.
+      #
+      # matchLabelKeys pins the count to one revision. Without it the constraint
+      # counted the outgoing pods too — during a rolling update they still match
+      # the selector — so the scheduler saw one pod per node, called the spread
+      # satisfied, and put both new pods wherever else it liked. The first
+      # rollout after this constraint landed did exactly that: both replicas
+      # ended up on jetson-2, which is what the constraint was added to prevent.
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
           whenUnsatisfiable: ScheduleAnyway
+          matchLabelKeys:
+            - pod-template-hash
           labelSelector:
             matchLabels:
               app.kubernetes.io/name: digishield
