@@ -52,5 +52,6 @@ spec:
               value: {{ . | quote }}
             {{- end }}
             {{- include "digishield.notificationsEnv" . | nindent 12 }}
+            {{- include "digishield.awsCredsEnv" . | nindent 12 }}
           resources:
             {{- toYaml .Values.scheduler.resources | nindent 12 }}

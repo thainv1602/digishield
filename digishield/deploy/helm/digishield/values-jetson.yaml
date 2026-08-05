@@ -84,6 +84,19 @@ externalSecrets:
 auth:
   # Cognito user pool issuer — the app validates JWTs against this OIDC issuer.
   issuerUri: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_8nUpkhk0s"
+  cognito:
+    userPoolId: "us-east-1_8nUpkhk0s" # the pool behind issuerUri, above
+    region: "us-east-1"
+    directory:
+      # Set true once the AWS credentials Secret exists (same one the SES/SNS
+      # gateways use — see notifications.aws below) and its IAM principal holds
+      # cognito-idp:AdminCreateUser / AdminAddUserToGroup / AdminGetUser on the
+      # pool. Until then, users added on the Users screen have no sign-in account
+      # and someone has to run admin-create-user by hand.
+      #
+      # Cognito's built-in mailer sends the invitation, capped at 50 messages a
+      # day; point the pool at SES if that ever binds.
+      enabled: false
 
 # Public tunnels terminate TLS before Traefik, so the API sees http while the
 # browser Origin is https — no longer same-origin. Allow the tunnel hostnames

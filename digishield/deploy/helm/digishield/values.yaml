@@ -117,8 +117,20 @@ flyway:
 
 # OAuth2 resource-server. issuerUri is the OIDC issuer the app validates JWTs
 # against (e.g. a Cognito user pool). Empty by default; set per environment.
+#
+# cognito.directory.enabled makes the Users screen create the *sign-in* account
+# too: the API calls AdminCreateUser (Cognito mails the temporary password) and
+# AdminAddUserToGroup for the chosen role. Off → the app row is created and
+# nobody can log in as it. Needs userPoolId and, off-EKS, the AWS credentials
+# Secret under notifications.aws (no IRSA on k3s).
 auth:
   issuerUri: ""
+  cognito:
+    userPoolId: ""
+    # Region of the pool. Blank falls back to the SDK default (AWS_REGION).
+    region: ""
+    directory:
+      enabled: false
 
 # AI (Claude). Off by default → deterministic StubAiClient (no token cost). When
 # claude.enabled is true, ANTHROPIC_API_KEY is injected from a Secret (never

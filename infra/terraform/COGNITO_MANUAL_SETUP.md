@@ -177,6 +177,12 @@ aws cognito-idp update-user-pool --user-pool-id "$POOL_ID" \
 
 ## 7. Create a user and assign a role
 
+This is the bootstrap path — the first admin, and any account created while the
+app is down. Everyday user creation belongs on the app's Users screen: with
+`auth.cognito.directory.enabled` on in the chart, adding a user there calls the
+same three APIs and lets Cognito email the invitation, instead of an operator
+handing a password over out of band. See section 9.
+
 The password is generated, never chosen and never written down here. A password
 in a guide is a password in everyone's git history: this file used to set
 `ChangeMe#2026`, and the accounts created from it stayed reachable long after
@@ -228,7 +234,47 @@ echo "          VITE_TENANT_ID=$TENANT_ID"
   must equal `$APP_URL` and be one of the registered callback URLs. `VITE_TENANT_ID`
   must equal the Lambda's `tid` so the FE's tenant matches the token.
 
-## 9. Verify `tid` is in the token
+## 9. Let the app create users
+
+Without this the Users screen writes an application row and nothing else: the
+person appears in the list, receives no mail, and has no account to sign in
+with. Turning it on makes `POST /users` call `AdminCreateUser` (Cognito emails
+the temporary password), then `AdminAddUserToGroup` for the chosen role.
+
+1. Attach the policy terraform created to the principal the API runs as — the
+   IAM user whose keys are in the `digishield-aws` Secret on Jetson, or the app's
+   IRSA role on EKS:
+
+   ```bash
+   POLICY_ARN=$(terraform -chdir=cognito output -raw cognito_user_directory_policy_arn)
+   aws iam attach-user-policy --user-name <the app's IAM user> --policy-arn "$POLICY_ARN"
+   ```
+
+   It grants `AdminCreateUser`, `AdminAddUserToGroup` and `AdminGetUser`, scoped
+   to this pool.
+
+2. Turn it on in `digishield/deploy/helm/digishield/values-jetson.yaml`:
+
+   ```yaml
+   auth:
+     cognito:
+       userPoolId: "us-east-1_xxxxxxxxx"
+       region: "us-east-1"
+       directory:
+         enabled: true
+   ```
+
+   The credentials come from the same `notifications.aws.existingSecret` the SES
+   and SNS gateways use — k3s has no IRSA.
+
+The pool's built-in mailer sends the invitation, capped at **50 messages a day**;
+past that, `AdminCreateUser` starts failing and the API returns 503. Point the
+pool at SES (Messaging → Email → *Send email with Amazon SES*) if that binds.
+
+Roles still live in the groups, not in `app_user.role` — the app writes both, but
+only the group reaches the token that authorises anything.
+
+## 10. Verify `tid` is in the token
 
 Sign in through the hosted UI, grab the **access token**, and decode the payload:
 

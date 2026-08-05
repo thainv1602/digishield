@@ -9,6 +9,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import com.digishield.auth.api.ImportResult;
 import com.digishield.auth.api.MfaSetupView;
 import com.digishield.auth.api.TokenPair;
+import com.digishield.auth.api.UserDirectory;
 import com.digishield.auth.api.UserUpsert;
 import com.digishield.auth.api.UserView;
 import com.digishield.auth.domain.AppUser;
@@ -51,11 +52,14 @@ public class AuthServiceImpl implements AuthService {
     /** Optional: absent in slices that do not wire the application shell. */
     private final ObjectProvider<AuditRecorder> auditRecorder;
     private final AuthProvider authProvider;
+    private final UserDirectory userDirectory;
 
     public AuthServiceImpl(AppUserRepository userRepository, AuthProvider authProvider,
+                           UserDirectory userDirectory,
                            ObjectProvider<AuditRecorder> auditRecorder) {
         this.userRepository = userRepository;
         this.authProvider = authProvider;
+        this.userDirectory = userDirectory;
         this.auditRecorder = auditRecorder;
     }
 
@@ -223,21 +227,37 @@ public class AuthServiceImpl implements AuthService {
         AppUser existing = userRepository.findByTenantIdAndEmail(tenantId, email).orElse(null);
         if (existing != null) {
             // Idempotent in dev: update the existing user rather than failing.
+            assertMayAdminister(existing, input);
             applyChanges(existing, input);
             return toUserView(userRepository.save(existing));
         }
+        Role role = input.role() != null ? Role.fromWireName(input.role()) : Role.LEARNER;
+        // Creating a user now hands out a real sign-in account in that role's group,
+        // so the same ceiling that guards an edit has to guard a create: without it
+        // an org admin could mint themselves a super admin by adding one.
+        assertMayGrant(role);
+        // Provision the sign-in account before the row exists. The other order leaves
+        // a user who shows up on the Users screen and can never log in; this one, at
+        // worst, leaves an account nobody is pointing at, and the directory adopts it
+        // on the retry.
+        UUID subject = userDirectory.createUser(email, role.wireName()).orElse(null);
         AppUser user = new AppUser(
-                UUID.randomUUID(),
+                // The directory's subject is what the token will carry, so the row is
+                // keyed by it when we know it — that is the id currentUser() looks up
+                // first, before falling back to matching on email.
+                subject != null ? subject : UUID.randomUUID(),
                 tenantId,
                 email,
-                input.role() != null ? Role.fromWireName(input.role()) : Role.LEARNER,
+                role,
                 UserStatus.PENDING,
                 deriveName(email),
                 null,
                 0);
         user.setDepartmentId(input.departmentId());
         user.setLocale(input.locale() != null ? input.locale() : "vi");
-        return toUserView(userRepository.save(user));
+        UserView saved = toUserView(userRepository.save(user));
+        audit("user.create", "user:" + email, AuditRecorder.Severity.CRITICAL);
+        return saved;
     }
 
     @Override
@@ -260,6 +280,16 @@ public class AuthServiceImpl implements AuthService {
         return saved;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>Every accepted row goes through {@link #createUser}, so a bulk import
+     * provisions that many sign-in accounts and sends that many invitations —
+     * enough to reach an identity provider's rate limit or daily mail cap. When
+     * one row fails the transaction rolls back and no application rows are
+     * written, but the accounts created before it stay; re-running the import
+     * adopts them rather than duplicating them.
+     */
     @Override
     @Transactional
     public ImportResult importUsers(List<UserUpsert> users) {
@@ -396,11 +426,20 @@ public class AuthServiceImpl implements AuthService {
                     "Cannot modify a user whose role outranks yours");
         }
         if (changes != null && changes.role() != null && !changes.role().isBlank()) {
-            Role wanted = Role.fromWireName(changes.role());
-            if (!actor.outranksOrEquals(wanted)) {
-                throw new AccessDeniedException(
-                        "Cannot grant a role above your own");
-            }
+            assertMayGrant(Role.fromWireName(changes.role()));
+        }
+    }
+
+    /**
+     * Refuses handing out authority the caller does not hold.
+     *
+     * <p>Empty caller role means no authenticated role at all — the {@code dev}
+     * profile permits everything and sets no authentication.
+     */
+    private void assertMayGrant(Role wanted) {
+        Optional<Role> caller = callerRole();
+        if (caller.isPresent() && !caller.get().outranksOrEquals(wanted)) {
+            throw new AccessDeniedException("Cannot grant a role above your own");
         }
     }
 

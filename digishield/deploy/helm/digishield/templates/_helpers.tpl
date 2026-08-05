@@ -88,7 +88,14 @@ would otherwise silently run with tenant isolation off. */}}
 - name: PUBLIC_BASE_URL
   value: {{ .Values.notifications.publicBaseUrl | quote }}
 {{- end }}
-{{- if or .Values.notifications.email.ses.enabled .Values.notifications.sms.sns.enabled }}
+{{- end -}}
+
+{{/* AWS credentials env — shared by every feature that calls AWS (SES, SNS, the
+     Cognito user directory). A Jetson k3s cluster has no IRSA, so the keys come
+     from a Secret; on EKS leave existingSecret empty and let IRSA supply them.
+     Rendered once per container, whichever of those features asked for it. */}}
+{{- define "digishield.awsCredsEnv" -}}
+{{- if or .Values.notifications.email.ses.enabled .Values.notifications.sms.sns.enabled .Values.auth.cognito.directory.enabled }}
 {{- if .Values.notifications.aws.region }}
 - name: AWS_REGION
   value: {{ .Values.notifications.aws.region | quote }}
@@ -104,6 +111,23 @@ would otherwise silently run with tenant isolation off. */}}
     secretKeyRef:
       name: {{ .Values.notifications.aws.existingSecret }}
       key: {{ .Values.notifications.aws.secretAccessKeyKey }}
+{{- end }}
+{{- end }}
+{{- end -}}
+
+{{/* User-directory env — API only. When on, creating a user on the Users screen
+     also creates the Cognito account (Cognito mails the temporary password) and
+     puts it in the role's group. Only the API serves that screen, so worker /
+     scheduler / flyway are left without the credentials to administer a pool. */}}
+{{- define "digishield.userDirectoryEnv" -}}
+{{- if .Values.auth.cognito.directory.enabled }}
+- name: AUTH_COGNITO_DIRECTORY_ENABLED
+  value: "true"
+- name: AUTH_COGNITO_USER_POOL_ID
+  value: {{ required "auth.cognito.userPoolId is required when auth.cognito.directory.enabled" .Values.auth.cognito.userPoolId | quote }}
+{{- with .Values.auth.cognito.region }}
+- name: AUTH_COGNITO_REGION
+  value: {{ . | quote }}
 {{- end }}
 {{- end }}
 {{- end -}}

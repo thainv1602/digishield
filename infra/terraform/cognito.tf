@@ -33,3 +33,8 @@ output "cognito_spa_client_id" {
 output "cognito_hosted_ui_domain" {
   value = module.cognito.hosted_ui_domain
 }
+
+output "cognito_user_directory_policy_arn" {
+  description = "Attach to the app's IRSA role so the Users screen can create sign-in accounts."
+  value       = module.cognito.user_directory_policy_arn
+}

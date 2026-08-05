@@ -13,5 +13,11 @@ output "cognito_hosted_ui_domain" {
 }
 
 output "cognito_user_pool_id" {
-  value = module.cognito.user_pool_id
+  description = "AUTH_COGNITO_USER_POOL_ID / auth.cognito.userPoolId in the chart."
+  value       = module.cognito.user_pool_id
+}
+
+output "cognito_user_directory_policy_arn" {
+  description = "Attach to the IAM user whose keys the app runs with, so the Users screen can create sign-in accounts."
+  value       = module.cognito.user_directory_policy_arn
 }

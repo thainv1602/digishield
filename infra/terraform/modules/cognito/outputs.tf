@@ -12,6 +12,11 @@ output "spa_client_id" {
   value       = aws_cognito_user_pool_client.spa.id
 }
 
+output "user_directory_policy_arn" {
+  description = "Attach to the app's principal (IRSA role, or the IAM user behind the AWS credentials Secret) to let the Users screen create sign-in accounts."
+  value       = aws_iam_policy.user_directory.arn
+}
+
 output "hosted_ui_domain" {
   value = "https://${aws_cognito_user_pool_domain.main.domain}.auth.${data.aws_region.current.name}.amazoncognito.com"
 }

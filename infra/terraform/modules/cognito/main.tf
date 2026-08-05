@@ -84,6 +84,31 @@ resource "aws_cognito_user_group" "roles" {
   user_pool_id = aws_cognito_user_pool.main.id
 }
 
+# ── User directory: what the API needs to run the Users screen ──────────────
+# Adding a user there creates the pool account (Cognito mails the temporary
+# password) and puts it in the role's group above — see the app's
+# CognitoUserDirectory, enabled by auth.cognito.directory.enabled in the chart.
+# The policy is created but attached to nothing: the app's principal differs per
+# deployment (an IRSA role on EKS, the IAM user behind the credentials Secret on
+# the Jetson k3s cluster, which has no IRSA). Attach it to whichever applies.
+data "aws_iam_policy_document" "user_directory" {
+  statement {
+    actions = [
+      "cognito-idp:AdminCreateUser",
+      "cognito-idp:AdminAddUserToGroup",
+      "cognito-idp:AdminGetUser",
+    ]
+    # Scoped to this pool: the app administers its own users and nothing else.
+    resources = [aws_cognito_user_pool.main.arn]
+  }
+}
+
+resource "aws_iam_policy" "user_directory" {
+  name        = "${var.name}-user-directory"
+  description = "Lets the DigiShield API create and group users in the ${var.name} pool"
+  policy      = data.aws_iam_policy_document.user_directory.json
+}
+
 # ── Pre-token-generation Lambda: injects the fixed `tid` claim ──────────────
 # Dev/single-tenant: every login gets the same tenant id. For real multi-tenant,
 # replace the hard-coded value with a per-user custom attribute lookup.

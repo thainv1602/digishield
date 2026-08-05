@@ -71,6 +71,10 @@ class AuthServiceImplTest {
 
     private AuditRecorder auditRecorder;
 
+    @Mock
+
+    private com.digishield.auth.api.UserDirectory userDirectory;
+
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -342,6 +346,113 @@ class AuthServiceImplTest {
         authService.updateUser(target, new UserUpsert(null, "org_admin", null, null));
 
         verify(userRepository).save(any(AppUser.class));
+    }
+
+    // ---- creating a user provisions the sign-in account --------------------
+
+    @Test
+    void creatingAUserProvisionsTheSignInAccountInTheRolesGroup() {
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
+                .thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "analyst")).thenReturn(Optional.empty());
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.createUser(new UserUpsert("new@x.com", "analyst", null, null));
+
+        // The group is what the token carries, and the token is what authorises:
+        // a row without one is a user who can sign in and reach nothing.
+        verify(userDirectory).createUser("new@x.com", "analyst");
+    }
+
+    @Test
+    void aUserWithNoRoleAskedForLandsInTheLearnerGroup() {
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
+                .thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "learner")).thenReturn(Optional.empty());
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.createUser(new UserUpsert("new@x.com", null, null, null));
+
+        // The row defaults to LEARNER; the directory has to be told the same thing
+        // rather than left with no group at all.
+        verify(userDirectory).createUser("new@x.com", "learner");
+    }
+
+    @Test
+    void theRowIsKeyedByTheDirectorysSubjectWhenItKnowsOne() {
+        UUID subject = UUID.randomUUID();
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
+                .thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "learner")).thenReturn(Optional.of(subject));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var created = authService.createUser(new UserUpsert("new@x.com", "learner", null, null));
+
+        // currentUser() resolves the caller by the token's subject first. Matching
+        // ids means the row is found straight away instead of via the email claim.
+        assertThat(created.id()).isEqualTo(subject);
+    }
+
+    @Test
+    void whenTheDirectoryRefusesNoRowIsWritten() {
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
+                .thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "learner"))
+                .thenThrow(new IllegalStateException("identity provider is down"));
+
+        assertThatThrownBy(() -> authService.createUser(new UserUpsert("new@x.com", "learner", null, null)))
+                .isInstanceOf(IllegalStateException.class);
+
+        // A row whose account was never created is a user the Users screen lists
+        // and nobody can log in as — the failure has to reach the admin instead.
+        verify(userRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void anOrgAdminCannotCreateASuperAdmin() {
+        actingAs("ROLE_ORG_ADMIN");
+        lenient().when(userRepository.findByTenantIdAndEmail(TENANT_ID, "boss@x.com"))
+                .thenReturn(Optional.empty());
+
+        // Creating a user now hands out real access, so the ceiling that guards an
+        // edit has to guard a create — otherwise this is self-promotion in one call.
+        assertThatThrownBy(() -> authService.createUser(
+                new UserUpsert("boss@x.com", "super_admin", null, null)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("above your own");
+        verify(userDirectory, never()).createUser(any(), any());
+        verify(userRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void postingAnExistingEmailCannotPromoteThemPastTheCaller() {
+        actingAs("ROLE_ORG_ADMIN");
+        AppUser existing = new AppUser(
+                UUID.randomUUID(), TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "u@x.com"))
+                .thenReturn(Optional.of(existing));
+
+        // POST on an address that already exists updates it. Without the same guard
+        // PATCH has, it is the way around the check on the line above.
+        assertThatThrownBy(() -> authService.createUser(
+                new UserUpsert("u@x.com", "super_admin", null, null)))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("above your own");
+        verify(userRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void creatingAUserIsAuditedAsCritical() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
+        when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
+                .thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "org_admin")).thenReturn(Optional.empty());
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.createUser(new UserUpsert("new@x.com", "org_admin", null, null));
+
+        verify(auditRecorder).record(eq("user.create"), eq("user:new@x.com"),
+                eq(AuditRecorder.Severity.CRITICAL));
     }
 
     @Test
