@@ -1,6 +1,7 @@
 package com.digishield;
 
 import com.digishield.auth.api.UserDirectory;
+import com.digishield.shared.security.LogSafe;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -119,8 +120,9 @@ class CognitoUserDirectory implements UserDirectory {
      * reach an access token already in their hands: the API validates those
      * offline against the pool's JWKS — signature, issuer, expiry — and asks
      * Cognito nothing, so a revoked one still passes until it expires. The
-     * window is the access token's lifetime (an hour by default on this pool),
-     * down from "as long as they keep refreshing".
+     * window is the access token's lifetime — 15 minutes, which is why the
+     * terraform module sets it there rather than leaving Cognito's hour — down
+     * from "as long as they keep refreshing".
      *
      * <p>Failing here does not fail the request. The group move is the change
      * that matters and it has already been applied; unwinding it to report this
@@ -135,10 +137,10 @@ class CognitoUserDirectory implements UserDirectory {
                     .userPoolId(userPoolId)
                     .username(email)
                     .build());
-            LOG.info("Ended existing sessions for {} after the role change", email);
+            LOG.info("Ended existing sessions for {} after the role change", LogSafe.value(email));
         } catch (CognitoIdentityProviderException e) {
             LOG.error("Role changed for {} but their sessions could not be ended, so they keep "
-                    + "the old role until their token expires: {}", email, e.toString());
+                    + "the old role until their token expires: {}", LogSafe.value(email), e.toString());
         }
     }
 
@@ -167,7 +169,7 @@ class CognitoUserDirectory implements UserDirectory {
         } catch (UserNotFoundException e) {
             throw noSuchAccount(email);
         } catch (CognitoIdentityProviderException e) {
-            LOG.error("Cognito rejected AdminListGroupsForUser for {}: {}", email, e.toString());
+            LOG.error("Cognito rejected AdminListGroupsForUser for {}: {}", LogSafe.value(email), e.toString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Could not read the current roles at the identity provider");
         }
@@ -180,10 +182,10 @@ class CognitoUserDirectory implements UserDirectory {
                     .username(email)
                     .groupName(group)
                     .build());
-            LOG.info("Revoked group {} from {}", group, email);
+            LOG.info("Revoked group {} from {}", group, LogSafe.value(email));
         } catch (CognitoIdentityProviderException e) {
             LOG.error("Cognito rejected AdminRemoveUserFromGroup for {} ({}): {}",
-                    email, group, e.toString());
+                    LogSafe.value(email), group, e.toString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Could not revoke the previous role at the identity provider");
         }
@@ -194,7 +196,7 @@ class CognitoUserDirectory implements UserDirectory {
      * was created — the row's address no longer names any account.
      */
     private ResponseStatusException noSuchAccount(String email) {
-        LOG.error("No Cognito account for {} — its role cannot be changed", email);
+        LOG.error("No Cognito account for {} — its role cannot be changed", LogSafe.value(email));
         return new ResponseStatusException(HttpStatus.CONFLICT,
                 "This user has no sign-in account at the identity provider, so their role "
                         + "cannot be changed; create the account first");
@@ -215,12 +217,12 @@ class CognitoUserDirectory implements UserDirectory {
                 .build();
         try {
             AdminCreateUserResponse response = cognito.adminCreateUser(request);
-            LOG.info("Created Cognito account for {} (invitation emailed)", email);
+            LOG.info("Created Cognito account for {} (invitation emailed)", LogSafe.value(email));
             return subjectOf(response.user() != null ? response.user().attributes() : List.of());
         } catch (UsernameExistsException e) {
             // Accounts made by hand before this existed, and repeat POSTs of the same
             // address. Adopt the account rather than refusing the whole request.
-            LOG.info("Cognito account for {} already exists — reusing it", email);
+            LOG.info("Cognito account for {} already exists — reusing it", LogSafe.value(email));
             return subjectOfExisting(email);
         } catch (InvalidParameterException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -231,7 +233,7 @@ class CognitoUserDirectory implements UserDirectory {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
                     "The identity provider is rate limiting account creation — try again later");
         } catch (CognitoIdentityProviderException e) {
-            LOG.error("Cognito rejected AdminCreateUser for {}: {}", email, e.toString());
+            LOG.error("Cognito rejected AdminCreateUser for {}: {}", LogSafe.value(email), e.toString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Could not create the sign-in account");
         }
@@ -247,7 +249,7 @@ class CognitoUserDirectory implements UserDirectory {
         } catch (CognitoIdentityProviderException e) {
             // Not fatal: without the subject the application row keeps a generated id
             // and currentUser() still resolves the caller by email claim.
-            LOG.warn("Could not read the existing Cognito account for {}: {}", email, e.toString());
+            LOG.warn("Could not read the existing Cognito account for {}: {}", LogSafe.value(email), e.toString());
             return null;
         }
     }
@@ -272,7 +274,8 @@ class CognitoUserDirectory implements UserDirectory {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "The identity provider has no group for role '" + role + "'");
         } catch (CognitoIdentityProviderException e) {
-            LOG.error("Cognito rejected AdminAddUserToGroup for {} ({}): {}", email, role, e.toString());
+            LOG.error("Cognito rejected AdminAddUserToGroup for {} ({}): {}",
+                    LogSafe.value(email), role, e.toString());
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Could not grant the role at the identity provider");
         }

@@ -1,6 +1,7 @@
 package com.digishield.auth.application;
 
 import com.digishield.auth.api.UserDirectory;
+import com.digishield.shared.security.LogSafe;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -24,13 +25,13 @@ public class LoggingUserDirectory implements UserDirectory {
     @Override
     public Optional<UUID> createUser(String email, String role) {
         log.info("[auth] No user directory configured — {} was added with role {} but has no "
-                + "sign-in account and cannot log in", email, role);
+                + "sign-in account and cannot log in", LogSafe.value(email), role);
         return Optional.empty();
     }
 
     @Override
     public void setRole(String email, String role, Set<String> otherRoles) {
         log.info("[auth] No user directory configured — {} is recorded as {} but the tokens "
-                + "they sign in with are unchanged", email, role);
+                + "they sign in with are unchanged", LogSafe.value(email), role);
     }
 }
