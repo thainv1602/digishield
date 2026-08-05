@@ -27,3 +27,24 @@ misconfigurations:
       sysfs, and needs the root filesystem to report disk usage for the real
       disks rather than the container's overlay. All three are mounted
       readOnly, so the container can observe the host and change nothing on it.
+
+  - id: KSV-0023
+    paths:
+      - "digishield/deploy/gitops/jetson/infra/node-exporter.yaml"
+    statement: >-
+      The same three read-only host mounts as KSV-0121, seen from the volume
+      side rather than the container side. There is no way to export a node's
+      metrics without reading the node's filesystems.
+
+  - id: KSV-0125
+    paths:
+      - "digishield/deploy/gitops/jetson/infra/node-exporter.yaml"
+      - "digishield/deploy/gitops/jetson/infra/kube-state-metrics.yaml"
+    statement: >-
+      The rule wants images from a configured allowlist of registries, which
+      this repo has not defined, so every upstream image fails it by default.
+      These two come from the projects that publish them — prom/node-exporter
+      from the Prometheus organisation, and registry.k8s.io for
+      kube-state-metrics, which is the Kubernetes project's own registry. Both
+      are pinned to exact version tags. If an allowlist is ever configured,
+      delete this entry rather than extending it.
