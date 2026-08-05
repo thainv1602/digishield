@@ -3,6 +3,7 @@ package com.digishield;
 import com.digishield.auth.api.UserDirectory;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,9 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreate
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRemoveUserFromGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeliveryMediumType;
@@ -27,6 +31,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidPara
 import software.amazon.awssdk.services.cognitoidentityprovider.model.LimitExceededException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceNotFoundException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.TooManyRequestsException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExistsException;
 
 /**
@@ -42,8 +47,9 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExi
  * the application composed would need its own SES identity and its own way of
  * handing over a credential, and Cognito already does both.
  *
- * <p>Needs {@code cognito-idp:AdminCreateUser}, {@code AdminAddUserToGroup} and
- * {@code AdminGetUser} on the pool.
+ * <p>Needs {@code cognito-idp:AdminCreateUser}, {@code AdminGetUser},
+ * {@code AdminAddUserToGroup}, {@code AdminListGroupsForUser} and
+ * {@code AdminRemoveUserFromGroup} on the pool.
  */
 @Component
 @Primary
@@ -89,6 +95,73 @@ class CognitoUserDirectory implements UserDirectory {
         UUID subject = createAccount(email);
         addToGroup(email, role);
         return Optional.ofNullable(subject);
+    }
+
+    @Override
+    public void setRole(String email, String role, Set<String> otherRoles) {
+        // Revoke before granting: see the SPI's note on which way this fails safe.
+        for (String held : groupsHeldAmong(email, otherRoles)) {
+            removeFromGroup(email, held);
+        }
+        addToGroup(email, role);
+    }
+
+    /**
+     * Which of {@code candidates} the account is actually in.
+     *
+     * <p>Asking is one call and usually saves several: a demotion revokes one
+     * group, not the five the account never held. It also catches memberships
+     * nobody recorded — an account added to a group by hand does not stop
+     * carrying it because the database says otherwise.
+     */
+    private List<String> groupsHeldAmong(String email, Set<String> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return List.of();
+        }
+        try {
+            AdminListGroupsForUserResponse held = cognito.adminListGroupsForUser(
+                    AdminListGroupsForUserRequest.builder()
+                            .userPoolId(userPoolId)
+                            .username(email)
+                            .build());
+            return held.groups().stream()
+                    .map(g -> g.groupName())
+                    .filter(candidates::contains)
+                    .toList();
+        } catch (UserNotFoundException e) {
+            throw noSuchAccount(email);
+        } catch (CognitoIdentityProviderException e) {
+            LOG.error("Cognito rejected AdminListGroupsForUser for {}: {}", email, e.toString());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Could not read the current roles at the identity provider");
+        }
+    }
+
+    private void removeFromGroup(String email, String group) {
+        try {
+            cognito.adminRemoveUserFromGroup(AdminRemoveUserFromGroupRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .groupName(group)
+                    .build());
+            LOG.info("Revoked group {} from {}", group, email);
+        } catch (CognitoIdentityProviderException e) {
+            LOG.error("Cognito rejected AdminRemoveUserFromGroup for {} ({}): {}",
+                    email, group, e.toString());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Could not revoke the previous role at the identity provider");
+        }
+    }
+
+    /**
+     * Users who predate the directory, or whose email was edited after the account
+     * was created — the row's address no longer names any account.
+     */
+    private ResponseStatusException noSuchAccount(String email) {
+        LOG.error("No Cognito account for {} — its role cannot be changed", email);
+        return new ResponseStatusException(HttpStatus.CONFLICT,
+                "This user has no sign-in account at the identity provider, so their role "
+                        + "cannot be changed; create the account first");
     }
 
     /** Creates the pool account (Cognito emails the temporary password), or adopts an existing one. */
@@ -153,6 +226,8 @@ class CognitoUserDirectory implements UserDirectory {
                     .username(email)
                     .groupName(role)
                     .build());
+        } catch (UserNotFoundException e) {
+            throw noSuchAccount(email);
         } catch (ResourceNotFoundException e) {
             // The pool has no such group. The account exists but its token would carry
             // no authority at all, so this fails loudly rather than leaving an admin to

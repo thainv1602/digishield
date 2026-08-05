@@ -1,6 +1,7 @@
 package com.digishield.auth.api;
 
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -34,4 +35,23 @@ public interface UserDirectory {
      *         directory cannot say (the dev no-op, for one)
      */
     Optional<UUID> createUser(String email, String role);
+
+    /**
+     * Moves an existing account to {@code role}: takes away every group in
+     * {@code otherRoles} it currently holds, then grants {@code role}.
+     *
+     * <p>Revoking first is deliberate. The two calls cannot be made atomic, and
+     * of the two ways to fail — a moment holding both the old role and the new,
+     * or a moment holding neither — only the second one fails closed. A demotion
+     * that leaves the old group behind is a demotion that did not happen: the
+     * token carries every group, and the app reads the highest one.
+     *
+     * <p>The caller owns the role vocabulary; this only moves group membership
+     * around. Roles the account does not hold are left alone, not "removed".
+     *
+     * @param email      login email, which is also the account's username
+     * @param role       snake_case role name to grant
+     * @param otherRoles every other role's group name, to revoke if held
+     */
+    void setRole(String email, String role, Set<String> otherRoles);
 }

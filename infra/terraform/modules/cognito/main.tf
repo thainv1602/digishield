@@ -86,8 +86,10 @@ resource "aws_cognito_user_group" "roles" {
 
 # ── User directory: what the API needs to run the Users screen ──────────────
 # Adding a user there creates the pool account (Cognito mails the temporary
-# password) and puts it in the role's group above — see the app's
-# CognitoUserDirectory, enabled by auth.cognito.directory.enabled in the chart.
+# password) and puts it in the role's group above; changing a role moves the
+# account between those groups, which is why the list/remove actions are here —
+# see the app's CognitoUserDirectory, enabled by auth.cognito.directory.enabled
+# in the chart.
 # The policy is created but attached to nothing: the app's principal differs per
 # deployment (an IRSA role on EKS, the IAM user behind the credentials Secret on
 # the Jetson k3s cluster, which has no IRSA). Attach it to whichever applies.
@@ -95,8 +97,10 @@ data "aws_iam_policy_document" "user_directory" {
   statement {
     actions = [
       "cognito-idp:AdminCreateUser",
-      "cognito-idp:AdminAddUserToGroup",
       "cognito-idp:AdminGetUser",
+      "cognito-idp:AdminAddUserToGroup",
+      "cognito-idp:AdminListGroupsForUser",
+      "cognito-idp:AdminRemoveUserFromGroup",
     ]
     # Scoped to this pool: the app administers its own users and nothing else.
     resources = [aws_cognito_user_pool.main.arn]

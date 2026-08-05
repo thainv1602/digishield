@@ -238,8 +238,14 @@ echo "          VITE_TENANT_ID=$TENANT_ID"
 
 Without this the Users screen writes an application row and nothing else: the
 person appears in the list, receives no mail, and has no account to sign in
-with. Turning it on makes `POST /users` call `AdminCreateUser` (Cognito emails
-the temporary password), then `AdminAddUserToGroup` for the chosen role.
+with — and changing their role changes a database column that authorises
+nothing. Turning it on makes
+
+- `POST /users` call `AdminCreateUser` (Cognito emails the temporary password),
+  then `AdminAddUserToGroup` for the chosen role, and
+- `PATCH /users/{id}` move the account between groups when the role changes:
+  the old group is revoked before the new one is granted, so an interrupted
+  change leaves the account with no role rather than with both.
 
 1. Attach the policy terraform created to the principal the API runs as — the
    IAM user whose keys are in the `digishield-aws` Secret on Jetson, or the app's
@@ -250,8 +256,8 @@ the temporary password), then `AdminAddUserToGroup` for the chosen role.
    aws iam attach-user-policy --user-name <the app's IAM user> --policy-arn "$POLICY_ARN"
    ```
 
-   It grants `AdminCreateUser`, `AdminAddUserToGroup` and `AdminGetUser`, scoped
-   to this pool.
+   It grants `AdminCreateUser`, `AdminGetUser`, `AdminAddUserToGroup`,
+   `AdminListGroupsForUser` and `AdminRemoveUserFromGroup`, scoped to this pool.
 
 2. Turn it on in `digishield/deploy/helm/digishield/values-jetson.yaml`:
 
@@ -272,7 +278,13 @@ past that, `AdminCreateUser` starts failing and the API returns 503. Point the
 pool at SES (Messaging → Email → *Send email with Amazon SES*) if that binds.
 
 Roles still live in the groups, not in `app_user.role` — the app writes both, but
-only the group reaches the token that authorises anything.
+only the group reaches the token that authorises anything. A user created before
+the directory was enabled has no account to move, so editing their role returns
+409: create it with section 7 first.
+
+Group changes apply at the next token, not immediately. An access token already
+issued keeps the old groups until it expires (an hour by default) or the session
+is refreshed.
 
 ## 10. Verify `tid` is in the token
 
