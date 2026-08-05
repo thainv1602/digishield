@@ -56,6 +56,13 @@ resource "aws_cognito_user_pool_client" "spa" {
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
 
+  # SRP to sign in, refresh to stay signed in — the two the hosted UI needs, and
+  # nothing else. The password flows are deliberately absent: ADMIN_USER_PASSWORD
+  # _AUTH was switched on by hand at some point to fetch a token from the CLI, and
+  # an apply takes it back off. It hands whoever holds the pool's admin
+  # credentials a way to trade any user's password for that user's tokens, which
+  # is a large door to leave open for a debugging convenience. Get a token through
+  # the hosted UI instead.
   explicit_auth_flows = [
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH",
