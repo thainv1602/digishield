@@ -22,6 +22,23 @@ spec:
       # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
       # would clobber the app's ${REDIS_PORT:...} placeholders.
       enableServiceLinks: false
+      # Put the replicas on different nodes. values-jetson.yaml already says "one
+      # replica per Jetson", but nothing enforced it: the scheduler happened to
+      # split them because it prefers the emptier node, and a rollout was free to
+      # land both on the same one. Two replicas that share a node are two replicas
+      # that die together, which is the failure the second one exists to survive.
+      #
+      # ScheduleAnyway, not DoNotSchedule: on a two-node cluster, draining one for
+      # maintenance would otherwise leave the second replica Pending rather than
+      # merely doubled up. Availability now beats tidiness later.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: digishield
+              app.kubernetes.io/component: api
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
