@@ -61,6 +61,38 @@ spec:
             # duplicate series describing the same two disks.
             - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/kubelet/.+|var/lib/docker/.+|var/lib/rancher/.+)($|/)
             - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+            # Collectors that are on by default but cannot work on these boards.
+            # Every one of them failed on every scrape, which put 127 "collector
+            # failed" lines into the last 200 log lines on each node — noise that
+            # buries real messages and is shipped to Loki and stored.
+            #
+            # cpufreq is the loud one and the reason this list exists: the Tegra
+            # kernel's per-CPU transition table is larger than the reader accepts
+            # ("trans_table: file too large"), so it errors rather than returning
+            # nothing. The rest are hardware and kernel features this board does
+            # not have: no ZFS or bcachefs, no InfiniBand or Fibre Channel, no
+            # mdadm or bonding or tape, no IPVS or NFS server, no Intel RAPL, no
+            # conntrack (same missing netfilter modules that stop klipper-lb, see
+            # traefik-config.yaml), and no PSI in this kernel build.
+            #
+            # Disabled, not silenced: if any of these ever becomes available —
+            # a kernel upgrade bringing PSI, say — delete its line and the metrics
+            # come back.
+            - --no-collector.bcachefs
+            - --no-collector.bonding
+            - --no-collector.conntrack
+            - --no-collector.cpufreq
+            - --no-collector.fibrechannel
+            - --no-collector.infiniband
+            - --no-collector.ipvs
+            - --no-collector.kernel_hung
+            - --no-collector.mdadm
+            - --no-collector.nfsd
+            - --no-collector.nvme
+            - --no-collector.pressure
+            - --no-collector.rapl
+            - --no-collector.tapestats
+            - --no-collector.zfs
           ports:
             # No hostPort. With hostNetwork the container already shares the
             # node's network namespace, so binding :9100 here *is* binding it on
