@@ -79,8 +79,12 @@ data:
           - source_labels: [__meta_kubernetes_pod_container_port_name]
             regex: http-metrics
             action: keep
-          - source_labels: [__meta_kubernetes_pod_name]
-            target_label: pod
+        # Deliberately no `pod` target label here, unlike the jobs above. Every
+        # kube-state-metrics series already carries a `pod` label naming the pod
+        # it *describes*; setting one from service discovery would overwrite it
+        # with the name of the exporter doing the describing, and Prometheus
+        # would rename the real one to `exported_pod`. Every query about pods
+        # would then have to use a label named after a collision.
 
       - job_name: prometheus
         static_configs:
