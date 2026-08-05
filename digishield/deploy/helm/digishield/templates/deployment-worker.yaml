@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/name: digishield
     app.kubernetes.io/component: worker
 spec:
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   replicas: {{ .Values.worker.replicaCount }}
   selector:
     matchLabels:

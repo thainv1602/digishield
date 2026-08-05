@@ -9,6 +9,7 @@ metadata:
     app.kubernetes.io/name: digishield
     app.kubernetes.io/component: frontend
 spec:
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   replicas: {{ .Values.frontend.replicaCount }}
   selector:
     matchLabels:

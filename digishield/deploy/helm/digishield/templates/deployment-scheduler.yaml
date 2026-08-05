@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/name: digishield
     app.kubernetes.io/component: scheduler
 spec:
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   # Keep at 1 replica so periodic jobs (@Scheduled) don't run in duplicate.
   replicas: {{ .Values.scheduler.replicaCount }}
   selector:

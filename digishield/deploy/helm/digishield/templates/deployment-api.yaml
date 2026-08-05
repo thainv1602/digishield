@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/name: digishield
     app.kubernetes.io/component: api
 spec:
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
   {{- if not .Values.api.autoscaling.enabled }}
   replicas: {{ .Values.api.replicaCount }}
   {{- end }}
