@@ -49,6 +49,9 @@ public interface UserDirectory {
      * <p>The caller owns the role vocabulary; this only moves group membership
      * around. Roles the account does not hold are left alone, not "removed".
      *
+     * <p>Implementations should also end the account's existing sessions, since a
+     * token already issued carries the old groups until it expires.
+     *
      * @param email      login email, which is also the account's username
      * @param role       snake_case role name to grant
      * @param otherRoles every other role's group name, to revoke if held

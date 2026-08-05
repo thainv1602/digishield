@@ -26,12 +26,14 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRemoveUserFromGroupRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUserGlobalSignOutRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.GroupType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeliveryMediumType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.MessageActionType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.ResourceNotFoundException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.TooManyRequestsException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserNotFoundException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExistsException;
@@ -195,6 +197,32 @@ class CognitoUserDirectoryTest {
         directory.setRole("a@x.vn", "learner", Set.of("org_admin", "analyst"));
 
         verify(cognito, never()).adminRemoveUserFromGroup(any(AdminRemoveUserFromGroupRequest.class));
+        verify(cognito).adminAddUserToGroup(any(AdminAddUserToGroupRequest.class));
+    }
+
+    @Test
+    void setRole_endsTheAccountsSessionsOnceTheGroupsHaveMoved() {
+        stubGroupsHeld("org_admin");
+
+        directory.setRole("boss@x.vn", "learner", Set.of("org_admin"));
+
+        // Without this the demoted admin keeps minting tokens carrying org_admin
+        // for as long as they keep refreshing.
+        InOrder order = inOrder(cognito);
+        order.verify(cognito).adminAddUserToGroup(any(AdminAddUserToGroupRequest.class));
+        order.verify(cognito).adminUserGlobalSignOut(any(AdminUserGlobalSignOutRequest.class));
+    }
+
+    @Test
+    void setRole_whenSessionsCannotBeEnded_stillReportsTheRoleChange() {
+        stubGroupsHeld("org_admin");
+        when(cognito.adminUserGlobalSignOut(any(AdminUserGlobalSignOutRequest.class)))
+                .thenThrow(TooManyRequestsException.builder().message("slow down").build());
+
+        // The group move already happened. Failing the request here would roll the
+        // row back and leave the pool and the database disagreeing about the role.
+        directory.setRole("boss@x.vn", "learner", Set.of("org_admin"));
+
         verify(cognito).adminAddUserToGroup(any(AdminAddUserToGroupRequest.class));
     }
 

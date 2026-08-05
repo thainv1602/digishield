@@ -101,6 +101,9 @@ data "aws_iam_policy_document" "user_directory" {
       "cognito-idp:AdminAddUserToGroup",
       "cognito-idp:AdminListGroupsForUser",
       "cognito-idp:AdminRemoveUserFromGroup",
+      # Ends the sessions of a user whose role just changed, so a demotion is not
+      # waiting on their refresh token to run out.
+      "cognito-idp:AdminUserGlobalSignOut",
     ]
     # Scoped to this pool: the app administers its own users and nothing else.
     resources = [aws_cognito_user_pool.main.arn]

@@ -257,7 +257,8 @@ nothing. Turning it on makes
    ```
 
    It grants `AdminCreateUser`, `AdminGetUser`, `AdminAddUserToGroup`,
-   `AdminListGroupsForUser` and `AdminRemoveUserFromGroup`, scoped to this pool.
+   `AdminListGroupsForUser`, `AdminRemoveUserFromGroup` and
+   `AdminUserGlobalSignOut`, scoped to this pool.
 
 2. Turn it on in `digishield/deploy/helm/digishield/values-jetson.yaml`:
 
@@ -282,9 +283,25 @@ only the group reaches the token that authorises anything. A user created before
 the directory was enabled has no account to move, so editing their role returns
 409: create it with section 7 first.
 
-Group changes apply at the next token, not immediately. An access token already
-issued keeps the old groups until it expires (an hour by default) or the session
-is refreshed.
+A role change ends the account's sessions (`AdminUserGlobalSignOut`), which is
+worth reading precisely:
+
+- Refresh tokens are invalidated, so the user cannot mint a new token carrying
+  the old group. Their next refresh fails and the app signs them out.
+- An **access token already issued keeps working** until it expires. The API
+  validates tokens offline against the pool's JWKS — signature, issuer, expiry —
+  and asks Cognito nothing, so revocation is invisible to it.
+
+So the exposure after a demotion is one access-token lifetime, **60 minutes** on
+this pool's default. Shorten it if that is too long — Cognito → app client →
+*Token expiration* → **Access token expiration**; 15 minutes costs nothing but a
+more frequent (silent) refresh. Closing the window entirely would mean the API
+checking each token against the provider, or against a per-user "signed out at"
+timestamp, on every request; neither is in place today.
+
+If ending the sessions fails, the role change still stands — the group move is
+the change that matters and it has already been applied. The failure is logged
+at ERROR: search for `sessions could not be ended`.
 
 ## 10. Verify `tid` is in the token
 

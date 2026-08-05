@@ -24,6 +24,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminRemoveUserFromGroupRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUserGlobalSignOutRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.DeliveryMediumType;
@@ -48,8 +49,9 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExi
  * handing over a credential, and Cognito already does both.
  *
  * <p>Needs {@code cognito-idp:AdminCreateUser}, {@code AdminGetUser},
- * {@code AdminAddUserToGroup}, {@code AdminListGroupsForUser} and
- * {@code AdminRemoveUserFromGroup} on the pool.
+ * {@code AdminAddUserToGroup}, {@code AdminListGroupsForUser},
+ * {@code AdminRemoveUserFromGroup} and {@code AdminUserGlobalSignOut} on the
+ * pool.
  */
 @Component
 @Primary
@@ -104,6 +106,40 @@ class CognitoUserDirectory implements UserDirectory {
             removeFromGroup(email, held);
         }
         addToGroup(email, role);
+        endSessions(email);
+    }
+
+    /**
+     * Ends the account's sessions, so the new role is not waiting on the old
+     * token's expiry.
+     *
+     * <p>What this does and does not buy is worth being exact about.
+     * {@code AdminUserGlobalSignOut} invalidates the refresh tokens, so the
+     * demoted user cannot mint another token carrying the old group. It does not
+     * reach an access token already in their hands: the API validates those
+     * offline against the pool's JWKS — signature, issuer, expiry — and asks
+     * Cognito nothing, so a revoked one still passes until it expires. The
+     * window is the access token's lifetime (an hour by default on this pool),
+     * down from "as long as they keep refreshing".
+     *
+     * <p>Failing here does not fail the request. The group move is the change
+     * that matters and it has already been applied; unwinding it to report this
+     * would leave the pool and the database disagreeing about the role, which is
+     * the exact drift this method exists to shorten. It is logged as an error
+     * instead — the sessions outlive the demotion by an hour, and someone should
+     * know that happened.
+     */
+    private void endSessions(String email) {
+        try {
+            cognito.adminUserGlobalSignOut(AdminUserGlobalSignOutRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .build());
+            LOG.info("Ended existing sessions for {} after the role change", email);
+        } catch (CognitoIdentityProviderException e) {
+            LOG.error("Role changed for {} but their sessions could not be ended, so they keep "
+                    + "the old role until their token expires: {}", email, e.toString());
+        }
     }
 
     /**
