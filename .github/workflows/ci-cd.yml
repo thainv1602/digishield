@@ -232,6 +232,12 @@ jobs:
           scan-type: config
           scan-ref: .
           severity: CRITICAL,HIGH
+          # Trivy auto-detects .trivyignore but NOT .trivyignore.yaml, so the
+          # file has to be named explicitly or its entries are silently ignored
+          # — verified against trivy 0.73.0. The YAML form is worth the extra
+          # line: it carries a written justification per suppression, which the
+          # plain-text form cannot.
+          trivyignores: .trivyignore.yaml
           format: sarif
           output: trivy-iac.sarif
       - name: Upload Trivy SARIF (deps)

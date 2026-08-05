@@ -1,0 +1,106 @@
+# node-exporter — the node's own CPU, memory, disk and network.
+#
+# Prometheus scraped exactly one thing before this: the app's /actuator/prometheus.
+# That answers "what is the JVM doing" but not "is the board out of memory", which
+# is the question that actually matters on a 7.4 GB Jetson running Postgres, Redis,
+# RabbitMQ, Loki, Prometheus and the app side by side.
+#
+# hostNetwork is required, not incidental: without it the network and connection
+# metrics describe the pod's namespace rather than the node's, which is not the
+# number anyone wants. It also means the pod IP *is* the node IP, which is how
+# Prometheus finds these with plain pod service discovery.
+#
+# Runs as nobody with no capabilities. Every host path is mounted read-only —
+# node-exporter never needs to write to any of them.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-exporter
+  namespace: digishield
+  labels:
+    app.kubernetes.io/name: node-exporter
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: node-exporter
+    spec:
+      hostNetwork: true
+      # hostPID is deliberately NOT set. It is only needed by the processes
+      # collector, which is off, and it would let this container see every
+      # process on the board for no gain.
+      dnsPolicy: ClusterFirstWithHostNet
+      # A metrics agent is worth nothing on the one node that is unhealthy, so
+      # it tolerates everything rather than being evicted exactly when needed.
+      tolerations:
+        - operator: Exists
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        runAsUser: 65534
+        runAsGroup: 65534
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:v1.12.1
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+            readOnlyRootFilesystem: true
+          args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --path.rootfs=/host/root
+            - --web.listen-address=:9100
+            # Pseudo-filesystems and the container runtime's own bind mounts
+            # would otherwise dominate the filesystem metrics with hundreds of
+            # duplicate series describing the same two disks.
+            - --collector.filesystem.mount-points-exclude=^/(dev|proc|sys|run|var/lib/kubelet/.+|var/lib/docker/.+|var/lib/rancher/.+)($|/)
+            - --collector.filesystem.fs-types-exclude=^(autofs|binfmt_misc|bpf|cgroup2?|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|iso9660|mqueue|nsfs|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|selinuxfs|squashfs|sysfs|tracefs)$
+          ports:
+            # No hostPort. With hostNetwork the container already shares the
+            # node's network namespace, so binding :9100 here *is* binding it on
+            # the node; hostPort would be redundant and only widens what a
+            # policy scanner has to forgive.
+            - containerPort: 9100
+              name: metrics
+          readinessProbe:
+            httpGet:
+              path: /
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 96Mi
+          volumeMounts:
+            - name: proc
+              mountPath: /host/proc
+              readOnly: true
+            - name: sys
+              mountPath: /host/sys
+              readOnly: true
+            - name: root
+              mountPath: /host/root
+              readOnly: true
+              # So filesystems mounted on the host after this pod started are
+              # still visible to it.
+              mountPropagation: HostToContainer
+      volumes:
+        - name: proc
+          hostPath:
+            path: /proc
+        - name: sys
+          hostPath:
+            path: /sys
+        - name: root
+          hostPath:
+            path: /
