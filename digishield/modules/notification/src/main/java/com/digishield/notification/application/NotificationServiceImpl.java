@@ -14,6 +14,7 @@ import com.digishield.notification.infrastructure.NotificationRepository;
 import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.digishield.shared.tenantcontext.LogSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.time.Duration;
@@ -106,7 +107,8 @@ public class NotificationServiceImpl implements NotificationService {
             gateway.deliver(channel.name(), recipient, title, body);
             return NotificationStatus.SENT;
         } catch (RuntimeException e) {
-            LOG.error("Notification delivery to {} on {} failed: {}", recipient, channel, e.getMessage());
+            LOG.error("Notification delivery to {} on {} failed: {}",
+                    LogSafe.value(recipient), channel, e.getMessage());
             return NotificationStatus.FAILED;
         }
     }

@@ -1,6 +1,7 @@
 package com.digishield;
 
 import com.digishield.notification.api.NotificationGateway;
+import com.digishield.shared.tenantcontext.LogSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,7 +40,8 @@ class SesEmailNotificationGateway implements NotificationGateway {
     @Override
     public void deliver(String channel, String recipient, String title, String body) {
         if (!"EMAIL".equals(channel)) {
-            LOG.info("SES gateway skips non-email channel {} (recipient {})", channel, recipient);
+            LOG.info("SES gateway skips non-email channel {} (recipient {})",
+                    LogSafe.value(channel), LogSafe.value(recipient));
             return;
         }
         SendEmailRequest request = SendEmailRequest.builder()
@@ -55,6 +57,6 @@ class SesEmailNotificationGateway implements NotificationGateway {
                         .build())
                 .build();
         sesClient.sendEmail(request);
-        LOG.info("Sent email notification to {} via SES", recipient);
+        LOG.info("Sent email notification to {} via SES", LogSafe.value(recipient));
     }
 }

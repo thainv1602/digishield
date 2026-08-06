@@ -1,4 +1,4 @@
-package com.digishield.shared.security;
+package com.digishield.shared.tenantcontext;
 
 /**
  * Renders a caller-supplied value safe to put in a log line.
