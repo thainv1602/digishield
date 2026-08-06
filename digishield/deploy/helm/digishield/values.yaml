@@ -12,11 +12,17 @@ imagePullSecrets: []
 # ReplicaSets per workload cluttering the ArgoCD tree — they hold no pods and
 # cost nothing but a row each, yet they bury the one that matters.
 #
-# Three is enough here because rollback is a git revert that ArgoCD syncs, not
-# `kubectl rollout undo`: with selfHeal on, an undo would be pulled straight back
-# to whatever the deploy branch says. The kept revisions are for reading history,
-# not for driving it.
-revisionHistoryLimit: 3
+# The number counts *superseded* ReplicaSets only — the running one is never in
+# it. So 1 leaves two rows per workload, and the Kubernetes default of 10 was
+# showing eleven.
+#
+# One rather than none. Routine rollback here is a git revert that ArgoCD syncs,
+# and with selfHeal on a `kubectl rollout undo` would be pulled straight back —
+# so the history is not the normal recovery path. But it is the fast one when a
+# rollout is actively broken: undo takes seconds, while reverting on main means
+# waiting out a CD run, roughly fifteen minutes when it works. One kept revision
+# buys that for the price of a single row in the tree.
+revisionHistoryLimit: 1
 
 api:
   replicaCount: 2
