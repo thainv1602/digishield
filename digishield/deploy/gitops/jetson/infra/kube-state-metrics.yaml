@@ -101,9 +101,7 @@ metadata:
   labels:
     app.kubernetes.io/name: kube-state-metrics
 spec:
-  # One superseded revision kept, matching the app chart. Kubernetes'
-  # default of 10 fills the ArgoCD tree with empty rows; rollback here is
-  # a git revert that ArgoCD syncs, so the history is only ever read.
+  # Matches the app chart; see its values.yaml for why one is enough.
   revisionHistoryLimit: 1
   replicas: 1
   selector:
