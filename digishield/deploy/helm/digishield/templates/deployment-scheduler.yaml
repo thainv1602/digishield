@@ -22,6 +22,11 @@ spec:
       # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
       # would clobber the app's ${REDIS_PORT:...} placeholders.
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -30,6 +35,11 @@ spec:
         - name: scheduler
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           args:
             - "--spring.profiles.active={{ .Values.scheduler.profile }}"
           {{- with .Values.api.managementPort }}
@@ -56,3 +66,9 @@ spec:
             {{- include "digishield.awsCredsEnv" (dict "ctx" . "directory" false) | nindent 12 }}
           resources:
             {{- toYaml .Values.scheduler.resources | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

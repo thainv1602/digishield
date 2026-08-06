@@ -22,6 +22,11 @@ spec:
       # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
       # would clobber the app's ${REDIS_PORT:...} placeholders.
       enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -31,9 +36,20 @@ spec:
         - name: flyway
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           args:
             - "--spring.profiles.active={{ .Values.flyway.profile }}"
           env:
             {{- include "digishield.dbEnv" . | nindent 12 }}
             {{- include "digishield.authEnv" . | nindent 12 }}
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
 {{- end }}
