@@ -259,7 +259,7 @@ class AuthServiceImplTest {
         authService.updateUser(userId, new UserUpsert(null, "analyst", null, null));
 
         // Who can do what changed — this is the entry an investigation looks for.
-        verify(auditRecorder).record(eq("user.role_change"), eq("user:" + userId),
+        verify(auditRecorder).record(eq("user.role_change"), eq("user:u@x.com"),
                 eq(AuditRecorder.Severity.CRITICAL));
     }
 
@@ -273,7 +273,7 @@ class AuthServiceImplTest {
 
         authService.updateUser(userId, new UserUpsert(null, "learner", null, null));
 
-        verify(auditRecorder).record(eq("user.update"), eq("user:" + userId),
+        verify(auditRecorder).record(eq("user.update"), eq("user:u@x.com"),
                 eq(AuditRecorder.Severity.SENSITIVE));
     }
 
@@ -505,8 +505,24 @@ class AuthServiceImplTest {
 
         authService.deleteUser(userId);
 
-        verify(auditRecorder).record(eq("user.delete"), eq("user:" + userId),
+        verify(auditRecorder).record(eq("user.delete"), eq("user:u@x.com"),
                 eq(AuditRecorder.Severity.CRITICAL));
+    }
+
+    @Test
+    void theDeleteEntryNamesTheUserByEmailNotByAnIdNobodyCanResolve() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "gone@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+
+        authService.deleteUser(userId);
+
+        // The row is gone by the time anyone reads this entry, so an id in the
+        // target would name a user nobody can look up any more.
+        verify(auditRecorder).record(eq("user.delete"), eq("user:gone@x.com"),
+                eq(AuditRecorder.Severity.CRITICAL));
+        verify(auditRecorder, never()).record(eq("user.delete"), eq("user:" + userId), any());
     }
 
     @Test

@@ -288,9 +288,9 @@ public class AuthServiceImpl implements AuthService {
         // A role change decides what someone may do; it is the entry an
         // investigation looks for, so it is called out from a plain edit.
         if (roleChanged) {
-            audit("user.role_change", "user:" + userId, AuditRecorder.Severity.CRITICAL);
+            audit("user.role_change", auditTarget(user), AuditRecorder.Severity.CRITICAL);
         } else {
-            audit("user.update", "user:" + userId, AuditRecorder.Severity.SENSITIVE);
+            audit("user.update", auditTarget(user), AuditRecorder.Severity.SENSITIVE);
         }
         return saved;
     }
@@ -308,7 +308,7 @@ public class AuthServiceImpl implements AuthService {
         // screen and can still sign in, because the token is what authorises.
         userDirectory.deleteUser(user.getEmail());
         userRepository.delete(user);
-        audit("user.delete", "user:" + userId, AuditRecorder.Severity.CRITICAL);
+        audit("user.delete", auditTarget(user), AuditRecorder.Severity.CRITICAL);
     }
 
     /**
@@ -332,6 +332,19 @@ public class AuthServiceImpl implements AuthService {
         if (isSelf) {
             throw new AccessDeniedException("You cannot delete your own account");
         }
+    }
+
+    /**
+     * Names the user an audit entry is about.
+     *
+     * <p>The email, not the id. An id answers "who was this" only while the row
+     * is still there to look up, which for a deletion is exactly when it is not:
+     * the first {@code user.delete} written on the cluster read
+     * {@code user:848874b8-…}, and the account it named was already gone.
+     */
+    private static String auditTarget(AppUser user) {
+        String email = user.getEmail();
+        return "user:" + ((email != null && !email.isBlank()) ? email : user.getId());
     }
 
     /** The provider's group name for a role, or {@code null} for no role at all. */
