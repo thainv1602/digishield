@@ -295,6 +295,45 @@ public class AuthServiceImpl implements AuthService {
         return saved;
     }
 
+    @Override
+    @Transactional
+    public void deleteUser(UUID userId) {
+        UUID tenantId = TenantContext.requireUuid();
+        AppUser user = userRepository.findByTenantIdAndId(tenantId, userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
+        assertMayAdminister(user, null);
+        assertNotSelf(user);
+        // The provider first, for the reason the create path has it first: a row
+        // removed while the account survives is a user who has vanished from every
+        // screen and can still sign in, because the token is what authorises.
+        userDirectory.deleteUser(user.getEmail());
+        userRepository.delete(user);
+        audit("user.delete", "user:" + userId, AuditRecorder.Severity.CRITICAL);
+    }
+
+    /**
+     * Refuses deleting the account the request is being made from.
+     *
+     * <p>An admin who removes themselves takes their own access with them, and on
+     * a tenant with one admin there is then nobody left who can undo it. Guessing
+     * is avoided rather than risked: the check only fires on a token, since the
+     * dev profile has no authenticated identity and {@code currentUser()} there
+     * stands in the tenant's first row, which is somebody else's account.
+     */
+    private void assertNotSelf(AppUser target) {
+        Optional<Jwt> jwt = currentJwt();
+        if (jwt.isEmpty()) {
+            return;
+        }
+        UUID subject = subjectUuid(jwt.get());
+        String email = jwt.get().getClaimAsString("email");
+        boolean isSelf = (subject != null && subject.equals(target.getId()))
+                || (email != null && email.equalsIgnoreCase(target.getEmail()));
+        if (isSelf) {
+            throw new AccessDeniedException("You cannot delete your own account");
+        }
+    }
+
     /** The provider's group name for a role, or {@code null} for no role at all. */
     private static String groupOf(Role role) {
         return role != null ? role.wireName() : null;

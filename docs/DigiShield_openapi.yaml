@@ -264,6 +264,18 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/User' }
+    delete:
+      tags: [Users]
+      summary: Remove a user and their sign-in account
+      description: >-
+        Deletes the user and the account they sign in with, so removing them
+        from the list also removes their access. Refused when the target
+        outranks the caller, or is the caller.
+      responses:
+        '204':
+          description: Deleted
+        '403':
+          description: Target outranks the caller, or is the caller
 
   /groups:
     get:

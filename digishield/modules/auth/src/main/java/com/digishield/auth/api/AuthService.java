@@ -64,6 +64,20 @@ public interface AuthService {
     UserView updateUser(UUID userId, UserUpsert changes);
 
     /**
+     * Removes a user from the current tenant, and their sign-in account with it.
+     *
+     * <p>The identity provider comes first: a row deleted while the account lives
+     * on is a user who no longer appears anywhere in the product and can still
+     * log into it, since authorisation reads the token rather than the database.
+     *
+     * @param userId the user to remove
+     * @throws java.util.NoSuchElementException if no such user exists in the tenant
+     * @throws org.springframework.security.access.AccessDeniedException if the
+     *         caller does not outrank the target, or is the target
+     */
+    void deleteUser(UUID userId);
+
+    /**
      * Bulk-imports users into the current tenant. In dev this is synchronous; the
      * returned {@link ImportResult#accepted()} reflects the number created.
      */

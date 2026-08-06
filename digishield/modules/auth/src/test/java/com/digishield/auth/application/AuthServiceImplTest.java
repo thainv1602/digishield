@@ -17,6 +17,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
@@ -31,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -420,6 +422,101 @@ class AuthServiceImplTest {
         // Email is the account's username at the provider and editing the row does
         // not rename it, so the new address names nothing.
         verify(userDirectory).setRole(eq("old@x.com"), eq("analyst"), any());
+    }
+
+    // ---- deleting a user takes the sign-in account with it -----------------
+
+    @Test
+    void deletingAUserRemovesTheirSignInAccountFirst() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+
+        authService.deleteUser(userId);
+
+        // A row deleted while the account lives on is a user who is gone from
+        // every screen and can still log in.
+        InOrder order = inOrder(userDirectory, userRepository);
+        order.verify(userDirectory).deleteUser("u@x.com");
+        order.verify(userRepository).delete(user);
+    }
+
+    @Test
+    void whenTheDirectoryRefusesTheRowSurvives() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+        doThrow(new IllegalStateException("identity provider is down"))
+                .when(userDirectory).deleteUser(any());
+
+        assertThatThrownBy(() -> authService.deleteUser(userId))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(userRepository, never()).delete(any(AppUser.class));
+    }
+
+    @Test
+    void anOrgAdminCannotDeleteASuperAdmin() {
+        actingAs("ROLE_ORG_ADMIN");
+        UUID victim = UUID.randomUUID();
+        existingUser(victim, Role.SUPER_ADMIN);
+
+        assertThatThrownBy(() -> authService.deleteUser(victim))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("outranks");
+        verify(userDirectory, never()).deleteUser(any());
+        verify(userRepository, never()).delete(any(AppUser.class));
+    }
+
+    @Test
+    void anAdminCannotDeleteTheirOwnAccount() {
+        UUID me = UUID.randomUUID();
+        AppUser self = new AppUser(me, TENANT_ID, "me@x.com", Role.ORG_ADMIN, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, me)).thenReturn(Optional.of(self));
+        authenticateAs(me, "me@x.com");
+
+        // Deleting yourself takes your own access with it, and on a tenant with
+        // one admin there is nobody left who can undo it.
+        assertThatThrownBy(() -> authService.deleteUser(me))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("your own account");
+        verify(userRepository, never()).delete(any(AppUser.class));
+    }
+
+    @Test
+    void selfDeleteIsMatchedByEmailWhenTheSubjectIsNotTheRowId() {
+        UUID rowId = UUID.randomUUID();
+        AppUser self = new AppUser(rowId, TENANT_ID, "me@x.com", Role.ORG_ADMIN, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, rowId)).thenReturn(Optional.of(self));
+        // Rows created before the directory carry a generated id, not the subject.
+        authenticateAs(UUID.randomUUID(), "me@x.com");
+
+        assertThatThrownBy(() -> authService.deleteUser(rowId))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("your own account");
+    }
+
+    @Test
+    void deletingAUserIsAuditedAsCritical() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+
+        authService.deleteUser(userId);
+
+        verify(auditRecorder).record(eq("user.delete"), eq("user:" + userId),
+                eq(AuditRecorder.Severity.CRITICAL));
+    }
+
+    @Test
+    void deletingAUserOfAnotherTenantIsNotFound() {
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.deleteUser(userId))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+        verify(userDirectory, never()).deleteUser(any());
     }
 
     // ---- creating a user provisions the sign-in account --------------------
