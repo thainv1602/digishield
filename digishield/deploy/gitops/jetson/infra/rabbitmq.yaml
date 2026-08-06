@@ -37,25 +37,9 @@ spec:
       labels:
         app.kubernetes.io/name: rabbitmq
     spec:
-      securityContext:
-        # Data on the volume is already owned by uid 100 — the container started
-        # as root and the entrypoint dropped to rabbitmq. Starting as 100 reaches
-        # the same mnesia directory; verified by initialising a volume the old
-        # way and reopening it read-only as 100.
-        runAsNonRoot: true
-        runAsUser: 100
-        runAsGroup: 101
-        fsGroup: 101
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: rabbitmq
           image: rabbitmq:3-management-alpine
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop: ["ALL"]
           ports:
             - containerPort: 5672
               name: amqp
@@ -73,17 +57,6 @@ spec:
                   name: digishield-rabbit
                   key: password
           volumeMounts:
-            # Three directories outside the data volume, each found by running
-            # the image read-only until it stopped complaining. The log one is
-            # not optional — without it the broker never boots:
-            #   BOOT FAILED: failed to open log file at
-            #   '/var/log/rabbitmq/rabbit@…log', reason: read-only file system
-            - name: tmp
-              mountPath: /tmp
-            - name: conf
-              mountPath: /etc/rabbitmq/conf.d
-            - name: logs
-              mountPath: /var/log/rabbitmq
             - name: data
               mountPath: /var/lib/rabbitmq
           readinessProbe:
@@ -99,13 +72,6 @@ spec:
             limits:
               cpu: "1"
               memory: 768Mi
-      volumes:
-        - name: tmp
-          emptyDir: {}
-        - name: conf
-          emptyDir: {}
-        - name: logs
-          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data
