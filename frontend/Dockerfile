@@ -30,7 +30,9 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL \
 RUN npm run gen:api && npm run build
 
 # ---- Runtime stage -------------------------------------------------------
-FROM nginx:1.27-alpine
+# Unprivileged variant: runs as uid 101 and listens on 8080, so the container
+# never needs root to bind its port (DS-0002).
+FROM nginxinc/nginx-unprivileged:1.27-alpine
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
-EXPOSE 80
+EXPOSE 8080
