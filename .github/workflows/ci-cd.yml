@@ -228,6 +228,14 @@ jobs:
           output: trivy-deps.sarif
       - name: Trivy config (IaC)
         uses: aquasecurity/trivy-action@v0.36.0
+        env:
+          # Trivy downloads the terraform modules a config references and scans
+          # them as if they were ours. Six open alerts — including all three
+          # criticals — came from terraform-aws-modules/eks, code that is not in
+          # this repository and cannot be fixed here. Suppressing them one by one
+          # is a treadmill: a module bump mints new ones. Scanning what we wrote
+          # is the point.
+          TRIVY_TF_EXCLUDE_DOWNLOADED_MODULES: "true"
         with:
           scan-type: config
           scan-ref: .
