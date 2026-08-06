@@ -30,9 +30,24 @@ spec:
       labels:
         app.kubernetes.io/name: redis
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        # Without this the emptyDir below belongs to root and redis cannot write
+        # its snapshot into it: "Failed opening the temp RDB file ... Permission
+        # denied". fsGroup hands the volume to redis's group.
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: redis
           image: redis:7-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 6379
               name: redis
@@ -48,3 +63,14 @@ spec:
             limits:
               cpu: 500m
               memory: 256Mi
+          # redis writes its RDB snapshot to /data. The image declares it as a
+          # VOLUME, which Docker honours by inventing one and Kubernetes ignores
+          # entirely — so on a read-only root filesystem there is nowhere to
+          # write unless we say so. This cache is not persisted; the volume only
+          # has to exist.
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

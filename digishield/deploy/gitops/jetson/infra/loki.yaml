@@ -118,6 +118,9 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
+            # /loki is the PVC below and nothing else is written — verified by
+            # running this image read-only with only /loki writable, no /tmp.
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           args: ["-config.file=/etc/loki/loki.yaml"]
