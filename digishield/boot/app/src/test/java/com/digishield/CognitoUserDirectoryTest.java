@@ -21,6 +21,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
@@ -238,6 +239,39 @@ class CognitoUserDirectoryTest {
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
         verify(cognito, never()).adminAddUserToGroup(any(AdminAddUserToGroupRequest.class));
+    }
+
+    @Test
+    void deleteUser_removesTheAccount() {
+        directory.deleteUser("gone@x.vn");
+
+        ArgumentCaptor<AdminDeleteUserRequest> req =
+                ArgumentCaptor.forClass(AdminDeleteUserRequest.class);
+        verify(cognito).adminDeleteUser(req.capture());
+        assertThat(req.getValue().userPoolId()).isEqualTo(POOL);
+        assertThat(req.getValue().username()).isEqualTo("gone@x.vn");
+    }
+
+    @Test
+    void deleteUser_whenTheAccountIsAlreadyGone_isNotAnError() {
+        when(cognito.adminDeleteUser(any(AdminDeleteUserRequest.class)))
+                .thenThrow(UserNotFoundException.builder().message("no user").build());
+
+        // Users predating the directory never had one, and a retried delete finds
+        // nothing the second time. The caller wants them gone; they are gone.
+        directory.deleteUser("legacy@x.vn");
+    }
+
+    @Test
+    void deleteUser_whenCognitoRefuses_surfacesTheFailure() {
+        when(cognito.adminDeleteUser(any(AdminDeleteUserRequest.class)))
+                .thenThrow(TooManyRequestsException.builder().message("slow down").build());
+
+        // The row must not be deleted behind a failure here, so this has to throw.
+        assertThatThrownBy(() -> directory.deleteUser("x@x.vn"))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
+                        .isEqualTo(HttpStatus.BAD_GATEWAY));
     }
 
     @Test

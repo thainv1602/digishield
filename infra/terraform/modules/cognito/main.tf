@@ -132,6 +132,11 @@ data "aws_iam_policy_document" "user_directory" {
       # Ends the sessions of a user whose role just changed, so a demotion is not
       # waiting on their refresh token to run out.
       "cognito-idp:AdminUserGlobalSignOut",
+      # Removing a user has to remove the account too, or they keep signing in
+      # after they have disappeared from every screen. This is the one action
+      # here that destroys something: a compromised app credential can wipe pool
+      # accounts, which is the price of the Users screen telling the truth.
+      "cognito-idp:AdminDeleteUser",
     ]
     # Scoped to this pool: the app administers its own users and nothing else.
     resources = [aws_cognito_user_pool.main.arn]

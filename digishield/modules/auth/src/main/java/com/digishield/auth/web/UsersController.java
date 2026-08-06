@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,6 +28,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
  *   <li>{@code POST /users} — create a user (returns {@code 201})</li>
  *   <li>{@code GET /users/{id}} — user details</li>
  *   <li>{@code PATCH /users/{id}} — update role / department / locale</li>
+ *   <li>{@code DELETE /users/{id}} — remove the user and their sign-in account ({@code 204})</li>
  *   <li>{@code POST /users/import} — bulk import (returns {@code 202})</li>
  * </ul>
  *
@@ -65,6 +67,12 @@ class UsersController {
     ResponseEntity<UserView> update(@PathVariable("id") UUID id,
                                     @RequestBody UserInputRequest request) {
         return ResponseEntity.ok(authService.updateUser(id, request.toUpsert()));
+    }
+
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> delete(@PathVariable("id") UUID id) {
+        authService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/import")

@@ -34,4 +34,10 @@ public class LoggingUserDirectory implements UserDirectory {
         log.info("[auth] No user directory configured — {} is recorded as {} but the tokens "
                 + "they sign in with are unchanged", LogSafe.value(email), role);
     }
+
+    @Override
+    public void deleteUser(String email) {
+        log.info("[auth] No user directory configured — {} was removed from the application "
+                + "but any sign-in account they hold elsewhere is untouched", LogSafe.value(email));
+    }
 }

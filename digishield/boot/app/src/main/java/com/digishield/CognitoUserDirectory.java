@@ -20,6 +20,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityPr
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUserToGroupRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
@@ -51,8 +52,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExi
  *
  * <p>Needs {@code cognito-idp:AdminCreateUser}, {@code AdminGetUser},
  * {@code AdminAddUserToGroup}, {@code AdminListGroupsForUser},
- * {@code AdminRemoveUserFromGroup} and {@code AdminUserGlobalSignOut} on the
- * pool.
+ * {@code AdminRemoveUserFromGroup}, {@code AdminUserGlobalSignOut} and
+ * {@code AdminDeleteUser} on the pool.
  */
 @Component
 @Primary
@@ -108,6 +109,26 @@ class CognitoUserDirectory implements UserDirectory {
         }
         addToGroup(email, role);
         endSessions(email);
+    }
+
+    @Override
+    public void deleteUser(String email) {
+        try {
+            cognito.adminDeleteUser(AdminDeleteUserRequest.builder()
+                    .userPoolId(userPoolId)
+                    .username(email)
+                    .build());
+            LOG.info("Deleted Cognito account for {}", LogSafe.value(email));
+        } catch (UserNotFoundException e) {
+            // Already gone: users who predate the directory never had one, and a
+            // retried delete finds nothing the second time. Either way the caller
+            // is asking for a state the pool is already in.
+            LOG.info("No Cognito account for {} to delete", LogSafe.value(email));
+        } catch (CognitoIdentityProviderException e) {
+            LOG.error("Cognito rejected AdminDeleteUser for {}: {}", LogSafe.value(email), e.toString());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Could not remove the sign-in account");
+        }
     }
 
     /**

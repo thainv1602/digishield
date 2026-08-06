@@ -245,7 +245,12 @@ nothing. Turning it on makes
   then `AdminAddUserToGroup` for the chosen role, and
 - `PATCH /users/{id}` move the account between groups when the role changes:
   the old group is revoked before the new one is granted, so an interrupted
-  change leaves the account with no role rather than with both.
+  change leaves the account with no role rather than with both, and
+- `DELETE /users/{id}` remove the account outright, so a user removed from the
+  list cannot sign in afterwards. Deleting rather than disabling matters because
+  creating a user adopts an existing account: a disabled one would be adopted by
+  the next person re-adding that address, reported as created, and unable to log
+  in.
 
 1. Attach the policy terraform created to the principal the API runs as — the
    IAM user whose keys are in the `digishield-aws` Secret on Jetson, or the app's
@@ -257,8 +262,13 @@ nothing. Turning it on makes
    ```
 
    It grants `AdminCreateUser`, `AdminGetUser`, `AdminAddUserToGroup`,
-   `AdminListGroupsForUser`, `AdminRemoveUserFromGroup` and
-   `AdminUserGlobalSignOut`, scoped to this pool.
+   `AdminListGroupsForUser`, `AdminRemoveUserFromGroup`,
+   `AdminUserGlobalSignOut` and `AdminDeleteUser`, scoped to this pool.
+
+   `AdminDeleteUser` is the one that destroys something. Removing a user has to
+   remove their account, or they keep signing in after disappearing from every
+   screen — but it does mean a leaked app credential can wipe accounts from this
+   pool. Nothing else in the policy can.
 
 2. Turn it on in `digishield/deploy/helm/digishield/values-jetson.yaml`:
 

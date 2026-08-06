@@ -57,4 +57,20 @@ public interface UserDirectory {
      * @param otherRoles every other role's group name, to revoke if held
      */
     void setRole(String email, String role, Set<String> otherRoles);
+
+    /**
+     * Removes the account entirely, so the address can be added again later.
+     *
+     * <p>Deleting rather than disabling is deliberate: {@link #createUser} adopts
+     * an account that already exists, so a merely disabled one would be adopted
+     * by the next person re-adding that address — reported as created, unable to
+     * sign in, and nobody the wiser.
+     *
+     * <p>An account that is already gone is not an error. The caller is removing
+     * a user either way, and a directory that has nothing to remove has already
+     * reached the state being asked for.
+     *
+     * @param email login email, which is also the account's username
+     */
+    void deleteUser(String email);
 }
