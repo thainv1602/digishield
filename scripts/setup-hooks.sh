@@ -11,4 +11,4 @@ chmod +x "$repo_root"/.githooks/* "$repo_root"/scripts/*.sh 2>/dev/null || true
 
 echo "✓ Git hooks enabled (core.hooksPath=.githooks)."
 echo "  - commit-msg: Conventional Commits + English subject"
-echo "  - pre-push:   blocks direct pushes to main/master/develop"
+echo "  - pre-push:   blocks direct pushes to main/master"

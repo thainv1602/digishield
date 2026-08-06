@@ -10,7 +10,7 @@ set -euo pipefail
 # stdin: <local ref> <local sha> <remote ref> <remote sha>
 while read -r _local_ref _local_sha remote_ref _remote_sha; do
   case "$remote_ref" in
-    refs/heads/main|refs/heads/master|refs/heads/develop)
+    refs/heads/main|refs/heads/master)
       branch="${remote_ref#refs/heads/}"
       echo "✗ Direct pushes to '$branch' are not allowed." >&2
       echo "" >&2
