@@ -1,7 +1,7 @@
 package com.digishield;
 
 import com.digishield.auth.api.UserDirectory;
-import com.digishield.shared.security.LogSafe;
+import com.digishield.shared.tenantcontext.LogSafe;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

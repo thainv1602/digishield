@@ -1,6 +1,7 @@
 package com.digishield;
 
 import com.digishield.notification.api.NotificationGateway;
+import com.digishield.shared.tenantcontext.LogSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,7 +57,7 @@ class SnsSmsNotificationGateway implements NotificationGateway {
                 .message(compose(title, body))
                 .messageAttributes(attributes)
                 .build());
-        LOG.info("Sent SMS notification to {} via SNS", recipient);
+        LOG.info("Sent SMS notification to {} via SNS", LogSafe.value(recipient));
     }
 
     /** Combines subject and body into a single plain-text SMS. */

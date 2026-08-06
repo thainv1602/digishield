@@ -16,6 +16,7 @@ import com.digishield.auth.domain.AppUser;
 import com.digishield.auth.domain.Role;
 import com.digishield.auth.domain.UserStatus;
 import com.digishield.auth.infrastructure.AppUserRepository;
+import com.digishield.shared.tenantcontext.LogSafe;
 import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.shared.tenantcontext.AuditRecorder;
 import java.util.Locale;
@@ -411,7 +412,7 @@ public class AuthServiceImpl implements AuthService {
             // mean querying app_user across tenants for unauthenticated input. The
             // attempt is recorded in the application log instead — structured, with
             // the request id — rather than not at all.
-            LOG.warn("Failed login for {}: {}", email, e.toString());
+            LOG.warn("Failed login for {}: {}", LogSafe.value(email), e.toString());
             throw e;
         }
     }

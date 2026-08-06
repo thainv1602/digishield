@@ -1,4 +1,4 @@
-package com.digishield.shared.security;
+package com.digishield.shared.tenantcontext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

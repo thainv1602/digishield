@@ -1,6 +1,7 @@
 package com.digishield;
 
 import com.digishield.shared.tenantcontext.AuditRecorder;
+import com.digishield.shared.tenantcontext.LogSafe;
 import com.digishield.shared.tenantcontext.CurrentActor;
 import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.tenancy.api.TenancyService;
@@ -43,7 +44,8 @@ class TenancyAuditRecorder implements AuditRecorder {
             // Nothing to file it under — an attempt against an address that belongs
             // to no tenant. Still visible in the application log, which now carries
             // a requestId, rather than disappearing entirely.
-            LOG.warn("Unattributable audit event: action={} actor={} target={}", action, actor, target);
+            LOG.warn("Unattributable audit event: action={} actor={} target={}",
+                    LogSafe.value(action), LogSafe.value(actor), LogSafe.value(target));
             return;
         }
         try {
@@ -52,7 +54,8 @@ class TenancyAuditRecorder implements AuditRecorder {
                             : severity.name().toLowerCase());
         } catch (RuntimeException e) {
             // Auditing must never break the action it is auditing.
-            LOG.warn("Could not write audit entry action={} target={}: {}", action, target, e.toString());
+            LOG.warn("Could not write audit entry action={} target={}: {}",
+                    LogSafe.value(action), LogSafe.value(target), e.toString());
         }
     }
 
