@@ -36,9 +36,29 @@ spec:
       labels:
         app.kubernetes.io/name: postgres
     spec:
+      securityContext:
+        # The container started as root and the entrypoint dropped to postgres,
+        # so the data on the volume is already owned by uid 70 — starting as 70
+        # directly reaches exactly the same files. Verified by initialising a
+        # volume the old way and reopening it read-only as 70: the rows were
+        # still there.
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        # The socket directory below is an emptyDir, which belongs to root until
+        # fsGroup hands it over; without this postgres cannot create its lock
+        # file and refuses to start.
+        fsGroup: 70
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: postgres
           image: postgres:16-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 5432
               name: postgres
@@ -58,6 +78,12 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            # postgres puts its unix socket and lock file here. On a read-only
+            # root filesystem the server dies at startup without it:
+            #   FATAL: could not create lock file
+            #   "/var/run/postgresql/.s.PGSQL.5432.lock": Read-only file system
+            - name: run
+              mountPath: /var/run/postgresql
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", "digishield"]
@@ -70,6 +96,9 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+      volumes:
+        - name: run
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data
