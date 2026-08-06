@@ -44,8 +44,8 @@ bash scripts/setup-hooks.sh
 
 ### Branching & merging
 
-- **Never push directly to `main` or `develop`** — they are protected (rejected by the pre-push hook and by GitHub branch protection).
-- Branch off `develop` (or `main`), then open a Pull Request:
+- **Never push directly to `main`** — it is protected (rejected by the pre-push hook and by GitHub branch protection).
+- Branch off `main`, then open a Pull Request:
 
   ```bash
   git switch -c feat/short-description
@@ -84,4 +84,4 @@ Requires the GitHub CLI authenticated as an admin (`gh auth login`):
 bash scripts/setup-branch-protection.sh
 ```
 
-This requires PRs, passing CI, and Code-Owner approval before merging into `main`/`develop`, and applies the rules to admins too.
+This requires PRs, passing CI, and Code-Owner approval before merging into `main`, and applies the rules to admins too.
