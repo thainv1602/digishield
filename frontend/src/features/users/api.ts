@@ -81,7 +81,7 @@ export function useUsers() {
   });
 }
 
-// ---- Mutations (create / update / import) ---------------------------------
+// ---- Mutations (create / update / delete / import) -------------------------
 
 /** POST /users — create a user in the current tenant. */
 export function createUser(body: UserUpsert): Promise<UserViewDto> {
@@ -91,6 +91,16 @@ export function createUser(body: UserUpsert): Promise<UserViewDto> {
 /** PATCH /users/{id} — update a user. */
 export function updateUser(id: string, body: UserUpsert): Promise<UserViewDto> {
   return apiRequest<UserViewDto>({ url: `/users/${id}`, method: 'PATCH', data: body });
+}
+
+/**
+ * DELETE /users/{id} — remove a user and the account they sign in with.
+ *
+ * Not just the row: the backend deletes the identity-provider account too, so
+ * the person cannot keep signing in after disappearing from this list.
+ */
+export function deleteUser(id: string): Promise<void> {
+  return apiRequest<void>({ url: `/users/${id}`, method: 'DELETE' });
 }
 
 /** POST /users/import — bulk create/update from a list. */
@@ -112,6 +122,15 @@ export function useUpdateUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { id: string; body: UserUpsert }) => updateUser(vars.id, vars.body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
+  });
+}
+
+/** Delete-user mutation; refreshes the user list on success. */
+export function useDeleteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: deleteUser,
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
   });
 }

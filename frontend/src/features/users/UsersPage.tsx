@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Button, DataTable, Input, Select, StatusPill, riskToVariant } from '@/shared/ui';
+import { Button, DataTable, Input, Select, StatusPill, riskToVariant, useToast } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { Search } from 'lucide-react';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { ROLES } from '@/app/auth/roles';
-import { useUsers, type UserRow } from './api';
+import { useUsers, useDeleteUser, type UserRow } from './api';
 import { UserFormDrawer } from './UserFormDrawer';
 import { ImportDrawer } from './ImportDrawer';
 
@@ -29,6 +29,8 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
+  const del = useDeleteUser();
+  const toast = useToast();
 
   const deptOptions = useMemo(
     () => Array.from(new Set(rows.map((u) => u.dept).filter(Boolean))).sort(),
@@ -52,6 +54,19 @@ export default function UsersPage() {
   const openEdit = (u: UserRow) => {
     setEditing(u);
     setFormOpen(true);
+  };
+  const doDelete = (u: UserRow) => {
+    // Spelled out because this reaches further than the table: the backend
+    // removes their sign-in account as well, so it is not undone by re-adding
+    // the address — that creates a new account with a new invitation.
+    const label = u.email || u.name;
+    if (!window.confirm(t('Xóa "{name}" và tài khoản đăng nhập của họ? Hành động này không thể hoàn tác.', { name: label }))) {
+      return;
+    }
+    del.mutate(u.id, {
+      onSuccess: () => toast({ msg: t('Đã xóa người dùng.'), variant: 'success' }),
+      onError: () => toast({ msg: t('Xóa người dùng thất bại, thử lại.'), variant: 'error' }),
+    });
   };
 
   const columns: ColumnDef<UserRow>[] = [
@@ -88,18 +103,35 @@ export default function UsersPage() {
       width: '80px',
     },
     {
-      id: 'edit',
+      id: 'actions',
       header: '',
       cell: (u) => (
-        <button
-          type="button"
-          onClick={() => openEdit(u)}
-          style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
-        >
-          {t('Sửa')}
-        </button>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <button
+            type="button"
+            onClick={() => openEdit(u)}
+            style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
+          >
+            {t('Sửa')}
+          </button>
+          <button
+            type="button"
+            onClick={() => doDelete(u)}
+            disabled={del.isPending}
+            style={{
+              fontSize: 12,
+              color: 'var(--color-red)',
+              cursor: del.isPending ? 'default' : 'pointer',
+              background: 'none',
+              border: 'none',
+              opacity: del.isPending ? 0.5 : 1,
+            }}
+          >
+            {t('Xóa')}
+          </button>
+        </div>
       ),
-      width: '60px',
+      width: '110px',
       align: 'right',
     },
   ];
