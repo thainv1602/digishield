@@ -23,6 +23,14 @@ spec:
       # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
       # would clobber the app's ${REDIS_PORT:...} placeholders.
       enableServiceLinks: false
+      # The image already runs as uid 1001 (see deploy/docker/Dockerfile); this
+      # states it so the kubelet refuses to start the pod if that ever changes
+      # silently, rather than quietly running as root.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        seccompProfile:
+          type: RuntimeDefault
       # Put the replicas on different nodes. values-jetson.yaml already says "one
       # replica per Jetson", but nothing enforced it: the scheduler happened to
       # split them because it prefers the emptier node, and a rollout was free to
@@ -57,6 +65,11 @@ spec:
         - name: api
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
           args:
             - "--spring.profiles.active={{ .Values.api.profile }}"
           ports:
@@ -114,3 +127,13 @@ spec:
             periodSeconds: 15
           resources:
             {{- toYaml .Values.api.resources | nindent 12 }}
+          # Boot cannot start without a writable java.io.tmpdir — with the root
+          # filesystem read-only and no mount here it fails outright:
+          #   Unable to create tempDir. java.io.tmpdir is set to /tmp
+          # Verified against this image before the constraint was added.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
