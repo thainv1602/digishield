@@ -19,6 +19,10 @@ metadata:
   labels:
     app.kubernetes.io/name: redis
 spec:
+  # One superseded revision kept, matching the app chart. Kubernetes'
+  # default of 10 fills the ArgoCD tree with empty rows; rollback here is
+  # a git revert that ArgoCD syncs, so the history is only ever read.
+  revisionHistoryLimit: 1
   replicas: 1
   selector:
     matchLabels:
