@@ -64,6 +64,7 @@ import com.digishield.learning.api.BehaviourHistory;
 import java.util.Comparator;
 import com.digishield.learning.api.LearnerDirectory;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,6 +78,15 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class LearningServiceImpl implements LearningService {
+
+    /** Days a learner gets to finish remediation before it counts as late. */
+    private static final int DEFAULT_REMEDIATION_DUE_DAYS = 3;
+
+    /**
+     * How long a learner has, from the property; a tenant that wants longer
+     * changes configuration rather than code.
+     */
+    private final int remediationDueDays;
 
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
@@ -124,7 +134,8 @@ public class LearningServiceImpl implements LearningService {
                                CoachingPageRepository coachingPageRepository,
                                PointRuleRepository pointRuleRepository,
                                ApplicationEventPublisher eventPublisher,
-                               ObjectMapper objectMapper) {
+                               ObjectMapper objectMapper,
+                               @org.springframework.beans.factory.annotation.Value("${digishield.learning.remediation.due-days:3}") Integer remediationDueDays) {
         this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lessonRepository = lessonRepository;
@@ -144,6 +155,10 @@ public class LearningServiceImpl implements LearningService {
         this.pointRuleRepository = pointRuleRepository;
         this.eventPublisher = eventPublisher;
         this.objectMapper = objectMapper;
+        // Boxed, and defaulted here rather than only in the property: Mockito
+        // constructs this class for the unit tests and cannot supply a primitive,
+        // so it passes null. At runtime the property always resolves.
+        this.remediationDueDays = remediationDueDays != null ? remediationDueDays : DEFAULT_REMEDIATION_DUE_DAYS;
     }
 
     @Override
@@ -231,14 +246,17 @@ public class LearningServiceImpl implements LearningService {
     public EnrollmentView assign(UUID tenantId, UUID userId, UUID courseId) {
         Enrollment enrollment = enrollmentRepository
                 .findByTenantIdAndUserIdAndCourseId(tenantId, userId, courseId)
-                .orElseGet(() -> enrollmentRepository.save(new Enrollment(
-                        UUID.randomUUID(),
-                        tenantId,
-                        userId,
-                        courseId,
-                        EnrollmentStatus.ASSIGNED,
-                        null
-                )));
+                .orElseGet(() -> {
+                    Enrollment created = new Enrollment(
+                            UUID.randomUUID(),
+                            tenantId,
+                            userId,
+                            courseId,
+                            EnrollmentStatus.ASSIGNED,
+                            null);
+                    created.setDueAt(Instant.now().plus(remediationDueDays, ChronoUnit.DAYS));
+                    return enrollmentRepository.save(created);
+                });
 
         // Being assigned a course already finished means it is being assigned
         // again — a repeat offence. This used to return the old completed record
@@ -248,6 +266,9 @@ public class LearningServiceImpl implements LearningService {
             enrollment.setStatus(EnrollmentStatus.ASSIGNED);
             enrollment.setProgress(0);
             enrollment.setScore(null);
+            // A repeat offence starts its own clock. Keeping the old date would
+            // hand someone a deadline that expired before they were told about it.
+            enrollment.setDueAt(Instant.now().plus(remediationDueDays, ChronoUnit.DAYS));
             enrollment = enrollmentRepository.save(enrollment);
         }
 
@@ -762,10 +783,29 @@ public class LearningServiceImpl implements LearningService {
                 enrollment.getUserId(),
                 enrollment.getCourseId(),
                 courseTitle,
-                enrollment.getStatus() != null ? enrollment.getStatus().name() : null,
+                statusOf(enrollment),
                 enrollment.getProgress(),
-                enrollment.getScore()
+                enrollment.getScore(),
+                enrollment.getDueAt()
         );
+    }
+
+    /**
+     * The status a caller should see, which is not always the one stored.
+     *
+     * <p>An assignment is late from the moment its deadline passes, not from the
+     * moment a sweep gets round to writing OVERDUE. Reporting the stored value
+     * would show ASSIGNED to someone who is already late, for as long as the job
+     * took to run.
+     */
+    private String statusOf(Enrollment enrollment) {
+        if (enrollment.getStatus() == null) {
+            return null;
+        }
+        if (enrollment.isOverdue(Instant.now())) {
+            return EnrollmentStatus.OVERDUE.name();
+        }
+        return enrollment.getStatus().name();
     }
 
     private BadgeView toBadgeView(Badge b) {

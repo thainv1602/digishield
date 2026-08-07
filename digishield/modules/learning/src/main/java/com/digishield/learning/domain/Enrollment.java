@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -39,6 +40,13 @@ public class Enrollment {
     /** Progress percentage (0..100). */
     @Column(name = "progress")
     private Integer progress;
+
+    /**
+     * When the assignment is due. Null for assignments made before deadlines
+     * existed -- those are not late, they were never given a date.
+     */
+    @Column(name = "due_at")
+    private Instant dueAt;
 
     /** Default constructor required by JPA. */
     protected Enrollment() {
@@ -91,6 +99,25 @@ public class Enrollment {
 
     public Integer getProgress() {
         return progress;
+    }
+
+    public Instant getDueAt() {
+        return dueAt;
+    }
+
+    public void setDueAt(Instant dueAt) {
+        this.dueAt = dueAt;
+    }
+
+    /**
+     * True when the deadline has passed and the course is not finished.
+     *
+     * <p>Derived rather than stored: a row is late the moment the clock passes
+     * its date, whether or not a sweep has run yet, and a stored flag would be
+     * wrong for exactly as long as it took the job to notice.
+     */
+    public boolean isOverdue(Instant now) {
+        return dueAt != null && status != EnrollmentStatus.COMPLETED && now.isAfter(dueAt);
     }
 
     public void setStatus(EnrollmentStatus status) {

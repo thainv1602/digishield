@@ -1,5 +1,6 @@
 package com.digishield.learning.api;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -13,8 +14,11 @@ import java.util.UUID;
  * @param status      enrollment status (assigned|in_progress|completed|overdue, lower-case)
  * @param progress    progress percentage (0..100, may be null)
  * @param score       score (may be null if the quiz has not been taken)
+ * @param dueAt       when the assignment is due; null for assignments made
+ *                    before deadlines existed
  */
 public record EnrollmentView(UUID id, UUID tenantId, UUID userId, UUID courseId,
                              String courseTitle, String status, Integer progress,
-                             Integer score) {
+                             Integer score,
+                             @com.fasterxml.jackson.annotation.JsonProperty("due_at") Instant dueAt) {
 }
