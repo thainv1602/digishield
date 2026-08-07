@@ -65,6 +65,12 @@ export interface CreateTenantInput {
   name: string;
   tier: string;
   dataRegion: string;
+  /**
+   * First administrator. Users are always created in the caller's own tenant,
+   * so this is the only moment an account can be placed inside the new one --
+   * skip it and the organisation has nobody who can sign in.
+   */
+  adminEmail?: string;
 }
 
 /** Update-tenant payload (`UpdateTenantCommand`); omitted fields left unchanged. */
