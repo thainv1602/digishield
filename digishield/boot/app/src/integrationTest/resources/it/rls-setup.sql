@@ -61,3 +61,39 @@ ALTER TABLE phishing_report FORCE ROW LEVEL SECURITY;
 CREATE POLICY tenant_isolation ON phishing_report
     USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
     WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
+
+-- =============================================================================
+-- app_user: the table that decides who belongs to which organisation.
+--
+-- Isolating reports proves the mechanism; isolating this proves the thing a
+-- customer actually cares about, which is that one organisation's administrator
+-- cannot see, edit or delete another organisation's people. Shape matches the
+-- JPA entity (AppUser) and the Flyway-migrated table.
+-- =============================================================================
+
+DROP TABLE IF EXISTS app_user;
+
+CREATE TABLE app_user (
+    id            uuid PRIMARY KEY,
+    tenant_id     uuid        NOT NULL,
+    email         varchar(255) NOT NULL,
+    role          varchar(40)  NOT NULL,
+    status        varchar(40)  NOT NULL,
+    name          varchar(255),
+    department_id uuid,
+    department    varchar(255),
+    locale        varchar(10),
+    phone         varchar(40),
+    -- Nullable, as in the migrated table: the entity's riskScore is an Integer
+    -- and a five-argument AppUser leaves it unset. A NOT NULL column with a
+    -- DEFAULT would not save it -- Hibernate writes an explicit NULL, and a
+    -- default only applies when the column is omitted.
+    risk_score    integer
+);
+
+ALTER TABLE app_user ENABLE ROW LEVEL SECURITY;
+ALTER TABLE app_user FORCE ROW LEVEL SECURITY;
+
+CREATE POLICY tenant_isolation ON app_user
+    USING (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid)
+    WITH CHECK (tenant_id = NULLIF(current_setting('app.tenant_id', true), '')::uuid);
