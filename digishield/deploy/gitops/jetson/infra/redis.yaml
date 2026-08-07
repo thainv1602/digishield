@@ -34,10 +34,6 @@ spec:
         runAsNonRoot: true
         runAsUser: 999
         runAsGroup: 999
-        # Without this the emptyDir below belongs to root and redis cannot write
-        # its snapshot into it: "Failed opening the temp RDB file ... Permission
-        # denied". fsGroup hands the volume to redis's group.
-        fsGroup: 999
         seccompProfile:
           type: RuntimeDefault
       containers:
