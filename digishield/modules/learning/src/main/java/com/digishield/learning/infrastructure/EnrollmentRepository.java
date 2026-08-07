@@ -1,6 +1,7 @@
 package com.digishield.learning.infrastructure;
 
 import com.digishield.learning.domain.Enrollment;
+import com.digishield.learning.domain.EnrollmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,6 +44,16 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     Optional<Enrollment> findByTenantIdAndUserIdAndCourseId(UUID tenantId, UUID userId, UUID courseId);
 
     Optional<Enrollment> findByTenantIdAndId(UUID tenantId, UUID id);
+
+    /**
+     * Assignments with a deadline that are not finished, for the overdue sweep.
+     *
+     * <p>Not scoped to a tenant: the sweep runs across all of them, and asking
+     * per tenant would mean one query per tenant to find the handful that are
+     * late.
+     */
+    List<Enrollment> findByDueAtIsNotNullAndStatusNot(EnrollmentStatus status);
+
 
     /** Whether anyone is enrolled on a course, so deleting one cannot orphan progress. */
     boolean existsByTenantIdAndCourseId(UUID tenantId, UUID courseId);
