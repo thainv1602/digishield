@@ -137,6 +137,11 @@ data "aws_iam_policy_document" "user_directory" {
       # here that destroys something: a compromised app credential can wipe pool
       # accounts, which is the price of the Users screen telling the truth.
       "cognito-idp:AdminDeleteUser",
+      # Locking a learner out for missing mandatory training, and letting them
+      # back in. Enable is as necessary as disable: without it a suspension has
+      # no exit, since the person cannot reach the training that caused it.
+      "cognito-idp:AdminDisableUser",
+      "cognito-idp:AdminEnableUser",
     ]
     # Scoped to this pool: the app administers its own users and nothing else.
     resources = [aws_cognito_user_pool.main.arn]

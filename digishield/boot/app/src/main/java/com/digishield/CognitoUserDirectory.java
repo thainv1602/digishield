@@ -21,6 +21,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminAddUse
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminEnableUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminListGroupsForUserRequest;
@@ -53,7 +55,8 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExi
  * <p>Needs {@code cognito-idp:AdminCreateUser}, {@code AdminGetUser},
  * {@code AdminAddUserToGroup}, {@code AdminListGroupsForUser},
  * {@code AdminRemoveUserFromGroup}, {@code AdminUserGlobalSignOut} and
- * {@code AdminDeleteUser} on the pool.
+ * {@code AdminDeleteUser}, {@code AdminDisableUser} and {@code AdminEnableUser} on
+ * the pool.
  */
 @Component
 @Primary
@@ -129,6 +132,33 @@ class CognitoUserDirectory implements UserDirectory {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
                     "Could not remove the sign-in account");
         }
+    }
+
+    @Override
+    public void setEnabled(String email, boolean enabled) {
+        try {
+            if (enabled) {
+                cognito.adminEnableUser(AdminEnableUserRequest.builder()
+                        .userPoolId(userPoolId).username(email).build());
+                LOG.info("Re-enabled Cognito account for {}", LogSafe.value(email));
+                return;
+            }
+            cognito.adminDisableUser(AdminDisableUserRequest.builder()
+                    .userPoolId(userPoolId).username(email).build());
+            LOG.info("Disabled Cognito account for {}", LogSafe.value(email));
+        } catch (UserNotFoundException e) {
+            throw noSuchAccount(email);
+        } catch (CognitoIdentityProviderException e) {
+            LOG.error("Cognito rejected admin{}User for {}: {}",
+                    enabled ? "Enable" : "Disable", LogSafe.value(email), e.toString());
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    enabled ? "Could not restore the sign-in account"
+                            : "Could not suspend the sign-in account");
+        }
+        // Disabling stops new tokens; it does not reach one already issued, and
+        // the API validates offline. Without this the lock waits out the access
+        // token, which is the same 15-minute window a demotion has.
+        endSessions(email);
     }
 
     /**

@@ -29,6 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -422,6 +423,95 @@ class AuthServiceImplTest {
         // Email is the account's username at the provider and editing the row does
         // not rename it, so the new address names nothing.
         verify(userDirectory).setRole(eq("old@x.com"), eq("analyst"), any());
+    }
+
+    // ---- suspension ---------------------------------------------------------
+
+    @Test
+    void suspendingAUserDisablesTheirSignInAccountFirst() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.setSuspended(userId, true, "overdue training");
+
+        // A row marked SUSPENDED while the account still signs in is a lock that
+        // exists only on screen: authorisation reads the token, not the column.
+        InOrder order = inOrder(userDirectory, userRepository);
+        order.verify(userDirectory).setEnabled("u@x.com", false);
+        order.verify(userRepository).save(any(AppUser.class));
+        assertThat(user.getStatus()).isEqualTo(UserStatus.SUSPENDED);
+    }
+
+    @Test
+    void restoringAUserEnablesTheAccountAgain() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.SUSPENDED);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.setSuspended(userId, false, null);
+
+        verify(userDirectory).setEnabled("u@x.com", true);
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void suspendingAnAlreadySuspendedUserTouchesNothing() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.SUSPENDED);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+
+        authService.setSuspended(userId, true, "overdue training");
+
+        // The sweep runs daily and would otherwise re-disable and re-sign-out the
+        // same people every morning.
+        verify(userDirectory, never()).setEnabled(any(), anyBoolean());
+        verify(userRepository, never()).save(any(AppUser.class));
+    }
+
+    @Test
+    void whenTheDirectoryRefusesTheUserIsNotMarkedSuspended() {
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+        doThrow(new IllegalStateException("identity provider is down"))
+                .when(userDirectory).setEnabled(any(), anyBoolean());
+
+        assertThatThrownBy(() -> authService.setSuspended(userId, true, "overdue training"))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(userRepository, never()).save(any(AppUser.class));
+        assertThat(user.getStatus()).isEqualTo(UserStatus.ACTIVE);
+    }
+
+    @Test
+    void anAdminCannotSuspendThemselves() {
+        UUID me = UUID.randomUUID();
+        AppUser self = new AppUser(me, TENANT_ID, "me@x.com", Role.ORG_ADMIN, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, me)).thenReturn(Optional.of(self));
+        authenticateAs(me, "me@x.com");
+
+        // Locking the door from the inside: the account that could undo it is the
+        // one that just lost its access.
+        assertThatThrownBy(() -> authService.setSuspended(me, true, "oops"))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(userDirectory, never()).setEnabled(any(), anyBoolean());
+    }
+
+    @Test
+    void suspensionIsAuditedAsCriticalWithTheReason() {
+        when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
+        UUID userId = UUID.randomUUID();
+        AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.LEARNER, UserStatus.ACTIVE);
+        when(userRepository.findByTenantIdAndId(TENANT_ID, userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        authService.setSuspended(userId, true, "overdue training");
+
+        verify(auditRecorder).record(eq("user.suspend"), eq("user:u@x.com (overdue training)"),
+                eq(AuditRecorder.Severity.CRITICAL));
     }
 
     // ---- deleting a user takes the sign-in account with it -----------------

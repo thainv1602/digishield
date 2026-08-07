@@ -107,6 +107,12 @@ digishield:
   # groups mapped to ROLE_* authorities. When issuer-uri is blank the API is locked
   # down (actuator only) — the permissive local experience is the dev profile.
   auth:
+    # Locking a learner out for missing mandatory training. Off by default: it
+    # takes real access away on a timer, and there is no self-service way back --
+    # a disabled account cannot reach the training it was disabled over, so an
+    # admin has to restore it (POST /users/{id}/suspension with suspended=false).
+    suspend-overdue-learners:
+      enabled: ${AUTH_SUSPEND_OVERDUE_ENABLED:false}
     cognito:
       enabled: ${AUTH_COGNITO_ENABLED:false}
       region: ${AUTH_COGNITO_REGION:}
@@ -132,6 +138,16 @@ digishield:
     # links inside delivered emails/SMS). Blank → relative links (fine for the
     # logging/simulation gateway; set to the real origin for live delivery).
     public-base-url: ${PUBLIC_BASE_URL:}
+  learning:
+    remediation:
+      # Days a learner has to finish training assigned after a simulation click
+      # before it counts as late.
+      due-days: ${LEARNING_REMEDIATION_DUE_DAYS:3}
+    due-sweep:
+      # Daily chase for assignments due soon or already past. Scheduler profile
+      # only -- a second replica would send the same reminder twice.
+      cron: ${LEARNING_DUE_SWEEP_CRON:0 0 8 * * *}
+      remind-before-hours: ${LEARNING_DUE_REMIND_BEFORE_HOURS:24}
   notifications:
     email:
       # No default on purpose. The address has to be one verified in SES, which is

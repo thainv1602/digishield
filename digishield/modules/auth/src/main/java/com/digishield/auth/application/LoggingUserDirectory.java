@@ -36,6 +36,12 @@ public class LoggingUserDirectory implements UserDirectory {
     }
 
     @Override
+    public void setEnabled(String email, boolean enabled) {
+        log.info("[auth] No user directory configured - {} is recorded as {} but can still sign in "
+                + "exactly as before", LogSafe.value(email), enabled ? "enabled" : "suspended");
+    }
+
+    @Override
     public void deleteUser(String email) {
         log.info("[auth] No user directory configured — {} was removed from the application "
                 + "but any sign-in account they hold elsewhere is untouched", LogSafe.value(email));
