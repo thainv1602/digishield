@@ -82,6 +82,11 @@ externalSecrets:
   enabled: false # secrets are created manually on the cluster (see JETSON_SETUP.md)
 
 auth:
+  # Verified end to end on this cluster before switching on: suspending flipped
+  # the Cognito account to Enabled=false and the row to SUSPENDED, restoring put
+  # both back, and both wrote a CRITICAL audit entry naming the account.
+  suspendOverdueLearners:
+    enabled: true
   # Cognito user pool issuer — the app validates JWTs against this OIDC issuer.
   issuerUri: "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_8nUpkhk0s"
   cognito:
