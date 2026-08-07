@@ -22,6 +22,22 @@ spec:
       # Kubelet-injected Docker-link vars from in-cluster Services (REDIS_PORT=tcp://...)
       # would clobber the app's ${REDIS_PORT:...} placeholders.
       enableServiceLinks: false
+      # Every external name the app resolves -- cognito-idp.us-east-1.amazonaws.com
+      # among them -- has fewer than five dots, so with the default ndots:5 the
+      # resolver tries each search suffix before the name itself. The node's
+      # resolv.conf carries "search lan tail761165.ts.net" (Tailscale adds the
+      # second), kubelet copies host search domains into every pod, and those two
+      # suffixes are forwarded upstream where they time out rather than answering
+      # NXDOMAIN. Measured on a pod that inherited them: 10.4s to resolve Cognito,
+      # against 0.31s on a pod that did not.
+      #
+      # ndots:1 tries anything with a dot as an absolute name first. In-cluster
+      # names used here (postgres, redis, rabbitmq, digishield-api) have no dots
+      # and still go through the search list.
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1001
