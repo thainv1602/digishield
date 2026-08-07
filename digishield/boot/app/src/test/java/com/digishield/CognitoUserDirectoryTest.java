@@ -45,6 +45,7 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExi
 class CognitoUserDirectoryTest {
 
     private static final String POOL = "us-east-1_test";
+    private static final UUID TENANT = UUID.randomUUID();
 
     private final CognitoIdentityProviderClient cognito = mock(CognitoIdentityProviderClient.class);
     private final CognitoUserDirectory directory = new CognitoUserDirectory(cognito, POOL);
@@ -63,7 +64,7 @@ class CognitoUserDirectoryTest {
     void createUser_asksCognitoToMailTheInvitation() {
         stubCreate(UUID.randomUUID());
 
-        directory.createUser("new@x.vn", "analyst");
+        directory.createUser("new@x.vn", "analyst", TENANT);
 
         ArgumentCaptor<AdminCreateUserRequest> request =
                 ArgumentCaptor.forClass(AdminCreateUserRequest.class);
@@ -78,10 +79,29 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
+    void createUser_stampsTheTenantOnTheAccount() {
+        stubCreate(UUID.randomUUID());
+
+        directory.createUser("new@x.vn", "learner", TENANT);
+
+        ArgumentCaptor<AdminCreateUserRequest> request =
+                ArgumentCaptor.forClass(AdminCreateUserRequest.class);
+        verify(cognito).adminCreateUser(request.capture());
+        // The pre-token Lambda builds the token's tid claim from this and refuses
+        // to issue a token without it, so an account created without the
+        // attribute is an account nobody can sign in to.
+        assertThat(request.getValue().userAttributes())
+                .anySatisfy(a -> {
+                    assertThat(a.name()).isEqualTo("custom:tenant_id");
+                    assertThat(a.value()).isEqualTo(TENANT.toString());
+                });
+    }
+
+    @Test
     void createUser_putsTheAccountInTheRolesGroup() {
         stubCreate(UUID.randomUUID());
 
-        directory.createUser("new@x.vn", "analyst");
+        directory.createUser("new@x.vn", "analyst", TENANT);
 
         ArgumentCaptor<AdminAddUserToGroupRequest> request =
                 ArgumentCaptor.forClass(AdminAddUserToGroupRequest.class);
@@ -95,7 +115,7 @@ class CognitoUserDirectoryTest {
         UUID subject = UUID.randomUUID();
         stubCreate(subject);
 
-        assertThat(directory.createUser("new@x.vn", "learner")).contains(subject);
+        assertThat(directory.createUser("new@x.vn", "learner", TENANT)).contains(subject);
     }
 
     @Test
@@ -109,7 +129,7 @@ class CognitoUserDirectoryTest {
                                 .name("sub").value(subject.toString()).build())
                         .build());
 
-        Optional<UUID> result = directory.createUser("old@x.vn", "manager");
+        Optional<UUID> result = directory.createUser("old@x.vn", "manager", TENANT);
 
         // Accounts created by hand before this existed still have to be usable.
         assertThat(result).contains(subject);
@@ -124,7 +144,7 @@ class CognitoUserDirectoryTest {
 
         // The account would exist carrying no authority; a silent skip looks like a
         // working account right up to the new user's first login.
-        assertThatThrownBy(() -> directory.createUser("new@x.vn", "nope"))
+        assertThatThrownBy(() -> directory.createUser("new@x.vn", "nope", TENANT))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.BAD_GATEWAY));
@@ -135,7 +155,7 @@ class CognitoUserDirectoryTest {
         when(cognito.adminCreateUser(any(AdminCreateUserRequest.class)))
                 .thenThrow(InvalidParameterException.builder().message("bad email").build());
 
-        assertThatThrownBy(() -> directory.createUser("not-an-email", "learner"))
+        assertThatThrownBy(() -> directory.createUser("not-an-email", "learner", TENANT))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(e -> assertThat(((ResponseStatusException) e).getStatusCode())
                         .isEqualTo(HttpStatus.BAD_REQUEST));

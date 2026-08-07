@@ -23,7 +23,7 @@ public class LoggingUserDirectory implements UserDirectory {
     private static final Logger log = LoggerFactory.getLogger(LoggingUserDirectory.class);
 
     @Override
-    public Optional<UUID> createUser(String email, String role) {
+    public Optional<UUID> createUser(String email, String role, UUID tenantId) {
         log.info("[auth] No user directory configured — {} was added with role {} but has no "
                 + "sign-in account and cannot log in", LogSafe.value(email), role);
         return Optional.empty();

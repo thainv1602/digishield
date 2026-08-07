@@ -3,9 +3,8 @@
 # instead; it uses the same module without the CloudFront dependency.
 
 module "cognito" {
-  source        = "./modules/cognito"
-  name          = local.name
-  dev_tenant_id = var.dev_tenant_id
+  source = "./modules/cognito"
+  name   = local.name
 
   callback_urls = [
     "https://${aws_cloudfront_distribution.frontend.domain_name}",

@@ -98,8 +98,8 @@ class CognitoUserDirectory implements UserDirectory {
     }
 
     @Override
-    public Optional<UUID> createUser(String email, String role) {
-        UUID subject = createAccount(email);
+    public Optional<UUID> createUser(String email, String role, UUID tenantId) {
+        UUID subject = createAccount(email, tenantId);
         addToGroup(email, role);
         return Optional.ofNullable(subject);
     }
@@ -254,7 +254,7 @@ class CognitoUserDirectory implements UserDirectory {
     }
 
     /** Creates the pool account (Cognito emails the temporary password), or adopts an existing one. */
-    private UUID createAccount(String email) {
+    private UUID createAccount(String email, UUID tenantId) {
         AdminCreateUserRequest request = AdminCreateUserRequest.builder()
                 .userPoolId(userPoolId)
                 .username(email)
@@ -263,7 +263,12 @@ class CognitoUserDirectory implements UserDirectory {
                         // The address is the one an admin typed, and the invitation
                         // proves they can read it; leaving it unverified would only
                         // block the password reset that recovers the account.
-                        AttributeType.builder().name("email_verified").value("true").build())
+                        AttributeType.builder().name("email_verified").value("true").build(),
+                        // The pre-token Lambda reads this to build the token's tid
+                        // claim, and refuses to issue a token without it. Every row
+                        // the person can read is filtered by that claim.
+                        AttributeType.builder().name("custom:tenant_id")
+                                .value(tenantId.toString()).build())
                 .desiredDeliveryMediums(DeliveryMediumType.EMAIL)
                 .build();
         try {
