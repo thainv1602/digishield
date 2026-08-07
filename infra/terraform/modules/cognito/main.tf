@@ -87,15 +87,18 @@ resource "aws_cognito_user_pool_client" "spa" {
   # takes to bite. The API validates tokens offline against the pool's JWKS, so
   # it cannot see that Cognito revoked one when the Users screen changed a role;
   # the old role survives until the token expires. Cognito's default hour was
-  # that whole hour. Fifteen minutes costs a silent refresh four times an hour —
-  # oidc-client-ts renews on `expires_in` with automaticSilentRenew, so nobody
-  # sees a login screen for it.
+  # that whole hour.
+  #
+  # Fifteen minutes turned out too tight in practice: a tab left open across a
+  # rollout came back to 401 on every request, because one missed silent renew
+  # is enough when the window is that short. Thirty halves the exposure of the
+  # default without logging an admin out for stepping away.
   #
   # The id token matches: it is what the frontend reads `cognito:groups` from to
   # decide which screens to draw, and a stale menu that 403s is worse than a
   # menu that has caught up.
-  access_token_validity  = 15
-  id_token_validity      = 15
+  access_token_validity  = 30
+  id_token_validity      = 30
   refresh_token_validity = 30 # days — Cognito's default, and what bounds a session
 
   token_validity_units {
