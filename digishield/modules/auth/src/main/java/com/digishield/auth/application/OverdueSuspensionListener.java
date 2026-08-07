@@ -1,6 +1,8 @@
 package com.digishield.auth.application;
 
 import com.digishield.auth.api.AuthService;
+import com.digishield.auth.api.UserView;
+import com.digishield.auth.domain.Role;
 import com.digishield.contracts.events.EnrollmentDueEvent;
 import com.digishield.shared.tenantcontext.TenantContext;
 import java.util.NoSuchElementException;
@@ -48,6 +50,16 @@ public class OverdueSuspensionListener {
         // set: everything below reads it to scope the lookup.
         TenantContext.set(event.tenantId().toString());
         try {
+            UserView user = authService.getUser(event.userId());
+            if (!isPlainLearner(user)) {
+                // Anyone who can administer users is left alone. The sweep runs
+                // with no caller, so the guard that stops an admin suspending
+                // themselves through the API does not apply here -- and a tenant
+                // whose only admin is locked out has nobody left who can undo it.
+                log.info("[auth] Not suspending {} for overdue training: role {} is not a learner",
+                        event.userId(), user.role());
+                return;
+            }
             authService.setSuspended(event.userId(), true, "overdue training");
             log.info("[auth] Suspended user {} for training overdue since {}",
                     event.userId(), event.dueAt());
@@ -57,5 +69,17 @@ public class OverdueSuspensionListener {
         } finally {
             TenantContext.clear();
         }
+    }
+
+    /**
+     * True only for a role that is exactly {@code learner}.
+     *
+     * <p>Deliberately an exact match rather than {@code Role.fromWireName}, which
+     * answers LEARNER for anything it does not recognise. Read that way, a null
+     * or misspelt role would be locked out, and the bias here has to run the
+     * other way: when it is unclear who someone is, leave their access alone.
+     */
+    private static boolean isPlainLearner(UserView user) {
+        return user != null && Role.LEARNER.wireName().equals(user.role());
     }
 }
