@@ -103,6 +103,21 @@ export function deleteUser(id: string): Promise<void> {
   return apiRequest<void>({ url: `/users/${id}`, method: 'DELETE' });
 }
 
+/**
+ * POST /users/{id}/suspension — lock a user out, or let them back in.
+ *
+ * Suspending disables the sign-in account itself, not just this row, and ends
+ * any session it has. Restoring is the only way back: a suspended person cannot
+ * reach the training they were suspended over, so nobody clears this themselves.
+ */
+export function setUserSuspension(id: string, suspended: boolean, reason?: string): Promise<UserViewDto> {
+  return apiRequest<UserViewDto>({
+    url: `/users/${id}/suspension`,
+    method: 'POST',
+    data: { suspended, ...(reason ? { reason } : {}) },
+  });
+}
+
 /** POST /users/import — bulk create/update from a list. */
 export function importUsers(users: UserUpsert[]): Promise<unknown> {
   return apiRequest<unknown>({ url: '/users/import', method: 'POST', data: { users } });
@@ -131,6 +146,16 @@ export function useDeleteUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: deleteUser,
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
+  });
+}
+
+/** Suspend/restore mutation; refreshes the user list on success. */
+export function useSetUserSuspension() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; suspended: boolean; reason?: string }) =>
+      setUserSuspension(vars.id, vars.suspended, vars.reason),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.users }),
   });
 }
