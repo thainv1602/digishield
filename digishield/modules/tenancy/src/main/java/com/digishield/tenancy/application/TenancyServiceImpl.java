@@ -7,6 +7,7 @@ import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.tenancy.api.AuditLogView;
 import com.digishield.tenancy.api.BusinessThresholdsView;
 import com.digishield.tenancy.api.CreateTenantCommand;
+import com.digishield.tenancy.api.TenantAdminProvisioner;
 import com.digishield.tenancy.api.FeatureFlagView;
 import com.digishield.tenancy.api.GroupView;
 import com.digishield.tenancy.api.MemberCountView;
@@ -45,6 +46,7 @@ import com.digishield.tenancy.infrastructure.TenantSettingsRepository;
 import com.digishield.tenancy.infrastructure.UsageMeteringRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,6 +87,9 @@ public class TenancyServiceImpl implements TenancyService {
     private final UsageMeteringRepository usageMeteringRepository;
     private final ObjectMapper objectMapper;
 
+    /** Absent in slices that do not wire the application shell. */
+    private final ObjectProvider<TenantAdminProvisioner> adminProvisioner;
+
     public TenancyServiceImpl(TenantRepository tenantRepository,
                               FeatureFlagRepository featureFlagRepository,
                               AuditLogRepository auditLogRepository,
@@ -97,7 +102,8 @@ public class TenancyServiceImpl implements TenancyService {
                               PlanRepository planRepository,
                               SubscriptionRepository subscriptionRepository,
                               UsageMeteringRepository usageMeteringRepository,
-                              ObjectMapper objectMapper) {
+                              ObjectMapper objectMapper,
+                              ObjectProvider<TenantAdminProvisioner> adminProvisioner) {
         this.tenantRepository = tenantRepository;
         this.featureFlagRepository = featureFlagRepository;
         this.auditLogRepository = auditLogRepository;
@@ -111,6 +117,7 @@ public class TenancyServiceImpl implements TenancyService {
         this.subscriptionRepository = subscriptionRepository;
         this.usageMeteringRepository = usageMeteringRepository;
         this.objectMapper = objectMapper;
+        this.adminProvisioner = adminProvisioner;
     }
 
     @Override
@@ -131,8 +138,25 @@ public class TenancyServiceImpl implements TenancyService {
                 TenantStatus.PROVISIONING
         );
         // A new tenant's tenant_id is by definition not the caller's, so the
-        // tenant_isolation WITH CHECK would reject the insert under RLS.
-        return PlatformScope.call(() -> toView(tenantRepository.save(tenant)));
+        // tenant_isolation WITH CHECK would reject the insert under RLS. The
+        // administrator is created in the same scope and the same transaction:
+        // if provisioning them fails, the tenant goes with it rather than being
+        // left as an organisation nobody can enter.
+        return PlatformScope.call(() -> {
+            TenantView view = toView(tenantRepository.save(tenant));
+            String adminEmail = command.adminEmail();
+            if (adminEmail != null && !adminEmail.isBlank()) {
+                TenantAdminProvisioner provisioner = adminProvisioner.getIfAvailable();
+                if (provisioner == null) {
+                    // Slices without the application shell have no provisioner.
+                    // Saying so beats creating an empty tenant in silence.
+                    throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                            "Cannot create the first administrator: no user directory is wired");
+                }
+                provisioner.provisionAdmin(id, adminEmail.trim());
+            }
+            return view;
+        });
     }
 
     @Override

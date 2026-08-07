@@ -593,12 +593,31 @@ paths:
                 items: { $ref: '#/components/schemas/Tenant' }
     post:
       tags: [Tenancy]
-      summary: Create a new tenant
+      summary: Create a new tenant, and its first administrator
+      description: >-
+        Users are always created in the caller's own tenant, so adminEmail is the
+        only moment an account can be placed inside the new one. Omit it and the
+        organisation exists with nobody able to sign in. Provisioning the admin
+        happens in the same transaction: if it fails, the tenant is not created.
       requestBody:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Tenant' }
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                tier:
+                  type: string
+                  enum: [POOL, BRIDGE, SILO]
+                dataRegion:
+                  type: string
+                adminEmail:
+                  type: string
+                  format: email
+                  description: first administrator; receives the invitation email
       responses:
         '201':
           description: Created

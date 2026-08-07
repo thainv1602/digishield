@@ -48,6 +48,9 @@ class TenancyServiceImplTest {
     private static final UUID TENANT_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     @Mock
+    private org.springframework.beans.factory.ObjectProvider<com.digishield.tenancy.api.TenantAdminProvisioner> adminProvisioner;
+
+    @Mock
     private TenantRepository tenantRepository;
 
     @Mock
@@ -80,10 +83,53 @@ class TenancyServiceImplTest {
     }
 
     @Test
+    void createTenant_withAnAdminEmail_provisionsThatAdminInTheNewTenant() {
+        authenticateAsSuperAdmin();
+        when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
+        com.digishield.tenancy.api.TenantAdminProvisioner provisioner =
+                org.mockito.Mockito.mock(com.digishield.tenancy.api.TenantAdminProvisioner.class);
+        when(adminProvisioner.getIfAvailable()).thenReturn(provisioner);
+
+        TenantView view = tenancyService.createTenant(
+                new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1", " boss@acme.vn "));
+
+        // The admin belongs to the tenant just created, not the caller's, and the
+        // address is trimmed before it becomes a login.
+        verify(provisioner).provisionAdmin(view.id(), "boss@acme.vn");
+    }
+
+    @Test
+    void createTenant_whenTheAdminCannotBeCreated_takesTheTenantWithIt() {
+        authenticateAsSuperAdmin();
+        when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
+        com.digishield.tenancy.api.TenantAdminProvisioner provisioner =
+                org.mockito.Mockito.mock(com.digishield.tenancy.api.TenantAdminProvisioner.class);
+        when(adminProvisioner.getIfAvailable()).thenReturn(provisioner);
+        org.mockito.Mockito.doThrow(new IllegalStateException("identity provider is down"))
+                .when(provisioner).provisionAdmin(any(), any());
+
+        // An organisation nobody can log into is worse than none: it looks
+        // finished. Letting the exception out rolls the transaction back.
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> tenancyService.createTenant(
+                        new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1", "boss@acme.vn")))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void createTenant_withoutAnAdminEmail_createsNobody() {
+        authenticateAsSuperAdmin();
+        when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        tenancyService.createTenant(new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1", null));
+
+        verify(adminProvisioner, org.mockito.Mockito.never()).getIfAvailable();
+    }
+
+    @Test
     void createTenant_persistsTenantInProvisioningStatus() {
         // Arrange
         authenticateAsSuperAdmin();
-        CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1");
+        CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1", null);
         // save() returns the entity it was given
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -116,7 +162,7 @@ class TenancyServiceImplTest {
 
         // Act
         TenantView view = tenancyService.createTenant(
-                new CreateTenantCommand("Acme Corp", "pool", "eu-west-1"));
+                new CreateTenantCommand("Acme Corp", "pool", "eu-west-1", null));
 
         // Assert
         assertThat(view.tier()).isEqualTo("POOL");
@@ -126,7 +172,7 @@ class TenancyServiceImplTest {
     void createTenant_whenTierOutsideTheEnum_isRejectedAsBadRequestAndNothingIsWritten() {
         // Arrange: "basic" is not a tier — this used to surface as a 500.
         authenticateAsSuperAdmin();
-        CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "basic", "eu-west-1");
+        CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "basic", "eu-west-1", null);
 
         // Act + Assert
         assertThatThrownBy(() -> tenancyService.createTenant(command))
@@ -141,7 +187,7 @@ class TenancyServiceImplTest {
     void createTenant_whenNameMissing_isRejectedAsBadRequestAndNothingIsWritten() {
         // Arrange
         authenticateAsSuperAdmin();
-        CreateTenantCommand command = new CreateTenantCommand("  ", "POOL", "eu-west-1");
+        CreateTenantCommand command = new CreateTenantCommand("  ", "POOL", "eu-west-1", null);
 
         // Act + Assert
         assertThatThrownBy(() -> tenancyService.createTenant(command))

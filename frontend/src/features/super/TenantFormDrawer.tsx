@@ -30,6 +30,7 @@ export function TenantFormDrawer({
   const [tier, setTier] = useState('POOL');
   const [status, setStatus] = useState('active');
   const [region, setRegion] = useState('in-country');
+  const [adminEmail, setAdminEmail] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -56,7 +57,15 @@ export function TenantFormDrawer({
     if (editing && tenant) {
       update.mutate({ id: tenant.id, body: { name: name.trim(), tier, status, dataRegion: region.trim() } }, onDone);
     } else {
-      create.mutate({ name: name.trim(), tier, dataRegion: region.trim() }, onDone);
+      create.mutate(
+        {
+          name: name.trim(),
+          tier,
+          dataRegion: region.trim(),
+          ...(adminEmail.trim() ? { adminEmail: adminEmail.trim() } : {}),
+        },
+        onDone,
+      );
     }
   };
 
@@ -83,6 +92,18 @@ export function TenantFormDrawer({
               </option>
             ))}
           </Select>
+        )}
+        {!tenant && (
+          <Input
+            label={t('Email quản trị viên đầu tiên')}
+            value={adminEmail}
+            onChange={(e) => setAdminEmail(e.target.value)}
+            placeholder="admin@tochuc.vn"
+            hint={t(
+              'Người này nhận thư mời và là người duy nhất đăng nhập được vào tổ chức mới. ' +
+                'Bỏ trống thì tổ chức được tạo nhưng chưa ai vào được.',
+            )}
+          />
         )}
         <Input
           label={t('Vùng dữ liệu')}
