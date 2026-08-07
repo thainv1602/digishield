@@ -11,9 +11,8 @@ provider "aws" {
 }
 
 module "cognito" {
-  source        = "../modules/cognito"
-  name          = var.name
-  dev_tenant_id = var.dev_tenant_id
+  source = "../modules/cognito"
+  name   = var.name
 
   # localhost for local dev + the public HTTPS URLs. Cognito requires exact
   # origins (no wildcards); every non-localhost URL must be HTTPS.

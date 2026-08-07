@@ -244,7 +244,7 @@ public class AuthServiceImpl implements AuthService {
         // a user who shows up on the Users screen and can never log in; this one, at
         // worst, leaves an account nobody is pointing at, and the directory adopts it
         // on the retry.
-        UUID subject = userDirectory.createUser(email, role.wireName()).orElse(null);
+        UUID subject = userDirectory.createUser(email, role.wireName(), tenantId).orElse(null);
         AppUser user = new AppUser(
                 // The directory's subject is what the token will carry, so the row is
                 // keyed by it when we know it — that is the id currentUser() looks up

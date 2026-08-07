@@ -28,13 +28,17 @@ public interface UserDirectory {
      * existed, say) is adopted rather than rejected, and its group membership is
      * asserted again.
      *
-     * @param email login email; also where the invitation is delivered
-     * @param role  snake_case role name, matching the provider's group name
+     * @param email    login email; also where the invitation is delivered
+     * @param role     snake_case role name, matching the provider's group name
+     * @param tenantId the organisation the account belongs to. Recorded on the
+     *                 account itself, because the token's tenant claim is built
+     *                 from it and everything the person can read is filtered by
+     *                 that claim -- an account without one cannot sign in at all
      * @return the provider's subject id when it is known, so the application row
      *         can carry the same id the token will present; empty when the
      *         directory cannot say (the dev no-op, for one)
      */
-    Optional<UUID> createUser(String email, String role);
+    Optional<UUID> createUser(String email, String role, UUID tenantId);
 
     /**
      * Moves an existing account to {@code role}: takes away every group in

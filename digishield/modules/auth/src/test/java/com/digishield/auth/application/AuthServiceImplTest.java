@@ -631,28 +631,28 @@ class AuthServiceImplTest {
     void creatingAUserProvisionsTheSignInAccountInTheRolesGroup() {
         when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
                 .thenReturn(Optional.empty());
-        when(userDirectory.createUser("new@x.com", "analyst")).thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "analyst", TENANT_ID)).thenReturn(Optional.empty());
         when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         authService.createUser(new UserUpsert("new@x.com", "analyst", null, null));
 
         // The group is what the token carries, and the token is what authorises:
         // a row without one is a user who can sign in and reach nothing.
-        verify(userDirectory).createUser("new@x.com", "analyst");
+        verify(userDirectory).createUser("new@x.com", "analyst", TENANT_ID);
     }
 
     @Test
     void aUserWithNoRoleAskedForLandsInTheLearnerGroup() {
         when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
                 .thenReturn(Optional.empty());
-        when(userDirectory.createUser("new@x.com", "learner")).thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "learner", TENANT_ID)).thenReturn(Optional.empty());
         when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         authService.createUser(new UserUpsert("new@x.com", null, null, null));
 
         // The row defaults to LEARNER; the directory has to be told the same thing
         // rather than left with no group at all.
-        verify(userDirectory).createUser("new@x.com", "learner");
+        verify(userDirectory).createUser("new@x.com", "learner", TENANT_ID);
     }
 
     @Test
@@ -660,7 +660,7 @@ class AuthServiceImplTest {
         UUID subject = UUID.randomUUID();
         when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
                 .thenReturn(Optional.empty());
-        when(userDirectory.createUser("new@x.com", "learner")).thenReturn(Optional.of(subject));
+        when(userDirectory.createUser("new@x.com", "learner", TENANT_ID)).thenReturn(Optional.of(subject));
         when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         var created = authService.createUser(new UserUpsert("new@x.com", "learner", null, null));
@@ -674,7 +674,7 @@ class AuthServiceImplTest {
     void whenTheDirectoryRefusesNoRowIsWritten() {
         when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
                 .thenReturn(Optional.empty());
-        when(userDirectory.createUser("new@x.com", "learner"))
+        when(userDirectory.createUser("new@x.com", "learner", TENANT_ID))
                 .thenThrow(new IllegalStateException("identity provider is down"));
 
         assertThatThrownBy(() -> authService.createUser(new UserUpsert("new@x.com", "learner", null, null)))
@@ -697,7 +697,7 @@ class AuthServiceImplTest {
                 new UserUpsert("boss@x.com", "super_admin", null, null)))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("above your own");
-        verify(userDirectory, never()).createUser(any(), any());
+        verify(userDirectory, never()).createUser(any(), any(), any());
         verify(userRepository, never()).save(any(AppUser.class));
     }
 
@@ -723,7 +723,7 @@ class AuthServiceImplTest {
         when(auditRecorderProvider.getIfAvailable()).thenReturn(auditRecorder);
         when(userRepository.findByTenantIdAndEmail(TENANT_ID, "new@x.com"))
                 .thenReturn(Optional.empty());
-        when(userDirectory.createUser("new@x.com", "org_admin")).thenReturn(Optional.empty());
+        when(userDirectory.createUser("new@x.com", "org_admin", TENANT_ID)).thenReturn(Optional.empty());
         when(userRepository.save(any(AppUser.class))).thenAnswer(inv -> inv.getArgument(0));
 
         authService.createUser(new UserUpsert("new@x.com", "org_admin", null, null));

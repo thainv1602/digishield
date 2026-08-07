@@ -16,6 +16,21 @@ resource "aws_cognito_user_pool" "main" {
   username_attributes      = ["email"]
   auto_verified_attributes = ["email"]
 
+  # Which tenant a user belongs to. The pre-token Lambda reads this and puts it
+  # in the token as `tid`, which is the only thing TenantFilter trusts and what
+  # every RLS policy filters on.
+  schema {
+    name                     = "tenant_id"
+    attribute_data_type      = "String"
+    mutable                  = true
+    developer_only_attribute = false
+    required                 = false
+    string_attribute_constraints {
+      min_length = 36
+      max_length = 36
+    }
+  }
+
   # Inject the tenant id into every issued token as the `tid` claim the backend
   # (TenantFilter) requires. V2_0 so the claim also lands in the access token.
   lambda_config {
@@ -170,12 +185,24 @@ data "archive_file" "pre_token_zip" {
       //
       // `tid` goes on both tokens so the backend's TenantFilter can resolve the
       // tenant. `email` goes on the ACCESS token because the backend only ever
-      // sees that one, and Cognito does not put email there by default — without
+      // sees that one, and Cognito does not put email there by default -- without
       // it every audit entry is attributed to the `sub` UUID, which answers
       // "who did this" with another question.
+      //
+      // The tenant comes from the user's own custom:tenant_id attribute. There is
+      // deliberately no fallback: a user with no tenant gets no token. Defaulting
+      // to any tenant would drop a misconfigured account into somebody else's
+      // organisation, and because every table is filtered by RLS on this claim,
+      // they would read that organisation's data.
       exports.handler = async (event) => {
-        const tid = process.env.FIXED_TENANT_ID;
-        const email = (event.request.userAttributes || {}).email;
+        const attrs = event.request.userAttributes || {};
+        const tid = attrs['custom:tenant_id'];
+        if (!tid) {
+          throw new Error(
+            'No custom:tenant_id on user ' + (event.userName || '?') +
+            ' -- refusing to issue a token rather than guess a tenant');
+        }
+        const email = attrs.email;
         const accessClaims = email ? { tid, email } : { tid };
         event.response = {
           claimsAndScopeOverrideDetails: {
@@ -224,12 +251,6 @@ resource "aws_lambda_function" "pre_token" {
   # X-Ray tracing (Trivy AWS-0066).
   tracing_config {
     mode = "Active"
-  }
-
-  environment {
-    variables = {
-      FIXED_TENANT_ID = var.dev_tenant_id
-    }
   }
 }
 
