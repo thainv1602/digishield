@@ -768,6 +768,40 @@ paths:
                     name: { type: string }
                     points: { type: integer }
 
+  /users/{id}/suspension:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      tags: [Users]
+      summary: Lock a user out, or let them back in
+      description: >-
+        Suspending disables the sign-in account and ends its sessions, so it
+        takes effect immediately rather than at the next token. There is no
+        self-service way back: a suspended person cannot reach the training they
+        may have been suspended over, so restoring here is the only exit.
+        Refused when the target outranks the caller, or is the caller.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                suspended:
+                  type: boolean
+                  default: true
+                  description: true to lock the account, false to restore it
+                reason:
+                  type: string
+                  description: short note recorded on the audit entry
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '403':
+          description: Target outranks the caller, or is the caller
+
   /users/{id}/badges:
     parameters:
       - { $ref: '#/components/parameters/Id' }

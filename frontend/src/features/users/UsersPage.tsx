@@ -4,7 +4,7 @@ import type { ColumnDef } from '@/shared/ui';
 import { Search } from 'lucide-react';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { ROLES } from '@/app/auth/roles';
-import { useUsers, useDeleteUser, type UserRow } from './api';
+import { useUsers, useDeleteUser, useSetUserSuspension, type UserRow } from './api';
 import { UserFormDrawer } from './UserFormDrawer';
 import { ImportDrawer } from './ImportDrawer';
 
@@ -30,6 +30,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('');
   const [deptFilter, setDeptFilter] = useState('');
   const del = useDeleteUser();
+  const suspension = useSetUserSuspension();
   const toast = useToast();
 
   const deptOptions = useMemo(
@@ -54,6 +55,34 @@ export default function UsersPage() {
   const openEdit = (u: UserRow) => {
     setEditing(u);
     setFormOpen(true);
+  };
+  const doSuspension = (u: UserRow) => {
+    const suspended = (u.status ?? '').toLowerCase() === 'suspended';
+    const label = u.email || u.name;
+    // Spelled out because suspending reaches past this table: the person cannot
+    // sign in at all afterwards, including into the training that suspended
+    // them, so restoring here is the only way back.
+    const question = suspended
+      ? t('Mở khoá "{name}"? Họ sẽ đăng nhập lại được ngay.', { name: label })
+      : t('Khoá "{name}"? Họ sẽ không đăng nhập được nữa, kể cả để làm bài đào tạo — chỉ admin mở lại được.', { name: label });
+    if (!window.confirm(question)) {
+      return;
+    }
+    suspension.mutate(
+      { id: u.id, suspended: !suspended },
+      {
+        onSuccess: () =>
+          toast({
+            msg: suspended ? t('Đã mở khoá người dùng.') : t('Đã khoá người dùng.'),
+            variant: 'success',
+          }),
+        onError: () =>
+          toast({
+            msg: suspended ? t('Mở khoá thất bại, thử lại.') : t('Khoá thất bại, thử lại.'),
+            variant: 'error',
+          }),
+      },
+    );
   };
   const doDelete = (u: UserRow) => {
     // Spelled out because this reaches further than the table: the backend
@@ -103,6 +132,19 @@ export default function UsersPage() {
       width: '80px',
     },
     {
+      id: 'status',
+      header: t('Trạng thái'),
+      cell: (u) => {
+        const suspended = (u.status ?? '').toLowerCase() === 'suspended';
+        return (
+          <span style={{ fontSize: 12, color: suspended ? 'var(--color-red)' : 'var(--color-muted)' }}>
+            {suspended ? t('Đã khoá') : t('Hoạt động')}
+          </span>
+        );
+      },
+      width: '100px',
+    },
+    {
       id: 'actions',
       header: '',
       cell: (u) => (
@@ -113,6 +155,21 @@ export default function UsersPage() {
             style={{ fontSize: 12, color: 'var(--color-blue)', cursor: 'pointer', background: 'none', border: 'none' }}
           >
             {t('Sửa')}
+          </button>
+          <button
+            type="button"
+            onClick={() => doSuspension(u)}
+            disabled={suspension.isPending}
+            style={{
+              fontSize: 12,
+              color: 'var(--color-muted)',
+              cursor: suspension.isPending ? 'default' : 'pointer',
+              background: 'none',
+              border: 'none',
+              opacity: suspension.isPending ? 0.5 : 1,
+            }}
+          >
+            {(u.status ?? '').toLowerCase() === 'suspended' ? t('Mở khoá') : t('Khoá')}
           </button>
           <button
             type="button"
@@ -131,7 +188,7 @@ export default function UsersPage() {
           </button>
         </div>
       ),
-      width: '110px',
+      width: '170px',
       align: 'right',
     },
   ];
