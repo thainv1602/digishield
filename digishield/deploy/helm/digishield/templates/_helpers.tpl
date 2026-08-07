@@ -14,6 +14,13 @@
 {{/* OAuth2 resource-server issuer — shared by api/worker/scheduler/flyway. The
      app boots a JwtDecoder from this OIDC issuer (e.g. a Cognito user pool). */}}
 {{- define "digishield.authEnv" -}}
+{{- if .Values.auth.suspendOverdueLearners.enabled }}
+{{- /* Locks a learner out when mandatory training passes its deadline. Reaches
+       real people on a timer and has no self-service exit, so it is off unless
+       a deployment says otherwise. */}}
+- name: AUTH_SUSPEND_OVERDUE_ENABLED
+  value: "true"
+{{- end }}
 {{- with .Values.auth.issuerUri }}
 {{- /* The app's SecurityConfig reads digishield.auth.jwt.issuer-uri, bound to
        AUTH_JWT_ISSUER_URI in application.yml — set that, not the Spring default. */}}

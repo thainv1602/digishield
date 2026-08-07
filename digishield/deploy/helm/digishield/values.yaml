@@ -132,6 +132,11 @@ flyway:
 # Secret under notifications.aws (no IRSA on k3s).
 auth:
   issuerUri: ""
+  # Lock a learner out when their mandatory training passes its deadline. Off by
+  # default: it takes real access away on a timer, and a suspended person cannot
+  # reach the training that suspended them, so only an admin can undo it.
+  suspendOverdueLearners:
+    enabled: false
   cognito:
     userPoolId: ""
     # Region of the pool. Blank falls back to the SDK default (AWS_REGION).
