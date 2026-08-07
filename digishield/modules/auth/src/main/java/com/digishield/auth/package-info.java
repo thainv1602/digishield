@@ -10,7 +10,10 @@
         allowedDependencies = {
                 "shared :: tenant-context",
                 "shared :: security",
-                "contracts"
+                "contracts",
+                // The module listens for EnrollmentDueEvent to lock out learners
+                // whose mandatory training has gone past its deadline.
+                "contracts :: events"
         }
 )
 package com.digishield.auth;

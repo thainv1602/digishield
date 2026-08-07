@@ -75,12 +75,35 @@ class UsersController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Locks a user out, or lets them back in.
+     *
+     * <p>The only way back for someone suspended for overdue training: they
+     * cannot reach the training while locked out, so an admin has to restore
+     * them first.
+     */
+    @PostMapping("/{id}/suspension")
+    ResponseEntity<UserView> setSuspension(@PathVariable("id") UUID id,
+                                           @RequestBody SuspensionRequest request) {
+        boolean suspended = request.suspended() == null || request.suspended();
+        return ResponseEntity.ok(authService.setSuspended(id, suspended, request.reason()));
+    }
+
     @PostMapping("/import")
     ResponseEntity<ImportResult> importUsers(@RequestBody ImportRequest request) {
         List<UserUpsert> users = request.users() == null
                 ? List.of()
                 : request.users().stream().map(UserInputRequest::toUpsert).toList();
         return ResponseEntity.accepted().body(authService.importUsers(users));
+    }
+
+    /**
+     * Body of {@code POST /users/{id}/suspension}.
+     *
+     * @param suspended true to lock the account (the default when omitted), false to restore it
+     * @param reason    short note recorded on the audit entry
+     */
+    record SuspensionRequest(Boolean suspended, String reason) {
     }
 
     /**

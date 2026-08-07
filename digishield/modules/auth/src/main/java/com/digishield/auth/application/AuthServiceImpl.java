@@ -348,6 +348,34 @@ public class AuthServiceImpl implements AuthService {
         return "user:" + ((email != null && !email.isBlank()) ? email : user.getId());
     }
 
+    @Override
+    @Transactional
+    public UserView setSuspended(UUID userId, boolean suspended, String reason) {
+        UUID tenantId = TenantContext.requireUuid();
+        AppUser user = userRepository.findByTenantIdAndId(tenantId, userId)
+                .orElseThrow(() -> new NoSuchElementException("User not found: " + userId));
+        assertMayAdminister(user, null);
+        // Suspending yourself locks the door from the inside: the account that
+        // could undo it is the one that just lost its access.
+        assertNotSelf(user);
+
+        UserStatus target = suspended ? UserStatus.SUSPENDED : UserStatus.ACTIVE;
+        if (user.getStatus() == target) {
+            return toUserView(user);
+        }
+
+        // The provider first, as everywhere else here: the column decides nothing
+        // on its own, since authorisation reads the token. A row marked SUSPENDED
+        // while the account still signs in is a lock that exists only on screen.
+        userDirectory.setEnabled(user.getEmail(), !suspended);
+        user.setStatus(target);
+        UserView saved = toUserView(userRepository.save(user));
+        audit(suspended ? "user.suspend" : "user.reactivate",
+                auditTarget(user) + (reason != null && !reason.isBlank() ? " (" + reason + ")" : ""),
+                AuditRecorder.Severity.CRITICAL);
+        return saved;
+    }
+
     /** The provider's group name for a role, or {@code null} for no role at all. */
     private static String groupOf(Role role) {
         return role != null ? role.wireName() : null;

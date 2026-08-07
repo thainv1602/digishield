@@ -73,4 +73,22 @@ public interface UserDirectory {
      * @param email login email, which is also the account's username
      */
     void deleteUser(String email);
+
+    /**
+     * Turns sign-in on or off for an account that stays in place.
+     *
+     * <p>Disabling ends the account's sessions as well, for the reason
+     * {@link #setRole} does: a token already issued keeps working against an API
+     * that validates offline, so without a sign-out the lock does not take hold
+     * until the token expires.
+     *
+     * <p>Worth being blunt about what this costs. A disabled account cannot log
+     * in <em>at all</em>, including into the training it was disabled for not
+     * completing. There is no path where the person clears the block themselves;
+     * someone has to enable them again first.
+     *
+     * @param email   login email, which is also the account's username
+     * @param enabled false to lock the account out, true to let it back in
+     */
+    void setEnabled(String email, boolean enabled);
 }

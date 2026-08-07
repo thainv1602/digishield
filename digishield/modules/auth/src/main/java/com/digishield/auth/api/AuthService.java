@@ -78,6 +78,24 @@ public interface AuthService {
     void deleteUser(UUID userId);
 
     /**
+     * Locks a user out, or lets them back in.
+     *
+     * <p>Suspension disables the sign-in account and ends its sessions, so it
+     * bites immediately rather than at the next token. It also cuts the person
+     * off from the training they may have been suspended for skipping: there is
+     * no self-service way back, only this method with {@code suspended} false.
+     *
+     * @param userId    the user to lock or restore
+     * @param suspended true to lock the account, false to restore it
+     * @param reason    short note recorded on the audit entry
+     * @return the updated user
+     * @throws java.util.NoSuchElementException if no such user exists in the tenant
+     * @throws org.springframework.security.access.AccessDeniedException if the
+     *         caller does not outrank the target, or is the target
+     */
+    UserView setSuspended(UUID userId, boolean suspended, String reason);
+
+    /**
      * Bulk-imports users into the current tenant. In dev this is synchronous; the
      * returned {@link ImportResult#accepted()} reflects the number created.
      */
