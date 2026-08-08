@@ -185,3 +185,38 @@ tailnet.
 Grafana is **not** funnelled. The `tailscale.com/funnel: "true"` annotation
 would make it public, and with it every metric and every application log in
 Loki, behind one password and no MFA.
+
+## 8. CoreDNS runs two replicas
+
+k3s ships CoreDNS with one replica, which makes whichever node happens to hold
+it a single point of failure for every name lookup in the cluster. Scale it:
+
+```bash
+kubectl -n kube-system scale deployment coredns --replicas=2
+```
+
+This sticks across restarts even though CoreDNS is a k3s-managed addon, because
+the bundled manifest never sets `spec.replicas` — confirm with
+`sudo grep -c replicas /var/lib/rancher/k3s/server/manifests/coredns.yaml`
+(expect `0`). The addon controller therefore does not own the field, and
+re-applying the manifest leaves the count alone:
+
+```bash
+kubectl -n kube-system get deploy coredns --show-managed-fields -o json \
+  | grep -c 'f:replicas'   # only the `kubectl` manager owns it
+```
+
+A future k3s release that starts pinning `replicas: 1` would silently undo
+this, so re-check the count after upgrading k3s.
+
+Placement needs nothing extra: the bundled manifest already carries a
+`topologySpreadConstraints` entry on `kubernetes.io/hostname` with
+`whenUnsatisfiable: DoNotSchedule`, so the second pod is forced onto the other
+Jetson rather than doubling up.
+
+Two replicas buy availability, not speed. Deleting the pod on one node while
+querying `kube-dns` 110 times in a row cost zero failed lookups. Latency was
+already fine — CoreDNS's own `coredns_proxy_request_duration_seconds` averaged
+16 ms to `192.168.1.1` and 20 ms to `8.8.8.8` over four days, with no query
+above two seconds. Beware of measuring this with busybox `nslookup`: it ignores
+`ndots` and reports times the real resolver never sees.
