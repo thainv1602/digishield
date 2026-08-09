@@ -89,9 +89,16 @@ graph TB
 
 ---
 
-## 3. Component Diagram (Container/Component)
+## 3. Component Diagram (Container/Component) — Target State
 
-**Description:** "Opens up" the system into 4 layers. The **Client Layer** includes the Web App, Browser Extension, and Email Add-in (where the "Report phishing" button lives). Every request passes through the **API Gateway** (JWT authentication, rate-limiting, routing) to **7 microservices** separated by business domain. Heavy tasks (bulk email/SMS sending, AI jobs) are pushed to the **Async Layer** (Message Queue + Workers + Scheduler) so they don't block requests. The **Data Layer** comprises PostgreSQL (business data), Redis (cache/queue), and Object Storage (media, reports). Note: only Simulation, Notification, and AI Service emit jobs to the queue.
+> **This diagram is the target state, not the current deployment.** The split
+> into separate services behind an API Gateway is the end state of **ADR-001**;
+> today the same nine domains ship as nine Spring Modulith modules inside a
+> single Spring Boot deployment, with no gateway in front. Read it as where the
+> system is heading. For what runs now, see
+> **[`DigiShield_Architecture.html`](DigiShield_Architecture.html)**.
+
+**Description:** "Opens up" the system into 4 layers. The **Client Layer** includes the Web App, Browser Extension, and Email Add-in (where the "Report phishing" button lives). Every request passes through the **API Gateway** (JWT authentication, rate-limiting, routing) to **9 services** separated by business domain — one per bounded domain in section 1, so the target split follows the module boundaries that already exist. Heavy tasks (bulk email/SMS sending, AI jobs) are pushed to the **Async Layer** (Message Queue + Workers + Scheduler) so they don't block requests. The **Data Layer** comprises PostgreSQL (business data), Redis (cache/queue), and Object Storage (media, reports). Note: only Simulation, Notification, and AI Service emit jobs to the queue.
 
 ```mermaid
 graph LR
@@ -103,14 +110,16 @@ graph LR
 
     GW[API Gateway<br/>Auth JWT · Rate-limit · Routing]
 
-    subgraph Svc[Microservices]
+    subgraph Svc[Services · target split]
         AUTH[Auth Service]
+        TEN[Tenancy/Billing Service]
         LRN[Learning Service]
         SIM[Simulation Service]
         REP[Reporting Service]
         ANA[Analytics Service]
         NOT[Notification Service]
         AIS[AI Service]
+        INT[Interception Service]
     end
 
     subgraph Async[Async Layer]
@@ -126,11 +135,11 @@ graph LR
     end
 
     W & BX & AD --> GW
-    GW --> AUTH & LRN & SIM & REP & ANA & NOT & AIS
+    GW --> AUTH & TEN & LRN & SIM & REP & ANA & NOT & AIS & INT
     SIM & NOT & AIS --> MQ
     MQ --> WK
     SCH --> MQ
-    AUTH & LRN & SIM & REP & ANA --> PG
+    AUTH & TEN & LRN & SIM & REP & ANA & INT --> PG
     AUTH & ANA --> RD
     LRN & REP --> OS
     WK --> NOT
