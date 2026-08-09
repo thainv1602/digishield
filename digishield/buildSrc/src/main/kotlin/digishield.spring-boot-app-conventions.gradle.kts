@@ -2,6 +2,7 @@ plugins {
     java
     checkstyle
     jacoco
+    id("com.github.spotbugs")
     id("org.springframework.boot")
     id("io.spring.dependency-management")
 }
@@ -120,4 +121,30 @@ tasks.jacocoTestCoverageVerification {
 
 tasks.named("check") {
     dependsOn(tasks.jacocoTestCoverageVerification)
+}
+
+// ---------------------------------------------------------------------------
+// SpotBugs -- bytecode analysis, complementing Checkstyle (style) and CodeQL
+// (security). Main sources only: SpotBugs on test code is mostly noise about
+// mock fields and assertions.
+// ---------------------------------------------------------------------------
+spotbugs {
+    toolVersion = "4.10.3"
+    effort = com.github.spotbugs.snom.Effort.MAX
+    reportLevel = com.github.spotbugs.snom.Confidence.DEFAULT
+    excludeFilter = rootProject.layout.projectDirectory.file("config/spotbugs/exclude.xml").asFile
+    // Enforced from the start. Checkstyle spent months at ignoreFailures = true
+    // and quietly accumulated 180 violations; a gate nobody can fail is not a
+    // gate. Everything SpotBugs found on the first run is either fixed or
+    // excluded with a reason in config/spotbugs/exclude.xml.
+    ignoreFailures = false
+}
+
+tasks.named<com.github.spotbugs.snom.SpotBugsTask>("spotbugsTest") {
+    enabled = false
+}
+
+tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
+    reports.create("xml") { required.set(true) }
+    reports.create("html") { required.set(true) }
 }

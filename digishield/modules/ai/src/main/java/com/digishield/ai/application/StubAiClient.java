@@ -133,7 +133,9 @@ public class StubAiClient implements AiClient {
     }
 
     private Difficulty pickDifficulty(TemplateChannel channel, String industry) {
-        int hash = Math.abs((channel.name() + industry).hashCode()) % 3;
+        // floorMod, not Math.abs: abs(Integer.MIN_VALUE) is still negative, so a
+        // string hashing to exactly that would fall through to HARD by accident.
+        int hash = Math.floorMod((channel.name() + industry).hashCode(), 3);
         return switch (hash) {
             case 0 -> Difficulty.EASY;
             case 1 -> Difficulty.MEDIUM;

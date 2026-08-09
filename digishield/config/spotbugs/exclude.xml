@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclusions.
+
+  Every entry here silences a bug pattern permanently, so each one carries a
+  reason. If a pattern is only wrong in one place, exclude that place, not the
+  pattern. Prefer fixing the code over adding an entry.
+-->
+<FindBugsFilter>
+
+    <!--
+      EI_EXPOSE_REP / EI_EXPOSE_REP2 — "may expose internal representation by
+      storing/returning an externally mutable object". 76 of the 87 findings on
+      the first run were these, and essentially all of them are Spring wiring:
+      records in contracts/dto whose accessors return the List they were built
+      with, and @Value-injected List<String> configuration held on a field.
+
+      Defensive copying every one of those would add allocation and noise to
+      DTOs that are already treated as immutable by convention, and the
+      "attacker" in this threat model is our own code. Excluded wholesale, which
+      is the usual disposition for this pattern in a Spring codebase.
+    -->
+    <Match>
+        <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    </Match>
+
+    <!--
+      CT_CONSTRUCTOR_THROW — flags constructors that can throw, because a
+      partially constructed object is reachable through a finalizer attack.
+      Every occurrence here is deliberate argument validation (rejecting an
+      unsafe digishield.rls.app-role, an unusable Cognito configuration). None
+      of these classes override finalize(), and validating in the constructor is
+      the behaviour we want: fail at startup, not at first use.
+    -->
+    <Match>
+        <Bug pattern="CT_CONSTRUCTOR_THROW"/>
+    </Match>
+
+    <!--
+      VA_FORMAT_STRING_USES_NEWLINE — wants %n instead of \n. The flagged string
+      is a prompt sent to Claude, not console output: %n would substitute the
+      platform line separator and make the prompt differ between a developer's
+      machine and the Linux container. \n is correct here.
+    -->
+    <Match>
+        <Class name="com.digishield.ai.application.ClaudeAiClient"/>
+        <Bug pattern="VA_FORMAT_STRING_USES_NEWLINE"/>
+    </Match>
+
+    <!--
+      ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD in RlsTenantAspect — the aspect
+      latches a static volatile flag when the context finishes refreshing, so
+      RLS statements are not issued against a half-built context. It is written
+      once, never reset, and volatile. Scoped to this class rather than excluded
+      globally: the pattern is worth hearing about anywhere else.
+    -->
+    <Match>
+        <Class name="com.digishield.shared.persistence.RlsTenantAspect"/>
+        <Bug pattern="ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD"/>
+    </Match>
+
+    <!--
+      DCN_NULLPOINTER_EXCEPTION — catching NPE rather than testing for null.
+      Both sites pull an optional claim out of a JWT and treat "absent" and
+      "unparseable" identically. The style is not good and these are worth
+      rewriting as explicit null checks, but doing so touches the authentication
+      path and belongs in its own change rather than a tooling PR. Scoped to the
+      two known methods so a third occurrence still fails the build.
+    -->
+    <Match>
+        <Class name="com.digishield.auth.application.AuthServiceImpl"/>
+        <Method name="subjectUuid"/>
+        <Bug pattern="DCN_NULLPOINTER_EXCEPTION"/>
+    </Match>
+    <Match>
+        <Class name="com.digishield.CognitoUserDirectory"/>
+        <Method name="subjectOf"/>
+        <Bug pattern="DCN_NULLPOINTER_EXCEPTION"/>
+    </Match>
+
+</FindBugsFilter>

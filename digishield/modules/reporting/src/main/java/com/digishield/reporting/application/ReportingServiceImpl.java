@@ -103,6 +103,7 @@ public class ReportingServiceImpl implements ReportingService {
             report.setAiLabel(AiLabel.THREAT);
             report.setStatus(ReportStatus.CONFIRMED);
             PhishingReport saved = reportRepository.save(report);
+            audit("triage.confirm", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
             eventPublisher.publish(
                     new PhishingReportConfirmedEvent(tenantId, saved.getUserId(), saved.getId()));
             return saved;
@@ -110,8 +111,7 @@ public class ReportingServiceImpl implements ReportingService {
 
         report.setAiLabel(AiLabel.CLEAN);
         report.setStatus(ReportStatus.DISMISSED);
-        audit(confirmThreat ? "triage.confirm" : "triage.dismiss",
-                "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
+        audit("triage.dismiss", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
         return reportRepository.save(report);
     }
 
