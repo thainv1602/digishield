@@ -63,7 +63,6 @@ public class ReportingServiceImpl implements ReportingService {
         }
     }
 
-
     @Override
     public PhishingReport submit(UUID userId, String payload, String channel) {
         UUID tenantId = TenantContext.requireUuid();

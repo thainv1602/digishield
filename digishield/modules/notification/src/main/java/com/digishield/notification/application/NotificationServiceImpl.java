@@ -77,7 +77,6 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
-
     @Override
     public Notification send(UUID userId, NotificationType type, NotificationChannel channel, String title, String body) {
         UUID tenantId = TenantContext.requireUuid();

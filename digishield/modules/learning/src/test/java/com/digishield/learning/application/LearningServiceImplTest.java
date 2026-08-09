@@ -80,7 +80,6 @@ class LearningServiceImplTest {
     @Captor
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
 
-
     @Test
     void completeQuiz_issuesACertificateOnPassing() {
         UUID enrollmentId = UUID.randomUUID();

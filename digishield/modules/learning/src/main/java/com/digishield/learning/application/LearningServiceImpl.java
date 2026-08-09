@@ -27,7 +27,6 @@ import com.digishield.learning.domain.Badge;
 import com.digishield.learning.domain.BadgeCatalog;
 import com.digishield.learning.domain.BadgeCriteriaType;
 import com.digishield.learning.domain.PointAction;
-import com.digishield.learning.domain.PointRule;
 import com.digishield.learning.domain.Certificate;
 import com.digishield.learning.domain.CoachingPage;
 import com.digishield.learning.domain.CompliancePolicy;
@@ -51,8 +50,8 @@ import com.digishield.learning.infrastructure.LessonRepository;
 import com.digishield.learning.infrastructure.PointRuleRepository;
 import com.digishield.learning.infrastructure.QuizQuestionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,7 +122,7 @@ public class LearningServiceImpl implements LearningService {
                                GamificationProfileRepository gamificationProfileRepository,
                                PointsAwarder pointsAwarder,
                                LearnerDirectory learnerDirectory,
-                               @org.springframework.beans.factory.annotation.Value("${digishield.learning.certificate-verify-url:}") String verifyUrl,
+                               @Value("${digishield.learning.certificate-verify-url:}") String verifyUrl,
                                PassMarkProvider passMarkProvider,
                                // Resolved lazily to break a start-up cycle:
                                // this reaches analytics, whose dashboard metrics
@@ -135,7 +134,7 @@ public class LearningServiceImpl implements LearningService {
                                PointRuleRepository pointRuleRepository,
                                ApplicationEventPublisher eventPublisher,
                                ObjectMapper objectMapper,
-                               @org.springframework.beans.factory.annotation.Value("${digishield.learning.remediation.due-days:3}") Integer remediationDueDays) {
+                               @Value("${digishield.learning.remediation.due-days:3}") Integer remediationDueDays) {
         this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lessonRepository = lessonRepository;
@@ -1026,7 +1025,6 @@ public class LearningServiceImpl implements LearningService {
         }
     }
 
-
     /**
      * The tenant's configured pass score, or the platform default when no
      * provider is wired.
@@ -1034,7 +1032,6 @@ public class LearningServiceImpl implements LearningService {
     private int passMark(UUID tenantId) {
         return passMarkProvider.passScorePct(tenantId);
     }
-
 
     /**
      * Issues the certificate for a course just passed.
@@ -1084,7 +1081,6 @@ public class LearningServiceImpl implements LearningService {
                 .map(LearnerDirectory.Learner::displayName)
                 .orElse(null);
     }
-
 
     private static BadgeCatalogView toBadgeCatalogView(BadgeCatalog b) {
         return new BadgeCatalogView(b.getId(), b.getName(), b.getDescription(), b.getIconRef(),

@@ -13,7 +13,6 @@ import com.digishield.simulation.domain.CampaignStatus;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.SimAction;
 import com.digishield.simulation.domain.SimCampaign;
-import com.digishield.simulation.domain.SimCampaignFunnel;
 import com.digishield.simulation.domain.SimEvent;
 import com.digishield.simulation.domain.SimRecipient;
 import com.digishield.simulation.domain.SimResult;

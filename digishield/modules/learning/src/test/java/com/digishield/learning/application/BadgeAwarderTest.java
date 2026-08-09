@@ -6,7 +6,6 @@ import com.digishield.learning.domain.BadgeCatalog;
 import com.digishield.learning.domain.BadgeCriteriaType;
 import com.digishield.learning.domain.Enrollment;
 import com.digishield.learning.domain.EnrollmentStatus;
-import com.digishield.learning.domain.GamificationProfile;
 import com.digishield.learning.infrastructure.BadgeCatalogRepository;
 import com.digishield.learning.infrastructure.BadgeRepository;
 import com.digishield.learning.infrastructure.EnrollmentRepository;
@@ -19,7 +18,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;

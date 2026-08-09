@@ -71,7 +71,6 @@ class AuthServiceImplTest {
 
     private ObjectProvider<AuditRecorder> auditRecorderProvider;
 
-
     @Mock
 
     private AuditRecorder auditRecorder;
@@ -79,7 +78,6 @@ class AuthServiceImplTest {
     @Mock
 
     private com.digishield.auth.api.UserDirectory userDirectory;
-
 
     @InjectMocks
     private AuthServiceImpl authService;
