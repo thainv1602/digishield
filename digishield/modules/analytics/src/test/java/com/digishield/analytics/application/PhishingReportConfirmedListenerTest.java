@@ -27,7 +27,7 @@ class PhishingReportConfirmedListenerTest {
     }
 
     @Test
-    void on_recordsConfirmedReportForTheReporterAndClearsContext() {
+    void onRecordsConfirmedReportForTheReporterAndClearsContext() {
         // Arrange
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();

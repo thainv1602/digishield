@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class OverdueSuspensionListener {
 
-    private static final Logger log = LoggerFactory.getLogger(OverdueSuspensionListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OverdueSuspensionListener.class);
 
     private final AuthService authService;
     private final boolean enabled;
@@ -56,16 +56,16 @@ public class OverdueSuspensionListener {
                 // with no caller, so the guard that stops an admin suspending
                 // themselves through the API does not apply here -- and a tenant
                 // whose only admin is locked out has nobody left who can undo it.
-                log.info("[auth] Not suspending {} for overdue training: role {} is not a learner",
+                LOG.info("[auth] Not suspending {} for overdue training: role {} is not a learner",
                         event.userId(), user.role());
                 return;
             }
             authService.setSuspended(event.userId(), true, "overdue training");
-            log.info("[auth] Suspended user {} for training overdue since {}",
+            LOG.info("[auth] Suspended user {} for training overdue since {}",
                     event.userId(), event.dueAt());
         } catch (NoSuchElementException e) {
             // The learner has been deleted since the sweep read the enrollment.
-            log.info("[auth] No user {} to suspend for overdue training", event.userId());
+            LOG.info("[auth] No user {} to suspend for overdue training", event.userId());
         } finally {
             TenantContext.clear();
         }

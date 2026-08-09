@@ -42,7 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class RiskRollupService {
 
-    private static final Logger log = LoggerFactory.getLogger(RiskRollupService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RiskRollupService.class);
 
     /** Bucket for people whose department is unset, so they still get counted. */
     private static final String UNASSIGNED = "—";
@@ -79,7 +79,7 @@ public class RiskRollupService {
             // No people means no denominator. Writing a zero here would render as
             // a real measurement of a real workforce, which is worse than a panel
             // that is visibly empty.
-            log.debug("Risk rollup skipped for tenant {}: no members", tenantId);
+            LOG.debug("Risk rollup skipped for tenant {}: no members", tenantId);
             return new Summary(0, 0, 0, 0.0);
         }
 
@@ -126,7 +126,7 @@ public class RiskRollupService {
         departmentRiskRepository.saveAll(departments);
         riskScoreRepository.saveAll(scores);
 
-        log.info("Risk rollup for tenant {}: {} members, {} departments, org risk {}, phish-prone {}%",
+        LOG.info("Risk rollup for tenant {}: {} members, {} departments, org risk {}, phish-prone {}%",
                 tenantId, members.size(), departments.size(), org.risk(), org.phishPronePct());
         return new Summary(members.size(), departments.size(), org.risk(), org.phishPronePct());
     }

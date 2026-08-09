@@ -21,25 +21,25 @@ class TenantAccessGuardTest {
     }
 
     @Test
-    void isSelf_true_whenTenantMatchesCallerContext() {
+    void isSelfTrueWhenTenantMatchesCallerContext() {
         UUID tenant = UUID.randomUUID();
         TenantContext.set(tenant.toString());
         assertThat(guard.isSelf(tenant)).isTrue();
     }
 
     @Test
-    void isSelf_false_whenTenantIsADifferentTenant() {
+    void isSelfFalseWhenTenantIsADifferentTenant() {
         TenantContext.set(UUID.randomUUID().toString());
         assertThat(guard.isSelf(UUID.randomUUID())).isFalse();
     }
 
     @Test
-    void isSelf_false_whenNoTenantContext() {
+    void isSelfFalseWhenNoTenantContext() {
         assertThat(guard.isSelf(UUID.randomUUID())).isFalse();
     }
 
     @Test
-    void isSelf_false_whenTenantIdIsNull() {
+    void isSelfFalseWhenTenantIdIsNull() {
         TenantContext.set(UUID.randomUUID().toString());
         assertThat(guard.isSelf(null)).isFalse();
     }

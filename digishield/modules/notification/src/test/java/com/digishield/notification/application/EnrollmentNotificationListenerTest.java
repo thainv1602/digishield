@@ -40,7 +40,7 @@ class EnrollmentNotificationListenerTest {
     private ArgumentCaptor<String> bodyCaptor;
 
     @Test
-    void on_whenEnrollmentAssigned_createsReminderForResolvedTenantAndUser() {
+    void onWhenEnrollmentAssignedCreatesReminderForResolvedTenantAndUser() {
         // Arrange
         UUID tenantId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID userId = UUID.randomUUID();

@@ -9,12 +9,4 @@
 
     <!-- Never check generated or build output. -->
     <suppress files="[\\/]build[\\/]" checks=".*"/>
-
-    <!-- Test methods are named unit_scenarioExpectedBehaviour, e.g.
-         email_routesToSesWhenAvailable. The underscore separates what is under
-         test from the scenario, which makes a failing test report readable at a
-         glance; camelCase throughout would run the two together. The convention
-         is deliberate and applied consistently, so exempt test sources from
-         MethodName rather than rename ~145 methods into something worse. -->
-    <suppress files="[\\/]src[\\/](test|integrationTest)[\\/]" checks="MethodName"/>
 </suppressions>

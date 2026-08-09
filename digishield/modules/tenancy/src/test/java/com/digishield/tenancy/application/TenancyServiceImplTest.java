@@ -83,7 +83,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_withAnAdminEmail_provisionsThatAdminInTheNewTenant() {
+    void createTenantWithAnAdminEmailProvisionsThatAdminInTheNewTenant() {
         authenticateAsSuperAdmin();
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
         com.digishield.tenancy.api.TenantAdminProvisioner provisioner =
@@ -99,7 +99,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_whenTheAdminCannotBeCreated_takesTheTenantWithIt() {
+    void createTenantWhenTheAdminCannotBeCreatedTakesTheTenantWithIt() {
         authenticateAsSuperAdmin();
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
         com.digishield.tenancy.api.TenantAdminProvisioner provisioner =
@@ -116,7 +116,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_withoutAnAdminEmail_createsNobody() {
+    void createTenantWithoutAnAdminEmailCreatesNobody() {
         authenticateAsSuperAdmin();
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -126,7 +126,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_persistsTenantInProvisioningStatus() {
+    void createTenantPersistsTenantInProvisioningStatus() {
         // Arrange
         authenticateAsSuperAdmin();
         CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "SILO", "eu-west-1", null);
@@ -155,7 +155,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_acceptsALowercaseTierFromTheWireContract() {
+    void createTenantAcceptsALowercaseTierFromTheWireContract() {
         // Arrange
         authenticateAsSuperAdmin();
         when(tenantRepository.save(any(Tenant.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -169,7 +169,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_whenTierOutsideTheEnum_isRejectedAsBadRequestAndNothingIsWritten() {
+    void createTenantWhenTierOutsideTheEnumIsRejectedAsBadRequestAndNothingIsWritten() {
         // Arrange: "basic" is not a tier — this used to surface as a 500.
         authenticateAsSuperAdmin();
         CreateTenantCommand command = new CreateTenantCommand("Acme Corp", "basic", "eu-west-1", null);
@@ -184,7 +184,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void createTenant_whenNameMissing_isRejectedAsBadRequestAndNothingIsWritten() {
+    void createTenantWhenNameMissingIsRejectedAsBadRequestAndNothingIsWritten() {
         // Arrange
         authenticateAsSuperAdmin();
         CreateTenantCommand command = new CreateTenantCommand("  ", "POOL", "eu-west-1", null);
@@ -197,7 +197,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void getFeatureFlags_mapsAllFlagsOfTenantToViews() {
+    void getFeatureFlagsMapsAllFlagsOfTenantToViews() {
         // Arrange
         UUID tenantId = TENANT_ID;
         FeatureFlag aiFlag = new FeatureFlag(UUID.randomUUID(), tenantId, "ai.assistant", true);
@@ -214,7 +214,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void isEnabled_whenFlagPresentAndEnabled_returnsTrue() {
+    void isEnabledWhenFlagPresentAndEnabledReturnsTrue() {
         // Arrange
         UUID tenantId = TENANT_ID;
         FeatureFlag flag = new FeatureFlag(UUID.randomUUID(), tenantId, "ai.assistant", true);
@@ -226,7 +226,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void isEnabled_whenFlagPresentButDisabled_returnsFalse() {
+    void isEnabledWhenFlagPresentButDisabledReturnsFalse() {
         // Arrange
         UUID tenantId = TENANT_ID;
         FeatureFlag flag = new FeatureFlag(UUID.randomUUID(), tenantId, "sms.campaign", false);
@@ -238,7 +238,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void isEnabled_whenFlagMissing_returnsFalse() {
+    void isEnabledWhenFlagMissingReturnsFalse() {
         // Arrange
         UUID tenantId = TENANT_ID;
         when(featureFlagRepository.findByTenantIdAndKey(tenantId, "unknown"))
@@ -249,7 +249,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void getThresholds_whenNone_createsAndReturnsDefaults() {
+    void getThresholdsWhenNoneCreatesAndReturnsDefaults() {
         // Arrange
         when(businessThresholdsRepository.findByTenantId(TENANT_ID)).thenReturn(Optional.empty());
         when(businessThresholdsRepository.save(any(BusinessThresholds.class)))
@@ -266,7 +266,7 @@ class TenancyServiceImplTest {
     }
 
     @Test
-    void updateThresholds_overridesProvidedFieldsAndClamps() {
+    void updateThresholdsOverridesProvidedFieldsAndClamps() {
         // Arrange: existing row, patch only two fields (one out of range)
         BusinessThresholds existing = new BusinessThresholds(UUID.randomUUID(), TENANT_ID, 60, 70, 2);
         when(businessThresholdsRepository.findByTenantId(TENANT_ID)).thenReturn(Optional.of(existing));

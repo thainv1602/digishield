@@ -77,7 +77,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void generateTemplate_persistsClientOutputAsDraftAndReturnsView() {
+    void generateTemplatePersistsClientOutputAsDraftAndReturnsView() {
         // Arrange: the AI client produces the content; the service persists it
         when(aiClient.generate(TemplateChannel.EMAIL, "banking", "summer"))
                 .thenReturn(new GeneratedTemplate("[banking] Cảnh báo", "tmpl/email/banking",
@@ -100,7 +100,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void listTemplates_returnsTenantTemplatesAsLowercaseViews() {
+    void listTemplatesReturnsTenantTemplatesAsLowercaseViews() {
         // Arrange
         AiTemplate t = new AiTemplate(
                 UUID.randomUUID(), TENANT_ID, TemplateChannel.SMS, "Thông báo",
@@ -122,7 +122,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void createTemplate_persistsAuthoredDraftWithBodyAndCategory() {
+    void createTemplatePersistsAuthoredDraftWithBodyAndCategory() {
         // Arrange
         when(templateRepository.save(any(AiTemplate.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -152,7 +152,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void submitTemplate_movesDraftToApproved() {
+    void submitTemplateMovesDraftToApproved() {
         // Arrange
         UUID id = UUID.randomUUID();
         AiTemplate t = new AiTemplate(
@@ -170,7 +170,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void updateTemplate_appliesOnlyProvidedFields() {
+    void updateTemplateAppliesOnlyProvidedFields() {
         // Arrange
         UUID id = UUID.randomUUID();
         AiTemplate t = new AiTemplate(
@@ -191,7 +191,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void deleteTemplate_removesTenantOwnedTemplate() {
+    void deleteTemplateRemovesTenantOwnedTemplate() {
         // Arrange
         UUID id = UUID.randomUUID();
         AiTemplate t = new AiTemplate(
@@ -207,7 +207,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void classify_delegatesToAiClient() {
+    void classifyDelegatesToAiClient() {
         // Arrange
         when(aiClient.classify("x")).thenReturn(new com.digishield.ai.api.dto.ClassificationView("threat", 0.8, "r"));
 
@@ -216,7 +216,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void runOrchestration_recordsRunningRunAndPublishesRequest() {
+    void runOrchestrationRecordsRunningRunAndPublishesRequest() {
         // Arrange
         UUID scopeId = UUID.randomUUID();
         ArgumentCaptor<AidaRun> runCaptor = ArgumentCaptor.forClass(AidaRun.class);
@@ -254,7 +254,7 @@ class AiServiceImplTest {
     }
 
     @Test
-    void listRuns_returnsTenantRunsAsViews() {
+    void listRunsReturnsTenantRunsAsViews() {
         // Arrange
         AidaRun run = new AidaRun(
                 UUID.randomUUID(), TENANT_ID, "Phòng Kế toán", null, "success",

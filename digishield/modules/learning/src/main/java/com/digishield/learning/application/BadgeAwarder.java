@@ -33,7 +33,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class BadgeAwarder {
 
-    private static final Logger log = LoggerFactory.getLogger(BadgeAwarder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BadgeAwarder.class);
 
     private final BadgeCatalogRepository catalogRepository;
     private final BadgeRepository badgeRepository;
@@ -81,7 +81,7 @@ public class BadgeAwarder {
             badgeRepository.save(new Badge(UUID.randomUUID(), tenantId, userId,
                     entry.getName(), entry.getDescription(), entry.getIconRef(),
                     true, Instant.now()));
-            log.info("Badge '{}' awarded to user {} (tenant {}): {} reached {}",
+            LOG.info("Badge '{}' awarded to user {} (tenant {}): {} reached {}",
                     entry.getName(), userId, tenantId, entry.getCriteriaType(), measured);
         }
     }

@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 class RemediationEnrollmentListener {
 
-    private static final Logger log = LoggerFactory.getLogger(RemediationEnrollmentListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RemediationEnrollmentListener.class);
 
     private final LearningService learningService;
 
@@ -35,7 +35,7 @@ class RemediationEnrollmentListener {
         // catalogue, and these events are persistent and retried, so one at-risk
         // user would fail repeatedly instead of once.
         if (learningService.listCourses(event.tenantId()).isEmpty()) {
-            log.warn("No course in the catalogue for tenant {}; remediation not assigned to user {}",
+            LOG.warn("No course in the catalogue for tenant {}; remediation not assigned to user {}",
                     event.tenantId(), event.userId());
             return;
         }

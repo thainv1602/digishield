@@ -54,7 +54,7 @@ class AidaOrchestrationCompletedListenerTest {
     }
 
     @Test
-    void on_finalisesRunWithSuccessAndRealCounts() {
+    void onFinalisesRunWithSuccessAndRealCounts() {
         // Arrange: a run left in "running" by the trigger.
         UUID tenantId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
@@ -74,7 +74,7 @@ class AidaOrchestrationCompletedListenerTest {
     }
 
     @Test
-    void on_englishLocale_writesEnglishSummary() {
+    void onEnglishLocaleWritesEnglishSummary() {
         // Arrange: the run was triggered by an English request, carried on the event.
         UUID tenantId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
@@ -95,7 +95,7 @@ class AidaOrchestrationCompletedListenerTest {
     }
 
     @Test
-    void on_zeroUsers_writesNoUsersSummary() {
+    void onZeroUsersWritesNoUsersSummary() {
         UUID tenantId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
         AidaRun run = new AidaRun(runId, tenantId, "org", null, "running", "…", Instant.now());
@@ -108,7 +108,7 @@ class AidaOrchestrationCompletedListenerTest {
     }
 
     @Test
-    void on_unknownRun_doesNothing() {
+    void onUnknownRunDoesNothing() {
         UUID runId = UUID.randomUUID();
         when(aidaRunRepository.findById(runId)).thenReturn(Optional.empty());
 

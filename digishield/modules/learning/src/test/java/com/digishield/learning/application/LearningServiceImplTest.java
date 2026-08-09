@@ -81,7 +81,7 @@ class LearningServiceImplTest {
     private ArgumentCaptor<EnrollmentAssignedEvent> eventCaptor;
 
     @Test
-    void completeQuiz_issuesACertificateOnPassing() {
+    void completeQuizIssuesACertificateOnPassing() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
@@ -111,7 +111,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_issuesNoCertificateOnFailing() {
+    void completeQuizIssuesNoCertificateOnFailing() {
         UUID enrollmentId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, UUID.randomUUID(),
                 UUID.randomUUID(), EnrollmentStatus.IN_PROGRESS, null);
@@ -124,7 +124,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_doesNotMintASecondCertificateForTheSameCourse() {
+    void completeQuizDoesNotMintASecondCertificateForTheSameCourse() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
@@ -146,7 +146,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void autoEnroll_sendsARepeatClickerUpALevel() {
+    void autoEnrollSendsARepeatClickerUpALevel() {
         UUID userId = UUID.randomUUID();
         Course basic = new Course(UUID.randomUUID(), TENANT_ID, "Nhập môn", CourseLevel.BASIC, "vi");
         Course harder = new Course(UUID.randomUUID(), TENANT_ID, "Nâng cao", CourseLevel.INTERMEDIATE, "vi");
@@ -166,7 +166,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void autoEnroll_stopsAtTheHardestCourseTheTenantHas() {
+    void autoEnrollStopsAtTheHardestCourseTheTenantHas() {
         UUID userId = UUID.randomUUID();
         Course basic = new Course(UUID.randomUUID(), TENANT_ID, "Nhập môn", CourseLevel.BASIC, "vi");
         Course harder = new Course(UUID.randomUUID(), TENANT_ID, "Nâng cao", CourseLevel.INTERMEDIATE, "vi");
@@ -185,7 +185,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void assign_reopensACourseTheyHadAlreadyFinished() {
+    void assignReopensACourseTheyHadAlreadyFinished() {
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
         Enrollment finished = new Enrollment(UUID.randomUUID(), TENANT_ID, userId, courseId,
@@ -210,7 +210,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_paysOnceForCompletionAndOnceForPassing() {
+    void completeQuizPaysOnceForCompletionAndOnceForPassing() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
@@ -227,7 +227,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_paysNothingForARetakeOfAFinishedCourse() {
+    void completeQuizPaysNothingForARetakeOfAFinishedCourse() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
@@ -242,7 +242,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_belowThePassMarkIsNotFinishing() {
+    void completeQuizBelowThePassMarkIsNotFinishing() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
@@ -260,7 +260,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_usesTheTenantsConfiguredPassMarkNotAFixedOne() {
+    void completeQuizUsesTheTenantsConfiguredPassMarkNotAFixedOne() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
@@ -276,7 +276,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void completeQuiz_failingAResitDoesNotUndoAnEarlierPass() {
+    void completeQuizFailingAResitDoesNotUndoAnEarlierPass() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
@@ -297,7 +297,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void updateProgress_paysOnlyOnTheTransitionToComplete() {
+    void updateProgressPaysOnlyOnTheTransitionToComplete() {
         UUID enrollmentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         Enrollment enrollment = new Enrollment(enrollmentId, TENANT_ID, userId, UUID.randomUUID(),
@@ -313,7 +313,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void createCourse_derivesLessonCountRatherThanTrustingTheRequest() {
+    void createCourseDerivesLessonCountRatherThanTrustingTheRequest() {
         when(courseRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of());
         when(courseRepository.save(any(Course.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -329,7 +329,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void createCourse_rejectsABlankTitle() {
+    void createCourseRejectsABlankTitle() {
         org.assertj.core.api.Assertions.assertThatThrownBy(() ->
                         learningService.createCourse(TENANT_ID, new com.digishield.learning.api.CourseView(
                                 null, null, "   ", "basic", "vi", 30, null, null, null)))
@@ -338,7 +338,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void deleteCourse_refusesWhileAnyoneIsEnrolled() {
+    void deleteCourseRefusesWhileAnyoneIsEnrolled() {
         UUID courseId = UUID.randomUUID();
         Course course = new Course(courseId, TENANT_ID, "Khoá cũ", CourseLevel.BASIC, "vi");
         when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId)).thenReturn(Optional.of(course));
@@ -355,7 +355,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void deleteCourse_removesItsLessonsWhenNobodyIsEnrolled() {
+    void deleteCourseRemovesItsLessonsWhenNobodyIsEnrolled() {
         UUID courseId = UUID.randomUUID();
         Course course = new Course(courseId, TENANT_ID, "Khoá rỗng", CourseLevel.BASIC, "vi");
         when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId)).thenReturn(Optional.of(course));
@@ -368,7 +368,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void createLesson_recountsTheCourseFromTheLessonsThatExist() {
+    void createLessonRecountsTheCourseFromTheLessonsThatExist() {
         UUID courseId = UUID.randomUUID();
         Course course = new Course(courseId, TENANT_ID, "Khoá", CourseLevel.BASIC, "vi", 30, 0, 1);
         when(courseRepository.findByTenantIdAndId(TENANT_ID, courseId)).thenReturn(Optional.of(course));
@@ -385,7 +385,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void assign_whenNotYetEnrolled_persistsEnrollmentAndPublishesEvent() {
+    void assignWhenNotYetEnrolledPersistsEnrollmentAndPublishesEvent() {
         // Arrange
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
@@ -419,7 +419,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void assign_whenAlreadyEnrolled_doesNotSaveButStillPublishesEvent() {
+    void assignWhenAlreadyEnrolledDoesNotSaveButStillPublishesEvent() {
         // Arrange
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
@@ -440,7 +440,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void autoEnroll_assignsTenantsFirstCourseAndPublishesEvent() {
+    void autoEnrollAssignsTenantsFirstCourseAndPublishesEvent() {
         // Arrange
         UUID userId = UUID.randomUUID();
         UUID courseId = UUID.randomUUID();
@@ -466,7 +466,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void autoEnroll_whenNoCourseForTenant_throwsIllegalState() {
+    void autoEnrollWhenNoCourseForTenantThrowsIllegalState() {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(courseRepository.findByTenantIdOrderBySortOrderAsc(TENANT_ID))
@@ -482,7 +482,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void listPointRules_mapsEntitiesToViews() {
+    void listPointRulesMapsEntitiesToViews() {
         // Arrange
         PointRule report = new PointRule(
                 UUID.randomUUID(), TENANT_ID, "report_confirmed", "Báo cáo email lừa đảo đúng", 50);
@@ -523,7 +523,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void listCompliancePolicies_reportsEachCoursesRealCompletion() {
+    void listCompliancePoliciesReportsEachCoursesRealCompletion() {
         givenEnrollments();
         when(compliancePolicyRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
                 policy(COURSE_A), policy(COURSE_B)));
@@ -536,7 +536,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void policyWithoutACourse_fallsBackToOverallCompletion() {
+    void policyWithoutACourseFallsBackToOverallCompletion() {
         givenEnrollments();
         when(compliancePolicyRepository.findByTenantId(TENANT_ID))
                 .thenReturn(java.util.List.of(policy(null)));
@@ -548,7 +548,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void policyWhoseCourseNobodyIsEnrolledIn_readsZeroRatherThanInventingANumber() {
+    void policyWhoseCourseNobodyIsEnrolledInReadsZeroRatherThanInventingANumber() {
         givenEnrollments();
         UUID unusedCourse = UUID.fromString("cccccccc-0000-0000-0000-000000000003");
         when(compliancePolicyRepository.findByTenantId(TENANT_ID))
@@ -559,7 +559,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void getComplianceStatus_countsCompliantPeopleIndividually() {
+    void getComplianceStatusCountsCompliantPeopleIndividually() {
         givenEnrollments();
         when(compliancePolicyRepository.findByTenantId(TENANT_ID)).thenReturn(java.util.List.of(
                 policy(COURSE_A), policy(COURSE_B)));
@@ -579,7 +579,7 @@ class LearningServiceImplTest {
     }
 
     @Test
-    void getComplianceStatus_withNoPoliciesIsAllZeroes() {
+    void getComplianceStatusWithNoPoliciesIsAllZeroes() {
         when(compliancePolicyRepository.findByTenantId(TENANT_ID))
                 .thenReturn(java.util.List.of());
 

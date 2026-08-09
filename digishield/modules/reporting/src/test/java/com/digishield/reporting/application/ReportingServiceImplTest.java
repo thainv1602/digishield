@@ -80,7 +80,7 @@ class ReportingServiceImplTest {
     }
 
     @Test
-    void submit_persistsReportWithSubmittedStatusForCurrentTenant() {
+    void submitPersistsReportWithSubmittedStatusForCurrentTenant() {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -104,7 +104,7 @@ class ReportingServiceImplTest {
     }
 
     @Test
-    void triage_whenConfirmingThreat_marksConfirmedAndPublishesEvent() {
+    void triageWhenConfirmingThreatMarksConfirmedAndPublishesEvent() {
         // Arrange
         UUID reportId = UUID.randomUUID();
         UUID reporterId = UUID.randomUUID();
@@ -129,7 +129,7 @@ class ReportingServiceImplTest {
     }
 
     @Test
-    void triage_whenNotConfirmingThreat_dismissesAndDoesNotPublish() {
+    void triageWhenNotConfirmingThreatDismissesAndDoesNotPublish() {
         // Arrange
         UUID reportId = UUID.randomUUID();
         PhishingReport report = new PhishingReport(
@@ -148,7 +148,7 @@ class ReportingServiceImplTest {
     }
 
     @Test
-    void triage_whenReportNotFound_throwsAndPublishesNothing() {
+    void triageWhenReportNotFoundThrowsAndPublishesNothing() {
         // Arrange
         UUID missingId = UUID.randomUUID();
         when(reportRepository.findById(missingId)).thenReturn(Optional.empty());
@@ -163,7 +163,7 @@ class ReportingServiceImplTest {
     }
 
     @Test
-    void triage_whenReportBelongsToAnotherTenant_isRejectedAndNothingIsWritten() {
+    void triageWhenReportBelongsToAnotherTenantIsRejectedAndNothingIsWritten() {
         // Arrange: a report owned by a DIFFERENT tenant than the caller's context
         UUID reportId = UUID.randomUUID();
         UUID otherTenant = UUID.fromString("22222222-2222-2222-2222-222222222222");

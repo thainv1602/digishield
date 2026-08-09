@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 public class RlsTenantAspect
         implements org.springframework.context.ApplicationListener<org.springframework.context.event.ContextRefreshedEvent> {
 
-    private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RlsTenantAspect.class);
+    private static final org.slf4j.Logger LOG = org.slf4j.LoggerFactory.getLogger(RlsTenantAspect.class);
     /** Matches [a-z_][a-z0-9_]* — guards the un-parameterisable SET ROLE identifier. */
     private static final java.util.regex.Pattern SAFE_ROLE = java.util.regex.Pattern.compile("[a-z_][a-z0-9_]*");
     private static volatile boolean contextRefreshed = false;
@@ -102,7 +102,7 @@ public class RlsTenantAspect
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException("Tenant context is not a UUID", e);
         }
-        LOGGER.debug("Setting tenant_id GUC to: {}", tenant);
+        LOG.debug("Setting tenant_id GUC to: {}", tenant);
         // Use set_config to avoid parameterization issues with SET LOCAL.
         // The 3rd parameter = true => local scope (only within the current transaction).
         jdbcTemplate.queryForObject(

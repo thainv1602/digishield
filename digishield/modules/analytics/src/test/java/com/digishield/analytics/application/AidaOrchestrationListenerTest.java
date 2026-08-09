@@ -43,7 +43,7 @@ class AidaOrchestrationListenerTest {
     }
 
     @Test
-    void on_orgScope_recomputesEveryUserAndEnrollsOnlyAtRisk() {
+    void onOrgScopeRecomputesEveryUserAndEnrollsOnlyAtRisk() {
         // Arrange: two users in the tenant — one at-risk, one not.
         UUID tenantId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();
@@ -68,7 +68,7 @@ class AidaOrchestrationListenerTest {
     }
 
     @Test
-    void on_userScope_recomputesOnlyThatUser() {
+    void onUserScopeRecomputesOnlyThatUser() {
         // Arrange
         UUID tenantId = UUID.randomUUID();
         UUID runId = UUID.randomUUID();

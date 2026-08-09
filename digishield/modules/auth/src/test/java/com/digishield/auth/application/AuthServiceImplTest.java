@@ -96,7 +96,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenNoToken_fallsBackToFirstUserOfTenant() {
+    void currentUserWhenNoTokenFallsBackToFirstUserOfTenant() {
         // Arrange
         AppUser otherTenantUser = new AppUser(
                 UUID.randomUUID(), OTHER_TENANT_ID, "other@x.com", Role.LEARNER, UserStatus.ACTIVE);
@@ -117,7 +117,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenTokenPresent_resolvesTheCallerNotWhoeverIsFirst() {
+    void currentUserWhenTokenPresentResolvesTheCallerNotWhoeverIsFirst() {
         UUID callerId = UUID.randomUUID();
         AppUser caller = new AppUser(
                 callerId, TENANT_ID, "learner@x.com", Role.LEARNER, UserStatus.ACTIVE);
@@ -135,7 +135,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenSubjectIsNotADirectoryId_fallsBackToTheEmailClaim() {
+    void currentUserWhenSubjectIsNotADirectoryIdFallsBackToTheEmailClaim() {
         UUID subject = UUID.randomUUID();
         UUID rowId = UUID.randomUUID();
         AppUser caller = new AppUser(
@@ -154,7 +154,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenTokenIdentifiesNobody_returnsEmpty() {
+    void currentUserWhenTokenIdentifiesNobodyReturnsEmpty() {
         UUID subject = UUID.randomUUID();
         when(userRepository.findByTenantIdAndId(TENANT_ID, subject)).thenReturn(Optional.empty());
         authenticateAs(subject, "stranger@x.com");
@@ -168,7 +168,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenTenantNotSet_returnsEmpty() {
+    void currentUserWhenTenantNotSetReturnsEmpty() {
         // Arrange
         TenantContext.clear();
 
@@ -180,7 +180,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void currentUser_whenNoUserForTenant_returnsEmpty() {
+    void currentUserWhenNoUserForTenantReturnsEmpty() {
         // Arrange
         AppUser otherTenantUser = new AppUser(
                 UUID.randomUUID(), OTHER_TENANT_ID, "other@x.com", Role.LEARNER, UserStatus.ACTIVE);
@@ -194,7 +194,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void findById_whenUserExists_returnsViewScopedToTenant() {
+    void findByIdWhenUserExistsReturnsViewScopedToTenant() {
         // Arrange
         UUID userId = UUID.randomUUID();
         AppUser user = new AppUser(userId, TENANT_ID, "u@x.com", Role.MANAGER, UserStatus.ACTIVE);
@@ -214,7 +214,7 @@ class AuthServiceImplTest {
     // change it. These now pin the token as the source.
 
     @Test
-    void hasRole_matchesAGrantedAuthorityCaseInsensitively() {
+    void hasRoleMatchesAGrantedAuthorityCaseInsensitively() {
         actingAs("ROLE_ORG_ADMIN");
 
         assertThat(authService.hasRole("org_admin")).isTrue();
@@ -222,14 +222,14 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void hasRole_isFalseForARoleTheTokenDoesNotCarry() {
+    void hasRoleIsFalseForARoleTheTokenDoesNotCarry() {
         actingAs("ROLE_LEARNER");
 
         assertThat(authService.hasRole("ORG_ADMIN")).isFalse();
     }
 
     @Test
-    void hasRole_ignoresTheDatabaseRowEntirely() {
+    void hasRoleIgnoresTheDatabaseRowEntirely() {
         // The row says super admin; the token says learner. The token wins.
         lenient().when(userRepository.findAll()).thenReturn(List.of(
                 new AppUser(UUID.randomUUID(), TENANT_ID, "x@x.com", Role.SUPER_ADMIN, UserStatus.ACTIVE)));
@@ -239,7 +239,7 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void hasRole_whenUnauthenticated_returnsFalse() {
+    void hasRoleWhenUnauthenticatedReturnsFalse() {
         SecurityContextHolder.clearContext();
 
         assertThat(authService.hasRole("ANY")).isFalse();
