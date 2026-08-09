@@ -134,12 +134,88 @@ describe('downloadCsv', () => {
     expect(revoke).toHaveBeenCalledWith(click.href);
   });
 
-  it('does not neutralise a leading = (formula injection is not handled here)', () => {
-    downloadCsv('x.csv', ['subject'], [['=HYPERLINK("http://evil","click")']]);
+});
 
-    // Documenting current behaviour, not endorsing it. The cell contains a
-    // quote, so it is quoted for CSV — which is correct RFC-4180 and still a
-    // formula to a spreadsheet. See the PR discussion.
-    expect(written()).toBe('subject\n"=HYPERLINK(""http://evil"",""click"")"');
+/**
+ * CSV quoting is not formula escaping — a quoted cell is still evaluated when
+ * the file is opened. These rows carry user-supplied text, so a leading `=` in
+ * a display name would run on the machine of whoever opens the export.
+ */
+describe('downloadCsv · formula injection', () => {
+  let payloads: string[] = [];
+  const RealBlob = globalThis.Blob;
+
+  const written = (): string => {
+    const last = payloads[payloads.length - 1];
+    if (last === undefined) throw new Error('the export wrote nothing');
+    return last.slice(BOM.length);
+  };
+
+  /** The single data cell of a one-column, one-row export. */
+  const cell = (value: string | number): string => {
+    downloadCsv('x.csv', ['h'], [[value]]);
+    return written().split('\n')[1] ?? '';
+  };
+
+  beforeEach(() => {
+    payloads = [];
+    class CapturingBlob {
+      constructor(parts: unknown[]) {
+        payloads.push(parts.map(String).join(''));
+      }
+    }
+    globalThis.Blob = CapturingBlob as unknown as typeof Blob;
+    Object.defineProperty(URL, 'createObjectURL', { value: () => 'blob:mock', configurable: true });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true });
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    globalThis.Blob = RealBlob;
+    vi.restoreAllMocks();
+  });
+
+  it.each(['=', '+', '@', '\t', '\r'])('neutralises a cell starting with %j', (lead) => {
+    expect(cell(`${lead}cmd|'/c calc'!A0`)).toContain(`'${lead}`);
+  });
+
+  it('neutralises a formula that also needs CSV quoting', () => {
+    // The apostrophe goes inside the quotes, or the quoting would strip it.
+    expect(cell('=HYPERLINK("http://evil","click")')).toBe(
+      '"\'=HYPERLINK(""http://evil"",""click"")"',
+    );
+  });
+
+  it('neutralises a leading dash that is not a number', () => {
+    expect(cell('-1+cmd')).toBe("'-1+cmd");
+  });
+
+  it('leaves a negative number alone', () => {
+    // Guarding this would turn a score into text and break sorting downstream.
+    expect(cell('-5')).toBe('-5');
+    expect(cell('-12.5')).toBe('-12.5');
+  });
+
+  it('never guards a numeric value', () => {
+    expect(cell(-5)).toBe('-5');
+    expect(cell(0)).toBe('0');
+  });
+
+  it('guards a leading + even though it parses as a number', () => {
+    // Vietnamese phone numbers arrive as "+8490…". Excel would otherwise treat
+    // the cell as a formula and display it with the + silently dropped.
+    expect(cell('+84901234567')).toBe("'+84901234567");
+  });
+
+  it('leaves ordinary text untouched', () => {
+    expect(cell('Nguyễn Văn A')).toBe('Nguyễn Văn A');
+    expect(cell('a=b')).toBe('a=b');
+    expect(cell('')).toBe('');
+  });
+
+  it('guards a dangerous header too', () => {
+    downloadCsv('x.csv', ['=cmd'], [['ok']]);
+
+    expect(written().split('\n')[0]).toBe("'=cmd");
   });
 });
