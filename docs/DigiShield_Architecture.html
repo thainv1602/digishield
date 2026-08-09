@@ -3,969 +3,165 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DigiShield — Architecture Diagrams</title>
-
+<title>DigiShield — Architecture (summary)</title>
 <style>
-  :root {
-    --ground:      #E8ECF1;
-    --surface:     #FFFFFF;
-    --surface-2:   #F2F5F8;
-    --ink:         #141A21;
-    --muted:       #5D6B7A;
-    --line:        #C3CEDA;
-    --line-soft:   #D8E0E8;
-
-    --sync:        #16688B;
-    --evt:         #B0521A;
-    --bnd:         #66499B;
-    --sync-tint:   #E1EEF4;
-    --evt-tint:    #F7EAE0;
-    --bnd-tint:    #ECE7F6;
-
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
-    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-
-    --measure: 66ch;
+  :root{
+    --ground:#E8ECF1;--surface:#FFFFFF;--surface-2:#F2F5F8;
+    --ink:#141A21;--muted:#5D6B7A;--line:#C3CEDA;--line-soft:#D8E0E8;
+    --sync:#16688B;--evt:#B0521A;--bnd:#66499B;
+    --sync-tint:#E1EEF4;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --measure:68ch;
   }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --ground:    #0E1319;
-      --surface:   #161D25;
-      --surface-2: #1C242D;
-      --ink:       #DBE3EB;
-      --muted:     #8896A5;
-      --line:      #2C3742;
-      --line-soft: #232C35;
-
-      --sync:      #5CB6D8;
-      --evt:       #E2925C;
-      --bnd:       #AB8CDC;
-      --sync-tint: #14313D;
-      --evt-tint:  #33271D;
-      --bnd-tint:  #241E34;
-    }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --ground:#0E1319;--surface:#161D25;--surface-2:#1C242D;
+    --ink:#DBE3EB;--muted:#8896A5;--line:#2C3742;--line-soft:#232C35;
+    --sync:#5CB6D8;--evt:#E2925C;--bnd:#AB8CDC;--sync-tint:#14313D;
+  }}
+  :root[data-theme="dark"]{
+    --ground:#0E1319;--surface:#161D25;--surface-2:#1C242D;
+    --ink:#DBE3EB;--muted:#8896A5;--line:#2C3742;--line-soft:#232C35;
+    --sync:#5CB6D8;--evt:#E2925C;--bnd:#AB8CDC;--sync-tint:#14313D;
   }
-
-  :root[data-theme="dark"] {
-    --ground:    #0E1319;
-    --surface:   #161D25;
-    --surface-2: #1C242D;
-    --ink:       #DBE3EB;
-    --muted:     #8896A5;
-    --line:      #2C3742;
-    --line-soft: #232C35;
-
-    --sync:      #5CB6D8;
-    --evt:       #E2925C;
-    --bnd:       #AB8CDC;
-    --sync-tint: #14313D;
-    --evt-tint:  #33271D;
-    --bnd-tint:  #241E34;
-  }
-
-  * { box-sizing: border-box; }
-
-  body {
-    background: var(--ground);
-    color: var(--ink);
-    font-family: var(--sans);
-    font-size: 16px;
-    line-height: 1.65;
-    margin: 0;
-    padding: 0 20px 100px;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  .page {
-    max-width: 1080px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    gap: 56px;
-  }
-
-  /* ── masthead ─────────────────────────────────────────── */
-
-  header.mast {
-    padding-top: 72px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    border-bottom: 1px solid var(--line);
-    padding-bottom: 40px;
-  }
-
-  .eyebrow {
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin: 0;
-  }
-
-  h1 {
-    font-size: clamp(34px, 5.2vw, 54px);
-    line-height: 1.04;
-    letter-spacing: -0.032em;
-    font-weight: 700;
-    margin: 0;
-    text-wrap: balance;
-  }
-
-  .standfirst {
-    max-width: var(--measure);
-    font-size: 18px;
-    color: var(--muted);
-    margin: 0;
-  }
-
-  .factbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 28px;
-    font-family: var(--mono);
-    font-size: 11.5px;
-    color: var(--muted);
-    margin-top: 6px;
-  }
-  .factbar b { color: var(--ink); font-weight: 600; }
-
-  /* ── sections ─────────────────────────────────────────── */
-
-  section {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .shead {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  h2 {
-    font-size: clamp(22px, 2.6vw, 29px);
-    line-height: 1.2;
-    letter-spacing: -0.022em;
-    font-weight: 650;
-    margin: 0;
-    text-wrap: balance;
-  }
-
-  p { margin: 0; max-width: var(--measure); }
-  p + p { margin-top: 12px; }
-
-  code {
-    font-family: var(--mono);
-    font-size: 0.88em;
-    background: var(--surface-2);
-    border: 1px solid var(--line-soft);
-    border-radius: 3px;
-    padding: 0.1em 0.34em;
-  }
-
-  strong { font-weight: 640; }
-
-  /* ── figures ──────────────────────────────────────────── */
-
-  figure {
-    margin: 0;
-    background: var(--surface);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    overflow: hidden;
-    background-image:
-      repeating-linear-gradient(to right,  var(--line-soft) 0 1px, transparent 1px 32px),
-      repeating-linear-gradient(to bottom, var(--line-soft) 0 1px, transparent 1px 32px);
-    background-position: -1px -1px;
-  }
-
-  .figbody { overflow-x: auto; padding: 18px; }
-
-  figure svg { display: block; width: 100%; min-width: 620px; height: auto; }
-
-  figcaption {
-    font-family: var(--mono);
-    font-size: 11.5px;
-    line-height: 1.55;
-    color: var(--muted);
-    border-top: 1px solid var(--line-soft);
-    background: var(--surface-2);
-    padding: 12px 18px;
-  }
-
-  /* ── shared svg vocabulary ────────────────────────────── */
-
-  .dg { color: var(--ink); }
-  .dg text { font-family: var(--mono); fill: var(--ink); }
-  .n  { fill: var(--surface);   stroke: var(--line); stroke-width: 1.25; }
-  .n2 { fill: var(--surface-2); stroke: var(--line); stroke-width: 1.25; }
-  .grp{ fill: none; stroke: var(--line); stroke-width: 1.25; stroke-dasharray: 4 5; }
-  .hS { fill: var(--sync-tint); stroke: var(--sync); stroke-width: 1.5; }
-  .hE { fill: var(--evt-tint);  stroke: var(--evt);  stroke-width: 1.5; }
-  .hB { fill: var(--bnd-tint);  stroke: none; }
-  .dE { fill: var(--surface); stroke: var(--evt); stroke-width: 1.25; stroke-dasharray: 5 4; }
-
-  .aS { fill: none; stroke: var(--sync); stroke-width: 1.6; }
-  .aE { fill: none; stroke: var(--evt);  stroke-width: 1.6; stroke-dasharray: 6 4; }
-  .aX { fill: none; stroke: var(--evt);  stroke-width: 1.5; stroke-dasharray: 3 3; }
-  .aM { fill: none; stroke: var(--muted); stroke-width: 1.2; }
-  .mS { fill: var(--sync); }
-  .mE { fill: var(--evt); }
-
-  .tM { fill: var(--muted); }
-  .tS { fill: var(--sync); }
-  .tE { fill: var(--evt); }
-  .tB { fill: var(--bnd); }
-  .bold { font-weight: 600; }
-  .track { letter-spacing: 0.14em; }
-
-  /* ── legend ───────────────────────────────────────────── */
-
-  .legend {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-    gap: 0;
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    background: var(--surface);
-  }
-  .legend div {
-    padding: 14px 16px;
-    border-right: 1px solid var(--line-soft);
-    border-bottom: 1px solid var(--line-soft);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-  .legend div:last-child { border-right: none; }
-  .legend b {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-  }
-  .legend span { font-size: 13px; color: var(--muted); line-height: 1.45; }
-
-  /* ── table ────────────────────────────────────────────── */
-
-  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 4px; background: var(--surface); }
-  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
-  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
-  th {
-    font-family: var(--mono);
-    font-size: 10.5px;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: var(--muted);
-    font-weight: 600;
-    background: var(--surface-2);
-  }
-  td:first-child { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
-  tbody tr:last-child td { border-bottom: none; }
-
-  /* ── closing note ─────────────────────────────────────── */
-
-  .closing {
-    border-left: 2px solid var(--sync);
-    padding: 4px 0 4px 20px;
-    font-size: 17px;
-    max-width: var(--measure);
-  }
-
-  @media (max-width: 640px) {
-    header.mast { padding-top: 44px; }
-    .page { gap: 44px; }
-  }
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;
+    line-height:1.65;margin:0;padding:0 20px 100px;-webkit-font-smoothing:antialiased}
+  .page{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+  header.mast{padding:64px 0 34px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:16px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);margin:0}
+  h1{font-size:clamp(30px,4.6vw,44px);line-height:1.06;letter-spacing:-.03em;font-weight:700;margin:0;text-wrap:balance}
+  .standfirst{max-width:var(--measure);font-size:18px;color:var(--muted);margin:0}
+  section{display:flex;flex-direction:column;gap:16px}
+  h2{font-size:clamp(20px,2.4vw,26px);line-height:1.2;letter-spacing:-.02em;font-weight:650;margin:0}
+  p,li{margin:0}p{max-width:var(--measure)}p+p{margin-top:10px}
+  ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;max-width:var(--measure)}
+  code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:1px solid var(--line-soft);border-radius:3px;padding:.08em .32em}
+  a{color:var(--sync)}
+  .cta{border:1px solid var(--sync);background:var(--sync-tint);border-radius:5px;padding:18px 20px;
+    display:flex;flex-direction:column;gap:8px;max-width:var(--measure)}
+  .cta b{font-size:17px}
+  .tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:520px;font-size:14px}
+  th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  th{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600;background:var(--surface-2);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.k{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+  .factbar{display:flex;flex-wrap:wrap;gap:10px 26px;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+  .factbar b{color:var(--ink);font-weight:600}
 </style>
 </head>
 <body>
-
 <div class="page">
 
 <header class="mast">
-  <p class="eyebrow">Architecture reference · 09.08.2026</p>
-  <h1>DigiShield — six architectural cuts</h1>
+  <p class="eyebrow">Architecture summary · 09.08.2026</p>
+  <h1>DigiShield — architecture at a glance</h1>
   <p class="standfirst">
-    A single Spring Boot application, split into nine modules whose boundaries are enforced by
-    tests, talking to each other through domain events. This document zooms in step by step,
-    from the system as a whole down to the path into production.
+    A short English summary. The diagrams, the extraction runbook and the serverless analysis
+    live in the Vietnamese page, which is the single source of truth.
   </p>
   <div class="factbar">
-    <span><b>Spring Boot</b> 4.1</span>
-    <span><b>Spring Modulith</b> 2.1</span>
-    <span><b>Java</b> 25</span>
-    <span><b>Gradle</b> 9.6.1 · multi-module</span>
     <span><b>9</b> business modules</span>
     <span><b>10</b> domain events</span>
+    <span><b>13</b> synchronous ports</span>
+    <span><b>34</b> adapters, all in <code>boot/app</code></span>
   </div>
 </header>
 
+<div class="cta">
+  <b>Full document: <a href="DigiShield_Architecture.vi.html">DigiShield_Architecture.vi.html</a></b>
+  <span>Nine diagrams — seven on the architecture as built, two on the evolution paths — plus the
+  rules to keep extraction cheap and a step-by-step runbook. In Vietnamese. Edit that file when the
+  architecture changes; this page carries no diagrams so the two cannot drift apart.</span>
+</div>
+
 <section>
-  <div class="shead">
-    <p class="eyebrow">How to read these</p>
-    <h2>Three kinds of stroke, shared across all six diagrams</h2>
-  </div>
-  <div class="legend">
-    <div>
-      <b class="tS">──────▶  solid, blue</b>
-      <span>Synchronous call: HTTP coming in, or one module calling an interface in another module's <code>api/</code>.</span>
-    </div>
-    <div>
-      <b class="tE">─ ─ ─ ▶  dashed, orange</b>
-      <span>Asynchronous event via <code>@ApplicationModuleListener</code> — transactional, persisted and retried.</span>
-    </div>
-    <div>
-      <b class="tE">─ ✗ ─  dashed with a cross</b>
-      <span>A <em>forbidden</em> path. Violating it turns <code>ModularityTests</code> red during <code>./gradlew test</code>.</span>
-    </div>
-    <div>
-      <b class="tB">■  violet band</b>
-      <span>Cross-cutting territory — tenancy and security, owned by no single module.</span>
-    </div>
-  </div>
+  <h2>The shape</h2>
+  <p>
+    A <b>modular monolith</b> on Spring Boot 4.1 and Spring Modulith 2.1, Java 25. One jar runs four
+    roles by Spring profile — <code>api</code>, <code>worker</code>, <code>scheduler</code>,
+    <code>flyway</code> — over PostgreSQL, Redis and RabbitMQ, with an optional outbound path to
+    Anthropic Claude that degrades to a deterministic stub.
+  </p>
+  <p>
+    Nine business modules live under <code>modules/</code>. They <b>may not import one another</b>:
+    each declares its allowed dependencies in <code>package-info.java</code>, and only
+    <code>contracts</code> and <code>shared</code> appear on those lists.
+    <code>ModularityTests</code> fails the build on any violation.
+  </p>
 </section>
 
-<!-- ══════════════════════ 01 ══════════════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Cut 01 · The whole system</p>
-    <h2>One artifact, four roles, three data stores</h2>
-  </div>
-  <p>
-    The React frontend lives in a sibling directory and calls <code>/api/v1</code>. Identity is
-    issued by Cognito; the backend only verifies the JWT. The same jar file runs four different
-    roles — which role it plays is decided by the Spring profile at startup, not by a different
-    build.
-  </p>
-
-  <figure>
-    <div class="figbody">
-      <svg class="dg" viewBox="0 0 900 440" role="img"
-           aria-label="The React frontend and Cognito on the left call into boot:app in the middle; boot:app is one jar running four profiles — api, worker, scheduler, flyway — and connects to PostgreSQL, Redis and RabbitMQ, plus an optional outbound path to Anthropic Claude.">
-        <defs>
-          <marker id="d1s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mS" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-          <marker id="d1e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mE" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-        </defs>
-
-        <rect class="n" x="24" y="90" width="160" height="62" rx="3"/>
-        <text x="104" y="116" font-size="12" text-anchor="middle" class="bold">Amazon Cognito</text>
-        <text x="104" y="134" font-size="9.5" text-anchor="middle" class="tM">JWT issuer</text>
-
-        <rect class="n" x="24" y="230" width="160" height="62" rx="3"/>
-        <text x="104" y="256" font-size="12" text-anchor="middle" class="bold">React + Vite</text>
-        <text x="104" y="274" font-size="9.5" text-anchor="middle" class="tM">../frontend</text>
-
-        <rect class="n2" x="254" y="40" width="300" height="360" rx="4"/>
-        <text x="274" y="68" font-size="13" class="bold tS">boot:app</text>
-        <text x="274" y="86" font-size="9.5" class="tM">one jar · Spring Boot 4.1 · Java 25</text>
-
-        <rect class="n" x="278" y="100" width="252" height="40" rx="3"/>
-        <text x="294" y="118" font-size="11" class="bold">api</text>
-        <text x="294" y="133" font-size="9" class="tM">controllers + actuator</text>
-
-        <rect class="n" x="278" y="148" width="252" height="40" rx="3"/>
-        <text x="294" y="166" font-size="11" class="bold">worker</text>
-        <text x="294" y="181" font-size="9" class="tM">handles background events</text>
-
-        <rect class="n" x="278" y="196" width="252" height="40" rx="3"/>
-        <text x="294" y="214" font-size="11" class="bold">scheduler</text>
-        <text x="294" y="229" font-size="9" class="tM">scheduled jobs</text>
-
-        <rect class="n" x="278" y="244" width="252" height="40" rx="3"/>
-        <text x="294" y="262" font-size="11" class="bold">flyway</text>
-        <text x="294" y="277" font-size="9" class="tM">migrations, separate job</text>
-
-        <line x1="278" y1="304" x2="530" y2="304" stroke="var(--line)" stroke-width="1"/>
-        <text x="278" y="324" font-size="9.5" class="tM">same image, different profile</text>
-        <text x="278" y="342" font-size="9.5" class="tM">inside: 9 Modulith modules</text>
-        <text x="278" y="360" font-size="9.5" class="tM">+ 5 shared libraries</text>
-
-        <rect class="n" x="640" y="60" width="236" height="62" rx="3"/>
-        <text x="758" y="86" font-size="12" text-anchor="middle" class="bold">PostgreSQL</text>
-        <text x="758" y="104" font-size="9.5" text-anchor="middle" class="tM">with row-level security</text>
-
-        <rect class="n" x="640" y="150" width="236" height="62" rx="3"/>
-        <text x="758" y="176" font-size="12" text-anchor="middle" class="bold">Redis</text>
-        <text x="758" y="194" font-size="9.5" text-anchor="middle" class="tM">cache</text>
-
-        <rect class="n" x="640" y="240" width="236" height="62" rx="3"/>
-        <text x="758" y="266" font-size="12" text-anchor="middle" class="bold">RabbitMQ</text>
-        <text x="758" y="284" font-size="9.5" text-anchor="middle" class="tM">message broker</text>
-
-        <rect class="dE" x="640" y="338" width="236" height="62" rx="3"/>
-        <text x="758" y="364" font-size="12" text-anchor="middle" class="bold tE">Anthropic Claude</text>
-        <text x="758" y="382" font-size="9.5" text-anchor="middle" class="tM">optional · falls back to stub</text>
-
-        <path class="aS" d="M104,230 V160" marker-end="url(#d1s)"/>
-        <text x="112" y="198" font-size="9" class="tM">OAuth</text>
-
-        <path class="aS" d="M184,121 H252" marker-end="url(#d1s)"/>
-        <text x="218" y="112" font-size="9" text-anchor="middle" class="tM">JWT tid</text>
-
-        <path class="aS" d="M184,261 H252" marker-end="url(#d1s)"/>
-        <text x="218" y="252" font-size="9" text-anchor="middle" class="tM">/api/v1</text>
-
-        <path class="aS" d="M554,91 H638" marker-end="url(#d1s)"/>
-        <text x="596" y="82" font-size="9" text-anchor="middle" class="tM">JDBC</text>
-
-        <path class="aS" d="M554,181 H638" marker-end="url(#d1s)"/>
-        <text x="596" y="172" font-size="9" text-anchor="middle" class="tM">cache</text>
-
-        <path class="aS" d="M554,271 H638" marker-end="url(#d1s)"/>
-        <text x="596" y="262" font-size="9" text-anchor="middle" class="tM">async</text>
-
-        <path class="aE" d="M554,369 H638" marker-end="url(#d1e)"/>
-        <text x="596" y="360" font-size="9" text-anchor="middle" class="tM">HTTPS</text>
-      </svg>
-    </div>
-    <figcaption>
-      One jar, four roles, selected by profile. Claude is an <em>optional</em> outbound path:
-      with <code>AI_CLAUDE_ENABLED</code> off, every AI endpoint still answers from
-      <code>StubAiClient</code> — and any Claude failure falls back to that same stub.
-    </figcaption>
-  </figure>
-</section>
-
-<!-- ══════════════════════ 02 ══════════════════════ -->
-<section>
-  <div class="shead">
-    <p class="eyebrow">Cut 02 · Boundaries</p>
-    <h2>The nine modules may not import each other</h2>
-  </div>
-  <p>
-    This is what separates DigiShield from an ordinary monolith. Each module declares in its
-    <code>package-info.java</code> exactly what it is allowed to depend on — and only
-    <code>contracts</code> and <code>shared</code> appear on those lists. No module names
-    another module.
-  </p>
-  <p>
-    The consequence: for two modules to talk, the path runs through <code>contracts</code> —
-    either an event or an interface. The boundary does not live in code review, it lives in
-    <code>ModularityTests</code>, which runs in seconds and needs no Docker.
-  </p>
-
-  <figure>
-    <div class="figbody">
-      <svg class="dg" viewBox="0 0 900 392" role="img"
-           aria-label="Nine business modules sit inside one frame; direct links between two modules are crossed out; the frame as a whole has arrows pointing down only to the contracts and shared bars.">
-        <defs>
-          <marker id="d2s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mS" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-        </defs>
-
-        <text x="876" y="36" font-size="10" text-anchor="end" class="tE">✗ = module calling module directly: forbidden</text>
-
-        <rect class="grp" x="24" y="52" width="852" height="204" rx="5"/>
-        <text x="44" y="76" font-size="11" class="bold">modules/</text>
-        <text x="112" y="76" font-size="9.5" class="tM">— 9 business modules, flat, no hierarchy</text>
-
-        <rect class="n" x="44" y="92" width="252" height="44" rx="3"/>
-        <text x="170" y="111" font-size="11.5" text-anchor="middle" class="bold">auth</text>
-        <text x="170" y="126" font-size="9" text-anchor="middle" class="tM">authentication · authorization</text>
-
-        <rect class="n" x="324" y="92" width="252" height="44" rx="3"/>
-        <text x="450" y="111" font-size="11.5" text-anchor="middle" class="bold">tenancy</text>
-        <text x="450" y="126" font-size="9" text-anchor="middle" class="tM">organisations · departments</text>
-
-        <rect class="n" x="604" y="92" width="252" height="44" rx="3"/>
-        <text x="730" y="111" font-size="11.5" text-anchor="middle" class="bold">learning</text>
-        <text x="730" y="126" font-size="9" text-anchor="middle" class="tM">courses · points · enrollment</text>
-
-        <rect class="n" x="44" y="148" width="252" height="44" rx="3"/>
-        <text x="170" y="167" font-size="11.5" text-anchor="middle" class="bold">simulation</text>
-        <text x="170" y="182" font-size="9" text-anchor="middle" class="tM">phishing simulation campaigns</text>
-
-        <rect class="n" x="324" y="148" width="252" height="44" rx="3"/>
-        <text x="450" y="167" font-size="11.5" text-anchor="middle" class="bold">reporting</text>
-        <text x="450" y="182" font-size="9" text-anchor="middle" class="tM">reports · data export</text>
-
-        <rect class="n" x="604" y="148" width="252" height="44" rx="3"/>
-        <text x="730" y="167" font-size="11.5" text-anchor="middle" class="bold">analytics</text>
-        <text x="730" y="182" font-size="9" text-anchor="middle" class="tM">risk score · AIDA</text>
-
-        <rect class="n" x="44" y="204" width="252" height="44" rx="3"/>
-        <text x="170" y="223" font-size="11.5" text-anchor="middle" class="bold">notification</text>
-        <text x="170" y="238" font-size="9" text-anchor="middle" class="tM">email · reminders</text>
-
-        <rect class="n" x="324" y="204" width="252" height="44" rx="3"/>
-        <text x="450" y="223" font-size="11.5" text-anchor="middle" class="bold">ai</text>
-        <text x="450" y="238" font-size="9" text-anchor="middle" class="tM">generate · classify · moderate</text>
-
-        <rect class="n" x="604" y="204" width="252" height="44" rx="3"/>
-        <text x="730" y="223" font-size="11.5" text-anchor="middle" class="bold">interception</text>
-        <text x="730" y="238" font-size="9" text-anchor="middle" class="tM">threat interception</text>
-
-        <path class="aX" d="M296,114 H324"/>
-        <circle cx="310" cy="114" r="9" fill="var(--surface)"/>
-        <path d="M305,109 L315,119 M315,109 L305,119" stroke="var(--evt)" stroke-width="1.8"/>
-
-        <path class="aX" d="M296,226 H324"/>
-        <circle cx="310" cy="226" r="9" fill="var(--surface)"/>
-        <path d="M305,221 L315,231 M315,221 L305,231" stroke="var(--evt)" stroke-width="1.8"/>
-
-        <path class="aX" d="M450,136 V148"/>
-        <circle cx="450" cy="142" r="9" fill="var(--surface)"/>
-        <path d="M445,137 L455,147 M455,137 L445,147" stroke="var(--evt)" stroke-width="1.8"/>
-
-        <path class="aS" d="M231,256 V298" marker-end="url(#d2s)"/>
-        <path class="aS" d="M669,256 V298" marker-end="url(#d2s)"/>
-        <text x="450" y="282" font-size="10" text-anchor="middle" class="tM">allowedDependencies — may only point down here</text>
-
-        <rect class="n2" x="24" y="300" width="414" height="68" rx="3"/>
-        <text x="44" y="324" font-size="12" class="bold tS">contracts</text>
-        <text x="44" y="342" font-size="9.5" class="tM">events — 10 shared domain events</text>
-        <text x="44" y="358" font-size="9.5" class="tM">dto — PageResponse and shared types</text>
-
-        <rect class="n2" x="462" y="300" width="414" height="68" rx="3"/>
-        <text x="482" y="324" font-size="12" class="bold tS">shared</text>
-        <text x="482" y="342" font-size="9.5" class="tM">tenant-context · messaging · persistence</text>
-        <text x="482" y="358" font-size="9.5" class="tM">security · observability</text>
-      </svg>
-    </div>
-    <figcaption>
-      The three crosses are only examples — the rule applies to <em>every</em> pair of modules.
-      The real dependency graph lives in
-      <code>@ApplicationModule(allowedDependencies = …)</code> in each
-      <code>package-info.java</code>, and it is verified rather than trusted.
-    </figcaption>
-  </figure>
-</section>
-
-<!-- ══════════════════════ 03 ══════════════════════ -->
-<section>
-  <div class="shead">
-    <p class="eyebrow">Cut 03 · The mechanism</p>
-    <h2>How one phishing click spreads</h2>
-  </div>
-  <p>
-    If you read only one diagram, read this one. It is the entire reason the event architecture
-    exists: <code>simulation</code> has no idea that <code>learning</code>,
-    <code>analytics</code> or <code>notification</code> exist. It records that something
-    happened and publishes it.
-  </p>
-  <p>
-    To add a new reaction to the click — opening a SOC ticket, say — you write one more
-    listener. Not a single line changes inside <code>simulation</code>.
-  </p>
-
-  <figure>
-    <div class="figbody">
-      <svg class="dg" viewBox="0 0 860 648" role="img"
-           aria-label="An employee clicks the phishing link; simulation writes a SimEvent and publishes UserClickedSimulationEvent; two listeners in learning and analytics receive it in parallel, each publishing a further event — EnrollmentAssignedEvent and RiskRecomputedEvent — the first leading to notification sending an email.">
-        <defs>
-          <marker id="d3s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mS" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-          <marker id="d3e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mE" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-        </defs>
-
-        <rect class="n" x="250" y="20" width="360" height="50" rx="3"/>
-        <text x="430" y="42" font-size="12.5" text-anchor="middle" class="bold">An employee clicks the fake link</text>
-        <text x="430" y="58" font-size="9" text-anchor="middle" class="tM">inside a simulation campaign email</text>
-
-        <path class="aS" d="M430,70 V108" marker-end="url(#d3s)"/>
-        <text x="442" y="93" font-size="9" class="tM">GET /api/v1/sim/track/{token}</text>
-
-        <rect class="n" x="210" y="110" width="440" height="92" rx="3"/>
-        <text x="230" y="132" font-size="11.5" class="bold tS">simulation</text>
-        <text x="230" y="152" font-size="10">SimTrackingController → SimulationServiceImpl</text>
-        <text x="230" y="170" font-size="9.5" class="tM">writes SimEvent(CLICK) to the database</text>
-        <text x="230" y="188" font-size="9.5" class="tM">then eventPublisher.publish(...) — job done</text>
-
-        <path class="aE" d="M430,202 V238" marker-end="url(#d3e)"/>
-        <text x="442" y="224" font-size="9" class="tM">publish</text>
-
-        <rect class="hE" x="230" y="240" width="400" height="48" rx="24"/>
-        <text x="430" y="262" font-size="12" text-anchor="middle" class="bold tE">UserClickedSimulationEvent</text>
-        <text x="430" y="278" font-size="9" text-anchor="middle" class="tM">contracts :: events</text>
-
-        <path class="aE" d="M430,288 V306"/>
-        <circle cx="430" cy="306" r="3" fill="var(--evt)"/>
-        <path class="aE" d="M430,306 H150 V334" marker-end="url(#d3e)"/>
-        <path class="aE" d="M430,306 H710 V334" marker-end="url(#d3e)"/>
-        <text x="430" y="324" font-size="9" text-anchor="middle" class="tM">@ApplicationModuleListener — parallel, transactional, retried</text>
-
-        <rect class="n" x="30" y="336" width="240" height="96" rx="3"/>
-        <text x="48" y="358" font-size="11.5" class="bold tS">learning</text>
-        <text x="48" y="378" font-size="10">SimulationClickListener</text>
-        <text x="48" y="396" font-size="9.5" class="tM">deducts SIMULATION_CLICKED</text>
-        <text x="48" y="414" font-size="9.5" class="tM">autoEnroll → remediation course</text>
-
-        <rect class="n" x="590" y="336" width="240" height="96" rx="3"/>
-        <text x="608" y="358" font-size="11.5" class="bold tS">analytics</text>
-        <text x="608" y="378" font-size="10">SimulationClickRiskListener</text>
-        <text x="608" y="396" font-size="9.5" class="tM">recordSimulationClick()</text>
-        <text x="608" y="414" font-size="9.5" class="tM">recomputes the user's risk score</text>
-
-        <path class="aE" d="M150,432 V468" marker-end="url(#d3e)"/>
-        <path class="aE" d="M710,432 V468" marker-end="url(#d3e)"/>
-
-        <rect class="hE" x="30" y="470" width="240" height="44" rx="22"/>
-        <text x="150" y="490" font-size="10.5" text-anchor="middle" class="bold tE">EnrollmentAssignedEvent</text>
-        <text x="150" y="505" font-size="8.5" text-anchor="middle" class="tM">contracts :: events</text>
-
-        <rect class="hE" x="590" y="470" width="240" height="44" rx="22"/>
-        <text x="710" y="490" font-size="10.5" text-anchor="middle" class="bold tE">RiskRecomputedEvent</text>
-        <text x="710" y="505" font-size="8.5" text-anchor="middle" class="tM">contracts :: events</text>
-
-        <path class="aE" d="M150,514 V550" marker-end="url(#d3e)"/>
-        <path class="aE" d="M710,514 V550" marker-end="url(#d3e)"/>
-
-        <rect class="n" x="30" y="552" width="240" height="80" rx="3"/>
-        <text x="48" y="574" font-size="11.5" class="bold tS">notification</text>
-        <text x="48" y="594" font-size="10">EnrollmentNotificationListener</text>
-        <text x="48" y="612" font-size="9.5" class="tM">creates reminder / sends email</text>
-
-        <rect class="grp" x="590" y="552" width="240" height="80" rx="3"/>
-        <text x="710" y="580" font-size="10.5" text-anchor="middle" class="tM">no listener yet</text>
-        <text x="710" y="600" font-size="9" text-anchor="middle" class="tM">extension point ready for:</text>
-        <text x="710" y="616" font-size="9" text-anchor="middle" class="tM">alerts, dashboard, SOC</text>
-      </svg>
-    </div>
-    <figcaption>
-      Every class name here is a real name in the repo. The right-hand branch ends open on
-      purpose — <code>RiskRecomputedEvent</code> is published but nothing listens to it yet.
-      That is a place to plug in, not an oversight.
-    </figcaption>
-  </figure>
-</section>
-
-<!-- ══════════════════════ 04 ══════════════════════ -->
-<section>
-  <div class="shead">
-    <p class="eyebrow">Cut 04 · Inside one module</p>
-    <h2>Five layers, but only one is visible from outside</h2>
-  </div>
-  <p>
-    All nine modules share exactly the same directory structure. The point is not that there
-    are five layers — it is that only <code>api/</code> is the public surface. Entities,
-    repositories and service implementations sit behind that wall; a module that imports them
-    turns the build red.
-  </p>
-
-  <figure>
-    <div class="figbody">
-      <svg class="dg" viewBox="0 0 860 420" role="img"
-           aria-label="The simulation module has five layers — web, api, application, domain, infrastructure. HTTP enters at web, other modules may only enter at api, and the direct path into domain is crossed out.">
-        <defs>
-          <marker id="d4s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mS" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-        </defs>
-
-        <rect class="grp" x="250" y="40" width="380" height="340" rx="5"/>
-        <text x="270" y="66" font-size="11.5" class="bold">modules/simulation</text>
-
-        <rect class="n" x="274" y="84" width="332" height="48" rx="3"/>
-        <text x="294" y="105" font-size="11.5" class="bold">web/</text>
-        <text x="294" y="121" font-size="9" class="tM">SimulationController · SimTrackingController</text>
-
-        <rect class="hS" x="274" y="142" width="332" height="48" rx="3"/>
-        <text x="294" y="163" font-size="11.5" class="bold tS">api/</text>
-        <text x="294" y="179" font-size="9" class="tM">public port — SimulationService, DTOs</text>
-
-        <rect class="n" x="274" y="200" width="332" height="48" rx="3"/>
-        <text x="294" y="221" font-size="11.5" class="bold">application/</text>
-        <text x="294" y="237" font-size="9" class="tM">SimulationServiceImpl · listeners · seeders</text>
-
-        <rect class="n" x="274" y="258" width="332" height="48" rx="3"/>
-        <text x="294" y="279" font-size="11.5" class="bold">domain/</text>
-        <text x="294" y="295" font-size="9" class="tM">SimCampaign, SimEvent, SimRecipient, enums</text>
-
-        <rect class="n" x="274" y="316" width="332" height="48" rx="3"/>
-        <text x="294" y="337" font-size="11.5" class="bold">infrastructure/</text>
-        <text x="294" y="353" font-size="9" class="tM">JPA repositories</text>
-
-        <rect class="n2" x="30" y="84" width="180" height="48" rx="3"/>
-        <text x="120" y="105" font-size="11" text-anchor="middle" class="bold">Browser / FE</text>
-        <text x="120" y="121" font-size="9" text-anchor="middle" class="tM">over HTTP</text>
-
-        <rect class="n2" x="30" y="142" width="180" height="48" rx="3"/>
-        <text x="120" y="163" font-size="11" text-anchor="middle" class="bold">Another module</text>
-        <text x="120" y="179" font-size="9" text-anchor="middle" class="tM">same jar</text>
-
-        <path class="aS" d="M210,108 H272" marker-end="url(#d4s)"/>
-        <path class="aS" d="M210,166 H272" marker-end="url(#d4s)"/>
-        <text x="241" y="158" font-size="9" text-anchor="middle" class="tM">calls</text>
-
-        <text x="200" y="266" font-size="9" text-anchor="middle" class="tE">cannot import</text>
-        <path class="aX" d="M120,190 V282 H266"/>
-        <circle cx="200" cy="282" r="9" fill="var(--surface)"/>
-        <path d="M195,277 L205,287 M205,277 L195,287" stroke="var(--evt)" stroke-width="1.8"/>
-
-        <path class="aM" d="M646,84 H662 V190 H646"/>
-        <text x="674" y="130" font-size="9.5" class="tM">public</text>
-        <text x="674" y="146" font-size="9.5" class="tM">surface</text>
-
-        <path class="aM" d="M646,200 H662 V364 H646"/>
-        <text x="674" y="268" font-size="9.5" class="tM">internal —</text>
-        <text x="674" y="284" font-size="9.5" class="tM">no other module</text>
-        <text x="674" y="300" font-size="9.5" class="tM">can reach in</text>
-      </svg>
-    </div>
-    <figcaption>
-      <code>web/</code> only takes HTTP from outside; it is not a door for other modules. Want
-      to use <code>simulation</code> from <code>learning</code>? There is exactly one way: an
-      interface in <code>simulation/api/</code>.
-    </figcaption>
-  </figure>
-</section>
-
-<!-- ══════════════════════ 05 ══════════════════════ -->
-<section>
-  <div class="shead">
-    <p class="eyebrow">Cut 05 · Cross-cutting</p>
-    <h2>Tenant isolation in two layers, not one</h2>
-  </div>
-  <p>
-    DigiShield is multi-tenant — many organisations share one database — so a leak between two
-    organisations is the worst failure the system can have. Hence two independent barriers: if
-    a developer forgets <code>WHERE tenant_id = ?</code>, PostgreSQL still stops it one layer
-    down.
-  </p>
-
-  <figure>
-    <div class="figbody">
-      <svg class="dg" viewBox="0 0 900 400" role="img"
-           aria-label="Layer one at the application tier: a request carrying a JWT passes through TenantFilter, TenantContext and TenantAccessGuard. Layer two at the database tier: RlsTenantAspect sets the session variable, the PostgreSQL RLS policy filters, and only the tenant's own rows come back.">
-        <defs>
-          <marker id="d5s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mS" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-        </defs>
-
-        <rect class="hB" x="24" y="56" width="852" height="116" rx="4"/>
-        <text x="44" y="78" font-size="10" class="bold tB track">LAYER 1 · APPLICATION</text>
-
-        <rect class="n" x="45" y="92" width="180" height="62" rx="3"/>
-        <text x="135" y="118" font-size="11" text-anchor="middle" class="bold">Request + JWT</text>
-        <text x="135" y="136" font-size="9" text-anchor="middle" class="tM">Authorization header</text>
-
-        <rect class="n" x="255" y="92" width="180" height="62" rx="3"/>
-        <text x="345" y="118" font-size="11" text-anchor="middle" class="bold">TenantFilter</text>
-        <text x="345" y="136" font-size="9" text-anchor="middle" class="tM">reads the tid claim</text>
-
-        <rect class="n" x="465" y="92" width="180" height="62" rx="3"/>
-        <text x="555" y="118" font-size="11" text-anchor="middle" class="bold">TenantContext</text>
-        <text x="555" y="136" font-size="9" text-anchor="middle" class="tM">request-scoped ThreadLocal</text>
-
-        <rect class="n" x="675" y="92" width="180" height="62" rx="3"/>
-        <text x="765" y="118" font-size="11" text-anchor="middle" class="bold">TenantAccessGuard</text>
-        <text x="765" y="136" font-size="9" text-anchor="middle" class="tM">@PreAuthorize by role</text>
-
-        <path class="aS" d="M225,123 H253" marker-end="url(#d5s)"/>
-        <path class="aS" d="M435,123 H463" marker-end="url(#d5s)"/>
-        <path class="aS" d="M645,123 H673" marker-end="url(#d5s)"/>
-
-        <path class="aS" d="M765,154 V186 H175 V234" marker-end="url(#d5s)"/>
-        <text x="470" y="178" font-size="9.5" text-anchor="middle" class="tM">the same tenantId carries on down to the database</text>
-
-        <rect class="hB" x="24" y="200" width="852" height="124" rx="4"/>
-        <text x="44" y="222" font-size="10" class="bold tB track">LAYER 2 · DATABASE</text>
-
-        <rect class="n" x="47" y="236" width="258" height="70" rx="3"/>
-        <text x="176" y="262" font-size="11" text-anchor="middle" class="bold">RlsTenantAspect</text>
-        <text x="176" y="280" font-size="9" text-anchor="middle" class="tM">SET app.tenant_id</text>
-        <text x="176" y="296" font-size="9" text-anchor="middle" class="tM">right on the connection</text>
-
-        <rect class="n" x="321" y="236" width="258" height="70" rx="3"/>
-        <text x="450" y="262" font-size="11" text-anchor="middle" class="bold">RLS policy</text>
-        <text x="450" y="280" font-size="9" text-anchor="middle" class="tM">PostgreSQL filters rows</text>
-        <text x="450" y="296" font-size="9" text-anchor="middle" class="tM">before they ever return</text>
-
-        <rect class="n" x="595" y="236" width="258" height="70" rx="3"/>
-        <text x="724" y="262" font-size="11" text-anchor="middle" class="bold">Only this tenant's rows</text>
-        <text x="724" y="280" font-size="9" text-anchor="middle" class="tM">even when the query</text>
-        <text x="724" y="296" font-size="9" text-anchor="middle" class="tM">forgets its WHERE clause</text>
-
-        <path class="aS" d="M305,271 H319" marker-end="url(#d5s)"/>
-        <path class="aS" d="M579,271 H593" marker-end="url(#d5s)"/>
-
-        <rect class="grp" x="24" y="342" width="852" height="46" rx="3"/>
-        <text x="44" y="364" font-size="9.5" class="tM">dev profile — DevTenantFilter assigns the demo tenant 1111…, and RlsTenantAspect is off because H2 has no set_config.</text>
-        <text x="44" y="380" font-size="9.5" class="tM">Every other profile keeps both layers intact. TenantIsolationIT runs against a real Postgres to prove it.</text>
-      </svg>
-    </div>
-    <figcaption>
-      The two layers fail for independent reasons: layer 1 fails when the code is wrong, layer 2
-      only if the RLS policy is removed. <code>TenantIsolationIT</code> proves organisation A
-      cannot read organisation B's people.
-    </figcaption>
-  </figure>
-</section>
-
-<!-- ══════════════════════ 06 ══════════════════════ -->
-<section>
-  <div class="shead">
-    <p class="eyebrow">Cut 06 · The path to production</p>
-    <h2>From commit to the Jetson cluster</h2>
-  </div>
-  <p>
-    One workflow at the monorepo root, sequential and fail-fast — a failure at the third stage
-    means the four after it burn no runner minutes. CD runs only on a push to <code>main</code>,
-    and it does not deploy by the <code>latest</code> tag: it pins
-    <code>sha-&lt;commit&gt;</code> into the manifest and pushes that to the branch ArgoCD
-    watches.
-  </p>
-
-  <figure>
-    <div class="figbody">
-      <svg class="dg" viewBox="0 0 860 452" role="img"
-           aria-label="The left column is seven CI stages running in sequence on every pull request; once all are green and the change merges to main, the right column runs eight CD stages, ending with ArgoCD syncing down to the k3s cluster on Jetson.">
-        <defs>
-          <marker id="d6s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path class="mS" d="M0,0 L10,5 L0,10 z"/>
-          </marker>
-        </defs>
-
-        <text x="30" y="42" font-size="11.5" class="bold tS">CI · every pull request and push</text>
-        <text x="530" y="42" font-size="11.5" class="bold tS">CD · only on push to main</text>
-
-        <rect class="n" x="30" y="56" width="330" height="36" rx="3"/>
-        <text x="48" y="72" font-size="10" class="bold">commit-lint</text>
-        <text x="48" y="85" font-size="8.5" class="tM">Conventional Commits · English only</text>
-
-        <rect class="n" x="30" y="108" width="330" height="36" rx="3"/>
-        <text x="48" y="124" font-size="10" class="bold">changes</text>
-        <text x="48" y="137" font-size="8.5" class="tM">path filter → backend / frontend / deploy</text>
-
-        <rect class="n" x="30" y="160" width="330" height="36" rx="3"/>
-        <text x="48" y="176" font-size="10" class="bold">backend</text>
-        <text x="48" y="189" font-size="8.5" class="tM">./gradlew test — unit, no Docker needed</text>
-
-        <rect class="n" x="30" y="212" width="330" height="36" rx="3"/>
-        <text x="48" y="228" font-size="10" class="bold">backend-it</text>
-        <text x="48" y="241" font-size="8.5" class="tM">Testcontainers · Checkstyle · JaCoCo</text>
-
-        <rect class="n" x="30" y="264" width="330" height="36" rx="3"/>
-        <text x="48" y="280" font-size="10" class="bold">frontend</text>
-        <text x="48" y="293" font-size="8.5" class="tM">lint · typecheck · test · build</text>
-
-        <rect class="n" x="30" y="316" width="330" height="36" rx="3"/>
-        <text x="48" y="332" font-size="10" class="bold">security + codeql</text>
-        <text x="48" y="345" font-size="8.5" class="tM">Gitleaks · Semgrep · Trivy · CodeQL</text>
-
-        <rect class="n" x="30" y="368" width="330" height="36" rx="3"/>
-        <text x="48" y="384" font-size="10" class="bold">e2e</text>
-        <text x="48" y="397" font-size="8.5" class="tM">Newman (API) + Selenium (UI)</text>
-
-        <path class="aS" d="M195,92 V106" marker-end="url(#d6s)"/>
-        <path class="aS" d="M195,144 V158" marker-end="url(#d6s)"/>
-        <path class="aS" d="M195,196 V210" marker-end="url(#d6s)"/>
-        <path class="aS" d="M195,248 V262" marker-end="url(#d6s)"/>
-        <path class="aS" d="M195,300 V314" marker-end="url(#d6s)"/>
-        <path class="aS" d="M195,352 V366" marker-end="url(#d6s)"/>
-
-        <path class="aS" d="M360,386 H455 V74 H528" marker-end="url(#d6s)"/>
-        <text x="464" y="238" font-size="9" class="tM">all green</text>
-        <text x="464" y="252" font-size="9" class="tM">→ merge to main</text>
-
-        <rect class="n" x="530" y="56" width="300" height="36" rx="3"/>
-        <text x="548" y="72" font-size="10" class="bold">build</text>
-        <text x="548" y="85" font-size="8.5" class="tM">amd64 + arm64, native runners, no QEMU</text>
-
-        <rect class="n" x="530" y="104" width="300" height="36" rx="3"/>
-        <text x="548" y="120" font-size="10" class="bold">build-push</text>
-        <text x="548" y="133" font-size="8.5" class="tM">merge manifest → GHCR: latest + sha</text>
-
-        <rect class="n" x="530" y="152" width="300" height="36" rx="3"/>
-        <text x="548" y="168" font-size="10" class="bold">image-scan</text>
-        <text x="548" y="181" font-size="8.5" class="tM">Trivy scans the pushed image</text>
-
-        <rect class="n" x="530" y="200" width="300" height="36" rx="3"/>
-        <text x="548" y="216" font-size="10" class="bold">sign-attest</text>
-        <text x="548" y="229" font-size="8.5" class="tM">cosign signs + attaches the SBOM</text>
-
-        <rect class="hS" x="530" y="248" width="300" height="36" rx="3"/>
-        <text x="548" y="264" font-size="10" class="bold tS">pin sha</text>
-        <text x="548" y="277" font-size="8.5" class="tM">rewrites manifest: sha-&lt;commit&gt;, never latest</text>
-
-        <rect class="n" x="530" y="296" width="300" height="36" rx="3"/>
-        <text x="548" y="312" font-size="10" class="bold">deploy/jetson branch</text>
-        <text x="548" y="325" font-size="8.5" class="tM">the bot can push, main is protected</text>
-
-        <rect class="n" x="530" y="344" width="300" height="36" rx="3"/>
-        <text x="548" y="360" font-size="10" class="bold">ArgoCD</text>
-        <text x="548" y="373" font-size="8.5" class="tM">sees the manifest change → syncs</text>
-
-        <rect class="n" x="530" y="392" width="300" height="36" rx="3"/>
-        <text x="548" y="408" font-size="10" class="bold">k3s on Jetson</text>
-        <text x="548" y="421" font-size="8.5" class="tM">api + frontend roll out</text>
-
-        <path class="aS" d="M680,92 V102" marker-end="url(#d6s)"/>
-        <path class="aS" d="M680,140 V150" marker-end="url(#d6s)"/>
-        <path class="aS" d="M680,188 V198" marker-end="url(#d6s)"/>
-        <path class="aS" d="M680,236 V246" marker-end="url(#d6s)"/>
-        <path class="aS" d="M680,284 V294" marker-end="url(#d6s)"/>
-        <path class="aS" d="M680,332 V342" marker-end="url(#d6s)"/>
-        <path class="aS" d="M680,380 V390" marker-end="url(#d6s)"/>
-      </svg>
-    </div>
-    <figcaption>
-      The highlighted stage is the crux of GitOps: CD never commands the cluster, it only edits
-      one tag line in git. ArgoCD is what decides when the rollout happens.
-    </figcaption>
-  </figure>
-</section>
-
-<!-- ══════════════════════ summary ══════════════════════ -->
-<section>
-  <div class="shead">
-    <p class="eyebrow">In review</p>
-    <h2>The four decisions that make this architecture</h2>
-  </div>
-
+  <h2>How modules communicate</h2>
   <div class="tablewrap">
     <table>
-      <thead>
-        <tr>
-          <th>Decision</th>
-          <th>What it buys</th>
-          <th>What it costs</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Channel</th><th>Mechanism</th><th>Count</th></tr></thead>
       <tbody>
         <tr>
-          <td>Modular monolith<br>over microservices</td>
-          <td>One deployment, one transaction, and cross-module refactors the compiler still keeps honest.</td>
-          <td>No per-module scaling; one badly broken module takes the whole process with it.</td>
+          <td class="k">Synchronous</td>
+          <td>A module declares an interface in its own <code>api/</code>; another module's implementation is wired in at the composition root.</td>
+          <td class="k">13 ports</td>
         </tr>
         <tr>
-          <td>Boundaries enforced<br>by tests</td>
-          <td>Nothing rests on human discipline — a violation shows up within seconds.</td>
-          <td>One more structure to learn; taking a shortcut means editing <code>package-info</code>.</td>
-        </tr>
-        <tr>
-          <td>Events instead of<br>direct calls</td>
-          <td>New reactions without touching the publisher; genuinely loose coupling.</td>
-          <td>Business flows can no longer be read by hitting “go to definition”.</td>
-        </tr>
-        <tr>
-          <td>Two-layer<br>tenant isolation</td>
-          <td>A single programming mistake is not enough to leak data between organisations.</td>
-          <td>Dev runs on H2 and so lacks layer 2 — integration tests on a real Postgres cover the gap.</td>
+          <td class="k">Asynchronous</td>
+          <td><code>@ApplicationModuleListener</code> over events in <code>contracts/events</code> — transactional, persisted, retried.</td>
+          <td class="k">10 events</td>
         </tr>
       </tbody>
     </table>
   </div>
-
-  <p class="closing">
-    In short: <strong>one</strong> Spring Boot application running <strong>four</strong> roles by
-    profile, holding <strong>nine</strong> modules whose boundaries are enforced by tests,
-    talking through <strong>ten</strong> domain events, with data isolated in
-    <strong>two</strong> layers and shipped to production by GitOps on SHA-pinned images.
+  <p>
+    The property that matters most for the future: <b>all 34 adapters live in <code>boot/app</code></b>,
+    never inside a module. Dependency inversion is already done, so extracting a module into a service
+    replaces an adapter with an HTTP client and touches neither module.
   </p>
+</section>
+
+<section>
+  <h2>Tenant isolation</h2>
+  <p>
+    Many organisations share one database, so a leak between two of them is the worst failure the
+    system has. Two independent barriers: <code>TenantAccessGuard</code> at the application tier, and
+    PostgreSQL <b>row-level security</b> at the data tier — if a query forgets
+    <code>WHERE tenant_id = ?</code>, the database still stops it.
+  </p>
+  <p>
+    <code>RlsTenantAspect</code> issues <code>SET LOCAL app.tenant_id</code> on the connection, inside
+    the transaction. That detail is the single largest constraint on any serverless plan.
+  </p>
+</section>
+
+<section>
+  <h2>Path to production</h2>
+  <p>
+    One workflow at the monorepo root, sequential and fail-fast: commit-lint → changes → backend →
+    backend-it (<code>check</code>, SpotBugs, JaCoCo) → frontend → security and CodeQL → e2e.
+  </p>
+  <p>
+    On a push to <code>main</code>: multi-arch build → GHCR → Trivy → cosign and SBOM → pin
+    <code>sha-&lt;commit&gt;</code> onto the <code>deploy/jetson</code> branch → <b>ArgoCD</b> syncs
+    the k3s cluster on Jetson. CD never commands the cluster; it edits one tag line in git.
+  </p>
+  <ul>
+    <li><b>Do not delete the <code>deploy/jetson</code> branch</b> — ArgoCD reads its manifests from
+      there, and it carries commits that exist nowhere on <code>main</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Related documents</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>File</th><th>Contents</th></tr></thead>
+      <tbody>
+        <tr><td class="k">DigiShield_Architecture.vi.html</td><td><b>The full architecture</b> — nine diagrams, extraction runbook, serverless analysis.</td></tr>
+        <tr><td class="k">DigiShield_Technical_Design.md</td><td>Design intent, written before the code. Sections 1–4 describe the target, not the present.</td></tr>
+        <tr><td class="k">DigiShield_ADR.md</td><td>Architecture decisions; ADR-001 commits to gradual extraction and to on-premise support.</td></tr>
+        <tr><td class="k">AUTHZ_MATRIX.md</td><td>Endpoint-by-role authorization matrix, enforced outside the <code>dev</code> profile.</td></tr>
+      </tbody>
+    </table>
+  </div>
 </section>
 
 </div>
