@@ -105,8 +105,11 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                // TODO raise threshold as coverage grows (target 0.50).
-                minimum = "0.10".toBigDecimal()
+                // A ratchet, not a target — see the same rule in
+                // digishield.spring-module-conventions. Note this task measures
+                // the `test` (unit) suite only, so boot/app scores 25.3% here
+                // even though its integration tests exercise a good deal more.
+                minimum = "0.15".toBigDecimal()
             }
         }
     }
