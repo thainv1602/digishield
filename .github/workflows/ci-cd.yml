@@ -172,7 +172,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
       - name: Test
-        run: npm test
+        # test:coverage runs the same tests and prints a coverage summary to the
+        # log. It does not gate — there is no threshold yet — but a number
+        # nobody ever sees is a number nobody acts on.
+        run: npm run test:coverage
       - name: Build
         run: npm run build
 
