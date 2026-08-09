@@ -2,7 +2,7 @@
 
 A platform for preventing, training against, and alerting on cyber fraud — for Enterprises, Government Agencies, and Schools.
 
-*Updated: 28/06/2026*
+*Updated: 09/08/2026*
 
 ## Documents
 
