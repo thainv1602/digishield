@@ -302,7 +302,7 @@ public class LearningServiceImpl implements LearningService {
         List<Course> byLevel = catalogue.stream()
                 .sorted(Comparator
                         .comparingInt((Course c) -> c.getLevel() == null ? 0 : c.getLevel().rank())
-                        .thenComparing(c -> c.getSortOrder() == null ? 0 : c.getSortOrder()))
+                        .thenComparingInt(c -> c.getSortOrder() == null ? 0 : c.getSortOrder()))
                 .toList();
 
         // The click that triggered this is already recorded, so one click means
