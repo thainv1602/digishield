@@ -244,16 +244,18 @@
 <!-- ═════════ PHẦN 2 ═════════ -->
 <section>
   <div class="shead">
-    <p class="eyebrow">Phần 2 · Nếu tách microservices</p>
-    <h2>Cắt theo đồ thị ghép nối, không cắt theo tên module</h2>
+    <p class="eyebrow">Phần 2 · Hướng dẫn tách service</p>
+    <h2>Khi tách thì làm gì, và từ giờ phải giữ gì</h2>
   </div>
   <p>
-    Cám dỗ lớn nhất là tách chín module thành chín service. Đồ thị ở trên nói rằng làm thế sẽ
-    tạo ra một hệ phân tán mà mỗi request phải đi qua năm chặng mạng, vì
-    <code>auth</code> và <code>tenancy</code> bị năm module gọi <em>đồng bộ</em>.
+    ADR-001 đã chốt hướng “modular monolith tiến tới tách dần”, nên phần này không bàn
+    <em>có nên tách hay không</em>. Nó trả lời ba câu: <b>giữ gì từ hôm nay</b> để đường tách
+    không bị bịt, <b>chuẩn bị gì</b> trước khi tách mảnh đầu tiên, và <b>làm theo thứ tự nào</b>.
   </p>
   <p>
-    Nguyên tắc: <b>cắt ở chỗ chỉ có event đi qua, giữ nguyên chỗ có port đồng bộ.</b>
+    Một nguyên tắc chi phối tất cả: <b>cắt ở chỗ chỉ có event đi qua, giữ nguyên chỗ có port đồng bộ.</b>
+    Chín module không thành chín service — <code>auth</code> và <code>tenancy</code> bị năm module
+    gọi đồng bộ, tách chúng ra là đặt một chặng mạng lên gần như mọi request.
   </p>
 
   <figure>
@@ -308,58 +310,115 @@
     </figcaption>
   </figure>
 
-  <h3>Ba mảnh nên tách trước, và vì sao</h3>
+  <h3>2.1 · Luật giữ cho tách được — áp dụng từ hôm nay</h3>
+  <p>
+    Đây là phần quan trọng nhất của bản hướng dẫn. Tách service tốn kém hay không được quyết định
+    bởi những gì đã tích tụ <em>trước</em> lúc tách, chứ không phải bởi tuần tách.
+  </p>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Service</th><th>Vì sao tách được</th><th>Được gì</th></tr></thead>
+      <thead><tr><th>Luật</th><th>Vì sao</th><th>Kiểm bằng gì</th></tr></thead>
       <tbody>
         <tr>
-          <td class="k">① tracking-svc</td>
-          <td>Endpoint beacon chỉ <b>ghi</b> một <code>SimEvent</code> rồi publish. Không đọc gì từ module khác. Không cần transaction chung.</td>
-          <td>Đây là nhịp tải cao nhất và bùng nổ nhất (một chiến dịch gửi 10.000 email → 10.000 lượt mở trong vài phút). Scale riêng, và lỗi ở đây không kéo sập API quản trị.</td>
+          <td>Module không import module</td>
+          <td>Giữ đảo phụ thuộc. Vi phạm là thứ duy nhất làm tách trở nên đắt thật sự.</td>
+          <td class="k">ModularityTests — tự động</td>
         </tr>
         <tr>
-          <td class="k">② ai-svc</td>
-          <td>Chỉ nối bằng <code>Aida*Event</code> + interface <code>AiClient</code>. Không chạm database nghiệp vụ.</td>
-          <td>Nhịp hoàn toàn khác: gọi LLM mất vài giây, hay timeout, cần retry riêng. Nhốt độ trễ đó ra khỏi tiến trình phục vụ HTTP.</td>
+          <td>Adapter luôn nằm trong <code>boot/app</code></td>
+          <td>Adapter là đúng chỗ sẽ bị thay bằng HTTP client. Nằm sai chỗ là phải sửa module.</td>
+          <td class="k">review — hiện 34/34 đúng chỗ</td>
         </tr>
         <tr>
-          <td class="k">③ notify-svc</td>
-          <td><code>notification</code> <b>chỉ nhận event</b>, không module nào gọi ngược vào nó (trừ một port <code>RecipientResolver</code> mà nó tự khai báo).</td>
-          <td>Gửi hàng loạt là việc chậm, hay hỏng, cần hàng đợi và retry. Cũng là chỗ giữ WebSocket — kết nối dài, không nên nằm chung tiến trình có deploy thường xuyên.</td>
+          <td>Không thêm khoá ngoại chéo module</td>
+          <td>Khoá ngoại chéo là thứ chặn chia database. Toàn bộ schema hiện chỉ có <b>2</b> khoá ngoại, và các module nối nhau bằng quy ước <code>tenant_id</code> — chính điều đó giữ cho việc chia sau này còn khả thi.</td>
+          <td class="k">grep REFERENCES trong migration</td>
+        </tr>
+        <tr>
+          <td>Không join sang bảng của module khác</td>
+          <td>Một câu join chéo là một ràng buộc ẩn không ai thấy cho tới ngày tách.</td>
+          <td class="k">review query trong repository</td>
+        </tr>
+        <tr>
+          <td>Event phải tự chứa đủ dữ liệu</td>
+          <td>Nếu consumer phải gọi ngược lại để lấy thêm thông tin, thì khi tách, mỗi event sẽ đẻ ra một lượt gọi mạng.</td>
+          <td class="k">đọc listener: có gọi ngược không</td>
+        </tr>
+        <tr>
+          <td>Listener phải idempotent</td>
+          <td>Modulith đã retry sẵn, nên đây là việc <em>đằng nào cũng phải làm</em> — không phải chi phí của việc tách.</td>
+          <td class="k">test giao cùng event hai lần</td>
         </tr>
       </tbody>
     </table>
   </div>
-
-  <h3>Vì sao lõi phải giữ nguyên</h3>
-  <div class="note warn">
-    <p><b>auth và tenancy không tách được rẻ.</b> Năm module gọi chúng đồng bộ để lấy danh sách
-    nhân sự, người học, người nhận, hạn mức, ngưỡng đạt. Biến thành service nghĩa là mỗi màn hình
-    quản trị phải chờ thêm 2–5 lượt gọi mạng, và phải tự xử lý ca “service định danh đang chết”.</p>
-    <p><b>learning, simulation, analytics, reporting dính nhau bằng dữ liệu.</b> Chúng dùng chung
-    một transaction và chung <code>tenant_id</code> dưới RLS. Tách ra là phải chia database, mà chia
-    database thì mất RLS làm lớp chặn thứ hai — đúng cái lớp đang bảo vệ khỏi lỗi nặng nhất.</p>
+  <div class="note ok">
+    <p><b>Hiện trạng khoá ngoại.</b> Cả hai khoá ngoại đều nằm trong bảng <code>group_member</code>:
+    một trỏ <code>tenant_group</code> (cùng module <code>tenancy</code>), một trỏ
+    <code>app_user</code> (sang <code>auth</code>). Cái thứ hai là chéo module, nhưng
+    <code>tenancy</code> và <code>auth</code> đều ở lại trong lõi nên nó không chặn gì.
+    Đừng thêm cái thứ ba mà không kiểm hai đầu có cùng nằm trong lõi hay không.</p>
   </div>
 
-  <h3>Việc phải làm dù tách mảnh nào</h3>
+  <h3>2.2 · Ba việc chuẩn bị — làm trước, có ích ngay cả khi chưa tách</h3>
+  <ol style="max-width:var(--measure);padding-left:20px;display:flex;flex-direction:column;gap:10px">
+    <li><b>Đưa event ra khỏi database.</b> Hiện <code>@ApplicationModuleListener</code> lưu event
+      trong chính Postgres và retry trong tiến trình. Thêm
+      <code>spring-modulith-events-amqp</code> để phát ra RabbitMQ (đã có sẵn trong compose stack).
+      Lợi ích ngay: event sống sót qua restart và quan sát được từ bên ngoài.</li>
+    <li><b>Truyền tenant qua ranh giới.</b> <code>TenantContext</code> là ThreadLocal — qua mạng nó
+      biến mất. Đưa <code>tid</code> vào header/message envelope và <b>verify lại ở đầu nhận</b>,
+      không tin header gửi tới. Lợi ích ngay: worker và scheduler cũng cần đúng cơ chế này.</li>
+    <li><b>Correlation id + tracing.</b> Một id đi xuyên request → event → listener. Lợi ích ngay:
+      hiện đã có <code>RequestIdFilter</code> và <code>TenantMdcFilter</code>, chỉ cần nối tiếp
+      sang nhánh event.</li>
+  </ol>
+  <p>
+    Ba việc này là <b>điều kiện tiên quyết chung</b> cho cả hướng microservices lẫn hướng Lambda ở
+    phần 3. Làm xong ba việc này thì mọi lựa chọn sau đều rẻ hơn.
+  </p>
+
+  <h3>2.3 · Runbook tách mảnh đầu tiên — <code>tracking-svc</code></h3>
+  <p>
+    Tách <code>tracking-svc</code> trước vì nó có lợi ích rõ nhất (tải cao nhất, bùng nổ nhất) và
+    rủi ro thấp nhất (chỉ ghi, không đọc dữ liệu module nào).
+  </p>
+  <ol style="max-width:var(--measure);padding-left:20px;display:flex;flex-direction:column;gap:8px">
+    <li>Tạo subproject <code>services/tracking</code> — nhẹ, không mang cả Spring Data.</li>
+    <li>Chuyển <code>TrackingController</code> (<code>/t/open.gif</code>, <code>/t/click</code>) và
+      phần giải mã token sang đó.</li>
+    <li><b>Không nối Postgres chính.</b> Service này xác thực token rồi publish một message; nó
+      không có repository nào.</li>
+    <li>Trong lõi, thêm listener tiêu thụ message đó và ghi <code>SimEvent</code> — đường ghi DB và
+      lớp RLS không đổi.</li>
+    <li>Đổi URL beacon trong template sang host mới.</li>
+    <li><b>Chạy song song.</b> Giữ cả đường cũ (<code>POST /api/v1/sim/events</code>) và đường mới,
+      đối chiếu số lượng event trong vài ngày.</li>
+    <li>Chỉ cắt đường cũ khi hai số khớp.</li>
+  </ol>
+
+  <h3>2.4 · Cổng nghiệm thu trước khi tách mảnh tiếp theo</h3>
+  <p>Không tách <code>ai-svc</code> hay <code>notify-svc</code> cho tới khi tất cả các mục sau đúng:</p>
   <ul>
-    <li><b>Thay adapter, không sửa module.</b> Trong <code>boot/app</code>, đổi <code>AuthParticipants</code>
-      từ gọi thẳng sang gọi HTTP. Module <code>simulation</code> không biết gì và không đổi.</li>
-    <li><b>Event phải ra khỏi database.</b> Hiện <code>@ApplicationModuleListener</code> lưu event trong
-      chính Postgres và retry trong tiến trình. Qua nhiều service thì phải đẩy sang RabbitMQ
-      (đã có trong stack) và tự lo <b>idempotency</b> — vì retry qua mạng có thể giao trùng.</li>
-    <li><b>Tenant phải đi kèm mỗi lượt gọi.</b> <code>TenantContext</code> là ThreadLocal; qua mạng nó
-      biến mất. Phải truyền tiếp <code>tid</code> và verify lại ở đầu bên kia, không tin header.</li>
-    <li><b>Mất lớp RLS ở service không có database.</b> <code>tracking-svc</code> ghi qua API của lõi
-      hoặc có bảng riêng — phải quyết rõ, đừng để nó cầm connection tới Postgres chính.</li>
+    <li>Event qua broker chạy ổn định ít nhất một chu kỳ chiến dịch thật.</li>
+    <li>Restart service không mất event, và giao trùng không sinh dữ liệu trùng.</li>
+    <li>Có test chứng minh đầu nhận <b>từ chối</b> tenant sai, không chỉ chấp nhận tenant đúng.</li>
+    <li>Một correlation id đi được từ lượt click tới bản ghi <code>SimEvent</code> trong log.</li>
+    <li>Độ trễ p99 của beacon không tệ hơn lúc còn trong monolith.</li>
   </ul>
 
-  <div class="note">
-    <p><b>Khuyến nghị.</b> Tách ① trước — nó có lợi ích rõ nhất (tải cao, tách biệt lỗi), rủi ro thấp
-    nhất (không đọc dữ liệu module khác), và là phép thử tốt cho toàn bộ hạ tầng phân tán: broker,
-    truyền tenant, idempotency, quan sát. Nếu ① chạy êm ba tháng thì làm ② và ③. Bốn service là
-    điểm dừng hợp lý cho quy mô hiện tại.</p>
+  <h3>2.5 · Bảng tra: cái gì tách được, cái gì không</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mảnh</th><th>Tách được?</th><th>Lý do</th></tr></thead>
+      <tbody>
+        <tr><td class="k">tracking (beacon)</td><td class="tO">Được — làm trước</td><td>Chỉ ghi rồi publish. Không đọc gì của module khác.</td></tr>
+        <tr><td class="k">ai</td><td class="tO">Được — thứ hai</td><td>Chỉ nối bằng <code>Aida*Event</code> + <code>AiClient</code>. Không chạm DB nghiệp vụ. Nhịp trễ khác hẳn.</td></tr>
+        <tr><td class="k">notification</td><td class="tO">Được — thứ ba</td><td>Chỉ nhận event. Cũng là chỗ hợp lý để giữ WebSocket, tách khỏi tiến trình deploy thường xuyên.</td></tr>
+        <tr><td class="k">auth · tenancy</td><td class="tN">Không</td><td>Bị năm module gọi đồng bộ. Tách ra là thêm 2–5 lượt gọi mạng cho mỗi màn hình quản trị, cộng nghĩa vụ xử lý ca “định danh đang chết”.</td></tr>
+        <tr><td class="k">learning · simulation<br>analytics · reporting</td><td class="tN">Không</td><td>Dùng chung transaction và chung <code>tenant_id</code> dưới RLS. Tách là phải chia database, mà chia database thì mất lớp chặn thứ hai đang bảo vệ khỏi lỗi nặng nhất.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -368,8 +427,8 @@
 <!-- ═════════ PHẦN 3 ═════════ -->
 <section>
   <div class="shead">
-    <p class="eyebrow">Phần 3 · Nếu dùng Lambda</p>
-    <h2>Serverless được cho phần bùng nổ, không được cho phần lõi</h2>
+    <p class="eyebrow">Phần 3 · Hướng dẫn nếu chọn Lambda</p>
+    <h2>Serverless chỉ ở rìa, và chỉ sau khi xong §2.2</h2>
   </div>
 
   <div class="note no">
@@ -454,7 +513,14 @@
     </table>
   </div>
 
-  <h3>Nếu vẫn muốn làm, chia thế nào</h3>
+  <h3>Điều kiện tiên quyết</h3>
+  <p>
+    Ba việc chuẩn bị ở <b>§2.2</b> — event ra khỏi database, tenant truyền qua ranh giới,
+    correlation id — là bắt buộc <em>trước</em> khi đưa bất cứ thứ gì lên Lambda. Không có chúng
+    thì mỗi hàm phải tự phát minh lại, mỗi lần một kiểu.
+  </p>
+
+  <h3>Bốn hàm, chia thế nào</h3>
   <ul>
     <li><b>Hàm 1 — <code>beacon-ingest</code>:</b> nhận <code>/t/open.gif</code> và <code>/t/click</code>,
       xác thực token, đẩy một bản ghi vào SQS, trả pixel/redirect ngay. Không chạm database.</li>
@@ -483,22 +549,45 @@
 <section>
   <div class="shead">
     <p class="eyebrow">Kết</p>
-    <h2>Ba lựa chọn, xếp theo mức độ nên làm</h2>
+    <h2>Thứ tự thi hành</h2>
   </div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Phương án</th><th>Khi nào hợp lý</th><th>Chi phí</th></tr></thead>
+      <thead><tr><th>Giai đoạn</th><th>Làm gì</th><th>Dấu hiệu đã tới lúc</th></tr></thead>
       <tbody>
-        <tr><td class="k">Giữ modular monolith</td><td>Quy mô hiện tại, đội nhỏ, còn phải phục vụ on-prem. Ranh giới module đã được test cưỡng chế nên vẫn sạch.</td><td>Không</td></tr>
-        <tr><td class="k">Tách 3 service ở rìa</td><td>Khi tải beacon hoặc gửi hàng loạt bắt đầu ảnh hưởng độ trễ API, hoặc khi có đội riêng nhận từng mảng.</td><td>Broker thật, truyền tenant qua mạng, idempotency, quan sát phân tán</td></tr>
-        <tr><td class="k">Lambda ở rìa</td><td>Chỉ nhánh cloud, và chỉ khi tải bùng nổ đủ mạnh để tiền tiết kiệm bù được chi phí vận hành hai cách đóng gói.</td><td>Như trên, cộng mất on-prem và khoá nhà cung cấp</td></tr>
+        <tr>
+          <td class="k">0 · Bây giờ</td>
+          <td>Giữ 6 luật ở §2.1 trong mọi PR. Chưa tách gì.</td>
+          <td>Luôn luôn — đây là chi phí duy trì, không phải giai đoạn có điểm bắt đầu.</td>
+        </tr>
+        <tr>
+          <td class="k">1 · Chuẩn bị</td>
+          <td>Ba việc ở §2.2: event ra broker, tenant qua ranh giới, correlation id.</td>
+          <td>Làm được ngay, có ích ngay. Không cần chờ lý do.</td>
+        </tr>
+        <tr>
+          <td class="k">2 · Tách tracking</td>
+          <td>Runbook §2.3, qua cổng nghiệm thu §2.4.</td>
+          <td>Tải beacon bắt đầu ảnh hưởng độ trễ API quản trị, hoặc cần scale riêng đợt chiến dịch.</td>
+        </tr>
+        <tr>
+          <td class="k">3 · Tách ai, notify</td>
+          <td>Cùng khuôn, lần lượt từng mảnh.</td>
+          <td>Giai đoạn 2 chạy êm qua ít nhất một chu kỳ chiến dịch thật.</td>
+        </tr>
+        <tr>
+          <td class="k">— · Lambda</td>
+          <td>Phần 3, chỉ ở rìa và chỉ nhánh cloud.</td>
+          <td>Nhánh riêng, không nằm trên đường đi của giai đoạn 2–3. Bắt buộc xong giai đoạn 1 trước.</td>
+        </tr>
       </tbody>
     </table>
   </div>
   <p class="closing">
-    Điểm mấu chốt: <b>34 adapter đều nằm trong <code>boot/app</code></b>. Chừng nào giữ được tính chất
-    đó, việc tách service luôn là thay adapter chứ không phải viết lại module — nên hoãn quyết định
-    tách không tốn gì, mà tách sớm thì phải trả ngay tiền vận hành hệ phân tán.
+    Điểm mấu chốt của cả bản hướng dẫn: <b>34 adapter đều nằm trong <code>boot/app</code></b>, và
+    schema gần như không có khoá ngoại chéo module. Chừng nào hai tính chất đó còn được giữ, tách
+    service luôn là thay adapter chứ không phải viết lại module — nên việc cần kỷ luật hàng ngày là
+    §2.1, còn ngày tách chỉ là thi hành.
   </p>
 </section>
 
