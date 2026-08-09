@@ -84,7 +84,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void recomputeRisk_persistsUserScopedScoreAndPublishesEvent() {
+    void recomputeRiskPersistsUserScopedScoreAndPublishesEvent() {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(riskSignalRepository
@@ -116,7 +116,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void computeScore_sumsRecentSignalWeightsOverBaseline() {
+    void computeScoreSumsRecentSignalWeightsOverBaseline() {
         // Arrange: two simulation clicks (weight 25 each) → 5 + 50 = 55
         UUID userId = UUID.randomUUID();
         when(riskSignalRepository
@@ -132,7 +132,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void computeScore_isCappedAt100() {
+    void computeScoreIsCappedAt100() {
         // Arrange: five clicks → 5 + 125 would exceed the cap
         UUID userId = UUID.randomUUID();
         List<RiskSignal> many = List.of(
@@ -150,7 +150,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void recordSimulationClick_savesSignalThenRecomputesUsingExplicitTenant() {
+    void recordSimulationClickSavesSignalThenRecomputesUsingExplicitTenant() {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(riskSignalRepository
@@ -177,7 +177,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void recordConfirmedReport_recordsVigilantSignalAndFloorsScoreAtZero() {
+    void recordConfirmedReportRecordsVigilantSignalAndFloorsScoreAtZero() {
         // Arrange: a single confirmed-report signal (weight -15) → 5 - 15 floored to 0
         UUID userId = UUID.randomUUID();
         RiskSignal reportSignal = new RiskSignal(
@@ -208,7 +208,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void benchmark_whenScoresExist_returnsIntegerAverage() {
+    void benchmarkWhenScoresExistReturnsIntegerAverage() {
         // Arrange
         List<RiskScore> scores = List.of(
                 score(40),
@@ -224,7 +224,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void benchmark_whenNoScores_returnsZero() {
+    void benchmarkWhenNoScoresReturnsZero() {
         // Arrange
         when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.DEPT)).thenReturn(List.of());
 
@@ -241,7 +241,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void dashboard_buildsTrendFromOrgRiskHistoryInChronologicalOrder() {
+    void dashboardBuildsTrendFromOrgRiskHistoryInChronologicalOrder() {
         // Arrange: org-scope history in deliberately unordered input
         List<RiskScore> orgScores = List.of(
                 orgScore(61, Instant.parse("2026-06-01T00:00:00Z")),
@@ -267,7 +267,7 @@ class AnalyticsServiceImplTest {
     }
 
     @Test
-    void dashboard_recentReports_comeFromProviderMappedOntoDto() {
+    void dashboardRecentReportsComeFromProviderMappedOntoDto() {
         // Arrange: no risk/dept history; the recent-reports provider returns one report
         when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(List.of());
         when(departmentRiskRepository.findByTenantIdOrderByRiskScoreDesc(TENANT_ID)).thenReturn(List.of());

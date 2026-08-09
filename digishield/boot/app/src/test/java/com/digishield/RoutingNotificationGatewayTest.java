@@ -25,7 +25,7 @@ class RoutingNotificationGatewayTest {
             new RoutingNotificationGateway(emailProvider, smsProvider);
 
     @Test
-    void email_routesToSesWhenAvailable() {
+    void emailRoutesToSesWhenAvailable() {
         when(emailProvider.getIfAvailable()).thenReturn(ses);
 
         routing.deliver("EMAIL", "user@example.com", "S", "B");
@@ -35,7 +35,7 @@ class RoutingNotificationGatewayTest {
     }
 
     @Test
-    void sms_routesToSnsWhenAvailable() {
+    void smsRoutesToSnsWhenAvailable() {
         when(smsProvider.getIfAvailable()).thenReturn(sns);
 
         routing.deliver("SMS", "+84901234561", "S", "B");
@@ -45,7 +45,7 @@ class RoutingNotificationGatewayTest {
     }
 
     @Test
-    void email_isNoOpWhenSesDisabled() {
+    void emailIsNoOpWhenSesDisabled() {
         when(emailProvider.getIfAvailable()).thenReturn(null);
 
         routing.deliver("EMAIL", "user@example.com", "S", "B");
@@ -55,7 +55,7 @@ class RoutingNotificationGatewayTest {
     }
 
     @Test
-    void unknownChannel_isNoOp() {
+    void unknownChannelIsNoOp() {
         routing.deliver("PUSH", "token", "S", "B");
 
         verifyNoInteractions(emailProvider, smsProvider, ses, sns);

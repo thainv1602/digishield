@@ -19,7 +19,7 @@ class RemediationEnrollmentListenerTest {
             new RemediationEnrollmentListener(learningService);
 
     @Test
-    void on_autoEnrollsTheAtRiskUser() {
+    void onAutoEnrollsTheAtRiskUser() {
         UUID tenantId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 

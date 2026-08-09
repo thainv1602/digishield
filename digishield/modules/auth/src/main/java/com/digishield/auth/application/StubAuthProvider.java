@@ -23,7 +23,7 @@ import java.util.List;
 @Component
 public class StubAuthProvider implements AuthProvider {
 
-    private static final Logger log = LoggerFactory.getLogger(StubAuthProvider.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StubAuthProvider.class);
 
     static final String DEV_ACCESS_TOKEN = "dev-access-token";
     static final String DEV_REFRESH_TOKEN = "dev-refresh-token";
@@ -57,12 +57,12 @@ public class StubAuthProvider implements AuthProvider {
 
     @Override
     public void forgotPassword(String email) {
-        log.info("[auth] Password reset requested (dev no-op)");
+        LOG.info("[auth] Password reset requested (dev no-op)");
     }
 
     @Override
     public void resetPassword(String token, String newPassword) {
-        log.info("[auth] Password reset completed (dev no-op)");
+        LOG.info("[auth] Password reset completed (dev no-op)");
     }
 
     @Override

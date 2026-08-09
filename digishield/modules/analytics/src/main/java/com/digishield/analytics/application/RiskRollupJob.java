@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Profile("scheduler")
 public class RiskRollupJob {
 
-    private static final Logger log = LoggerFactory.getLogger(RiskRollupJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(RiskRollupJob.class);
 
     private final TenantDirectory tenants;
     private final RiskRollupService rollupService;
@@ -55,11 +55,11 @@ public class RiskRollupJob {
             // connects as the database owner; were that to change, the query
             // would return nothing and this job would do nothing every night
             // while still logging a clean finish. Say so loudly instead.
-            log.error("Risk rollup found no active tenants — dashboards will not be updated. "
+            LOG.error("Risk rollup found no active tenants — dashboards will not be updated. "
                     + "Check that the tenant registry is readable outside tenant isolation.");
             return;
         }
-        log.info("Risk rollup starting for {} tenant(s) (cron {})", tenantIds.size(), cron);
+        LOG.info("Risk rollup starting for {} tenant(s) (cron {})", tenantIds.size(), cron);
 
         int done = 0;
         int failed = 0;
@@ -73,11 +73,11 @@ public class RiskRollupJob {
                 // up; a job that aborts halfway leaves some dashboards fresh and
                 // others stale with nothing saying which is which.
                 failed++;
-                log.error("Risk rollup failed for tenant {}", tenantId, e);
+                LOG.error("Risk rollup failed for tenant {}", tenantId, e);
             } finally {
                 TenantContext.clear();
             }
         }
-        log.info("Risk rollup finished: {} succeeded, {} failed", done, failed);
+        LOG.info("Risk rollup finished: {} succeeded, {} failed", done, failed);
     }
 }

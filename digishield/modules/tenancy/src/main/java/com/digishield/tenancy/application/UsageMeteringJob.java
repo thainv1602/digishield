@@ -40,7 +40,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("scheduler")
 public class UsageMeteringJob {
 
-    private static final Logger log = LoggerFactory.getLogger(UsageMeteringJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UsageMeteringJob.class);
 
     private final TenancyService tenancyService;
     private final DeliveryUsageProvider deliveryUsage;
@@ -67,7 +67,7 @@ public class UsageMeteringJob {
     public void run() {
         List<UUID> tenantIds = tenancyService.systemActiveTenantIds();
         if (tenantIds.isEmpty()) {
-            log.error("Usage metering found no active tenants — usage will not be updated.");
+            LOG.error("Usage metering found no active tenants — usage will not be updated.");
             return;
         }
         YearMonth month = YearMonth.now(zone);
@@ -81,12 +81,12 @@ public class UsageMeteringJob {
                 // One tenant's failure must not stop the rest; a job that stops
                 // halfway leaves some figures current and others stale with
                 // nothing saying which.
-                log.error("Usage metering failed for tenant {}", tenantId, e);
+                LOG.error("Usage metering failed for tenant {}", tenantId, e);
             } finally {
                 TenantContext.clear();
             }
         }
-        log.info("Usage metering finished for {} of {} tenant(s), period {}",
+        LOG.info("Usage metering finished for {} of {} tenant(s), period {}",
                 done, tenantIds.size(), month);
     }
 
@@ -110,6 +110,6 @@ public class UsageMeteringJob {
             row.setValue(value);
             usageMeteringRepository.save(row);
         });
-        log.debug("Usage for tenant {} in {}: {}", tenantId, period, counts);
+        LOG.debug("Usage for tenant {} in {}: {}", tenantId, period, counts);
     }
 }

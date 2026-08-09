@@ -31,7 +31,7 @@ class SimulationClickListenerTest {
     private SimulationClickListener listener;
 
     @Test
-    void on_whenUserClickedSimulation_callsAutoEnrollWithEventFields() {
+    void onWhenUserClickedSimulationCallsAutoEnrollWithEventFields() {
         // Arrange
         UUID tenantId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID userId = UUID.randomUUID();
@@ -51,7 +51,7 @@ class SimulationClickListenerTest {
     }
 
     @Test
-    void on_whenCatalogueIsEmpty_skipsInsteadOfFailingForever() {
+    void onWhenCatalogueIsEmptySkipsInsteadOfFailingForever() {
         UUID tenantId = UUID.fromString("11111111-1111-1111-1111-111111111111");
         UUID userId = UUID.randomUUID();
         org.mockito.Mockito.when(learningService.listCourses(tenantId))

@@ -81,7 +81,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pausesWithEducationalMessage() {
+    void evaluateWhenOnCallAndNewPayeeAndWatchlistHitPausesWithEducationalMessage() {
         // Arrange
         UUID userId = UUID.randomUUID();
         AccountWatchEntry watchHit = new AccountWatchEntry(
@@ -112,7 +112,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void evaluate_whenWatchlistHitButNotOnCallNorNewPayee_warns() {
+    void evaluateWhenWatchlistHitButNotOnCallNorNewPayeeWarns() {
         // Arrange
         UUID userId = UUID.randomUUID();
         AccountWatchEntry watchHit = new AccountWatchEntry(
@@ -136,7 +136,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void evaluate_whenOnCallAndNewPayeeButNoWatchlistHit_warnsIsNotTriggeredAndAllows() {
+    void evaluateWhenOnCallAndNewPayeeButNoWatchlistHitWarnsIsNotTriggeredAndAllows() {
         // Arrange: high-risk behavioural signals but the destination is clean
         UUID userId = UUID.randomUUID();
         when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
@@ -156,7 +156,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
+    void evaluateWhenNoSignalsAllowsAndPersistsEmptySignals() {
         // Arrange
         UUID userId = UUID.randomUUID();
         when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
@@ -178,7 +178,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void addWatchEntry_whenRiskLevelMissing_isRejectedAsBadRequestAndNothingIsWritten() {
+    void addWatchEntryWhenRiskLevelMissingIsRejectedAsBadRequestAndNothingIsWritten() {
         // Arrange: a body that omits risk_level — the shape that used to NPE.
         AccountWatchEntryView request = new AccountWatchEntryView(
                 null, "phone", "+84900000000", null, "user-report", null);
@@ -193,7 +193,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void addWatchEntry_whenTypeOutsideTheEnum_isRejectedAsBadRequest() {
+    void addWatchEntryWhenTypeOutsideTheEnumIsRejectedAsBadRequest() {
         // Arrange
         AccountWatchEntryView request = new AccountWatchEntryView(
                 null, "carrier-pigeon", "+84900000000", "high", "user-report", null);
@@ -208,7 +208,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void addWatchEntry_whenValueBlank_isRejectedAsBadRequest() {
+    void addWatchEntryWhenValueBlankIsRejectedAsBadRequest() {
         // Arrange
         AccountWatchEntryView request = new AccountWatchEntryView(
                 null, "phone", "   ", "high", "user-report", null);
@@ -221,7 +221,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void addWatchEntry_whenValid_persistsEntryScopedToTheCurrentTenant() {
+    void addWatchEntryWhenValidPersistsEntryScopedToTheCurrentTenant() {
         // Arrange: lowercase wire values, as the OpenAPI contract sends them.
         when(watchRepository.save(any(AccountWatchEntry.class))).thenAnswer(inv -> inv.getArgument(0));
         AccountWatchEntryView request = new AccountWatchEntryView(
@@ -242,7 +242,7 @@ class InterceptionServiceImplTest {
     }
 
     @Test
-    void checkAccount_delegatesToRepositoryScopedByTenant() {
+    void checkAccountDelegatesToRepositoryScopedByTenant() {
         // Arrange
         AccountWatchEntry entry = new AccountWatchEntry(
                 UUID.randomUUID(), TENANT_ID, WatchType.PHONE, "+84900000000",

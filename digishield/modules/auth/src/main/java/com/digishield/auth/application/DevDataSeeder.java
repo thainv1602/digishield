@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Order(0)
 public class DevDataSeeder implements CommandLineRunner {
 
-    private static final Logger log = LoggerFactory.getLogger(DevDataSeeder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DevDataSeeder.class);
 
     private final AppUserRepository userRepository;
 
@@ -64,7 +64,7 @@ public class DevDataSeeder implements CommandLineRunner {
                         Role.LEARNER, "Kế toán", 78));
 
         userRepository.saveAll(demoUsers);
-        log.info("[dev] Seeded {} demo users for tenant {}", demoUsers.size(), tenant);
+        LOG.info("[dev] Seeded {} demo users for tenant {}", demoUsers.size(), tenant);
     }
 
     private static AppUser user(String id, UUID tenant, String email, String name,

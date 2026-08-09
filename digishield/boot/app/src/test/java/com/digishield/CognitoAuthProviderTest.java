@@ -31,7 +31,7 @@ class CognitoAuthProviderTest {
     }
 
     @Test
-    void login_returnsTokensOnSuccess() {
+    void loginReturnsTokensOnSuccess() {
         stubInitiateAuth(InitiateAuthResponse.builder()
                 .authenticationResult(AuthenticationResultType.builder()
                         .accessToken("access-1").refreshToken("refresh-1").expiresIn(3600).build())
@@ -45,7 +45,7 @@ class CognitoAuthProviderTest {
     }
 
     @Test
-    void login_whenMfaRequired_throwsWithChallengeAndToken() {
+    void loginWhenMfaRequiredThrowsWithChallengeAndToken() {
         stubInitiateAuth(InitiateAuthResponse.builder()
                 .challengeName(ChallengeNameType.SOFTWARE_TOKEN_MFA)
                 .session("sess-123")
@@ -62,7 +62,7 @@ class CognitoAuthProviderTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void login_whenNotAuthorized_throws401() {
+    void loginWhenNotAuthorizedThrows401() {
         when(cognito.initiateAuth(any(Consumer.class)))
                 .thenThrow(NotAuthorizedException.builder().message("bad").build());
 
@@ -72,14 +72,14 @@ class CognitoAuthProviderTest {
     }
 
     @Test
-    void mfaChallenge_rejectsMalformedToken() {
+    void mfaChallengeRejectsMalformedToken() {
         assertThatThrownBy(() -> provider.mfaChallenge("no-separators", "000000", false))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(400));
     }
 
     @Test
-    void ssoCallback_isNotSupported() {
+    void ssoCallbackIsNotSupported() {
         assertThatThrownBy(() -> provider.ssoCallback("acme", "assertion"))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(ex -> assertThat(((ResponseStatusException) ex).getStatusCode().value()).isEqualTo(501));

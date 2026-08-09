@@ -88,7 +88,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void send_deliversViaGatewayAndPersistsSentNotification() {
+    void sendDeliversViaGatewayAndPersistsSentNotification() {
         // Arrange: email resolves and the gateway delivers successfully
         UUID userId = UUID.randomUUID();
         when(recipients.emailFor(userId)).thenReturn(Optional.of("user@example.com"));
@@ -113,7 +113,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void send_smsChannel_resolvesPhoneAndDelivers() {
+    void sendSmsChannelResolvesPhoneAndDelivers() {
         // Arrange: SMS uses the phone address, not the email
         UUID userId = UUID.randomUUID();
         when(recipients.phoneFor(userId)).thenReturn(Optional.of("+84901234561"));
@@ -131,7 +131,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void send_whenRecipientUnresolved_persistsFailedAndSkipsGateway() {
+    void sendWhenRecipientUnresolvedPersistsFailedAndSkipsGateway() {
         // Arrange: no email for the user
         UUID userId = UUID.randomUUID();
         when(recipients.emailFor(userId)).thenReturn(Optional.empty());
@@ -146,7 +146,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void send_whenGatewayThrows_persistsFailed() {
+    void sendWhenGatewayThrowsPersistsFailed() {
         // Arrange: resolves, but the gateway delivery fails
         UUID userId = UUID.randomUUID();
         when(recipients.emailFor(userId)).thenReturn(Optional.of("user@example.com"));
@@ -162,7 +162,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void scheduleReminder_persistsScheduledReminderOverInAppChannel() {
+    void scheduleReminderPersistsScheduledReminderOverInAppChannel() {
         // Arrange
         UUID userId = UUID.randomUUID();
 
@@ -180,7 +180,7 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void broadcastAlert_fansOutToEveryTenantUser() {
+    void broadcastAlertFansOutToEveryTenantUser() {
         // Arrange: two users in the tenant
         UUID u1 = UUID.randomUUID();
         UUID u2 = UUID.randomUUID();

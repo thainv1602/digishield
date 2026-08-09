@@ -15,7 +15,7 @@ class StubAiClientTest {
     private final StubAiClient client = new StubAiClient();
 
     @Test
-    void classify_flagsThreatSignals() {
+    void classifyFlagsThreatSignals() {
         ClassificationView result = client.classify("Please verify your account and enter your password");
 
         assertThat(result.label()).isEqualTo("threat");
@@ -24,12 +24,12 @@ class StubAiClientTest {
     }
 
     @Test
-    void classify_returnsCleanForBenignContent() {
+    void classifyReturnsCleanForBenignContent() {
         assertThat(client.classify("Hello, see you at the team lunch tomorrow.").label()).isEqualTo("clean");
     }
 
     @Test
-    void moderate_passesSafeContent() {
+    void moderatePassesSafeContent() {
         ModerationView result = client.moderate("hello world");
 
         assertThat(result.verdict()).isEqualTo("pass");
@@ -37,7 +37,7 @@ class StubAiClientTest {
     }
 
     @Test
-    void moderate_blocksContentWithMultipleUnsafeWords() {
+    void moderateBlocksContentWithMultipleUnsafeWords() {
         ModerationView result = client.moderate("this ransomware can exploit your system");
 
         assertThat(result.verdict()).isEqualTo("block");
@@ -45,7 +45,7 @@ class StubAiClientTest {
     }
 
     @Test
-    void generate_buildsSubjectBodyRefAndDifficulty() {
+    void generateBuildsSubjectBodyRefAndDifficulty() {
         GeneratedTemplate t = client.generate(TemplateChannel.EMAIL, "banking", "summer");
 
         assertThat(t.subject()).contains("banking");

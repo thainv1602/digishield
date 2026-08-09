@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 class SimulationClickListener {
 
-    private static final Logger log = LoggerFactory.getLogger(SimulationClickListener.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SimulationClickListener.class);
 
     private final LearningService learningService;
     private final PointsAwarder pointsAwarder;
@@ -42,7 +42,7 @@ class SimulationClickListener {
         // retried, one click would fail forever rather than once — noisily, and
         // with nothing anybody can do about it until a course exists.
         if (learningService.listCourses(event.tenantId()).isEmpty()) {
-            log.warn("No course in the catalogue for tenant {}; remediation not assigned to user {}",
+            LOG.warn("No course in the catalogue for tenant {}; remediation not assigned to user {}",
                     event.tenantId(), event.userId());
             return;
         }

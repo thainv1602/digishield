@@ -20,30 +20,30 @@ import org.springframework.stereotype.Component;
 @Component
 public class LoggingUserDirectory implements UserDirectory {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggingUserDirectory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LoggingUserDirectory.class);
 
     @Override
     public Optional<UUID> createUser(String email, String role, UUID tenantId) {
-        log.info("[auth] No user directory configured — {} was added with role {} but has no "
+        LOG.info("[auth] No user directory configured — {} was added with role {} but has no "
                 + "sign-in account and cannot log in", LogSafe.value(email), role);
         return Optional.empty();
     }
 
     @Override
     public void setRole(String email, String role, Set<String> otherRoles) {
-        log.info("[auth] No user directory configured — {} is recorded as {} but the tokens "
+        LOG.info("[auth] No user directory configured — {} is recorded as {} but the tokens "
                 + "they sign in with are unchanged", LogSafe.value(email), role);
     }
 
     @Override
     public void setEnabled(String email, boolean enabled) {
-        log.info("[auth] No user directory configured - {} is recorded as {} but can still sign in "
+        LOG.info("[auth] No user directory configured - {} is recorded as {} but can still sign in "
                 + "exactly as before", LogSafe.value(email), enabled ? "enabled" : "suspended");
     }
 
     @Override
     public void deleteUser(String email) {
-        log.info("[auth] No user directory configured — {} was removed from the application "
+        LOG.info("[auth] No user directory configured — {} was removed from the application "
                 + "but any sign-in account they hold elsewhere is untouched", LogSafe.value(email));
     }
 }

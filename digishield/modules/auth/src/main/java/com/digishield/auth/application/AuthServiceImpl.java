@@ -50,8 +50,6 @@ public class AuthServiceImpl implements AuthService {
 
     private static final Logger LOG = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
-
     private final AppUserRepository userRepository;
     /** Optional: absent in slices that do not wire the application shell. */
     private final ObjectProvider<AuditRecorder> auditRecorder;
@@ -424,7 +422,7 @@ public class AuthServiceImpl implements AuthService {
             }
         }
         String jobId = "import-" + UUID.randomUUID();
-        log.info("[auth] Bulk import accepted {} users (job {})", accepted, jobId);
+        LOG.info("[auth] Bulk import accepted {} users (job {})", accepted, jobId);
         return new ImportResult(jobId, accepted);
     }
 

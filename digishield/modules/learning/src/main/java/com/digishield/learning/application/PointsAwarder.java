@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PointsAwarder {
 
-    private static final Logger log = LoggerFactory.getLogger(PointsAwarder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PointsAwarder.class);
 
     private final GamificationProfileRepository profileRepository;
     private final PointRuleRepository pointRuleRepository;
@@ -53,7 +53,7 @@ public class PointsAwarder {
         profile.setPoints(profile.getPoints() + points);
         GamificationProfile saved = profileRepository.save(profile);
 
-        log.info("Points {}{} to user {} for {} (tenant {}), now {}",
+        LOG.info("Points {}{} to user {} for {} (tenant {}), now {}",
                 points >= 0 ? "+" : "", points, userId, action.wireName(), tenantId, saved.getPoints());
 
         // Every scoring event runs through here — a report confirmed, a course

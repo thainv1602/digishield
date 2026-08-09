@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Profile("scheduler")
 public class EnrollmentDueJob {
 
-    private static final Logger log = LoggerFactory.getLogger(EnrollmentDueJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EnrollmentDueJob.class);
 
     private final EnrollmentRepository enrollments;
     private final ApplicationEventPublisher events;
@@ -82,7 +82,7 @@ public class EnrollmentDueJob {
                 upcoming++;
             }
         }
-        log.info("[learning] Due sweep (cron {}): {} overdue, {} due within {}h, {} open with a deadline",
+        LOG.info("[learning] Due sweep (cron {}): {} overdue, {} due within {}h, {} open with a deadline",
                 cron, late, upcoming, remindBeforeHours, open.size());
     }
 }

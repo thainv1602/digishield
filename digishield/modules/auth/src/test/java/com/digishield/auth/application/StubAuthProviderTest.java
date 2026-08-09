@@ -14,7 +14,7 @@ class StubAuthProviderTest {
     private final StubAuthProvider provider = new StubAuthProvider();
 
     @Test
-    void login_returnsStaticDevTokens() {
+    void loginReturnsStaticDevTokens() {
         TokenPair tokens = provider.login("user@digishield.vn", "irrelevant");
         assertThat(tokens.accessToken()).isEqualTo("dev-access-token");
         assertThat(tokens.refreshToken()).isEqualTo("dev-refresh-token");
@@ -22,12 +22,12 @@ class StubAuthProviderTest {
     }
 
     @Test
-    void mfaVerify_returnsEightRecoveryCodes() {
+    void mfaVerifyReturnsEightRecoveryCodes() {
         assertThat(provider.mfaVerify("000000")).hasSize(8);
     }
 
     @Test
-    void mfaSetup_buildsAnOtpauthUrlForTheAccount() {
+    void mfaSetupBuildsAnOtpauthUrlForTheAccount() {
         MfaSetupView view = provider.mfaSetup("minh@coquan.gov.vn");
         assertThat(view.secret()).isNotBlank();
         assertThat(view.otpauthUrl()).startsWith("otpauth://totp/").contains("secret=").contains("issuer=DigiShield");

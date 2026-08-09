@@ -85,7 +85,7 @@ class SimulationServiceImplTest {
     private ArgumentCaptor<UserClickedSimulationEvent> eventCaptor;
 
     @Test
-    void campaignDetail_whenNoStoredResults_buildsRowsFromWhatWasRecorded() {
+    void campaignDetailWhenNoStoredResultsBuildsRowsFromWhatWasRecorded() {
         UUID campaignId = UUID.randomUUID();
         UUID clicker = UUID.randomUUID();
         UUID silent = UUID.randomUUID();
@@ -115,7 +115,7 @@ class SimulationServiceImplTest {
     }
 
     @Test
-    void campaignDetail_reportingOutranksClicking() {
+    void campaignDetailReportingOutranksClicking() {
         UUID campaignId = UUID.randomUUID();
         UUID user = UUID.randomUUID();
         givenCampaign(campaignId);
@@ -140,7 +140,7 @@ class SimulationServiceImplTest {
     }
 
     @Test
-    void campaignDetail_prefersStoredResultsWhenPresent() {
+    void campaignDetailPrefersStoredResultsWhenPresent() {
         UUID campaignId = UUID.randomUUID();
         givenCampaign(campaignId);
         when(resultRepository.findByTenantIdAndCampaignId(TENANT_ID, campaignId))
@@ -182,7 +182,7 @@ class SimulationServiceImplTest {
     }
 
     @Test
-    void createCampaign_persistsDraftCampaignForCurrentTenant() {
+    void createCampaignPersistsDraftCampaignForCurrentTenant() {
         // Arrange
         UUID templateId = UUID.randomUUID();
         UUID groupId = UUID.randomUUID();
@@ -203,7 +203,7 @@ class SimulationServiceImplTest {
     }
 
     @Test
-    void recordEvent_whenClick_publishesUserClickedEvent() {
+    void recordEventWhenClickPublishesUserClickedEvent() {
         // Arrange
         UUID campaignId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
@@ -231,7 +231,7 @@ class SimulationServiceImplTest {
     }
 
     @Test
-    void recordEvent_whenNonClickAction_doesNotPublishEvent() {
+    void recordEventWhenNonClickActionDoesNotPublishEvent() {
         // Arrange
         UUID campaignId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
@@ -246,7 +246,7 @@ class SimulationServiceImplTest {
     }
 
     @Test
-    void recordEvent_whenTenantNotSet_throwsIllegalState() {
+    void recordEventWhenTenantNotSetThrowsIllegalState() {
         // Arrange
         TenantContext.clear();
 

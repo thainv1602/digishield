@@ -61,7 +61,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_asksCognitoToMailTheInvitation() {
+    void createUserAsksCognitoToMailTheInvitation() {
         stubCreate(UUID.randomUUID());
 
         directory.createUser("new@x.vn", "analyst", TENANT);
@@ -79,7 +79,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_stampsTheTenantOnTheAccount() {
+    void createUserStampsTheTenantOnTheAccount() {
         stubCreate(UUID.randomUUID());
 
         directory.createUser("new@x.vn", "learner", TENANT);
@@ -98,7 +98,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_putsTheAccountInTheRolesGroup() {
+    void createUserPutsTheAccountInTheRolesGroup() {
         stubCreate(UUID.randomUUID());
 
         directory.createUser("new@x.vn", "analyst", TENANT);
@@ -111,7 +111,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_returnsTheSubjectCognitoAssigned() {
+    void createUserReturnsTheSubjectCognitoAssigned() {
         UUID subject = UUID.randomUUID();
         stubCreate(subject);
 
@@ -119,7 +119,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_whenTheAccountAlreadyExists_adoptsItAndStillAssertsTheGroup() {
+    void createUserWhenTheAccountAlreadyExistsAdoptsItAndStillAssertsTheGroup() {
         when(cognito.adminCreateUser(any(AdminCreateUserRequest.class)))
                 .thenThrow(UsernameExistsException.builder().message("exists").build());
         UUID subject = UUID.randomUUID();
@@ -137,7 +137,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_whenTheGroupIsMissing_fails() {
+    void createUserWhenTheGroupIsMissingFails() {
         stubCreate(UUID.randomUUID());
         when(cognito.adminAddUserToGroup(any(AdminAddUserToGroupRequest.class)))
                 .thenThrow(ResourceNotFoundException.builder().message("no group").build());
@@ -151,7 +151,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void createUser_whenCognitoRejectsTheAddress_isABadRequest() {
+    void createUserWhenCognitoRejectsTheAddressIsABadRequest() {
         when(cognito.adminCreateUser(any(AdminCreateUserRequest.class)))
                 .thenThrow(InvalidParameterException.builder().message("bad email").build());
 
@@ -172,7 +172,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_revokesTheOldGroupBeforeGrantingTheNewOne() {
+    void setRoleRevokesTheOldGroupBeforeGrantingTheNewOne() {
         stubGroupsHeld("org_admin");
 
         directory.setRole("boss@x.vn", "learner", Set.of("org_admin", "manager", "analyst"));
@@ -185,7 +185,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_revokesOnlyTheGroupsTheAccountActuallyHolds() {
+    void setRoleRevokesOnlyTheGroupsTheAccountActuallyHolds() {
         stubGroupsHeld("analyst");
 
         directory.setRole("a@x.vn", "manager", Set.of("org_admin", "analyst", "learner"));
@@ -198,7 +198,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_grantsTheNewGroup() {
+    void setRoleGrantsTheNewGroup() {
         stubGroupsHeld("learner");
 
         directory.setRole("a@x.vn", "content_editor", Set.of("learner"));
@@ -211,7 +211,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_leavesAGroupTheAccountIsAlreadyInAlone() {
+    void setRoleLeavesAGroupTheAccountIsAlreadyInAlone() {
         // Nothing to revoke; the grant is idempotent at Cognito.
         stubGroupsHeld();
 
@@ -222,7 +222,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_endsTheAccountsSessionsOnceTheGroupsHaveMoved() {
+    void setRoleEndsTheAccountsSessionsOnceTheGroupsHaveMoved() {
         stubGroupsHeld("org_admin");
 
         directory.setRole("boss@x.vn", "learner", Set.of("org_admin"));
@@ -235,7 +235,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_whenSessionsCannotBeEnded_stillReportsTheRoleChange() {
+    void setRoleWhenSessionsCannotBeEndedStillReportsTheRoleChange() {
         stubGroupsHeld("org_admin");
         when(cognito.adminUserGlobalSignOut(any(AdminUserGlobalSignOutRequest.class)))
                 .thenThrow(TooManyRequestsException.builder().message("slow down").build());
@@ -248,7 +248,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void setRole_whenThereIsNoAccount_saysSoRatherThanReportingSuccess() {
+    void setRoleWhenThereIsNoAccountSaysSoRatherThanReportingSuccess() {
         when(cognito.adminListGroupsForUser(any(AdminListGroupsForUserRequest.class)))
                 .thenThrow(UserNotFoundException.builder().message("no user").build());
 
@@ -262,7 +262,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void deleteUser_removesTheAccount() {
+    void deleteUserRemovesTheAccount() {
         directory.deleteUser("gone@x.vn");
 
         ArgumentCaptor<AdminDeleteUserRequest> req =
@@ -273,7 +273,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void deleteUser_whenTheAccountIsAlreadyGone_isNotAnError() {
+    void deleteUserWhenTheAccountIsAlreadyGoneIsNotAnError() {
         when(cognito.adminDeleteUser(any(AdminDeleteUserRequest.class)))
                 .thenThrow(UserNotFoundException.builder().message("no user").build());
 
@@ -283,7 +283,7 @@ class CognitoUserDirectoryTest {
     }
 
     @Test
-    void deleteUser_whenCognitoRefuses_surfacesTheFailure() {
+    void deleteUserWhenCognitoRefusesSurfacesTheFailure() {
         when(cognito.adminDeleteUser(any(AdminDeleteUserRequest.class)))
                 .thenThrow(TooManyRequestsException.builder().message("slow down").build());
 
