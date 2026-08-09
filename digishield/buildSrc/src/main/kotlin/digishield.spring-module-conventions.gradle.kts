@@ -117,8 +117,12 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                // TODO raise threshold as coverage grows (target 0.50).
-                minimum = "0.10".toBigDecimal()
+                // A ratchet, not a target. The floor sits just under the least
+                // covered subproject (modules/reporting, 19.6% at the time of
+                // writing) so it catches a module sliding backwards without
+                // failing the build today. Raise it as the weakest module
+                // improves; the long-term target is still 0.50.
+                minimum = "0.15".toBigDecimal()
             }
         }
     }
