@@ -1,7 +1,7 @@
 # DIGITAL SHIELD (DigiShield) — Technical Design Document (TDD)
 
 > Version 1.0 · 06/27/2026
-> Document with diagrams (Mermaid) + API specification. To be used alongside **DigiShield_Product_Technical_Spec_v2.docx** (product specification) and **DigiShield_openapi.yaml** (machine-readable API specification).
+> Document with diagrams (Mermaid) + API specification. To be used alongside **DigiShield_Product_Technical_Spec_v2.docx** (product specification), **DigiShield_openapi.yaml** (machine-readable API specification) and **DigiShield_Architecture.html** (as-built architecture diagrams).
 >
 > The ```mermaid``` blocks render directly on GitHub, GitLab, VS Code (Mermaid extension), Obsidian, etc. If you need images, use [mermaid.live](https://mermaid.live) and paste the code to export PNG/SVG.
 
@@ -31,6 +31,15 @@
 ---
 
 ## 1. Architecture Overview
+
+> **Design intent vs. as-built.** Sections 1–4 describe the architecture as
+> *designed*. For the architecture as *implemented* — module boundaries, the
+> event fan-out, the layering inside a module, tenant isolation and the delivery
+> pipeline — see **[`DigiShield_Architecture.html`](DigiShield_Architecture.html)**.
+> Its six diagrams were drawn from the code (class, event and endpoint names are
+> read out of the repository), so where the two documents disagree, that file
+> reflects what is running and this one records what was planned. Open it in a
+> browser: its diagrams are inline SVG, which GitHub's Markdown renderer strips.
 
 DigiShield is a **multi-tenant SaaS** platform built on a **gradually-decoupling, event-driven modular monolith** architecture — the core is a single deployment unit with clearly bounded modules (Auth, Learning, Simulation, Reporting, Analytics, Notification, AI, Tenancy/Billing), progressively split into microservices as scaling/team needs arise (see **ADR-001** in `DigiShield_ADR.md`). Each organization (tenant) has its data logically isolated via `org_id`/`tenant_id`. Heavy tasks (bulk email/SMS sending, AI analysis) run asynchronously through queues using a separate worker pool. Packaged in containers so it can run both in the cloud and on-premise/air-gapped (government sector); managed serverless is not used as the core.
 
