@@ -61,6 +61,31 @@ bash scripts/setup-hooks.sh
   - ✅ At least one approving review from a Code Owner (see [`.github/CODEOWNERS`](../.github/CODEOWNERS))
   - ✅ All review conversations resolved
 
+### Long-lived branches — do not delete
+
+The repository keeps exactly two permanent branches. Everything else is a
+feature branch and is safe to delete once merged.
+
+| Branch | Purpose |
+|--------|---------|
+| `main` | Development trunk. Protected. |
+| **`deploy/jetson`** | **Deployment state, not a leftover.** ArgoCD on the Jetson cluster syncs the DigiShield application from this branch, and CD force-pushes the `sha-<commit>` image pins onto it. |
+
+> ⚠️ **Never delete `deploy/jetson`.** It carries commits that do not exist on
+> `main` — the pinned image tags in `digishield/deploy/helm/digishield/values-jetson.yaml`
+> — and it is named in
+> [`digishield/deploy/gitops/jetson/apps/digishield.yaml`](../digishield/deploy/gitops/jetson/apps/digishield.yaml)
+> as `targetRevision`. Deleting it leaves that ArgoCD Application without a
+> source: running pods keep running, but the cluster stops syncing and the
+> record of which image is deployed is lost. CD does recreate the branch, but
+> only on a push to `main` that touches code — a docs-only push will not, so the
+> cluster can stay broken for a while.
+
+The rule generalises: before deleting any branch, grep for its name under
+`digishield/deploy/gitops/`. A branch that appears as a `targetRevision` there is
+infrastructure. Note that `root-app.yaml` and `apps/infra.yaml` track `main`;
+only `apps/digishield.yaml` tracks `deploy/jetson`.
+
 ### Commit messages
 
 Follow [Conventional Commits](https://www.conventionalcommits.org/), written **in English**:
