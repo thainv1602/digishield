@@ -53,6 +53,26 @@
 
   section { display:flex; flex-direction:column; gap:18px; }
   .shead { display:flex; flex-direction:column; gap:6px; }
+
+  /* Đầu mục mang số / chữ cái lớn ở rail trái, để quét nhanh khi cuộn. */
+  .shead.marked {
+    display:grid; grid-template-columns:1.4em 1fr; gap:0 22px; align-items:start;
+    border-top:2px solid var(--ink); padding-top:16px;
+  }
+  .marker {
+    font-family:var(--mono); font-size:clamp(40px,6vw,60px); font-weight:700;
+    line-height:.78; letter-spacing:-.05em; color:var(--sync); font-variant-numeric:tabular-nums;
+  }
+  .shead.marked > div { display:flex; flex-direction:column; gap:6px; }
+  @media (max-width:560px){
+    .shead.marked { grid-template-columns:1fr; gap:6px; }
+    .marker { font-size:34px; line-height:1; }
+  }
+  /* Số phụ mục tách khỏi tiêu đề, cùng màu marker. */
+  h3 .num {
+    font-family:var(--mono); font-size:.8em; font-weight:600; color:var(--sync);
+    margin-right:.55em; font-variant-numeric:tabular-nums;
+  }
   h2 { font-size:clamp(21px,2.5vw,28px); line-height:1.2; letter-spacing:-.02em; font-weight:650; margin:0; text-wrap:balance; }
   h3 { font-size:17px; font-weight:640; margin:0; letter-spacing:-.01em; }
   p, li { margin:0; }
@@ -142,7 +162,7 @@
   <h1>DigiShield — 20 đề tài sinh viên</h1>
   <p class="standfirst">
     Với mỗi đề tài, tài liệu này chỉ rõ ba thứ: <b>code ở đâu</b>, <b>làm gì</b>, và
-    <b>nghiệm thu thế nào</b>. Đọc §0 trước — nó mô tả kiến trúc và “công thức đóng góp”
+    <b>nghiệm thu thế nào</b>. Đọc phần <b>0</b> trước — nó mô tả kiến trúc và “công thức đóng góp”
     áp dụng cho <em>mọi</em> đề tài, để phần từng đề tài chỉ nói điểm khác biệt.
   </p>
   <div class="factbar">
@@ -154,20 +174,23 @@
 </header>
 
 <div class="note warn">
-  <p><b>Có gì thay đổi so với bản 15 đề tài.</b> Phần CI/CD (§0.7) đã được viết lại: repo giờ chỉ
+  <p><b>Có gì thay đổi so với bản 15 đề tài.</b> Phần CI/CD (mục 0.7) đã được viết lại: repo giờ chỉ
   còn <em>một</em> workflow, e2e đã nằm trên <code>main</code>, và đích deploy là cụm k3s trên
   Jetson chứ không phải EKS. ĐT15 được viết lại vì phần lớn việc của nó đã xong.
-  Thêm §0.8 (quy mô nhóm) và năm đề tài mới ĐT16–ĐT20.</p>
+  Thêm mục 0.8 (quy mô nhóm) và năm đề tài mới ĐT16–ĐT20.</p>
 </div>
 
-<!-- ══════════════ §0 ══════════════ -->
+<!-- ══════════════ 0 ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">§0</p>
-    <h2>Nền tảng chung — đọc trước</h2>
+  <div class="shead marked">
+    <span class="marker">0</span>
+    <div>
+      <p class="eyebrow">Đọc trước · áp dụng cho mọi đề tài</p>
+      <h2>Nền tảng chung</h2>
+    </div>
   </div>
 
-  <h3>0.1 Kiến trúc</h3>
+  <h3><span class="num">0.1</span>Kiến trúc</h3>
   <p>
     Modular monolith trên Spring Boot 4.1 + Spring Modulith 2.1, Java 25, Gradle multi-module.
     Chín module nghiệp vụ trong <code>modules/</code>, năm thư viện dùng chung trong
@@ -193,7 +216,7 @@
     Sơ đồ kiến trúc đầy đủ (6 hình): <code>../docs/DigiShield_Architecture.html</code>.
   </p>
 
-  <h3>0.2 Bản đồ sự kiện — hầu hết đề tài “cắm” vào đây</h3>
+  <h3><span class="num">0.2</span>Bản đồ sự kiện — hầu hết đề tài “cắm” vào đây</h3>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Event</th><th>Ai publish</th><th>Ai nghe</th></tr></thead>
@@ -216,14 +239,14 @@
     liệu chưa sẵn sàng.
   </p>
 
-  <h3>0.3 Dữ liệu</h3>
+  <h3><span class="num">0.3</span>Dữ liệu</h3>
   <p>
     PostgreSQL + Flyway (<code>db/migration/</code>). Mọi bảng nghiệp vụ có <code>tenant_id</code> và
     được Row-Level Security bảo vệ. Ở profile <code>dev</code> chạy H2 và RLS <b>tắt</b> — nên lỗi
     rò dữ liệu giữa tenant sẽ <em>không</em> lộ ra khi dev, chỉ lộ ở integration test trên Postgres thật.
   </p>
 
-  <h3>0.4 AI — điểm cắm</h3>
+  <h3><span class="num">0.4</span>AI — điểm cắm</h3>
   <p>
     <code>ai/application/AiClient.java</code> có ba cài đặt: <code>StubAiClient</code> (mặc định,
     offline, deterministic), <code>ClaudeAiClient</code> (bật bằng <code>AI_CLAUDE_ENABLED</code>),
@@ -231,14 +254,14 @@
     stub. <b>Test luôn dùng <code>StubAiClient</code></b> để kết quả lặp lại được.
   </p>
 
-  <h3>0.5 Frontend</h3>
+  <h3><span class="num">0.5</span>Frontend</h3>
   <p>
     React 18 + TypeScript + Vite ở repo anh em <code>../frontend</code>. Client API sinh tự động từ
     <code>../docs/DigiShield_openapi.yaml</code> bằng <code>npm run gen:api</code> — <b>đổi API thì
     phải cập nhật file OpenAPI trước</b>, không sửa tay client.
   </p>
 
-  <h3>0.6 Công thức đóng góp chuẩn — áp dụng cho mọi đề tài</h3>
+  <h3><span class="num">0.6</span>Công thức đóng góp chuẩn — áp dụng cho mọi đề tài</h3>
 <pre><code>1. git switch -c feat/&lt;slug&gt;          # nhánh từ main; KHÔNG push thẳng main
 2. domain/          entity + enum
 3. migration        V2026.MM.DD.NNN__*.sql          [nếu đổi schema]
@@ -250,7 +273,7 @@
 9. openapi          cập nhật ../docs/DigiShield_openapi.yaml
 10. test            5 lớp bên dưới → ./gradlew check → PR → CI xanh</code></pre>
 
-  <h3>0.7 Test &amp; CI/CD — chạy ở đâu</h3>
+  <h3><span class="num">0.7</span>Test &amp; CI/CD — chạy ở đâu</h3>
   <div class="note warn">
     <p><b>Phần này khác hẳn bản trước.</b> Repo <em>không còn</em> sáu workflow riêng
     (<code>backend-ci</code>, <code>frontend-ci</code>, <code>security-ci</code>,
@@ -301,7 +324,7 @@
     commit không có trên <code>main</code>.</p>
   </div>
 
-  <h3>0.8 Quy mô nhóm &amp; cách ước lượng</h3>
+  <h3><span class="num">0.8</span>Quy mô nhóm &amp; cách ước lượng</h3>
   <p>
     Một đề tài được thiết kế cho <b>nhóm 4 người, một học kỳ</b>. Thước đo là số
     <b>phần việc</b> — mỗi phần đi trọn từ <code>domain/</code> tới màn hình và có đủ 5 lớp test.
@@ -344,9 +367,12 @@
 
 <!-- ══════════════ NHÓM A ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm A · modules/simulation</p>
-    <h2>Mô phỏng đa kênh &amp; nội dung — ĐT01–06</h2>
+  <div class="shead marked">
+    <span class="marker">A</span>
+    <div>
+      <p class="eyebrow">modules/simulation</p>
+      <h2>Mô phỏng đa kênh &amp; nội dung — ĐT01–06</h2>
+    </div>
   </div>
   <p>
     Neo: <code>domain/Channel.java</code> (đã khai báo <code>EMAIL, SMS, QR, USB, VOICE, ZALO,
@@ -436,9 +462,12 @@
 
 <!-- ══════════════ NHÓM B ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm B · modules/reporting · modules/interception</p>
-    <h2>Báo cáo phishing &amp; SOC — ĐT07–08</h2>
+  <div class="shead marked">
+    <span class="marker">B</span>
+    <div>
+      <p class="eyebrow">modules/reporting · modules/interception</p>
+      <h2>Báo cáo phishing &amp; SOC — ĐT07–08</h2>
+    </div>
   </div>
   <p>
     Neo: <code>reporting/domain/PhishingReport.java</code>, <code>reporting/web/ReportingController.java</code>,
@@ -471,9 +500,12 @@
 
 <!-- ══════════════ NHÓM C ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm C · modules/learning</p>
-    <h2>Đào tạo &amp; LMS — ĐT09–11</h2>
+  <div class="shead marked">
+    <span class="marker">C</span>
+    <div>
+      <p class="eyebrow">modules/learning</p>
+      <h2>Đào tạo &amp; LMS — ĐT09–11</h2>
+    </div>
   </div>
   <p>
     Neo: <code>domain/CoachingPage.java</code>, <code>domain/Enrollment.java</code>,
@@ -516,9 +548,12 @@
 
 <!-- ══════════════ NHÓM D ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm D · modules/analytics</p>
-    <h2>Phân tích &amp; rủi ro — ĐT12–13</h2>
+  <div class="shead marked">
+    <span class="marker">D</span>
+    <div>
+      <p class="eyebrow">modules/analytics</p>
+      <h2>Phân tích &amp; rủi ro — ĐT12–13</h2>
+    </div>
   </div>
   <p>
     Neo: <code>domain/RiskScore.java</code>, <code>domain/RiskSignal.java</code>,
@@ -553,9 +588,12 @@
 
 <!-- ══════════════ NHÓM E ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm E · modules/ai</p>
-    <h2>AI &amp; tự động hoá — ĐT14</h2>
+  <div class="shead marked">
+    <span class="marker">E</span>
+    <div>
+      <p class="eyebrow">modules/ai</p>
+      <h2>AI &amp; tự động hoá — ĐT14</h2>
+    </div>
   </div>
   <div class="topic">
     <header><span class="tid">ĐT14</span><h3>AIDA orchestration nâng cao</h3></header>
@@ -572,9 +610,12 @@
 
 <!-- ══════════════ NHÓM F ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm F · e2e · buildSrc · CI</p>
-    <h2>Chất lượng &amp; DevSecOps — ĐT15 <span class="tag rev">viết lại</span></h2>
+  <div class="shead marked">
+    <span class="marker">F</span>
+    <div>
+      <p class="eyebrow">e2e · buildSrc · CI</p>
+      <h2>Chất lượng &amp; DevSecOps — ĐT15 <span class="tag rev">viết lại</span></h2>
+    </div>
   </div>
   <div class="note ok">
     <p><b>Phần lớn việc của bản cũ đã xong.</b> Đề tài này được viết lại để không giao lại việc đã làm:</p>
@@ -615,9 +656,12 @@
 
 <!-- ══════════════ NHÓM G ══════════════ -->
 <section>
-  <div class="shead">
-    <p class="eyebrow">Nhóm G · tenancy · notification · auth <span class="tag new">mới</span></p>
-    <h2>Nền tảng vận hành — ĐT16–20</h2>
+  <div class="shead marked">
+    <span class="marker">G</span>
+    <div>
+      <p class="eyebrow">tenancy · notification · auth <span class="tag new">mới</span></p>
+      <h2>Nền tảng vận hành — ĐT16–20</h2>
+    </div>
   </div>
   <p>
     Năm đề tài này lấp ba module <b>chưa đề tài nào chạm tới</b> — <code>tenancy</code>,
