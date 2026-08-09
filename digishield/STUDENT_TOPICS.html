@@ -1,0 +1,736 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DigiShield — 20 đề tài sinh viên</title>
+
+<style>
+  :root {
+    --ground:#E8ECF1; --surface:#FFFFFF; --surface-2:#F2F5F8;
+    --ink:#141A21; --muted:#5D6B7A; --line:#C3CEDA; --line-soft:#D8E0E8;
+    --sync:#16688B; --evt:#B0521A; --bnd:#66499B; --ok:#2F6B3D;
+    --sync-tint:#E1EEF4; --evt-tint:#F7EAE0; --bnd-tint:#ECE7F6; --ok-tint:#E4EFE6;
+    --mono: ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+    --sans: ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --measure: 72ch;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#0E1319; --surface:#161D25; --surface-2:#1C242D;
+      --ink:#DBE3EB; --muted:#8896A5; --line:#2C3742; --line-soft:#232C35;
+      --sync:#5CB6D8; --evt:#E2925C; --bnd:#AB8CDC; --ok:#79BC8B;
+      --sync-tint:#14313D; --evt-tint:#33271D; --bnd-tint:#241E34; --ok-tint:#1B2E22;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#0E1319; --surface:#161D25; --surface-2:#1C242D;
+    --ink:#DBE3EB; --muted:#8896A5; --line:#2C3742; --line-soft:#232C35;
+    --sync:#5CB6D8; --evt:#E2925C; --bnd:#AB8CDC; --ok:#79BC8B;
+    --sync-tint:#14313D; --evt-tint:#33271D; --bnd-tint:#241E34; --ok-tint:#1B2E22;
+  }
+
+  * { box-sizing:border-box; }
+  body {
+    background:var(--ground); color:var(--ink); font-family:var(--sans);
+    font-size:16px; line-height:1.65; margin:0; padding:0 20px 100px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page { max-width:1120px; margin:0 auto; display:flex; flex-direction:column; gap:52px; }
+
+  header.mast {
+    padding:64px 0 36px; border-bottom:1px solid var(--line);
+    display:flex; flex-direction:column; gap:16px;
+  }
+  .eyebrow {
+    font-family:var(--mono); font-size:11px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted); margin:0;
+  }
+  h1 { font-size:clamp(32px,5vw,50px); line-height:1.05; letter-spacing:-.03em; font-weight:700; margin:0; text-wrap:balance; }
+  .standfirst { max-width:var(--measure); font-size:18px; color:var(--muted); margin:0; }
+  .factbar { display:flex; flex-wrap:wrap; gap:10px 26px; font-family:var(--mono); font-size:11.5px; color:var(--muted); }
+  .factbar b { color:var(--ink); font-weight:600; }
+
+  section { display:flex; flex-direction:column; gap:18px; }
+  .shead { display:flex; flex-direction:column; gap:6px; }
+  h2 { font-size:clamp(21px,2.5vw,28px); line-height:1.2; letter-spacing:-.02em; font-weight:650; margin:0; text-wrap:balance; }
+  h3 { font-size:17px; font-weight:640; margin:0; letter-spacing:-.01em; }
+  p, li { margin:0; }
+  p { max-width:var(--measure); }
+  p + p { margin-top:10px; }
+  ul { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; max-width:var(--measure); }
+  a { color:var(--sync); }
+
+  code {
+    font-family:var(--mono); font-size:.86em; background:var(--surface-2);
+    border:1px solid var(--line-soft); border-radius:3px; padding:.08em .32em;
+  }
+  pre {
+    font-family:var(--mono); font-size:12.5px; line-height:1.6; margin:0;
+    background:var(--surface); border:1px solid var(--line); border-radius:4px;
+    padding:14px 16px; overflow-x:auto;
+  }
+  pre code { background:none; border:none; padding:0; font-size:inherit; }
+
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:4px; background:var(--surface); }
+  table { border-collapse:collapse; width:100%; min-width:600px; font-size:14px; }
+  th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  th {
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--muted); font-weight:600; background:var(--surface-2); white-space:nowrap;
+  }
+  tbody tr:last-child td { border-bottom:none; }
+  td.k { font-family:var(--mono); font-size:12.5px; white-space:nowrap; }
+
+  /* ── topic cards ─────────────────────────────── */
+  .topic {
+    border:1px solid var(--line); border-radius:5px; background:var(--surface);
+    padding:18px 20px; display:flex; flex-direction:column; gap:12px;
+  }
+  .topic > header { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 14px; }
+  .tid {
+    font-family:var(--mono); font-size:12px; font-weight:700; letter-spacing:.04em;
+    color:var(--sync); background:var(--sync-tint); border-radius:3px; padding:2px 8px;
+  }
+  .topic dl { margin:0; display:grid; grid-template-columns:max-content 1fr; gap:8px 16px; align-items:baseline; }
+  .topic dt {
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); font-weight:600; padding-top:3px;
+  }
+  .topic dd { margin:0; font-size:14.5px; line-height:1.6; }
+  @media (max-width:640px) { .topic dl { grid-template-columns:1fr; gap:2px 0; } .topic dt { padding-top:8px; } }
+
+  .tag {
+    font-family:var(--mono); font-size:10px; letter-spacing:.06em; font-weight:600;
+    border-radius:3px; padding:2px 7px; white-space:nowrap;
+  }
+  .tag.new  { color:var(--evt); background:var(--evt-tint); }
+  .tag.rev  { color:var(--bnd); background:var(--bnd-tint); }
+  .tag.dep  { color:var(--muted); background:var(--surface-2); border:1px solid var(--line-soft); }
+  .tag.done { color:var(--ok);  background:var(--ok-tint); }
+
+  /* ── callouts ────────────────────────────────── */
+  .note {
+    border-left:3px solid var(--sync); background:var(--surface); border-radius:0 4px 4px 0;
+    padding:12px 16px; font-size:14.5px; max-width:var(--measure);
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .note.warn { border-left-color:var(--evt); }
+  .note.ok   { border-left-color:var(--ok); }
+  .note b { font-weight:640; }
+
+  /* ── flow chain (replaces mermaid) ───────────── */
+  .flow { display:flex; flex-wrap:wrap; align-items:stretch; gap:8px; font-family:var(--mono); font-size:11.5px; }
+  .flow .step {
+    background:var(--surface); border:1px solid var(--line); border-radius:4px;
+    padding:8px 11px; line-height:1.45; flex:0 1 auto;
+  }
+  .flow .step b { display:block; font-weight:650; font-size:12px; }
+  .flow .step span { color:var(--muted); }
+  .flow .arrow { align-self:center; color:var(--sync); font-weight:700; }
+  .flow.evt .arrow { color:var(--evt); }
+
+  .grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px; }
+  hr { border:none; border-top:1px solid var(--line); margin:0; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header class="mast">
+  <p class="eyebrow">Hướng dẫn triển khai · cập nhật 09.08.2026</p>
+  <h1>DigiShield — 20 đề tài sinh viên</h1>
+  <p class="standfirst">
+    Với mỗi đề tài, tài liệu này chỉ rõ ba thứ: <b>code ở đâu</b>, <b>làm gì</b>, và
+    <b>nghiệm thu thế nào</b>. Đọc §0 trước — nó mô tả kiến trúc và “công thức đóng góp”
+    áp dụng cho <em>mọi</em> đề tài, để phần từng đề tài chỉ nói điểm khác biệt.
+  </p>
+  <div class="factbar">
+    <span><b>20</b> đề tài · 7 nhóm</span>
+    <span><b>9</b> module nghiệp vụ</span>
+    <span><b>10</b> domain event</span>
+    <span><b>5</b> lớp test bắt buộc</span>
+  </div>
+</header>
+
+<div class="note warn">
+  <p><b>Có gì thay đổi so với bản 15 đề tài.</b> Phần CI/CD (§0.7) đã được viết lại: repo giờ chỉ
+  còn <em>một</em> workflow, e2e đã nằm trên <code>main</code>, và đích deploy là cụm k3s trên
+  Jetson chứ không phải EKS. ĐT15 được viết lại vì phần lớn việc của nó đã xong.
+  Thêm §0.8 (quy mô nhóm) và năm đề tài mới ĐT16–ĐT20.</p>
+</div>
+
+<!-- ══════════════ §0 ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">§0</p>
+    <h2>Nền tảng chung — đọc trước</h2>
+  </div>
+
+  <h3>0.1 Kiến trúc</h3>
+  <p>
+    Modular monolith trên Spring Boot 4.1 + Spring Modulith 2.1, Java 25, Gradle multi-module.
+    Chín module nghiệp vụ trong <code>modules/</code>, năm thư viện dùng chung trong
+    <code>shared/</code>, hợp đồng liên module trong <code>contracts/</code>.
+  </p>
+  <div class="note">
+    <p><b>Luật quan trọng nhất:</b> các module <em>không được import lẫn nhau</em>. Mỗi module khai
+    báo trong <code>package-info.java</code> đúng những thứ nó được phụ thuộc, và chỉ có
+    <code>contracts</code> với <code>shared</code> nằm trong danh sách. Vi phạm làm
+    <code>ModularityTests</code> đỏ ngay ở <code>./gradlew test</code>.</p>
+    <p>Muốn hai module nói chuyện: hoặc một <b>event</b> trong <code>contracts/events</code>,
+    hoặc một <b>interface</b> trong <code>api/</code> của module kia. Không có đường thứ ba.</p>
+  </div>
+  <p>Bên trong một module có đúng năm tầng, và chỉ <code>api/</code> là bề mặt công khai:</p>
+  <div class="flow">
+    <span class="step"><b>web/</b><span>controller HTTP</span></span>
+    <span class="step" style="border-color:var(--sync);background:var(--sync-tint)"><b>api/</b><span>cổng công khai duy nhất</span></span>
+    <span class="step"><b>application/</b><span>impl · listener · seeder</span></span>
+    <span class="step"><b>domain/</b><span>entity · enum</span></span>
+    <span class="step"><b>infrastructure/</b><span>repository JPA</span></span>
+  </div>
+  <p style="font-size:14px;color:var(--muted)">
+    Sơ đồ kiến trúc đầy đủ (6 hình): <code>../docs/DigiShield_Architecture.html</code>.
+  </p>
+
+  <h3>0.2 Bản đồ sự kiện — hầu hết đề tài “cắm” vào đây</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Event</th><th>Ai publish</th><th>Ai nghe</th></tr></thead>
+      <tbody>
+        <tr><td class="k">UserClickedSimulationEvent</td><td class="k">simulation</td><td class="k">learning · analytics</td></tr>
+        <tr><td class="k">EnrollmentAssignedEvent</td><td class="k">learning</td><td class="k">notification</td></tr>
+        <tr><td class="k">EnrollmentDueEvent</td><td class="k">learning</td><td class="k">notification · auth</td></tr>
+        <tr><td class="k">PhishingReportConfirmedEvent</td><td class="k">reporting</td><td class="k">analytics</td></tr>
+        <tr><td class="k">ThreatIntelConvertedEvent</td><td class="k">reporting</td><td class="k">learning</td></tr>
+        <tr><td class="k">SimulationDeliveryRequestedEvent</td><td class="k">simulation</td><td class="k">notification</td></tr>
+        <tr><td class="k">RemediationEnrollmentRequestedEvent</td><td class="k">analytics</td><td class="k">learning</td></tr>
+        <tr><td class="k">AidaOrchestrationRequested/Completed</td><td class="k">ai</td><td class="k">ai · analytics</td></tr>
+        <tr><td class="k"><b>RiskRecomputedEvent</b></td><td class="k">analytics</td><td class="k" style="color:var(--evt)"><b>chưa ai nghe</b> — điểm cắm sẵn</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:14px;color:var(--muted)">
+    Listener dùng <code>@ApplicationModuleListener</code>: bất đồng bộ, có transaction, được lưu và
+    <b>retry</b>. Nghĩa là listener phải chịu được chạy lại — đừng để nó ném lỗi vĩnh viễn khi dữ
+    liệu chưa sẵn sàng.
+  </p>
+
+  <h3>0.3 Dữ liệu</h3>
+  <p>
+    PostgreSQL + Flyway (<code>db/migration/</code>). Mọi bảng nghiệp vụ có <code>tenant_id</code> và
+    được Row-Level Security bảo vệ. Ở profile <code>dev</code> chạy H2 và RLS <b>tắt</b> — nên lỗi
+    rò dữ liệu giữa tenant sẽ <em>không</em> lộ ra khi dev, chỉ lộ ở integration test trên Postgres thật.
+  </p>
+
+  <h3>0.4 AI — điểm cắm</h3>
+  <p>
+    <code>ai/application/AiClient.java</code> có ba cài đặt: <code>StubAiClient</code> (mặc định,
+    offline, deterministic), <code>ClaudeAiClient</code> (bật bằng <code>AI_CLAUDE_ENABLED</code>),
+    <code>MlAiClient</code> (self-host, xem <code>research/</code>). Mọi lỗi Claude đều degrade về
+    stub. <b>Test luôn dùng <code>StubAiClient</code></b> để kết quả lặp lại được.
+  </p>
+
+  <h3>0.5 Frontend</h3>
+  <p>
+    React 18 + TypeScript + Vite ở repo anh em <code>../frontend</code>. Client API sinh tự động từ
+    <code>../docs/DigiShield_openapi.yaml</code> bằng <code>npm run gen:api</code> — <b>đổi API thì
+    phải cập nhật file OpenAPI trước</b>, không sửa tay client.
+  </p>
+
+  <h3>0.6 Công thức đóng góp chuẩn — áp dụng cho mọi đề tài</h3>
+<pre><code>1. git switch -c feat/&lt;slug&gt;          # nhánh từ main; KHÔNG push thẳng main
+2. domain/          entity + enum
+3. migration        V2026.MM.DD.NNN__*.sql          [nếu đổi schema]
+4. infrastructure/  repository
+5. api/             interface *Service + DTO         ← bề mặt công khai
+6. application/     *ServiceImpl (+ listener nếu cross-module) (+ DevSeeder)
+7. web/             endpoint ở *Controller
+8. contracts/       event, nếu module khác cần phản ứng
+9. openapi          cập nhật ../docs/DigiShield_openapi.yaml
+10. test            5 lớp bên dưới → ./gradlew check → PR → CI xanh</code></pre>
+
+  <h3>0.7 Test &amp; CI/CD — chạy ở đâu</h3>
+  <div class="note warn">
+    <p><b>Phần này khác hẳn bản trước.</b> Repo <em>không còn</em> sáu workflow riêng
+    (<code>backend-ci</code>, <code>frontend-ci</code>, <code>security-ci</code>,
+    <code>automation-ci</code>, <code>cd</code>, <code>commit-lint</code>). Tất cả đã gộp vào
+    <b>một file duy nhất</b>: <code>.github/workflows/ci-cd.yml</code> ở gốc monorepo.</p>
+  </div>
+
+  <p><b>Năm lớp test bắt buộc cho mọi đề tài</b> — thiếu bất kỳ lớp nào coi như chưa xong:</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>#</th><th>Lớp</th><th>Công cụ</th><th>Vị trí</th><th>Lệnh</th></tr></thead>
+      <tbody>
+        <tr><td class="k">1</td><td>BE unit</td><td>JUnit 5 + Mockito</td><td class="k">modules/&lt;m&gt;/src/test/…<br>(<code>*Test.java</code>)</td><td class="k">./gradlew test</td></tr>
+        <tr><td class="k">2</td><td>BE integration</td><td>Testcontainers (Postgres)</td><td class="k">boot/app/src/integrationTest/…<br>(<code>*IT.java</code>)</td><td class="k">./gradlew integrationTest</td></tr>
+        <tr><td class="k">3</td><td>FE unit</td><td>Vitest + Testing Library</td><td class="k">../frontend/src/**/*.test.ts(x)</td><td class="k">npm run test:coverage</td></tr>
+        <tr><td class="k">4</td><td>API collection</td><td>Postman → Newman</td><td class="k">postman/</td><td class="k">npm run test:api</td></tr>
+        <tr><td class="k">5</td><td>E2E</td><td>Selenium</td><td class="k">e2e/ (đã ở <code>main</code>)</td><td class="k">./gradlew :e2e:test -De2e.enabled=true</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>Chạy trong <code>./gradlew check</code> (đều là <b>gate thật</b>, hỏng là đỏ build):</p>
+  <ul>
+    <li><b>ModularityTests</b> — ranh giới module.</li>
+    <li><b>Checkstyle</b> — 46 rule, <code>maxWarnings = 0</code>, <code>ignoreFailures = false</code>.</li>
+    <li><b>SpotBugs</b> — phân tích bytecode, <code>effort = MAX</code>, ngoại lệ khai báo trong <code>config/spotbugs/exclude.xml</code>.</li>
+    <li><b>JaCoCo</b> — sàn LINE <b>0.15</b> mỗi subproject. Đây là <em>ratchet chống tụt</em>, không phải mục tiêu; mục tiêu dài hạn 0.50.</li>
+  </ul>
+
+  <p>Các chặng của workflow, chạy <b>tuần tự và fail-fast</b>:</p>
+  <div class="flow">
+    <span class="step"><b>commit-lint</b><span>Conventional Commits · tiếng Anh</span></span><span class="arrow">→</span>
+    <span class="step"><b>changes</b><span>path filter</span></span><span class="arrow">→</span>
+    <span class="step"><b>backend</b><span>gradlew test</span></span><span class="arrow">→</span>
+    <span class="step"><b>backend-it</b><span>check · IT · Checkstyle · SpotBugs · JaCoCo</span></span><span class="arrow">→</span>
+    <span class="step"><b>frontend</b><span>lint · typecheck · test · build</span></span><span class="arrow">→</span>
+    <span class="step"><b>security + codeql</b><span>Gitleaks · Semgrep · Trivy</span></span><span class="arrow">→</span>
+    <span class="step"><b>e2e</b><span>Newman + Selenium</span></span>
+  </div>
+  <p style="font-size:14px;color:var(--muted)">
+    Sau khi merge vào <code>main</code>: build multi-arch → GHCR → Trivy → cosign + SBOM →
+    ghim tag <code>sha-&lt;commit&gt;</code> lên nhánh <code>deploy/jetson</code> → <b>ArgoCD</b> tự
+    đồng bộ xuống <b>cụm k3s trên Jetson</b>. Không phải EKS, và CD không ra lệnh cho cụm — nó chỉ
+    sửa một dòng tag trong git.
+  </p>
+  <div class="note">
+    <p><b>Nhánh <code>deploy/jetson</code> không được xoá.</b> ArgoCD lấy manifest từ đó và nó mang
+    commit không có trên <code>main</code>.</p>
+  </div>
+
+  <h3>0.8 Quy mô nhóm &amp; cách ước lượng</h3>
+  <p>
+    Một đề tài được thiết kế cho <b>nhóm 4 người, một học kỳ</b>. Thước đo là số
+    <b>lát cắt dọc</b> — mỗi lát đi trọn từ <code>domain/</code> tới màn hình và có đủ 5 lớp test.
+    Một đề tài đủ tầm cho 4 người khi có <b>3–5 lát cắt độc lập</b>, để mỗi thành viên sở hữu một
+    lát mà không giẫm chân nhau.
+  </p>
+  <div class="note warn">
+    <p><b>Phụ thuộc cần lưu ý khi giao đề.</b> ĐT06 (web beacon) là hạ tầng nền cho ĐT01–ĐT05.
+    Nếu giao song song, năm nhóm sẽ chờ một nhóm. Hoặc giao ĐT06 sớm hơn một nhịp, hoặc yêu cầu
+    ĐT01–05 tự stub beacon rồi thay sau.</p>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ BẢNG TỔNG ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Tổng quan</p>
+    <h2>20 đề tài, 7 nhóm</h2>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Nhóm</th><th>Đề tài</th><th>Module chính</th><th>Ghi chú</th></tr></thead>
+      <tbody>
+        <tr><td class="k">A</td><td class="k">ĐT01–06</td><td class="k">simulation</td><td>Mô phỏng đa kênh &amp; nội dung. ĐT06 là nền cho ĐT01–05.</td></tr>
+        <tr><td class="k">B</td><td class="k">ĐT07–08</td><td class="k">reporting · interception</td><td>Báo cáo phishing &amp; SOC.</td></tr>
+        <tr><td class="k">C</td><td class="k">ĐT09–11</td><td class="k">learning</td><td>Đào tạo &amp; LMS.</td></tr>
+        <tr><td class="k">D</td><td class="k">ĐT12–13</td><td class="k">analytics</td><td>Phân tích &amp; rủi ro.</td></tr>
+        <tr><td class="k">E</td><td class="k">ĐT14</td><td class="k">ai</td><td>AI &amp; tự động hoá.</td></tr>
+        <tr><td class="k">F</td><td class="k">ĐT15</td><td class="k">e2e · buildSrc · CI</td><td>Chất lượng &amp; DevSecOps. <span class="tag rev">viết lại</span></td></tr>
+        <tr><td class="k">G</td><td class="k">ĐT16–20</td><td class="k">tenancy · notification · auth</td><td>Nền tảng vận hành. <span class="tag new">mới</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM A ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm A · modules/simulation</p>
+    <h2>Mô phỏng đa kênh &amp; nội dung — ĐT01–06</h2>
+  </div>
+  <p>
+    Neo: <code>domain/Channel.java</code> (đã khai báo <code>EMAIL, SMS, QR, USB, VOICE, ZALO,
+    TEAMS, SLACK</code>), <code>domain/SimAction.java</code> (<code>DELIVERED, OPEN, CLICK, SUBMIT,
+    REPORT</code>), <code>domain/SimEvent.java</code>, <code>web/SimulationController.java</code>,
+    <code>application/SimulationServiceImpl.java</code>.
+  </p>
+  <p>
+    Phần lớn kênh <em>đã có trong enum nhưng chưa chạy end-to-end</em>. Việc chính là hiện thực
+    <b>gửi → theo dõi → funnel</b> cho từng kênh, rồi publish <code>UserClickedSimulationEvent</code>
+    để learning/analytics tự phản ứng (đã nối sẵn, không phải sửa).
+  </p>
+  <div class="flow evt">
+    <span class="step"><b>Người dùng</b><span>mở / nhấn</span></span><span class="arrow">→</span>
+    <span class="step"><b>Beacon (ĐT06)</b><span>ghi SimEvent</span></span><span class="arrow">→</span>
+    <span class="step"><b>simulation</b><span>publish event</span></span><span class="arrow">⇢</span>
+    <span class="step"><b>learning</b><span>ghi danh remediation</span></span>
+    <span class="step"><b>analytics</b><span>cộng RiskSignal</span></span>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT01</span><h3>QR-code phishing (quishing)</h3><span class="tag dep">cần ĐT06</span></header>
+    <dl>
+      <dt>Code</dt><dd>Service sinh QR (ZXing) trong <code>simulation/application/</code>; endpoint <code>POST /api/v1/sim/campaigns/{id}/qr</code>; landing + tracking đi qua ĐT06. Chấm điểm link: <code>ai/AiClient.classify</code>.</dd>
+      <dt>Workflow</dt><dd>Tạo campaign kênh <code>QR</code> → sinh QR trỏ beacon → người quét → ghi <code>SimEvent(CLICK)</code> → publish event → learning ghi danh, analytics cộng risk.</dd>
+      <dt>Test</dt><dd>UT bộ sinh QR; IT ingest event kênh QR; e2e “quét QR → click → submit”.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT02</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT06 · ĐT17</span></header>
+    <dl>
+      <dt>Code</dt><dd>Cài <code>notification/api/NotificationGateway</code> cho SMS (AWS SNS/Twilio, kèm stub offline); campaign kênh <code>SMS</code>; track theo số điện thoại. Model tiếng Việt: <code>research/phase2</code> (PhoBERT).</dd>
+      <dt>Workflow</dt><dd>Campaign <code>SMS</code> → gateway gửi → link rút gọn trỏ beacon → track CLICK/SUBMIT.</dd>
+      <dt>Test</dt><dd>UT mock provider; contract test payload; IT funnel SMS.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT03</span><h3>Vishing / callback</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Entity kịch bản cuộc gọi trong <code>domain/</code>; campaign kênh <code>VOICE</code>; IVR stub trong <code>application/</code>.</dd>
+      <dt>Workflow</dt><dd>Gửi email mồi + số bẫy → người dùng gọi lại → ghi <code>SimEvent</code> → đo tỉ lệ.</dd>
+      <dt>Test</dt><dd>UT state-machine cuộc gọi; IT event callback.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT04</span><h3>Landing page builder + credential-capture</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Entity <code>LandingPage</code> + repo + CRUD; trang public render HTML; form <b>chỉ ghi “đã nhập hay chưa”</b> — tuyệt đối không lưu mật khẩu.</dd>
+      <dt>Workflow</dt><dd>Builder tạo page → gắn campaign → người nhập → sinh <code>SimAction.SUBMIT</code> → data-entry funnel.</dd>
+      <dt>Test</dt><dd>IT submit → <code>SUBMIT</code>; e2e điền form → dashboard tăng. <b>Thêm một test khẳng định không có trường mật khẩu nào được ghi.</b></dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT05</span><h3>Đính kèm độc hại (vô hại)</h3><span class="tag dep">cần ĐT06</span></header>
+    <dl>
+      <dt>Code</dt><dd>Mở rộng template ở <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>); beacon nhúng trong tệp doc/pdf.</dd>
+      <dt>Workflow</dt><dd>Gửi template có đính kèm → mở tệp gọi beacon → ghi <code>OPEN</code>.</dd>
+      <dt>Test</dt><dd>UT sinh beacon; IT track open.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT06</span><h3>Web beacon endpoints — hạ tầng nền</h3><span class="tag rev">giao sớm</span></header>
+    <dl>
+      <dt>Code</dt><dd>Controller mới <code>web/TrackingController.java</code>: <code>GET /t/open.gif</code> (pixel 1×1), <code>GET /t/click</code> (redirect + ghi CLICK). Ánh xạ token → <code>SimEvent</code>. Hiện event chỉ vào được qua <code>POST /api/v1/sim/events</code>.</dd>
+      <dt>Workflow</dt><dd>Email/QR/SMS nhúng URL beacon → mở/nhấn → ghi event → publish <code>UserClickedSimulationEvent</code>.</dd>
+      <dt>Test</dt><dd>IT beacon → event; test chống bot &amp; chống đếm trùng (idempotent theo token); k6 load cho endpoint nóng.</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM B ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm B · modules/reporting · modules/interception</p>
+    <h2>Báo cáo phishing &amp; SOC — ĐT07–08</h2>
+  </div>
+  <p>
+    Neo: <code>reporting/domain/PhishingReport.java</code>, <code>reporting/web/ReportingController.java</code>,
+    <code>interception/web/InterceptionController.java</code>, <code>interception/domain/AccountWatchEntry.java</code>,
+    event <code>PhishingReportConfirmedEvent</code>.
+  </p>
+
+  <div class="topic">
+    <header><span class="tid">ĐT07</span><h3>Nút “Report Phishing” (add-in Outlook/Gmail)</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Backend đã có API report + triage. Việc mới là <b>extension</b> (thư mục mới, ví dụ <code>../report-addin/</code>) gọi API, và endpoint nhận payload từ add-in.</dd>
+      <dt>Workflow</dt><dd>Bấm nút → add-in POST email → <code>PhishingReport(NEW)</code> → analyst triage → publish <code>PhishingReportConfirmedEvent</code> → analytics cập nhật risk; <code>convert-to-training</code>.</dd>
+      <dt>Test</dt><dd>UT luồng triage; e2e “report → xuất hiện trong SOC inbox”.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT08</span><h3>Abuse-mailbox auto-triage</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Trong <code>ReportingServiceImpl</code> gọi <code>AiClient.classify()</code> để tự xếp hạng <code>PhishingReport</code>; thêm cột priority (migration + entity).</dd>
+      <dt>Workflow</dt><dd>Nạp email report → AI phân loại → sắp hàng đợi SOC theo mức độ → gợi ý hành động.</dd>
+      <dt>Test</dt><dd>UT ranking; IT với <code>StubAiClient</code> để kết quả deterministic.</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM C ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm C · modules/learning</p>
+    <h2>Đào tạo &amp; LMS — ĐT09–11</h2>
+  </div>
+  <p>
+    Neo: <code>domain/CoachingPage.java</code>, <code>domain/Enrollment.java</code>,
+    <code>domain/Assessment.java</code>, <code>application/SimulationClickListener.java</code>
+    (đã tự ghi danh khi click), <code>application/RemediationEnrollmentListener.java</code>.
+  </p>
+
+  <div class="topic">
+    <header><span class="tid">ĐT09</span><h3>Micro-learning “teachable moment”</h3><span class="tag dep">cần ĐT06</span></header>
+    <dl>
+      <dt>Code</dt><dd>Mở rộng <code>CoachingPage</code> + endpoint trang học tương tác; nối vào redirect của ĐT06.</dd>
+      <dt>Workflow</dt><dd>Click phishing → redirect sang coaching page + micro-quiz. <code>SimulationClickListener</code> đã ghi danh remediation sẵn — <b>đừng ghi danh lần hai</b>.</dd>
+      <dt>Test</dt><dd>IT click → enroll đúng một lần; e2e trải nghiệm learner.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT10</span><h3>Trình tạo chương trình đào tạo tự động</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Entity <code>TrainingProgram</code> + engine sinh kế hoạch trong <code>learning/application/</code>; dùng <code>notification</code> để nhắc và profile <code>scheduler</code> để chạy theo lịch.</dd>
+      <dt>Workflow</dt><dd>Wizard chọn nội dung → lịch → task calendar → auto-enroll (publish <code>EnrollmentAssignedEvent</code>).</dd>
+      <dt>Test</dt><dd>UT engine sinh kế hoạch; IT job lịch tự ghi danh.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT11</span><h3>Lộ trình học thích ứng theo năng lực &amp; rủi ro</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Trong <code>LearningServiceImpl</code> dùng <code>assessments/placement</code> + risk score (từ <code>analytics</code>, qua interface trong <code>api/</code>) để chọn khoá/độ khó (<code>domain/CourseLevel.java</code>).</dd>
+      <dt>Workflow</dt><dd>Placement + risk → thuật toán chọn nội dung → lộ trình cá nhân.</dd>
+      <dt>Test</dt><dd>UT thuật toán với bộ dữ liệu cố định (deterministic — không random).</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM D ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm D · modules/analytics</p>
+    <h2>Phân tích &amp; rủi ro — ĐT12–13</h2>
+  </div>
+  <p>
+    Neo: <code>domain/RiskScore.java</code>, <code>domain/RiskSignal.java</code>,
+    <code>domain/RiskSignalType.java</code>, <code>application/SimulationClickRiskListener.java</code>,
+    <code>web/AnalyticsController.java</code>, event <code>RiskRecomputedEvent</code>.
+  </p>
+
+  <div class="topic">
+    <header><span class="tid">ĐT12</span><h3>Human Risk Score engine</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Mở rộng <code>RiskSignalType</code> + logic tổng hợp trong <code>AnalyticsServiceImpl</code>; publish <code>RiskRecomputedEvent</code>.</dd>
+      <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → feed AIDA (ĐT14).</dd>
+      <dt>Test</dt><dd>UT tính điểm deterministic; IT recompute qua event.</dd>
+      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm cắm sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT17 xem ai sẽ là consumer đầu tiên.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT13</span><h3>Báo cáo lãnh đạo + xuất định kỳ &amp; benchmark</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Service export (PDF: OpenPDF/Flying Saucer; CSV) trong <code>analytics/application/</code>; endpoint export ở <code>web/AnalyticsController.java</code>; digest chạy bằng <code>scheduler</code> + <code>notification</code>.</dd>
+      <dt>Workflow</dt><dd>Tổng hợp dashboard/benchmark → xuất PDF/CSV → gửi email digest định kỳ.</dd>
+      <dt>Test</dt><dd>Snapshot test nội dung report; IT job digest.</dd>
+      <dt>Bẫy</dt><dd><b>CSV không chỉ là escape dấu phẩy.</b> Ô bắt đầu bằng <code>=</code>, <code>+</code>, <code>@</code> vẫn là công thức sống khi mở bằng Excel, kể cả khi đã quote đúng RFC-4180. Frontend đã xử lý trong <code>../frontend/src/shared/lib/csv.ts</code> — đọc hàm <code>guardFormula</code> ở đó trước khi viết export phía backend, và nhớ ngoại lệ cho số âm.</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM E ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm E · modules/ai</p>
+    <h2>AI &amp; tự động hoá — ĐT14</h2>
+  </div>
+  <div class="topic">
+    <header><span class="tid">ĐT14</span><h3>AIDA orchestration nâng cao</h3></header>
+    <dl>
+      <dt>Code</dt><dd>Mở rộng orchestration có sẵn: rule chọn test/training theo <code>RiskScore</code> (từ ĐT12); drip/follow-up dùng <code>scheduler</code>. Giảm phụ thuộc Claude bằng <code>MlAiClient</code> (self-host, xem <code>research/</code>).</dd>
+      <dt>Workflow</dt><dd><code>AidaOrchestrationRequestedEvent</code> → chọn hành động theo risk → tạo campaign (<code>simulation</code>) / ghi danh (<code>learning</code>) → follow-up → <code>AidaOrchestrationCompletedEvent</code>.</dd>
+      <dt>Test</dt><dd>UT rule chọn hành động; IT orchestration end-to-end với <code>StubAiClient</code>.</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM F ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm F · e2e · buildSrc · CI</p>
+    <h2>Chất lượng &amp; DevSecOps — ĐT15 <span class="tag rev">viết lại</span></h2>
+  </div>
+  <div class="note ok">
+    <p><b>Phần lớn việc của bản cũ đã xong.</b> Đề tài này được viết lại để không giao lại việc đã làm:</p>
+    <ul>
+      <li>Checkstyle <code>ignoreFailures = false</code> — <b>xong</b>, 0 violation, không còn ngoại lệ nào.</li>
+      <li>SpotBugs — <b>xong</b>, enforced, <code>effort = MAX</code>.</li>
+      <li>JaCoCo — đã nâng <b>0.10 → 0.15</b>. Còn xa 0.50.</li>
+      <li>E2E gate — <b>đã là gate thật</b>, không còn <code>continue-on-error</code>.</li>
+      <li>FE coverage — đã có <b>130 test</b>, branch <b>57%</b> (auth + shared logic).</li>
+    </ul>
+  </div>
+  <div class="topic">
+    <header><span class="tid">ĐT15</span><h3>Nâng chất lượng test &amp; siết gate</h3></header>
+    <dl>
+      <dt>Việc còn lại</dt>
+      <dd>
+        <b>1. Mutation testing.</b> Thêm <b>PITest</b> cho backend và đặt ngưỡng mutation score. Đây là
+        việc giá trị nhất còn lại: coverage chỉ nói code <em>được chạy</em>, mutation nói test
+        <em>có bắt lỗi</em> hay không.<br>
+        <b>2. Nâng sàn coverage.</b> Sàn per-project đang bị chặn bởi module yếu nhất
+        (<code>reporting</code> ~19.6%). Viết test cho <code>reporting</code> và <code>tenancy</code>
+        rồi nâng sàn dần; đồng thời cân nhắc thêm verification trên <b>bản aggregate</b>, vì sàn
+        per-project không bắt được suy giảm diện rộng.<br>
+        <b>3. Coverage của integration test không được tính.</b> <code>testCodeCoverageReport</code>
+        cho ra cùng một con số dù có chạy Testcontainers hay không — exec data của
+        <code>integrationTest</code> chưa được nối vào bản aggregate. Sửa chỗ này làm con số CI công bố
+        đúng với thực tế.<br>
+        <b>4. Performance.</b> Thêm <b>k6</b> cho endpoint nóng (tracking event, dashboard), chạy
+        non-blocking trước, thành gate sau.<br>
+        <b>5. FE coverage.</b> 130 test nhưng mới phủ auth + shared logic; các trang nghiệp vụ chưa có.
+      </dd>
+      <dt>Nghiệm thu</dt><dd>Pipeline xanh với gate thật; mutation score có ngưỡng; sàn JaCoCo cao hơn lúc nhận đề và <em>giải thích được vì sao dừng ở mức đó</em>.</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ NHÓM G ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Nhóm G · tenancy · notification · auth <span class="tag new">mới</span></p>
+    <h2>Nền tảng vận hành — ĐT16–20</h2>
+  </div>
+  <p>
+    Năm đề tài này lấp ba module <b>chưa đề tài nào chạm tới</b> — <code>tenancy</code>,
+    <code>notification</code>, <code>auth</code> — cộng hai việc cắt ngang mà 15 đề tài cũ không ai nhận.
+  </p>
+
+  <div class="topic">
+    <header><span class="tid">ĐT16</span><h3>Gói dịch vụ, hạn mức &amp; đo lường sử dụng</h3><span class="tag new">mới</span></header>
+    <dl>
+      <dt>Code</dt><dd>Module <code>modules/tenancy/</code>. Đã có sẵn nhưng chưa chạy thật: <code>domain/Plan.java</code>, <code>Subscription.java</code>, <code>UsageMetering.java</code>, <code>TenantTier.java</code>, <code>FeatureFlag.java</code>, <code>BusinessThresholds.java</code>, và job <code>application/UsageMeteringJob.java</code>.</dd>
+      <dt>Bốn lát cắt</dt>
+      <dd>
+        (1) <b>Gói &amp; đăng ký</b> — CRUD Plan/Subscription, vòng đời nâng/hạ gói.<br>
+        (2) <b>Đo lường</b> — <code>UsageMeteringJob</code> gom số liệu thật (số người dùng, chiến dịch, email gửi) theo kỳ.<br>
+        (3) <b>Cưỡng chế hạn mức</b> — chặn ở tầng service khi vượt quota, trả lỗi có nghĩa chứ không phải 500.<br>
+        (4) <b>Feature flag theo tier</b> + màn hình super-admin.
+      </dd>
+      <dt>Test</dt><dd>UT logic tính hạn mức ở đúng ranh giới (đủ / vừa chạm / vượt); IT job đo lường qua nhiều kỳ; e2e nâng gói → tính năng mở khoá.</dd>
+      <dt>Vì sao đủ tầm</dt><dd>Bốn lát cắt độc lập, mỗi lát có entity + endpoint + màn hình riêng.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT17</span><h3>Thông báo đa kênh &amp; realtime</h3><span class="tag new">mới</span></header>
+    <dl>
+      <dt>Code</dt><dd>Module <code>modules/notification/</code>. Hiện <b>cả hai cổng ra đều là stub</b>: <code>application/LoggingNotificationGateway.java</code> chỉ ghi log, <code>application/NoopRealtimeNotifier.java</code> không làm gì. <code>domain/NotificationChannel.java</code> mới có <code>IN_APP, EMAIL</code>.</dd>
+      <dt>Bốn lát cắt</dt>
+      <dd>
+        (1) <b>Gateway email thật</b> (SES/SMTP) với retry + ghi nhận thất bại.<br>
+        (2) <b>Kênh SMS</b> — mở rộng enum + gateway, dùng chung cho ĐT02.<br>
+        (3) <b>Realtime</b> — cài <code>RealtimeNotifier</code> bằng WebSocket thay <code>NoopRealtimeNotifier</code>; phía FE <code>useAlertStream</code> <b>đã sẵn sàng</b> và đã có 18 test, chỉ chờ server đẩy.<br>
+        (4) <b>Tuỳ chọn nhận &amp; digest</b> — người dùng chọn kênh, gộp thông báo theo lịch.
+      </dd>
+      <dt>Test</dt><dd>UT định tuyến kênh; IT listener → gửi; FE unit đã có sẵn cho stream; e2e “broadcast → chuông đỏ”.</dd>
+      <dt>Vì sao đủ tầm</dt><dd>Cân nhất trong năm cái: bốn lát rõ ràng, và có sẵn hợp đồng phía FE để đối chiếu.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT18</span><h3>SCIM/SSO provisioning &amp; quản trị người dùng</h3><span class="tag new">mới</span></header>
+    <dl>
+      <dt>Code</dt><dd><code>tenancy/domain/ScimConfig.java</code> đã có các trường (<code>idpName</code>, <code>scimEndpoint</code>, <code>clientId</code>, <code>lastSyncAt</code>) nhưng chưa có luồng đồng bộ. Cộng <code>domain/Group.java</code> + <code>GroupMember.java</code>, và <code>modules/auth</code> + Cognito.</dd>
+      <dt>Ba–bốn lát cắt</dt>
+      <dd>
+        (1) Endpoint <b>SCIM Users</b> (tạo/sửa/khoá).<br>
+        (2) Endpoint <b>SCIM Groups</b> ↔ ánh xạ sang <code>Group</code>/<code>GroupMember</code> và role.<br>
+        (3) <b>Đồng bộ Cognito</b> — tạo/khoá tài khoản tương ứng, xử lý ca đã tồn tại.<br>
+        (4) <b>Deprovision</b> khi nhân sự rời tổ chức + ghi audit đầy đủ.
+      </dd>
+      <dt>Test</dt><dd>UT ánh xạ group → role (ưu tiên quyền cao nhất); IT vòng đời tạo → khoá; test bảo đảm deprovision <em>không</em> xoá dữ liệu lịch sử.</dd>
+      <dt>Cảnh báo phạm vi</dt><dd>SCIM là chuẩn có sẵn nên phần lớn là làm đúng spec, ít không gian thiết kế. Nếu nhóm mạnh, ghép thêm phần <b>chính sách phiên đăng nhập</b> (thời hạn token, buộc đăng nhập lại) để đủ tải cho 4 người.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT19</span><h3>Song ngữ đầu-cuối (i18n)</h3><span class="tag new">mới</span></header>
+    <dl>
+      <dt>Vấn đề thật</dt><dd>Bất đối xứng rõ rệt: frontend có <code>shared/i18n/messages.ts</code> <b>1108 dòng</b>, còn backend <b>hardcode tiếng Việt</b> ngay trong service (ví dụ <code>"Không tìm thấy báo cáo phishing: "</code>). Đường <code>Accept-Language</code> đã thông sẵn từ FE (xem interceptor trong <code>shared/api/client.ts</code>) nhưng backend chưa dùng.</dd>
+      <dt>Bốn lát cắt</dt>
+      <dd>
+        (1) <b>Backend <code>MessageSource</code></b> — bóc toàn bộ chuỗi ra <code>messages_vi/en.properties</code>, phân giải theo <code>Accept-Language</code>.<br>
+        (2) <b>Bản địa hoá nội dung nghiệp vụ</b> — template phishing, khoá học, thông báo phải theo <code>locale</code> của <em>người nhận</em>, không phải của người tạo. Đây là phần khó và đáng giá nhất.<br>
+        (3) <b>Định dạng theo locale</b> — ngày, số, tiền tệ, thứ tự tên.<br>
+        (4) <b>Gate CI khoá dịch thiếu</b> — script so khớp khoá giữa các ngôn ngữ, thiếu là đỏ build.
+      </dd>
+      <dt>Test</dt><dd>UT phân giải message theo locale kèm ca fallback; IT một endpoint trả hai ngôn ngữ; FE unit cho bộ chuyển ngôn ngữ; test CI phát hiện khoá thiếu.</dd>
+      <dt>Vì sao mở rộng</dt><dd>Nếu chỉ “bóc chuỗi” thì đây là việc cơ học, không đủ cho 4 người. Lát (2) và (4) mới là phần có thiết kế.</dd>
+    </dl>
+  </div>
+
+  <div class="topic">
+    <header><span class="tid">ĐT20</span><h3>RBAC &amp; kiểm soát truy cập đa tenant</h3><span class="tag new">mới</span></header>
+    <dl>
+      <dt>Code</dt><dd><code>modules/auth</code> + <code>shared/security/</code> (<code>MethodSecurityConfig</code>, <code>TenantAccessGuard</code>, <code>Roles</code>) + <code>shared/persistence/RlsTenantAspect.java</code>. Ma trận quyền đã có sẵn: <code>../docs/AUTHZ_MATRIX.md</code>.</dd>
+      <dt>Vấn đề thật</dt><dd>Ma trận đã viết ra nhưng <b>chỉ enforce ở profile non-dev</b> — nghĩa là chạy dev sẽ không bao giờ thấy lỗi phân quyền, và hiện chưa có bộ test nào phủ hết ma trận đó.</dd>
+      <dt>Bốn lát cắt</dt>
+      <dd>
+        (1) <b>Test ma trận</b> — sinh test từ <code>AUTHZ_MATRIX.md</code>: mỗi endpoint × mỗi vai trò, khẳng định cho phép/từ chối đúng như bảng.<br>
+        (2) <b>Cô lập tenant lớp 2</b> — mở rộng <code>TenantIsolationIT</code> ra mọi bảng có <code>tenant_id</code>, chứng minh RLS chặn kể cả khi query quên <code>WHERE</code>.<br>
+        (3) <b>Đường super-admin “step into tenant”</b> — header <code>X-Acting-Tenant</code> đã có phía FE; chứng minh nó chỉ có tác dụng với <code>SUPER_ADMIN</code> đã xác thực.<br>
+        (4) <b>Audit &amp; hồi quy</b> — mọi hành động nhạy cảm phải để lại bản ghi; thêm test chống hồi quy.
+      </dd>
+      <dt>Test</dt><dd>Đây là đề tài mà <em>sản phẩm chính là test</em>, nên đủ 5 lớp một cách tự nhiên: UT guard, IT trên Postgres thật (RLS chỉ sống ở đó), Postman ca 401/403, e2e đăng nhập sai vai trò bị chặn.</dd>
+      <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành đã gộp vào ĐT15. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
+    </dl>
+  </div>
+</section>
+
+<hr>
+
+<!-- ══════════════ PHỤ LỤC ══════════════ -->
+<section>
+  <div class="shead">
+    <p class="eyebrow">Phụ lục</p>
+    <h2>Lệnh hay dùng</h2>
+  </div>
+<pre><code># Backend dev (H2, security mở) để frontend gọi
+./gradlew bootRun --args='--spring.profiles.active=dev'
+
+# Unit test nhanh — không cần Docker
+./gradlew test
+
+# Integration test — cần Docker cho Testcontainers
+./gradlew integrationTest
+
+# Toàn bộ: test + IT + Checkstyle + SpotBugs + JaCoCo
+./gradlew check
+
+# Chỉ một gate
+./gradlew checkstyleMain spotbugsMain
+
+# Frontend (repo anh em ../frontend)
+npm run test:coverage        # Vitest + coverage
+npm run lint &amp;&amp; npm run typecheck
+npm run gen:api              # sinh lại client từ OpenAPI
+
+# API collection (cần backend đang chạy)
+cd postman &amp;&amp; npm run test:api
+
+# E2E (cần backend :8080 + frontend :5173)
+./gradlew :e2e:test -De2e.enabled=true
+
+# Prod-like: Postgres + Flyway thật, để kiểm migration
+docker compose -f deploy/compose/docker-compose.prodlike.yml up --build</code></pre>
+
+  <div class="note">
+    <p><b>Trước khi mở PR:</b> <code>./gradlew check</code> xanh, <code>npm run test:coverage</code>
+    xanh, commit theo Conventional Commits <b>viết bằng tiếng Anh</b>, và nhánh tách từ
+    <code>main</code> (không push thẳng <code>main</code> — nhánh này được bảo vệ).</p>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
