@@ -1,5 +1,16 @@
 # DigiShield — Hướng dẫn triển khai 15 đề tài sinh viên
 
+> ⚠️ **Bản này đã cũ. Dùng [`STUDENT_TOPICS.html`](STUDENT_TOPICS.html) để giao đề.**
+>
+> Bản HTML có **20 đề tài** (thêm ĐT16–ĐT20 cho ba module chưa ai nhận: `tenancy`,
+> `notification`, `auth`), và quan trọng hơn: phần **CI/CD ở đây mô tả sai hiện trạng**.
+> Repo giờ chỉ còn *một* workflow (`ci-cd.yml`) chứ không phải sáu, `e2e/` đã nằm trên
+> `main` chứ không phải một nhánh riêng, E2E đã là gate thật, và đích deploy là cụm k3s
+> trên Jetson qua ArgoCD chứ không phải EKS. Ngưỡng JaCoCo là 0.15 (không phải 0.10), và
+> phần lớn việc của ĐT15 ở dưới thì **đã hoàn thành**.
+>
+> File này giữ lại làm bản ghi lịch sử của đợt giao đề 15 đề tài. Mở HTML bằng trình duyệt.
+
 Tài liệu này bổ trợ cho danh mục 15 đề tài. Với **mỗi nhóm** nó chỉ rõ: **code ở đâu**,
 **làm gì**, và **workflow (luồng xử lý + quy trình đóng góp)**.
 
