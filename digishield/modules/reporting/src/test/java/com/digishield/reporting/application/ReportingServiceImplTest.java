@@ -60,7 +60,6 @@ class ReportingServiceImplTest {
 
     private ObjectProvider<AuditRecorder> auditRecorder;
 
-
     @InjectMocks
     private ReportingServiceImpl reportingService;
 

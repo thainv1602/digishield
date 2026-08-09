@@ -28,8 +28,11 @@ checkstyle {
     configProperties["checkstyle.suppressions.file"] =
         rootProject.layout.projectDirectory.file("config/checkstyle/suppressions.xml").asFile.absolutePath
     maxWarnings = 0
-    // TODO flip to false to enforce
-    isIgnoreFailures = true
+    // Enforced: a Checkstyle violation fails the build. The two deliberate
+    // conventions it used to trip over -- unit_scenario test method names and
+    // the SLF4J `log` field -- are now expressed in config/checkstyle rather
+    // than tolerated by ignoring every violation.
+    isIgnoreFailures = false
 }
 
 // Ensure checkstyle runs as part of `check` (the checkstyle plugin already wires

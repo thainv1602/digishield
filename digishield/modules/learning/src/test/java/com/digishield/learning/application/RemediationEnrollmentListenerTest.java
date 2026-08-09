@@ -24,7 +24,8 @@ class RemediationEnrollmentListenerTest {
         UUID userId = UUID.randomUUID();
 
         org.mockito.Mockito.when(learningService.listCourses(tenantId))
-                .thenReturn(java.util.List.of(new com.digishield.learning.api.CourseView(java.util.UUID.randomUUID(), null, "Khoá", "basic", "vi", 30, 1, null, null)));
+                .thenReturn(java.util.List.of(new com.digishield.learning.api.CourseView(
+                        java.util.UUID.randomUUID(), null, "Khoá", "basic", "vi", 30, 1, null, null)));
 
         listener.on(new RemediationEnrollmentRequestedEvent(tenantId, userId, UUID.randomUUID()));
 

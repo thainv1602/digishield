@@ -70,7 +70,6 @@ class NotificationServiceImplTest {
 
     private ObjectProvider<AuditRecorder> auditRecorder;
 
-
     @InjectMocks
     private NotificationServiceImpl notificationService;
 
