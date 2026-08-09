@@ -93,11 +93,12 @@
   <p class="eyebrow">Tài liệu kiến trúc · 09.08.2026</p>
   <h1>Kiến trúc DigiShield &amp; hai đường tiến hoá</h1>
   <p class="standfirst">
-    Phần 1 mô tả hệ thống <b>đang chạy</b>. Phần 2 và 3 trả lời hai câu hỏi thiết kế:
-    nếu tách microservices thì cắt ở đâu, và nếu dùng Lambda thì cái gì lên được — cả hai
-    đều bám vào đồ thị ghép nối thật đọc từ code, không phải từ sơ đồ trên giấy.
+    Phần 1 mô tả hệ thống <b>đang chạy</b>, qua bảy sơ đồ. Phần 2 là bản hướng dẫn tách service:
+    giữ gì từ hôm nay, chuẩn bị gì, làm theo thứ tự nào. Phần 3 làm điều tương tự cho hướng Lambda.
+    Tất cả bám vào đồ thị ghép nối đọc từ code, không phải từ sơ đồ trên giấy.
   </p>
   <div class="factbar">
+    <span><b>9</b> sơ đồ</span>
     <span><b>9</b> module · <b>10</b> event</span>
     <span><b>13</b> port đồng bộ</span>
     <span><b>34</b> adapter, tất cả trong <code>boot/app</code></span>
@@ -105,9 +106,10 @@
 </header>
 
 <div class="note">
-  <p>Bản tiếng Anh với đầy đủ 6 lát cắt (gồm cả cấu trúc bên trong một module và pipeline CI/CD):
-  <a href="DigiShield_Architecture.html"><code>DigiShield_Architecture.html</code></a>.
-  Bản tiếng Việt này tập trung vào phần cần cho hai câu hỏi tiến hoá ở sau.</p>
+  <p><b>Đây là bản đầy đủ và là nguồn duy nhất.</b> Chín sơ đồ: bảy cho kiến trúc hiện tại, hai cho
+  hai đường tiến hoá. Bản tiếng Anh
+  (<a href="DigiShield_Architecture.html"><code>DigiShield_Architecture.html</code></a>) chỉ là trang
+  tóm tắt cho người đọc tiếng Anh và trỏ ngược về đây — sửa kiến trúc thì sửa file này.</p>
 </div>
 
 <!-- ═════════ PHẦN 1 ═════════ -->
@@ -128,6 +130,108 @@
     <div><b class="tE">─ ─ ─ ▶ nét đứt</b><span><b>Event bất đồng bộ</b> qua <code>@ApplicationModuleListener</code> — có transaction, được lưu, retry được.</span></div>
     <div><b class="tB">■ nền tím</b><span>Vùng cắt ngang: tenant và bảo mật, không thuộc riêng module nào.</span></div>
   </div>
+
+  <h3>Toàn cảnh hệ thống</h3>
+  <figure>
+    <div class="figbody">
+      <svg class="dg" viewBox="0 0 900 440" role="img"
+           aria-label="Frontend React và Cognito bên trái gọi vào boot:app ở giữa; boot:app là một jar chạy bốn profile api, worker, scheduler, flyway, nối sang PostgreSQL, Redis, RabbitMQ và một lối ra tuỳ chọn tới Anthropic Claude.">
+        <defs>
+          <marker id="v3s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mS" d="M0,0 L10,5 L0,10 z"/></marker>
+          <marker id="v3e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mE" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+        <rect class="n" x="24" y="90" width="160" height="62" rx="3"/>
+        <text x="104" y="116" font-size="12" text-anchor="middle" class="bold">Amazon Cognito</text>
+        <text x="104" y="134" font-size="9.5" text-anchor="middle" class="tM">nơi phát hành JWT</text>
+        <rect class="n" x="24" y="230" width="160" height="62" rx="3"/>
+        <text x="104" y="256" font-size="12" text-anchor="middle" class="bold">React + Vite</text>
+        <text x="104" y="274" font-size="9.5" text-anchor="middle" class="tM">repo ../frontend</text>
+
+        <rect class="n2" x="254" y="40" width="300" height="360" rx="4"/>
+        <text x="274" y="68" font-size="13" class="bold tS">boot:app</text>
+        <text x="274" y="86" font-size="9.5" class="tM">một jar · Spring Boot 4.1 · Java 25</text>
+        <rect class="n" x="278" y="100" width="252" height="40" rx="3"/>
+        <text x="294" y="118" font-size="11" class="bold">api</text><text x="294" y="133" font-size="9" class="tM">controller + actuator</text>
+        <rect class="n" x="278" y="148" width="252" height="40" rx="3"/>
+        <text x="294" y="166" font-size="11" class="bold">worker</text><text x="294" y="181" font-size="9" class="tM">xử lý event nền</text>
+        <rect class="n" x="278" y="196" width="252" height="40" rx="3"/>
+        <text x="294" y="214" font-size="11" class="bold">scheduler</text><text x="294" y="229" font-size="9" class="tM">job theo lịch</text>
+        <rect class="n" x="278" y="244" width="252" height="40" rx="3"/>
+        <text x="294" y="262" font-size="11" class="bold">flyway</text><text x="294" y="277" font-size="9" class="tM">migration, job riêng</text>
+        <line x1="278" y1="304" x2="530" y2="304" stroke="var(--line)" stroke-width="1"/>
+        <text x="278" y="324" font-size="9.5" class="tM">cùng một image, khác profile</text>
+        <text x="278" y="342" font-size="9.5" class="tM">bên trong: 9 module Modulith</text>
+        <text x="278" y="360" font-size="9.5" class="tM">+ 5 thư viện shared</text>
+
+        <rect class="n" x="640" y="60" width="236" height="62" rx="3"/>
+        <text x="758" y="86" font-size="12" text-anchor="middle" class="bold">PostgreSQL</text>
+        <text x="758" y="104" font-size="9.5" text-anchor="middle" class="tM">có row-level security</text>
+        <rect class="n" x="640" y="150" width="236" height="62" rx="3"/>
+        <text x="758" y="176" font-size="12" text-anchor="middle" class="bold">Redis</text><text x="758" y="194" font-size="9.5" text-anchor="middle" class="tM">cache</text>
+        <rect class="n" x="640" y="240" width="236" height="62" rx="3"/>
+        <text x="758" y="266" font-size="12" text-anchor="middle" class="bold">RabbitMQ</text><text x="758" y="284" font-size="9.5" text-anchor="middle" class="tM">message broker</text>
+        <rect class="dE" x="640" y="338" width="236" height="62" rx="3" style="fill:var(--surface);stroke:var(--evt);stroke-width:1.25;stroke-dasharray:5 4"/>
+        <text x="758" y="364" font-size="12" text-anchor="middle" class="bold tE">Anthropic Claude</text>
+        <text x="758" y="382" font-size="9.5" text-anchor="middle" class="tM">tuỳ chọn · lỗi thì về stub</text>
+
+        <path class="aS" d="M104,230 V160" marker-end="url(#v3s)"/><text x="112" y="198" font-size="9" class="tM">OAuth</text>
+        <path class="aS" d="M184,121 H252" marker-end="url(#v3s)"/><text x="218" y="112" font-size="9" text-anchor="middle" class="tM">JWT tid</text>
+        <path class="aS" d="M184,261 H252" marker-end="url(#v3s)"/><text x="218" y="252" font-size="9" text-anchor="middle" class="tM">/api/v1</text>
+        <path class="aS" d="M554,91 H638" marker-end="url(#v3s)"/><text x="596" y="82" font-size="9" text-anchor="middle" class="tM">JDBC</text>
+        <path class="aS" d="M554,181 H638" marker-end="url(#v3s)"/><text x="596" y="172" font-size="9" text-anchor="middle" class="tM">cache</text>
+        <path class="aS" d="M554,271 H638" marker-end="url(#v3s)"/><text x="596" y="262" font-size="9" text-anchor="middle" class="tM">async</text>
+        <path class="aE" d="M554,369 H638" marker-end="url(#v3e)"/><text x="596" y="360" font-size="9" text-anchor="middle" class="tM">HTTPS</text>
+      </svg>
+    </div>
+    <figcaption>
+      Một jar chạy bốn vai trò theo profile. Claude là lối ra <em>tuỳ chọn</em>: tắt cờ
+      <code>AI_CLAUDE_ENABLED</code> thì mọi endpoint AI vẫn chạy bằng <code>StubAiClient</code>.
+    </figcaption>
+  </figure>
+
+  <h3>Ranh giới module</h3>
+  <figure>
+    <div class="figbody">
+      <svg class="dg" viewBox="0 0 900 392" role="img"
+           aria-label="Chín module nghiệp vụ trong một khung; đường nối trực tiếp giữa hai module bị gạch chéo; cả khung chỉ có mũi tên đi xuống hai thanh contracts và shared.">
+        <defs><marker id="v4s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mS" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <text x="876" y="36" font-size="10" text-anchor="end" class="tE">✗ = module gọi thẳng module: bị cấm</text>
+        <rect class="grp" x="24" y="52" width="852" height="204" rx="5"/>
+        <text x="44" y="76" font-size="11" class="bold">modules/</text>
+        <text x="112" y="76" font-size="9.5" class="tM">— 9 module nghiệp vụ, phẳng, không phân cấp</text>
+        <rect class="n" x="44" y="92" width="252" height="44" rx="3"/><text x="170" y="111" font-size="11.5" text-anchor="middle" class="bold">auth</text><text x="170" y="126" font-size="9" text-anchor="middle" class="tM">định danh · phân quyền</text>
+        <rect class="n" x="324" y="92" width="252" height="44" rx="3"/><text x="450" y="111" font-size="11.5" text-anchor="middle" class="bold">tenancy</text><text x="450" y="126" font-size="9" text-anchor="middle" class="tM">tổ chức · gói · phòng ban</text>
+        <rect class="n" x="604" y="92" width="252" height="44" rx="3"/><text x="730" y="111" font-size="11.5" text-anchor="middle" class="bold">learning</text><text x="730" y="126" font-size="9" text-anchor="middle" class="tM">khoá học · điểm · ghi danh</text>
+        <rect class="n" x="44" y="148" width="252" height="44" rx="3"/><text x="170" y="167" font-size="11.5" text-anchor="middle" class="bold">simulation</text><text x="170" y="182" font-size="9" text-anchor="middle" class="tM">chiến dịch diễn tập</text>
+        <rect class="n" x="324" y="148" width="252" height="44" rx="3"/><text x="450" y="167" font-size="11.5" text-anchor="middle" class="bold">reporting</text><text x="450" y="182" font-size="9" text-anchor="middle" class="tM">báo cáo · xuất số liệu</text>
+        <rect class="n" x="604" y="148" width="252" height="44" rx="3"/><text x="730" y="167" font-size="11.5" text-anchor="middle" class="bold">analytics</text><text x="730" y="182" font-size="9" text-anchor="middle" class="tM">risk score · AIDA</text>
+        <rect class="n" x="44" y="204" width="252" height="44" rx="3"/><text x="170" y="223" font-size="11.5" text-anchor="middle" class="bold">notification</text><text x="170" y="238" font-size="9" text-anchor="middle" class="tM">email · nhắc việc</text>
+        <rect class="n" x="324" y="204" width="252" height="44" rx="3"/><text x="450" y="223" font-size="11.5" text-anchor="middle" class="bold">ai</text><text x="450" y="238" font-size="9" text-anchor="middle" class="tM">sinh mẫu · phân loại</text>
+        <rect class="n" x="604" y="204" width="252" height="44" rx="3"/><text x="730" y="223" font-size="11.5" text-anchor="middle" class="bold">interception</text><text x="730" y="238" font-size="9" text-anchor="middle" class="tM">chặn lọc thời gian thực</text>
+        <path class="aX" d="M296,114 H324" style="fill:none;stroke:var(--evt);stroke-width:1.5;stroke-dasharray:3 3"/>
+        <circle cx="310" cy="114" r="9" fill="var(--surface)"/>
+        <path d="M305,109 L315,119 M315,109 L305,119" stroke="var(--evt)" stroke-width="1.8"/>
+        <path d="M296,226 H324" style="fill:none;stroke:var(--evt);stroke-width:1.5;stroke-dasharray:3 3"/>
+        <circle cx="310" cy="226" r="9" fill="var(--surface)"/>
+        <path d="M305,221 L315,231 M315,221 L305,231" stroke="var(--evt)" stroke-width="1.8"/>
+        <path class="aS" d="M231,256 V298" marker-end="url(#v4s)"/>
+        <path class="aS" d="M669,256 V298" marker-end="url(#v4s)"/>
+        <text x="450" y="282" font-size="10" text-anchor="middle" class="tM">allowedDependencies — chỉ được trỏ xuống đây</text>
+        <rect class="n2" x="24" y="300" width="414" height="68" rx="3"/>
+        <text x="44" y="324" font-size="12" class="bold tS">contracts</text>
+        <text x="44" y="342" font-size="9.5" class="tM">events — 10 domain event dùng chung</text>
+        <text x="44" y="358" font-size="9.5" class="tM">dto — kiểu chia sẻ giữa các module</text>
+        <rect class="n2" x="462" y="300" width="414" height="68" rx="3"/>
+        <text x="482" y="324" font-size="12" class="bold tS">shared</text>
+        <text x="482" y="342" font-size="9.5" class="tM">tenant-context · messaging · persistence</text>
+        <text x="482" y="358" font-size="9.5" class="tM">security · observability</text>
+      </svg>
+    </div>
+    <figcaption>
+      Hai dấu ✗ chỉ là ví dụ — luật áp cho <em>mọi</em> cặp module, và được
+      <code>ModularityTests</code> verify chứ không phải được tin.
+    </figcaption>
+  </figure>
 
   <h3>Đồ thị ghép nối thật</h3>
   <p>
@@ -225,6 +329,103 @@
     adapter in-process bằng một HTTP client — <em>không sửa dòng nào trong cả hai module</em>.</p>
   </div>
 
+  <h3>Một cú click lan đi thế nào</h3>
+  <figure>
+    <div class="figbody">
+      <svg class="dg" viewBox="0 0 860 520" role="img"
+           aria-label="Nhân viên bấm link giả mạo; simulation ghi SimEvent và publish UserClickedSimulationEvent; learning và analytics nhận song song, mỗi bên publish tiếp một event, dẫn tới notification gửi email.">
+        <defs>
+          <marker id="v5s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mS" d="M0,0 L10,5 L0,10 z"/></marker>
+          <marker id="v5e" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mE" d="M0,0 L10,5 L0,10 z"/></marker>
+        </defs>
+        <rect class="n" x="250" y="16" width="360" height="46" rx="3"/>
+        <text x="430" y="38" font-size="12.5" text-anchor="middle" class="bold">Nhân viên bấm link giả mạo</text>
+        <text x="430" y="54" font-size="9" text-anchor="middle" class="tM">trong email của chiến dịch diễn tập</text>
+        <path class="aS" d="M430,62 V96" marker-end="url(#v5s)"/>
+        <text x="442" y="83" font-size="9" class="tM">GET /api/v1/sim/track/{token}</text>
+        <rect class="n" x="210" y="98" width="440" height="84" rx="3"/>
+        <text x="230" y="120" font-size="11.5" class="bold tS">simulation</text>
+        <text x="230" y="139" font-size="10">SimTrackingController → SimulationServiceImpl</text>
+        <text x="230" y="157" font-size="9.5" class="tM">ghi SimEvent(CLICK) vào database</text>
+        <text x="230" y="174" font-size="9.5" class="tM">rồi publish — hết phần việc của nó</text>
+        <path class="aE" d="M430,182 V214" marker-end="url(#v5e)"/>
+        <rect class="hE" x="230" y="216" width="400" height="44" rx="22"/>
+        <text x="430" y="236" font-size="12" text-anchor="middle" class="bold tE">UserClickedSimulationEvent</text>
+        <text x="430" y="251" font-size="9" text-anchor="middle" class="tM">contracts :: events</text>
+        <path class="aE" d="M430,260 V278"/>
+        <circle cx="430" cy="278" r="3" fill="var(--evt)"/>
+        <path class="aE" d="M430,278 H150 V306" marker-end="url(#v5e)"/>
+        <path class="aE" d="M430,278 H710 V306" marker-end="url(#v5e)"/>
+        <text x="430" y="296" font-size="9" text-anchor="middle" class="tM">@ApplicationModuleListener — song song, có transaction, retry được</text>
+        <rect class="n" x="30" y="308" width="240" height="80" rx="3"/>
+        <text x="48" y="329" font-size="11.5" class="bold tS">learning</text>
+        <text x="48" y="348" font-size="10">SimulationClickListener</text>
+        <text x="48" y="365" font-size="9.5" class="tM">trừ điểm · ghi danh remediation</text>
+        <rect class="n" x="590" y="308" width="240" height="80" rx="3"/>
+        <text x="608" y="329" font-size="11.5" class="bold tS">analytics</text>
+        <text x="608" y="348" font-size="10">SimulationClickRiskListener</text>
+        <text x="608" y="365" font-size="9.5" class="tM">tính lại risk score</text>
+        <path class="aE" d="M150,388 V418" marker-end="url(#v5e)"/>
+        <path class="aE" d="M710,388 V418" marker-end="url(#v5e)"/>
+        <rect class="hE" x="30" y="420" width="240" height="40" rx="20"/>
+        <text x="150" y="445" font-size="10.5" text-anchor="middle" class="bold tE">EnrollmentAssignedEvent</text>
+        <rect class="hE" x="590" y="420" width="240" height="40" rx="20"/>
+        <text x="710" y="445" font-size="10.5" text-anchor="middle" class="bold tE">RiskRecomputedEvent</text>
+        <path class="aE" d="M150,460 V486" marker-end="url(#v5e)"/>
+        <path class="aE" d="M710,460 V486" marker-end="url(#v5e)"/>
+        <rect class="n" x="30" y="488" width="240" height="28" rx="3"/>
+        <text x="150" y="507" font-size="10" text-anchor="middle">notification → gửi email nhắc học</text>
+        <rect class="grp" x="590" y="488" width="240" height="28" rx="3"/>
+        <text x="710" y="507" font-size="10" text-anchor="middle" class="tM">chưa ai nghe — điểm cắm sẵn</text>
+      </svg>
+    </div>
+    <figcaption>
+      <code>simulation</code> không biết ba module kia tồn tại. Muốn thêm phản ứng mới cho cú click,
+      viết thêm một listener — không sửa dòng nào trong <code>simulation</code>.
+    </figcaption>
+  </figure>
+
+  <h3>Bên trong một module</h3>
+  <figure>
+    <div class="figbody">
+      <svg class="dg" viewBox="0 0 860 420" role="img"
+           aria-label="Module simulation có năm tầng web, api, application, domain, infrastructure; HTTP vào web, module khác chỉ vào được api, còn đường đi thẳng vào domain bị gạch chéo.">
+        <defs><marker id="v6s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mS" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <rect class="grp" x="250" y="40" width="380" height="340" rx="5"/>
+        <text x="270" y="66" font-size="11.5" class="bold">modules/simulation</text>
+        <rect class="n" x="274" y="84" width="332" height="48" rx="3"/>
+        <text x="294" y="105" font-size="11.5" class="bold">web/</text><text x="294" y="121" font-size="9" class="tM">SimulationController · SimTrackingController</text>
+        <rect class="hS" x="274" y="142" width="332" height="48" rx="3"/>
+        <text x="294" y="163" font-size="11.5" class="bold tS">api/</text><text x="294" y="179" font-size="9" class="tM">cổng công khai — SimulationService, DTO</text>
+        <rect class="n" x="274" y="200" width="332" height="48" rx="3"/>
+        <text x="294" y="221" font-size="11.5" class="bold">application/</text><text x="294" y="237" font-size="9" class="tM">SimulationServiceImpl · listener · seeder</text>
+        <rect class="n" x="274" y="258" width="332" height="48" rx="3"/>
+        <text x="294" y="279" font-size="11.5" class="bold">domain/</text><text x="294" y="295" font-size="9" class="tM">SimCampaign, SimEvent, SimRecipient, enum</text>
+        <rect class="n" x="274" y="316" width="332" height="48" rx="3"/>
+        <text x="294" y="337" font-size="11.5" class="bold">infrastructure/</text><text x="294" y="353" font-size="9" class="tM">repository JPA</text>
+        <rect class="n2" x="30" y="84" width="180" height="48" rx="3"/>
+        <text x="120" y="105" font-size="11" text-anchor="middle" class="bold">Trình duyệt / FE</text><text x="120" y="121" font-size="9" text-anchor="middle" class="tM">qua HTTP</text>
+        <rect class="n2" x="30" y="142" width="180" height="48" rx="3"/>
+        <text x="120" y="163" font-size="11" text-anchor="middle" class="bold">Module khác</text><text x="120" y="179" font-size="9" text-anchor="middle" class="tM">cùng một jar</text>
+        <path class="aS" d="M210,108 H272" marker-end="url(#v6s)"/>
+        <path class="aS" d="M210,166 H272" marker-end="url(#v6s)"/>
+        <text x="241" y="158" font-size="9" text-anchor="middle" class="tM">gọi</text>
+        <text x="200" y="266" font-size="9" text-anchor="middle" class="tE">không import được</text>
+        <path d="M120,190 V282 H266" style="fill:none;stroke:var(--evt);stroke-width:1.5;stroke-dasharray:3 3"/>
+        <circle cx="200" cy="282" r="9" fill="var(--surface)"/>
+        <path d="M195,277 L205,287 M205,277 L195,287" stroke="var(--evt)" stroke-width="1.8"/>
+        <path class="aM" d="M646,84 H662 V190 H646"/>
+        <text x="674" y="130" font-size="9.5" class="tM">bề mặt</text><text x="674" y="146" font-size="9.5" class="tM">công khai</text>
+        <path class="aM" d="M646,200 H662 V364 H646"/>
+        <text x="674" y="268" font-size="9.5" class="tM">nội bộ —</text><text x="674" y="284" font-size="9.5" class="tM">không module</text><text x="674" y="300" font-size="9.5" class="tM">nào chạm tới</text>
+      </svg>
+    </div>
+    <figcaption>
+      <code>web/</code> chỉ nhận HTTP từ ngoài, nó không phải cửa cho module khác. Đây cũng là lý do
+      tách service sau này rẻ: cửa duy nhất đã được thu về một chỗ.
+    </figcaption>
+  </figure>
+
   <h3>Cô lập tenant — hai lớp</h3>
   <p>
     Nhiều tổ chức dùng chung một database, nên rò dữ liệu giữa hai tổ chức là lỗi nặng nhất.
@@ -237,6 +438,90 @@
     <b>trên chính connection, bên trong transaction</b>. Ghi nhớ chi tiết này — nó là ràng buộc
     lớn nhất ở phần 3.
   </p>
+
+  <figure>
+    <div class="figbody">
+      <svg class="dg" viewBox="0 0 900 400" role="img"
+           aria-label="Lớp một ở tầng ứng dụng: request kèm JWT đi qua TenantFilter, TenantContext rồi TenantAccessGuard. Lớp hai ở tầng database: RlsTenantAspect đặt biến session, chính sách RLS của PostgreSQL lọc, chỉ còn rows của đúng tenant.">
+        <defs><marker id="v7s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mS" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <rect class="hB" x="24" y="56" width="852" height="116" rx="4"/>
+        <text x="44" y="78" font-size="10" class="bold tB track">LỚP 1 · ỨNG DỤNG</text>
+        <rect class="n" x="45" y="92" width="180" height="62" rx="3"/>
+        <text x="135" y="118" font-size="11" text-anchor="middle" class="bold">Request + JWT</text><text x="135" y="136" font-size="9" text-anchor="middle" class="tM">header Authorization</text>
+        <rect class="n" x="255" y="92" width="180" height="62" rx="3"/>
+        <text x="345" y="118" font-size="11" text-anchor="middle" class="bold">TenantFilter</text><text x="345" y="136" font-size="9" text-anchor="middle" class="tM">đọc claim tid</text>
+        <rect class="n" x="465" y="92" width="180" height="62" rx="3"/>
+        <text x="555" y="118" font-size="11" text-anchor="middle" class="bold">TenantContext</text><text x="555" y="136" font-size="9" text-anchor="middle" class="tM">ThreadLocal của request</text>
+        <rect class="n" x="675" y="92" width="180" height="62" rx="3"/>
+        <text x="765" y="118" font-size="11" text-anchor="middle" class="bold">TenantAccessGuard</text><text x="765" y="136" font-size="9" text-anchor="middle" class="tM">@PreAuthorize theo vai trò</text>
+        <path class="aS" d="M225,123 H253" marker-end="url(#v7s)"/>
+        <path class="aS" d="M435,123 H463" marker-end="url(#v7s)"/>
+        <path class="aS" d="M645,123 H673" marker-end="url(#v7s)"/>
+        <path class="aS" d="M765,154 V186 H175 V234" marker-end="url(#v7s)"/>
+        <text x="470" y="178" font-size="9.5" text-anchor="middle" class="tM">cùng tenantId đó đi tiếp xuống database</text>
+        <rect class="hB" x="24" y="200" width="852" height="124" rx="4"/>
+        <text x="44" y="222" font-size="10" class="bold tB track">LỚP 2 · DATABASE</text>
+        <rect class="n" x="47" y="236" width="258" height="70" rx="3"/>
+        <text x="176" y="262" font-size="11" text-anchor="middle" class="bold">RlsTenantAspect</text>
+        <text x="176" y="280" font-size="9" text-anchor="middle" class="tM">SET LOCAL app.tenant_id</text>
+        <text x="176" y="296" font-size="9" text-anchor="middle" class="tM">ngay trên connection</text>
+        <rect class="n" x="321" y="236" width="258" height="70" rx="3"/>
+        <text x="450" y="262" font-size="11" text-anchor="middle" class="bold">Chính sách RLS</text>
+        <text x="450" y="280" font-size="9" text-anchor="middle" class="tM">PostgreSQL tự lọc</text>
+        <text x="450" y="296" font-size="9" text-anchor="middle" class="tM">trước cả khi trả về</text>
+        <rect class="n" x="595" y="236" width="258" height="70" rx="3"/>
+        <text x="724" y="262" font-size="11" text-anchor="middle" class="bold">Chỉ rows của tenant</text>
+        <text x="724" y="280" font-size="9" text-anchor="middle" class="tM">kể cả khi query</text>
+        <text x="724" y="296" font-size="9" text-anchor="middle" class="tM">quên mất mệnh đề WHERE</text>
+        <path class="aS" d="M305,271 H319" marker-end="url(#v7s)"/>
+        <path class="aS" d="M579,271 H593" marker-end="url(#v7s)"/>
+        <rect class="grp" x="24" y="342" width="852" height="46" rx="3"/>
+        <text x="44" y="364" font-size="9.5" class="tM">profile dev — DevTenantFilter gán tenant demo, RlsTenantAspect tắt vì H2 không có set_config.</text>
+        <text x="44" y="380" font-size="9.5" class="tM">Mọi profile khác giữ đủ cả hai lớp. TenantIsolationIT chạy trên Postgres thật để chứng minh.</text>
+      </svg>
+    </div>
+    <figcaption>
+      Hai lớp hỏng vì lý do độc lập nhau: lớp 1 hỏng khi code sai, lớp 2 chỉ hỏng nếu chính sách RLS
+      bị gỡ. Chi tiết <code>SET LOCAL</code> trên connection là ràng buộc lớn nhất ở phần 3.
+    </figcaption>
+  </figure>
+
+  <h3>Đường ra production</h3>
+  <figure>
+    <div class="figbody">
+      <svg class="dg" viewBox="0 0 900 210" role="img"
+           aria-label="Bảy chặng CI chạy tuần tự trên mọi pull request, rồi sau khi merge vào main là chuỗi CD build multi-arch, quét, ký, ghim sha và ArgoCD đồng bộ xuống cụm k3s trên Jetson.">
+        <defs><marker id="v8s" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="mS" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <text x="24" y="28" font-size="11" class="bold tS">CI · mọi pull request</text>
+        <rect class="n" x="24" y="38" width="112" height="40" rx="3"/><text x="80" y="56" font-size="9.5" text-anchor="middle" class="bold">commit-lint</text><text x="80" y="70" font-size="8" text-anchor="middle" class="tM">tiếng Anh</text>
+        <rect class="n" x="148" y="38" width="112" height="40" rx="3"/><text x="204" y="56" font-size="9.5" text-anchor="middle" class="bold">changes</text><text x="204" y="70" font-size="8" text-anchor="middle" class="tM">path filter</text>
+        <rect class="n" x="272" y="38" width="112" height="40" rx="3"/><text x="328" y="56" font-size="9.5" text-anchor="middle" class="bold">backend</text><text x="328" y="70" font-size="8" text-anchor="middle" class="tM">unit test</text>
+        <rect class="n" x="396" y="38" width="132" height="40" rx="3"/><text x="462" y="56" font-size="9.5" text-anchor="middle" class="bold">backend-it</text><text x="462" y="70" font-size="8" text-anchor="middle" class="tM">check · SpotBugs · JaCoCo</text>
+        <rect class="n" x="540" y="38" width="112" height="40" rx="3"/><text x="596" y="56" font-size="9.5" text-anchor="middle" class="bold">frontend</text><text x="596" y="70" font-size="8" text-anchor="middle" class="tM">lint · test · build</text>
+        <rect class="n" x="664" y="38" width="112" height="40" rx="3"/><text x="720" y="56" font-size="9.5" text-anchor="middle" class="bold">security</text><text x="720" y="70" font-size="8" text-anchor="middle" class="tM">+ CodeQL</text>
+        <rect class="n" x="788" y="38" width="88" height="40" rx="3"/><text x="832" y="56" font-size="9.5" text-anchor="middle" class="bold">e2e</text><text x="832" y="70" font-size="8" text-anchor="middle" class="tM">Newman · Selenium</text>
+        <path class="aS" d="M136,58 H146" marker-end="url(#v8s)"/><path class="aS" d="M260,58 H270" marker-end="url(#v8s)"/>
+        <path class="aS" d="M384,58 H394" marker-end="url(#v8s)"/><path class="aS" d="M528,58 H538" marker-end="url(#v8s)"/>
+        <path class="aS" d="M652,58 H662" marker-end="url(#v8s)"/><path class="aS" d="M776,58 H786" marker-end="url(#v8s)"/>
+
+        <text x="24" y="118" font-size="11" class="bold tS">CD · chỉ khi push vào main</text>
+        <rect class="n" x="24" y="128" width="132" height="40" rx="3"/><text x="90" y="146" font-size="9.5" text-anchor="middle" class="bold">build</text><text x="90" y="160" font-size="8" text-anchor="middle" class="tM">amd64 + arm64</text>
+        <rect class="n" x="168" y="128" width="132" height="40" rx="3"/><text x="234" y="146" font-size="9.5" text-anchor="middle" class="bold">GHCR</text><text x="234" y="160" font-size="8" text-anchor="middle" class="tM">latest + sha</text>
+        <rect class="n" x="312" y="128" width="112" height="40" rx="3"/><text x="368" y="146" font-size="9.5" text-anchor="middle" class="bold">Trivy</text><text x="368" y="160" font-size="8" text-anchor="middle" class="tM">quét image</text>
+        <rect class="n" x="436" y="128" width="132" height="40" rx="3"/><text x="502" y="146" font-size="9.5" text-anchor="middle" class="bold">cosign + SBOM</text><text x="502" y="160" font-size="8" text-anchor="middle" class="tM">ký</text>
+        <rect class="hS" x="580" y="128" width="132" height="40" rx="3"/><text x="646" y="146" font-size="9.5" text-anchor="middle" class="bold tS">ghim sha</text><text x="646" y="160" font-size="8" text-anchor="middle" class="tM">nhánh deploy/jetson</text>
+        <rect class="n" x="724" y="128" width="152" height="40" rx="3"/><text x="800" y="146" font-size="9.5" text-anchor="middle" class="bold">ArgoCD → k3s Jetson</text><text x="800" y="160" font-size="8" text-anchor="middle" class="tM">tự đồng bộ</text>
+        <path class="aS" d="M156,148 H166" marker-end="url(#v8s)"/><path class="aS" d="M300,148 H310" marker-end="url(#v8s)"/>
+        <path class="aS" d="M424,148 H434" marker-end="url(#v8s)"/><path class="aS" d="M568,148 H578" marker-end="url(#v8s)"/>
+        <path class="aS" d="M712,148 H722" marker-end="url(#v8s)"/>
+        <text x="24" y="196" font-size="9" class="tM">CD không ra lệnh cho cụm — nó chỉ sửa một dòng tag trong git; ArgoCD mới quyết định lúc nào rollout.</text>
+      </svg>
+    </div>
+    <figcaption>
+      Một workflow duy nhất ở gốc monorepo, tuần tự và fail-fast. Chặng tô sáng là mấu chốt GitOps.
+    </figcaption>
+  </figure>
+
 </section>
 
 <hr>
@@ -244,16 +529,18 @@
 <!-- ═════════ PHẦN 2 ═════════ -->
 <section>
   <div class="shead">
-    <p class="eyebrow">Phần 2 · Nếu tách microservices</p>
-    <h2>Cắt theo đồ thị ghép nối, không cắt theo tên module</h2>
+    <p class="eyebrow">Phần 2 · Hướng dẫn tách service</p>
+    <h2>Khi tách thì làm gì, và từ giờ phải giữ gì</h2>
   </div>
   <p>
-    Cám dỗ lớn nhất là tách chín module thành chín service. Đồ thị ở trên nói rằng làm thế sẽ
-    tạo ra một hệ phân tán mà mỗi request phải đi qua năm chặng mạng, vì
-    <code>auth</code> và <code>tenancy</code> bị năm module gọi <em>đồng bộ</em>.
+    ADR-001 đã chốt hướng “modular monolith tiến tới tách dần”, nên phần này không bàn
+    <em>có nên tách hay không</em>. Nó trả lời ba câu: <b>giữ gì từ hôm nay</b> để đường tách
+    không bị bịt, <b>chuẩn bị gì</b> trước khi tách mảnh đầu tiên, và <b>làm theo thứ tự nào</b>.
   </p>
   <p>
-    Nguyên tắc: <b>cắt ở chỗ chỉ có event đi qua, giữ nguyên chỗ có port đồng bộ.</b>
+    Một nguyên tắc chi phối tất cả: <b>cắt ở chỗ chỉ có event đi qua, giữ nguyên chỗ có port đồng bộ.</b>
+    Chín module không thành chín service — <code>auth</code> và <code>tenancy</code> bị năm module
+    gọi đồng bộ, tách chúng ra là đặt một chặng mạng lên gần như mọi request.
   </p>
 
   <figure>
@@ -308,58 +595,115 @@
     </figcaption>
   </figure>
 
-  <h3>Ba mảnh nên tách trước, và vì sao</h3>
+  <h3>2.1 · Luật giữ cho tách được — áp dụng từ hôm nay</h3>
+  <p>
+    Đây là phần quan trọng nhất của bản hướng dẫn. Tách service tốn kém hay không được quyết định
+    bởi những gì đã tích tụ <em>trước</em> lúc tách, chứ không phải bởi tuần tách.
+  </p>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Service</th><th>Vì sao tách được</th><th>Được gì</th></tr></thead>
+      <thead><tr><th>Luật</th><th>Vì sao</th><th>Kiểm bằng gì</th></tr></thead>
       <tbody>
         <tr>
-          <td class="k">① tracking-svc</td>
-          <td>Endpoint beacon chỉ <b>ghi</b> một <code>SimEvent</code> rồi publish. Không đọc gì từ module khác. Không cần transaction chung.</td>
-          <td>Đây là nhịp tải cao nhất và bùng nổ nhất (một chiến dịch gửi 10.000 email → 10.000 lượt mở trong vài phút). Scale riêng, và lỗi ở đây không kéo sập API quản trị.</td>
+          <td>Module không import module</td>
+          <td>Giữ đảo phụ thuộc. Vi phạm là thứ duy nhất làm tách trở nên đắt thật sự.</td>
+          <td class="k">ModularityTests — tự động</td>
         </tr>
         <tr>
-          <td class="k">② ai-svc</td>
-          <td>Chỉ nối bằng <code>Aida*Event</code> + interface <code>AiClient</code>. Không chạm database nghiệp vụ.</td>
-          <td>Nhịp hoàn toàn khác: gọi LLM mất vài giây, hay timeout, cần retry riêng. Nhốt độ trễ đó ra khỏi tiến trình phục vụ HTTP.</td>
+          <td>Adapter luôn nằm trong <code>boot/app</code></td>
+          <td>Adapter là đúng chỗ sẽ bị thay bằng HTTP client. Nằm sai chỗ là phải sửa module.</td>
+          <td class="k">review — hiện 34/34 đúng chỗ</td>
         </tr>
         <tr>
-          <td class="k">③ notify-svc</td>
-          <td><code>notification</code> <b>chỉ nhận event</b>, không module nào gọi ngược vào nó (trừ một port <code>RecipientResolver</code> mà nó tự khai báo).</td>
-          <td>Gửi hàng loạt là việc chậm, hay hỏng, cần hàng đợi và retry. Cũng là chỗ giữ WebSocket — kết nối dài, không nên nằm chung tiến trình có deploy thường xuyên.</td>
+          <td>Không thêm khoá ngoại chéo module</td>
+          <td>Khoá ngoại chéo là thứ chặn chia database. Toàn bộ schema hiện chỉ có <b>2</b> khoá ngoại, và các module nối nhau bằng quy ước <code>tenant_id</code> — chính điều đó giữ cho việc chia sau này còn khả thi.</td>
+          <td class="k">grep REFERENCES trong migration</td>
+        </tr>
+        <tr>
+          <td>Không join sang bảng của module khác</td>
+          <td>Một câu join chéo là một ràng buộc ẩn không ai thấy cho tới ngày tách.</td>
+          <td class="k">review query trong repository</td>
+        </tr>
+        <tr>
+          <td>Event phải tự chứa đủ dữ liệu</td>
+          <td>Nếu consumer phải gọi ngược lại để lấy thêm thông tin, thì khi tách, mỗi event sẽ đẻ ra một lượt gọi mạng.</td>
+          <td class="k">đọc listener: có gọi ngược không</td>
+        </tr>
+        <tr>
+          <td>Listener phải idempotent</td>
+          <td>Modulith đã retry sẵn, nên đây là việc <em>đằng nào cũng phải làm</em> — không phải chi phí của việc tách.</td>
+          <td class="k">test giao cùng event hai lần</td>
         </tr>
       </tbody>
     </table>
   </div>
-
-  <h3>Vì sao lõi phải giữ nguyên</h3>
-  <div class="note warn">
-    <p><b>auth và tenancy không tách được rẻ.</b> Năm module gọi chúng đồng bộ để lấy danh sách
-    nhân sự, người học, người nhận, hạn mức, ngưỡng đạt. Biến thành service nghĩa là mỗi màn hình
-    quản trị phải chờ thêm 2–5 lượt gọi mạng, và phải tự xử lý ca “service định danh đang chết”.</p>
-    <p><b>learning, simulation, analytics, reporting dính nhau bằng dữ liệu.</b> Chúng dùng chung
-    một transaction và chung <code>tenant_id</code> dưới RLS. Tách ra là phải chia database, mà chia
-    database thì mất RLS làm lớp chặn thứ hai — đúng cái lớp đang bảo vệ khỏi lỗi nặng nhất.</p>
+  <div class="note ok">
+    <p><b>Hiện trạng khoá ngoại.</b> Cả hai khoá ngoại đều nằm trong bảng <code>group_member</code>:
+    một trỏ <code>tenant_group</code> (cùng module <code>tenancy</code>), một trỏ
+    <code>app_user</code> (sang <code>auth</code>). Cái thứ hai là chéo module, nhưng
+    <code>tenancy</code> và <code>auth</code> đều ở lại trong lõi nên nó không chặn gì.
+    Đừng thêm cái thứ ba mà không kiểm hai đầu có cùng nằm trong lõi hay không.</p>
   </div>
 
-  <h3>Việc phải làm dù tách mảnh nào</h3>
+  <h3>2.2 · Ba việc chuẩn bị — làm trước, có ích ngay cả khi chưa tách</h3>
+  <ol style="max-width:var(--measure);padding-left:20px;display:flex;flex-direction:column;gap:10px">
+    <li><b>Đưa event ra khỏi database.</b> Hiện <code>@ApplicationModuleListener</code> lưu event
+      trong chính Postgres và retry trong tiến trình. Thêm
+      <code>spring-modulith-events-amqp</code> để phát ra RabbitMQ (đã có sẵn trong compose stack).
+      Lợi ích ngay: event sống sót qua restart và quan sát được từ bên ngoài.</li>
+    <li><b>Truyền tenant qua ranh giới.</b> <code>TenantContext</code> là ThreadLocal — qua mạng nó
+      biến mất. Đưa <code>tid</code> vào header/message envelope và <b>verify lại ở đầu nhận</b>,
+      không tin header gửi tới. Lợi ích ngay: worker và scheduler cũng cần đúng cơ chế này.</li>
+    <li><b>Correlation id + tracing.</b> Một id đi xuyên request → event → listener. Lợi ích ngay:
+      hiện đã có <code>RequestIdFilter</code> và <code>TenantMdcFilter</code>, chỉ cần nối tiếp
+      sang nhánh event.</li>
+  </ol>
+  <p>
+    Ba việc này là <b>điều kiện tiên quyết chung</b> cho cả hướng microservices lẫn hướng Lambda ở
+    phần 3. Làm xong ba việc này thì mọi lựa chọn sau đều rẻ hơn.
+  </p>
+
+  <h3>2.3 · Runbook tách mảnh đầu tiên — <code>tracking-svc</code></h3>
+  <p>
+    Tách <code>tracking-svc</code> trước vì nó có lợi ích rõ nhất (tải cao nhất, bùng nổ nhất) và
+    rủi ro thấp nhất (chỉ ghi, không đọc dữ liệu module nào).
+  </p>
+  <ol style="max-width:var(--measure);padding-left:20px;display:flex;flex-direction:column;gap:8px">
+    <li>Tạo subproject <code>services/tracking</code> — nhẹ, không mang cả Spring Data.</li>
+    <li>Chuyển <code>TrackingController</code> (<code>/t/open.gif</code>, <code>/t/click</code>) và
+      phần giải mã token sang đó.</li>
+    <li><b>Không nối Postgres chính.</b> Service này xác thực token rồi publish một message; nó
+      không có repository nào.</li>
+    <li>Trong lõi, thêm listener tiêu thụ message đó và ghi <code>SimEvent</code> — đường ghi DB và
+      lớp RLS không đổi.</li>
+    <li>Đổi URL beacon trong template sang host mới.</li>
+    <li><b>Chạy song song.</b> Giữ cả đường cũ (<code>POST /api/v1/sim/events</code>) và đường mới,
+      đối chiếu số lượng event trong vài ngày.</li>
+    <li>Chỉ cắt đường cũ khi hai số khớp.</li>
+  </ol>
+
+  <h3>2.4 · Cổng nghiệm thu trước khi tách mảnh tiếp theo</h3>
+  <p>Không tách <code>ai-svc</code> hay <code>notify-svc</code> cho tới khi tất cả các mục sau đúng:</p>
   <ul>
-    <li><b>Thay adapter, không sửa module.</b> Trong <code>boot/app</code>, đổi <code>AuthParticipants</code>
-      từ gọi thẳng sang gọi HTTP. Module <code>simulation</code> không biết gì và không đổi.</li>
-    <li><b>Event phải ra khỏi database.</b> Hiện <code>@ApplicationModuleListener</code> lưu event trong
-      chính Postgres và retry trong tiến trình. Qua nhiều service thì phải đẩy sang RabbitMQ
-      (đã có trong stack) và tự lo <b>idempotency</b> — vì retry qua mạng có thể giao trùng.</li>
-    <li><b>Tenant phải đi kèm mỗi lượt gọi.</b> <code>TenantContext</code> là ThreadLocal; qua mạng nó
-      biến mất. Phải truyền tiếp <code>tid</code> và verify lại ở đầu bên kia, không tin header.</li>
-    <li><b>Mất lớp RLS ở service không có database.</b> <code>tracking-svc</code> ghi qua API của lõi
-      hoặc có bảng riêng — phải quyết rõ, đừng để nó cầm connection tới Postgres chính.</li>
+    <li>Event qua broker chạy ổn định ít nhất một chu kỳ chiến dịch thật.</li>
+    <li>Restart service không mất event, và giao trùng không sinh dữ liệu trùng.</li>
+    <li>Có test chứng minh đầu nhận <b>từ chối</b> tenant sai, không chỉ chấp nhận tenant đúng.</li>
+    <li>Một correlation id đi được từ lượt click tới bản ghi <code>SimEvent</code> trong log.</li>
+    <li>Độ trễ p99 của beacon không tệ hơn lúc còn trong monolith.</li>
   </ul>
 
-  <div class="note">
-    <p><b>Khuyến nghị.</b> Tách ① trước — nó có lợi ích rõ nhất (tải cao, tách biệt lỗi), rủi ro thấp
-    nhất (không đọc dữ liệu module khác), và là phép thử tốt cho toàn bộ hạ tầng phân tán: broker,
-    truyền tenant, idempotency, quan sát. Nếu ① chạy êm ba tháng thì làm ② và ③. Bốn service là
-    điểm dừng hợp lý cho quy mô hiện tại.</p>
+  <h3>2.5 · Bảng tra: cái gì tách được, cái gì không</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Mảnh</th><th>Tách được?</th><th>Lý do</th></tr></thead>
+      <tbody>
+        <tr><td class="k">tracking (beacon)</td><td class="tO">Được — làm trước</td><td>Chỉ ghi rồi publish. Không đọc gì của module khác.</td></tr>
+        <tr><td class="k">ai</td><td class="tO">Được — thứ hai</td><td>Chỉ nối bằng <code>Aida*Event</code> + <code>AiClient</code>. Không chạm DB nghiệp vụ. Nhịp trễ khác hẳn.</td></tr>
+        <tr><td class="k">notification</td><td class="tO">Được — thứ ba</td><td>Chỉ nhận event. Cũng là chỗ hợp lý để giữ WebSocket, tách khỏi tiến trình deploy thường xuyên.</td></tr>
+        <tr><td class="k">auth · tenancy</td><td class="tN">Không</td><td>Bị năm module gọi đồng bộ. Tách ra là thêm 2–5 lượt gọi mạng cho mỗi màn hình quản trị, cộng nghĩa vụ xử lý ca “định danh đang chết”.</td></tr>
+        <tr><td class="k">learning · simulation<br>analytics · reporting</td><td class="tN">Không</td><td>Dùng chung transaction và chung <code>tenant_id</code> dưới RLS. Tách là phải chia database, mà chia database thì mất lớp chặn thứ hai đang bảo vệ khỏi lỗi nặng nhất.</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
@@ -368,8 +712,8 @@
 <!-- ═════════ PHẦN 3 ═════════ -->
 <section>
   <div class="shead">
-    <p class="eyebrow">Phần 3 · Nếu dùng Lambda</p>
-    <h2>Serverless được cho phần bùng nổ, không được cho phần lõi</h2>
+    <p class="eyebrow">Phần 3 · Hướng dẫn nếu chọn Lambda</p>
+    <h2>Serverless chỉ ở rìa, và chỉ sau khi xong §2.2</h2>
   </div>
 
   <div class="note no">
@@ -454,7 +798,14 @@
     </table>
   </div>
 
-  <h3>Nếu vẫn muốn làm, chia thế nào</h3>
+  <h3>Điều kiện tiên quyết</h3>
+  <p>
+    Ba việc chuẩn bị ở <b>§2.2</b> — event ra khỏi database, tenant truyền qua ranh giới,
+    correlation id — là bắt buộc <em>trước</em> khi đưa bất cứ thứ gì lên Lambda. Không có chúng
+    thì mỗi hàm phải tự phát minh lại, mỗi lần một kiểu.
+  </p>
+
+  <h3>Bốn hàm, chia thế nào</h3>
   <ul>
     <li><b>Hàm 1 — <code>beacon-ingest</code>:</b> nhận <code>/t/open.gif</code> và <code>/t/click</code>,
       xác thực token, đẩy một bản ghi vào SQS, trả pixel/redirect ngay. Không chạm database.</li>
@@ -483,22 +834,45 @@
 <section>
   <div class="shead">
     <p class="eyebrow">Kết</p>
-    <h2>Ba lựa chọn, xếp theo mức độ nên làm</h2>
+    <h2>Thứ tự thi hành</h2>
   </div>
   <div class="tablewrap">
     <table>
-      <thead><tr><th>Phương án</th><th>Khi nào hợp lý</th><th>Chi phí</th></tr></thead>
+      <thead><tr><th>Giai đoạn</th><th>Làm gì</th><th>Dấu hiệu đã tới lúc</th></tr></thead>
       <tbody>
-        <tr><td class="k">Giữ modular monolith</td><td>Quy mô hiện tại, đội nhỏ, còn phải phục vụ on-prem. Ranh giới module đã được test cưỡng chế nên vẫn sạch.</td><td>Không</td></tr>
-        <tr><td class="k">Tách 3 service ở rìa</td><td>Khi tải beacon hoặc gửi hàng loạt bắt đầu ảnh hưởng độ trễ API, hoặc khi có đội riêng nhận từng mảng.</td><td>Broker thật, truyền tenant qua mạng, idempotency, quan sát phân tán</td></tr>
-        <tr><td class="k">Lambda ở rìa</td><td>Chỉ nhánh cloud, và chỉ khi tải bùng nổ đủ mạnh để tiền tiết kiệm bù được chi phí vận hành hai cách đóng gói.</td><td>Như trên, cộng mất on-prem và khoá nhà cung cấp</td></tr>
+        <tr>
+          <td class="k">0 · Bây giờ</td>
+          <td>Giữ 6 luật ở §2.1 trong mọi PR. Chưa tách gì.</td>
+          <td>Luôn luôn — đây là chi phí duy trì, không phải giai đoạn có điểm bắt đầu.</td>
+        </tr>
+        <tr>
+          <td class="k">1 · Chuẩn bị</td>
+          <td>Ba việc ở §2.2: event ra broker, tenant qua ranh giới, correlation id.</td>
+          <td>Làm được ngay, có ích ngay. Không cần chờ lý do.</td>
+        </tr>
+        <tr>
+          <td class="k">2 · Tách tracking</td>
+          <td>Runbook §2.3, qua cổng nghiệm thu §2.4.</td>
+          <td>Tải beacon bắt đầu ảnh hưởng độ trễ API quản trị, hoặc cần scale riêng đợt chiến dịch.</td>
+        </tr>
+        <tr>
+          <td class="k">3 · Tách ai, notify</td>
+          <td>Cùng khuôn, lần lượt từng mảnh.</td>
+          <td>Giai đoạn 2 chạy êm qua ít nhất một chu kỳ chiến dịch thật.</td>
+        </tr>
+        <tr>
+          <td class="k">— · Lambda</td>
+          <td>Phần 3, chỉ ở rìa và chỉ nhánh cloud.</td>
+          <td>Nhánh riêng, không nằm trên đường đi của giai đoạn 2–3. Bắt buộc xong giai đoạn 1 trước.</td>
+        </tr>
       </tbody>
     </table>
   </div>
   <p class="closing">
-    Điểm mấu chốt: <b>34 adapter đều nằm trong <code>boot/app</code></b>. Chừng nào giữ được tính chất
-    đó, việc tách service luôn là thay adapter chứ không phải viết lại module — nên hoãn quyết định
-    tách không tốn gì, mà tách sớm thì phải trả ngay tiền vận hành hệ phân tán.
+    Điểm mấu chốt của cả bản hướng dẫn: <b>34 adapter đều nằm trong <code>boot/app</code></b>, và
+    schema gần như không có khoá ngoại chéo module. Chừng nào hai tính chất đó còn được giữ, tách
+    service luôn là thay adapter chứ không phải viết lại module — nên việc cần kỷ luật hàng ngày là
+    §2.1, còn ngày tách chỉ là thi hành.
   </p>
 </section>
 
