@@ -61,18 +61,25 @@ jobs:
         id: f
         uses: dorny/paths-filter@v3
         with:
+          # 'every' is required for the '!' lines below to mean what they say.
+          # Under the default 'some', each line is an independent matcher OR-ed
+          # with the rest, so '!**/*.md' reads as "any file that is not .md" and
+          # makes every filter true for any non-Markdown file anywhere in the
+          # repo — a docs-only change was running the full backend suite.
+          # With 'every' a file must satisfy all lines, so the '!' lines exclude.
+          # Because AND leaves no room to OR across lines, alternatives are
+          # written as a brace group inside a single pattern.
+          predicate-quantifier: 'every'
           filters: |
             backend:
               - 'digishield/**'
               - '!digishield/Software Testing Slide/**'
               - '!**/*.md'
             frontend:
-              - 'frontend/**'
-              - 'docs/DigiShield_openapi.yaml'
+              - '{frontend/**,docs/DigiShield_openapi.yaml}'
               - '!**/*.md'
             deploy:
-              - 'deploy/**'
-              - 'digishield/deploy/**'
+              - '{deploy,digishield/deploy}/**'
               - '!**/*.md'
 
   # 3a) Backend unit tests — fast feedback before the heavier IT suite.
