@@ -9,6 +9,7 @@ A platform for preventing, training against, and alerting on cyber fraud — for
 | File | Contents |
 |------|----------|
 | **DigiShield_Technical_Design.md** | Technical design: architecture, ER, sequence, BPMN, DFD, and multi-tenant (SaaS) architecture. |
+| **DigiShield_Architecture.html** | Six architecture diagrams: system context, module boundaries, event flow, module internals, tenant isolation, CI/CD. Open in a browser. |
 | **DigiShield_ADR.md** | Architecture decisions (ADR-001…004) + realization appendix. |
 | **DigiShield_openapi.yaml** | API spec (OpenAPI 3.0.3). Import into Swagger/Postman or generate a client. |
 | **DigiShield_UIUX_Spec.md** | UI/UX design: design system, app shell, wireframes for 6 roles. |
@@ -16,6 +17,9 @@ A platform for preventing, training against, and alerting on cyber fraud — for
 
 > Open `.bpmn` files with [demo.bpmn.io](https://demo.bpmn.io) or Camunda Modeler.
 > View `.md` files in a Markdown reader (VS Code, Obsidian) to render tables & Mermaid diagrams.
+> `DigiShield_Architecture.html` is a self-contained page — no build step, no network. Its
+> diagrams are hand-authored inline SVG, so GitHub's Markdown renderer would strip them; open
+> the file in a browser instead. It follows the viewer's light/dark theme.
 
 ## Code
 
