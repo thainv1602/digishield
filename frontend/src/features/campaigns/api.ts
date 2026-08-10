@@ -47,13 +47,16 @@ export interface CampaignDetail {
   results: CampaignResultRow[] | null;
 }
 
-/** Wire shape of the `SimCampaign` entity returned by the create endpoint. */
+/**
+ * Wire shape of `SimCampaignDto`, returned by both the list and the create
+ * endpoint. Create used to return the JPA entity instead, which is why the
+ * enums arrived UPPERCASE there and lower-case here; both are lower-case now.
+ */
 export interface SimCampaign {
   id: string;
-  tenantId: string | null;
-  /** UPPERCASE enum on the wire, e.g. "EMAIL". */
+  /** lower-case enum on the wire, e.g. "email". */
   channel: string | null;
-  /** UPPERCASE enum on the wire, e.g. "DRAFT". */
+  /** lower-case enum on the wire, e.g. "draft". */
   status: string | null;
   templateId: string | null;
   name: string | null;

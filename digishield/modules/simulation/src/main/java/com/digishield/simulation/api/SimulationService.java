@@ -5,7 +5,6 @@ import com.digishield.simulation.api.dto.SimCampaignDetailDto;
 import com.digishield.simulation.api.dto.SimCampaignDto;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.SimAction;
-import com.digishield.simulation.domain.SimCampaign;
 import com.digishield.simulation.domain.SimEvent;
 
 import java.util.List;
@@ -24,7 +23,7 @@ public interface SimulationService {
      * @param groupId    target audience group (may be null)
      * @return the newly created campaign
      */
-    SimCampaign createCampaign(Channel channel, UUID templateId, UUID groupId);
+    SimCampaignDto createCampaign(Channel channel, UUID templateId, UUID groupId);
 
     /**
      * Launches ("sends") a campaign to the given recipients: creates a tracking

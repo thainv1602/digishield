@@ -86,11 +86,11 @@ public class SimulationServiceImpl implements SimulationService {
     }
 
     @Override
-    public SimCampaign createCampaign(Channel channel, UUID templateId, UUID groupId) {
+    public SimCampaignDto createCampaign(Channel channel, UUID templateId, UUID groupId) {
         UUID tenantId = TenantContext.requireUuid();
         SimCampaign campaign = new SimCampaign(
                 UUID.randomUUID(), tenantId, channel, CampaignStatus.DRAFT, templateId, groupId, null);
-        return campaignRepository.save(campaign);
+        return toSummary(campaignRepository.save(campaign));
     }
 
     @Override

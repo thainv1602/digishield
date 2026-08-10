@@ -6,8 +6,7 @@ import com.digishield.simulation.api.dto.SimCampaignDetailDto;
 import com.digishield.simulation.api.dto.SimCampaignDto;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.SimAction;
-import com.digishield.simulation.domain.SimCampaign;
-import com.digishield.simulation.domain.SimEvent;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,18 +44,25 @@ public class SimulationController {
     }
 
     @PostMapping("/campaigns")
-    public ResponseEntity<SimCampaign> createCampaign(@RequestBody CreateCampaignRequest request) {
-        SimCampaign campaign = simulationService.createCampaign(
+    public ResponseEntity<SimCampaignDto> createCampaign(
+            @RequestBody CreateCampaignRequest request) {
+        SimCampaignDto campaign = simulationService.createCampaign(
                 request.channel(), request.templateId(), request.groupId());
-        return ResponseEntity.ok(campaign);
+        return ResponseEntity.status(HttpStatus.CREATED).body(campaign);
     }
 
+    /**
+     * Records a tracked interaction. Accepted rather than created: the event is
+     * a fact about the campaign, and the caller has nothing to do with the row.
+     *
+     * @param request the campaign, user and action
+     */
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/events")
-    public ResponseEntity<SimEvent> recordEvent(@RequestBody RecordEventRequest request) {
-        SimEvent event = simulationService.recordEvent(
+    public ResponseEntity<Void> recordEvent(@RequestBody RecordEventRequest request) {
+        simulationService.recordEvent(
                 request.campaignId(), request.userId(), request.action());
-        return ResponseEntity.ok(event);
+        return ResponseEntity.accepted().build();
     }
 
     /**

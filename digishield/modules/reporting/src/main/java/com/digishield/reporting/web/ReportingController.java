@@ -4,7 +4,6 @@ import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.UserReportDto;
-import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,10 +51,10 @@ public class ReportingController {
 
     @PreAuthorize("hasRole('LEARNER')")
     @PostMapping("/phishing")
-    public ResponseEntity<PhishingReport> submit(@RequestBody SubmitReportRequest request) {
-        PhishingReport report = reportingService.submit(
+    public ResponseEntity<PhishingReportDto> submit(@RequestBody SubmitReportRequest request) {
+        PhishingReportDto report = reportingService.submit(
                 request.userId(), request.payload(), request.channel());
-        return ResponseEntity.ok(report);
+        return ResponseEntity.status(HttpStatus.CREATED).body(report);
     }
 
     /**
@@ -79,9 +78,9 @@ public class ReportingController {
      */
     @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/phishing/{id}/triage")
-    public ResponseEntity<PhishingReport> triage(@PathVariable("id") UUID id,
-                                                 @RequestBody TriageRequest request) {
-        PhishingReport report = reportingService.triage(id, request.toDecision());
+    public ResponseEntity<PhishingReportDto> triage(@PathVariable("id") UUID id,
+                                                    @RequestBody TriageRequest request) {
+        PhishingReportDto report = reportingService.triage(id, request.toDecision());
         return ResponseEntity.ok(report);
     }
 
