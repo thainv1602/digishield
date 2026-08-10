@@ -6,7 +6,6 @@ import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
 import com.digishield.reporting.api.dto.ThreatIntelDto;
 import com.digishield.reporting.api.dto.UserReportDto;
 import com.digishield.reporting.domain.BlacklistType;
-import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
 
 import java.util.List;

@@ -5,7 +5,6 @@ import com.digishield.simulation.api.dto.SimCampaignDetailDto;
 import com.digishield.simulation.api.dto.SimCampaignDto;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.SimAction;
-import com.digishield.simulation.domain.SimCampaign;
 import com.digishield.simulation.domain.SimEvent;
 
 import java.util.List;
