@@ -432,6 +432,14 @@
     vẫn lệch 40 chỗ. Bài học là <b>thứ gì không được đo thì trôi</b>. Nay
     <code>scripts/check-openapi-routes.py</code> chạy trong CI và so hai chiều: route phục vụ mà
     không khai thì đỏ, và path khai mà không có controller cũng đỏ.</p>
+    <p>Khai đủ vẫn chưa đủ đúng. Schema <code>Course</code> khai <code>duration_min</code> trong
+    khi server gửi <code>durationMin</code> — đã khai, và sai suốt. Nặng hơn:
+    <code>POST /enrollments</code> khai body <code>{user_id, course_id}</code> còn server đọc
+    <code>userId</code>/<code>courseId</code>, nên client sinh tự động gửi hai field bị Jackson
+    lặng lẽ bỏ. <code>scripts/check-openapi-schemas.py</code> so tên field của schema với DTO mà
+    handler thật sự trả về và nhận; cặp schema↔DTO lấy từ chính hợp đồng chứ không ghép theo tên,
+    vì ghép theo tên <code>Group</code> sẽ trúng một <code>private record</code> nằm trong
+    <code>RiskRollupService</code>.</p>
   </div>
 
 <h3><span class="num">0.10</span>Đây là môn kiểm thử — chức năng chỉ là phương tiện</h3>

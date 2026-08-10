@@ -1,0 +1,31 @@
+# Schema mismatches between docs/DigiShield_openapi.yaml and the DTOs the
+# controllers actually return or accept, expressed as one key per pairing.
+#
+# Accepted debt, not a permission slip. scripts/check-openapi-schemas.py fails
+# on any mismatch NOT listed here, and equally fails on a line here that no
+# longer mismatches -- so the file can only shrink. Fix the spec (or the DTO),
+# then run:
+#
+#     python3 scripts/check-openapi-schemas.py --update-baseline
+#
+# Entries: 19
+
+GET /compliance/policies response CompliancePolicyView
+GET /compliance/status response ComplianceStatusView
+GET /tenants response TenantView
+GET /tenants/{} response TenantView
+GET /tenants/{}/settings response ScimConfigView
+GET /users response UserView
+GET /users/{} response UserView
+GET /users/{}/badges response BadgeView
+PATCH /tenants/{} response TenantView
+PATCH /users/{} response UserView
+POST /blacklist request AddBlacklistRequest
+POST /interventions/evaluate request EvaluateRequest
+POST /notifications request CreateNotificationRequest
+POST /reports/phishing request SubmitReportRequest
+POST /sim/campaigns request CreateCampaignRequest
+POST /sim/events request RecordEventRequest
+POST /tenants response TenantView
+POST /users response UserView
+POST /users/{}/suspension response UserView
