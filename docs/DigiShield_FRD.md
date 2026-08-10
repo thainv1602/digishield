@@ -144,6 +144,9 @@ merely inconvenient to test.
 > capstone topics (`digishield/STUDENT_TOPICS.html`) owns one or more modules; the floor
 > is an acceptance criterion of the topic that touches the module. Topic ĐT15 does not
 > raise coverage by itself — it maintains the gate and stops it slipping back.
+>
+> The rungs, the per-module cost of each, and the procedure for raising the floor are in
+> **[`DigiShield_Coverage_Roadmap.md`](DigiShield_Coverage_Roadmap.md)**.
 
 ## 9. Traceability
 
