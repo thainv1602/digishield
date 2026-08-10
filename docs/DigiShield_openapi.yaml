@@ -64,6 +64,108 @@ paths:
               schema: { $ref: '#/components/schemas/TokenPair' }
         '401': { $ref: '#/components/responses/Problem' }
 
+  /auth/profile:
+    get:
+      tags: [Auth]
+      summary: Current user's editable profile
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+    patch:
+      tags: [Auth]
+      summary: Update the current user's profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                locale: { type: string, example: vi }
+                email: { type: string, format: email }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+
+  /lessons/{id}/quiz:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Learning]
+      summary: Quiz attached to a lesson
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Quiz' }
+
+  /lessons:
+    get:
+      tags: [Learning]
+      summary: List lessons across the catalogue
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LessonSummary' }
+    post:
+      tags: [Learning]
+      summary: Create a lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Lesson' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Lesson' }
+
+  /lessons/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Learning]
+      summary: Lesson detail
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Lesson' }
+    put:
+      tags: [Learning]
+      summary: Replace a lesson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Lesson' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Lesson' }
+    delete:
+      tags: [Learning]
+      summary: Delete a lesson
+      responses:
+        '204': { description: Deleted }
+
   /auth/sso/callback:
     post:
       tags: [Auth]
@@ -331,17 +433,83 @@ paths:
                 properties:
                   member_count: { type: integer }
 
+  /groups/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Groups]
+      summary: Update a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Group' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Group' }
+    delete:
+      tags: [Groups]
+      summary: Delete a group
+      responses:
+        '204': { description: Deleted }
+
+  /groups/{id}/members/{userId}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+      - in: path
+        name: userId
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Groups]
+      summary: Remove a member from a group
+      responses:
+        '200':
+          description: Member count after the change
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemberCount' }
+
+  /groups/{id}/members:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Groups]
+      summary: Member ids of a group
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: string, format: uuid }
+    post:
+      tags: [Groups]
+      summary: Add a member to a group
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Member count after the change
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemberCount' }
+
   /courses:
     get:
       tags: [Learning]
       summary: Course library
-      parameters:
-        - in: query
-          name: level
-          schema: { type: string, enum: [basic, beginner, intermediate, advanced] }
-        - in: query
-          name: lang
-          schema: { type: string, example: vi }
       responses:
         '200':
           description: OK
@@ -350,8 +518,60 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Course' }
+    post:
+      tags: [Learning]
+      summary: Create a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Course' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Course' }
+
+  /courses/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    put:
+      tags: [Learning]
+      summary: Replace a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Course' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Course' }
+    delete:
+      tags: [Learning]
+      summary: Delete a course
+      responses:
+        '204': { description: Deleted }
 
   /enrollments:
+    get:
+      tags: [Learning]
+      summary: List enrollments
+      parameters:
+        - in: query
+          name: status
+          schema: { type: string, enum: [assigned, in_progress, completed, overdue] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Enrollment' }
     post:
       tags: [Learning]
       summary: Enroll user in a course
@@ -361,13 +581,34 @@ paths:
           application/json:
             schema:
               type: object
-              required: [user_id, course_id]
+              required: [userId, courseId]
               properties:
-                user_id: { type: string, format: uuid }
-                course_id: { type: string, format: uuid }
+                userId: { type: string, format: uuid }
+                courseId: { type: string, format: uuid }
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enrollment' }
+
+  /enrollments/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Learning]
+      summary: Update enrollment progress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                progress: { type: integer, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: OK
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Enrollment' }
@@ -420,6 +661,30 @@ paths:
               schema: { $ref: '#/components/schemas/SimCampaignDetail' }
         '404':
           description: Not found
+
+  /sim/campaigns/{id}/send:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      tags: [Simulation]
+      summary: Send a campaign to selected recipients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userIds]
+              properties:
+                userIds:
+                  type: array
+                  items: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Per-recipient tracking tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SendResult' }
   /sim/track/{token}:
     get:
       tags: [Simulation]
@@ -439,6 +704,32 @@ paths:
           description: Coaching page
           content:
             text/html:
+              schema: { type: string }
+
+  /qr:
+    get:
+      tags: [Simulation]
+      summary: Render a QR code as SVG
+      description: >-
+        Public by design: a QR lure is photographed off a poster, so the image
+        must render before the viewer has any session.
+      security: []
+      parameters:
+        - in: query
+          name: data
+          required: true
+          schema: { type: string }
+        - in: query
+          name: size
+          schema: { type: integer, default: 220 }
+        - in: query
+          name: quiet
+          schema: { type: integer, default: 2 }
+      responses:
+        '200':
+          description: SVG image
+          content:
+            image/svg+xml:
               schema: { type: string }
   /sim/events:
     post:
@@ -487,6 +778,24 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/Report' }
+
+  /reports/phishing/mine/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Reports]
+      summary: Reports submitted by one learner
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/UserReport' }
 
   /reports/phishing/{id}/triage:
     parameters:
@@ -550,6 +859,15 @@ paths:
             schema: { $ref: '#/components/schemas/BlacklistEntry' }
       responses:
         '201': { description: Created }
+
+  /blacklist/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    delete:
+      tags: [Blacklist]
+      summary: Remove a blacklist entry
+      responses:
+        '204': { description: Deleted }
 
   /analytics/risk:
     get:
@@ -618,6 +936,72 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SimTemplate' }
+
+  /ai/templates:
+    get:
+      tags: [AI]
+      summary: List simulation templates
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/SimTemplate' }
+    post:
+      tags: [AI]
+      summary: Create a simulation template (draft)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimTemplateUpsert' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimTemplate' }
+
+  /ai/templates/{id}/submit:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      tags: [AI]
+      summary: Submit a template for approval
+      description: >-
+        Moves the template out of draft so a reviewer other than its author can
+        approve it (business rule BR-4).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimTemplate' }
+
+  /ai/templates/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [AI]
+      summary: Update a simulation template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SimTemplateUpsert' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimTemplate' }
+    delete:
+      tags: [AI]
+      summary: Delete a simulation template
+      responses:
+        '204': { description: Deleted }
 
   /ai/classify:
     post:
@@ -690,6 +1074,45 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Tenant' }
 
+  /tenants/{id}/impersonate:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    post:
+      tags: [Tenancy]
+      summary: Enter a tenant as a platform operator
+      description: >-
+        Writes the entry into that tenant's own audit log, so impersonation
+        leaves a trace the customer can see (business rule BR-6).
+      responses:
+        '204': { description: Recorded }
+
+  /tenants/{id}/thresholds:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Tenancy]
+      summary: Business thresholds of a tenant
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BusinessThresholds' }
+    patch:
+      tags: [Tenancy]
+      summary: Update business thresholds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BusinessThresholds' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BusinessThresholds' }
+
   /tenants/{id}:
     parameters:
       - { $ref: '#/components/parameters/Id' }
@@ -738,6 +1161,33 @@ paths:
             schema: { $ref: '#/components/schemas/TenantSettings' }
       responses:
         '200': { description: OK }
+
+  /settings/mail-domain/verify:
+    get:
+      tags: [Tenancy]
+      summary: Check MX, SPF and DMARC of a sending domain
+      parameters:
+        - in: query
+          name: domain
+          required: true
+          schema: { type: string, example: digishield.vn }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MailDomainCheck' }
+
+  /super/scim:
+    get:
+      tags: [Provisioning]
+      summary: SCIM configuration seen by platform operators
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ScimConfig' }
 
   /tenants/{id}/feature-flags:
     parameters:
@@ -829,6 +1279,20 @@ paths:
                 items: { $ref: '#/components/schemas/AuditLogEntry' }
         '403':
           description: Requires ORG_ADMIN or above
+
+  /super/audit:
+    get:
+      tags: [Tenancy]
+      summary: Audit log for platform operators
+      description: Same handler as /audit; separate path for the Super Admin console.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditLogEntry' }
   /plans:
     get:
       tags: [Billing]
@@ -866,6 +1330,55 @@ paths:
                     rank: { type: integer }
                     name: { type: string }
                     points: { type: integer }
+
+  /gamification/point-rules:
+    get:
+      tags: [Gamification]
+      summary: Point rules in force
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/PointRule' }
+
+  /gamification/badges/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    delete:
+      tags: [Gamification]
+      summary: Delete a badge definition
+      responses:
+        '204': { description: Deleted }
+
+  /gamification/badges:
+    get:
+      tags: [Gamification]
+      summary: Badge catalogue
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/BadgeCatalog' }
+    post:
+      tags: [Gamification]
+      summary: Create a badge definition
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BadgeCatalog' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BadgeCatalog' }
 
   /users/{id}/suspension:
     parameters:
@@ -1112,6 +1625,20 @@ paths:
       responses:
         '201': { description: Created }
 
+  /notifications/read-all:
+    post:
+      tags: [Notification]
+      summary: Mark every notification of the tenant as read
+      responses:
+        '200':
+          description: Number of notifications updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  updated: { type: integer }
+
   /notifications/reminders:
     post:
       tags: [Notification]
@@ -1129,6 +1656,27 @@ paths:
                 channel: { type: string, enum: [in_app, email, sms] }
       responses:
         '202': { description: Accepted }
+
+  /settings/sms/test:
+    post:
+      tags: [Notification]
+      summary: Send a test SMS through the configured provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string, example: "+84901234567" }
+                message: { type: string }
+      responses:
+        '200':
+          description: Delivery outcome
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SmsTestResult' }
 
   /threat-intel:
     get:
@@ -1217,6 +1765,19 @@ paths:
                 scope_id: { type: string, format: uuid }
       responses:
         '202': { description: Accepted }
+
+  /ai/orchestration/runs:
+    get:
+      tags: [AI]
+      summary: List orchestration runs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AidaRun' }
 
   /coaching-pages:
     get:
@@ -1446,25 +2007,33 @@ components:
           type: object
           description: Dynamic conditions for the smart group
           example: { risk_score_gte: 70, department: "ke-toan" }
+        member_count: { type: integer }
 
     Course:
       type: object
       properties:
         id: { type: string, format: uuid }
-        domain: { type: string }
+        tenantId: { type: string, format: uuid }
+        title: { type: string }
         level: { type: string, enum: [basic, beginner, intermediate, advanced] }
-        lang: { type: string }
-        duration_min: { type: integer }
+        lang: { type: string, example: vi }
+        durationMin: { type: integer }
+        lessonCount: { type: integer }
+        progress: { type: integer, minimum: 0, maximum: 100 }
+        status: { type: string }
 
     Enrollment:
       type: object
       properties:
         id: { type: string, format: uuid }
-        user_id: { type: string, format: uuid }
-        course_id: { type: string, format: uuid }
+        tenantId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        courseTitle: { type: string }
         status: { type: string, enum: [assigned, in_progress, completed, overdue] }
+        progress: { type: integer, minimum: 0, maximum: 100 }
         score: { type: integer }
-        completed_at: { type: string, format: date-time }
+        due_at: { type: string, format: date-time }
 
     SimTemplate:
       type: object
@@ -1473,6 +2042,13 @@ components:
         channel: { type: string, enum: [email, sms, qr, usb, voice, zalo, teams, slack] }
         subject: { type: string }
         body_ref: { type: string }
+        body: { type: string }
+        body_format: { type: string, enum: [html, markdown, text] }
+        category: { type: string }
+        logo_url: { type: string }
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/Attachment' }
         difficulty: { type: string, enum: [easy, medium, hard] }
         status: { type: string, enum: [draft, approved] }
 
@@ -1771,3 +2347,183 @@ components:
         metric: { type: string, enum: [email_sent, sms_sent, ai_call, storage] }
         value: { type: integer }
         period: { type: string, example: 2026-06 }
+
+    Attachment:
+      type: object
+      properties:
+        name: { type: string }
+        mime: { type: string }
+
+    SimTemplateUpsert:
+      type: object
+      properties:
+        channel: { type: string, enum: [email, sms, qr, usb, voice, zalo, teams, slack] }
+        subject: { type: string }
+        body: { type: string }
+        body_format: { type: string, enum: [html, markdown, text] }
+        category: { type: string }
+        logo_url: { type: string }
+        attachments:
+          type: array
+          items: { $ref: '#/components/schemas/Attachment' }
+        difficulty: { type: string, enum: [easy, medium, hard] }
+        approved: { type: boolean }
+
+    AidaRun:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        scope: { type: string }
+        scope_id: { type: string, format: uuid }
+        status: { type: string }
+        summary: { type: string }
+        created_at: { type: string, format: date-time }
+
+    Profile:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tenantId: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { type: string }
+        name: { type: string }
+        locale: { type: string, example: vi }
+
+    LessonSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        courseTitle: { type: string }
+        title: { type: string }
+        durationMin: { type: integer }
+        questionCount: { type: integer }
+
+    Lesson:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        courseId: { type: string, format: uuid }
+        title: { type: string }
+        body: { type: string }
+        exampleTitle: { type: string }
+        example: { type: string }
+        closing: { type: string }
+        durationMin: { type: integer }
+        progressPct: { type: integer, minimum: 0, maximum: 100 }
+        checkpoints:
+          type: array
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              state: { type: string }
+
+    Quiz:
+      type: object
+      properties:
+        lessonId: { type: string, format: uuid }
+        questions:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              q: { type: string }
+              options:
+                type: array
+                items: { type: string }
+              correct: { type: integer, description: Index into options }
+              explain: { type: string }
+
+    PointRule:
+      type: object
+      properties:
+        action: { type: string }
+        label: { type: string }
+        points: { type: integer }
+
+    BadgeCatalog:
+      type: object
+      description: A badge definition, as distinct from Badge (one awarded to a user).
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        description: { type: string }
+        iconRef: { type: string }
+        criteria_type: { type: string }
+        criteria_threshold: { type: integer }
+
+    MemberCount:
+      type: object
+      properties:
+        member_count: { type: integer }
+
+    BusinessThresholds:
+      type: object
+      properties:
+        risk_alert_score: { type: integer, minimum: 0, maximum: 100 }
+        pass_score_pct: { type: integer, minimum: 0, maximum: 100 }
+        min_campaigns_per_quarter: { type: integer, minimum: 0 }
+
+    ScimConfig:
+      type: object
+      properties:
+        tenantId: { type: string, format: uuid }
+        idpName: { type: string }
+        connected: { type: boolean }
+        idpTenantId: { type: string }
+        clientId: { type: string }
+        scimEndpoint: { type: string }
+        lastSyncAt: { type: string, format: date-time }
+        syncedUserCount: { type: integer }
+        syncErrorCount: { type: integer }
+        syncStatus: { type: string }
+
+    UserReport:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        payload: { type: string }
+        channel: { type: string }
+        status: { type: string }
+        reportedAt: { type: string, format: date-time }
+        ageLabel: { type: string }
+
+    MailDomainCheck:
+      type: object
+      properties:
+        domain: { type: string }
+        mx: { $ref: '#/components/schemas/DnsRecordCheck' }
+        spf: { $ref: '#/components/schemas/DnsRecordCheck' }
+        dmarc: { $ref: '#/components/schemas/DnsRecordCheck' }
+
+    DnsRecordCheck:
+      type: object
+      properties:
+        ok: { type: boolean }
+        records:
+          type: array
+          items: { type: string }
+        note: { type: string }
+
+    SmsTestResult:
+      type: object
+      properties:
+        delivered: { type: boolean }
+        detail: { type: string }
+
+    SendResult:
+      type: object
+      properties:
+        campaignId: { type: string, format: uuid }
+        status: { type: string }
+        recipientCount: { type: integer }
+        recipients:
+          type: array
+          items:
+            type: object
+            properties:
+              userId: { type: string, format: uuid }
+              token: { type: string, format: uuid }
+              trackUrl: { type: string }

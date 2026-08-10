@@ -100,8 +100,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      # --strict makes the contract bidirectional: a path declared in the spec
+      # with no controller behind it fails too. Affordable now that the two
+      # sides match exactly (121 operations each); without it the spec could
+      # still grow client methods that 404.
       - name: Compare controller routes against the spec
-        run: python3 scripts/check-openapi-routes.py
+        run: python3 scripts/check-openapi-routes.py --strict
 
   # 3b) Backend unit tests — fast feedback before the heavier IT suite.
   backend:
