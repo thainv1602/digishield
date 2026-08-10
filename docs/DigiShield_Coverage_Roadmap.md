@@ -1,6 +1,6 @@
 # DigiShield — Coverage roadmap to 0.90
 
-> Version 1.0 · 10/08/2026
+> Version 1.1 · 10/08/2026 — rung zero completed; figures corrected
 > Expands `DigiShield_FRD.md` §8.1, which sets the policy. This file sets the schedule.
 
 The target is **0.90 line coverage, measured per subproject**. Per subproject rather than
@@ -20,7 +20,7 @@ Measured on 10/08/2026 from `jacocoTestReport`, unit suite:
 |---|---|---|
 | `modules/reporting` | 64 / 323 | **19.8%** |
 | `modules/tenancy` | 157 / 743 | **21.1%** |
-| `boot/app` | 162 / 640 | **25.3%** |
+| `boot/app` | 240 / 640 | 37.5% |
 | `modules/notification` | 140 / 338 | 41.4% |
 | `modules/learning` | 558 / 1207 | 46.2% |
 | `modules/ai` | 244 / 515 | 47.4% |
@@ -30,21 +30,46 @@ Measured on 10/08/2026 from `jacocoTestReport`, unit suite:
 | `modules/interception` | 103 / 184 | 56.0% |
 | `shared/tenant-context` | 69 / 114 | 60.5% |
 | `modules/analytics` | 231 / 311 | **74.3%** |
-| **Total** | **2205 / 5295** | **41.6%** |
+| **Total (per-module, unit suites)** | **2283 / 5295** | **43.1%** |
+| **Union incl. integration suite** | **3189 / 5553** | **57.4%** |
 
 The current floor is `0.15`. The weakest subproject is at 19.8%, so the gate is presently
 about 4 points below what is already true — it protects against regression and nothing more.
 
-## 2. Fix the measurement before chasing the number
+## 2. Rung zero — done, and it changed the numbers
 
-**`boot/app` at 25.3% is not its real coverage.** Its integration tests — `TenantIsolationIT`,
-`SimulationModuleIT` and the rest — are not counted: `testCodeCoverageReport` produces the
-same figure whether or not the Testcontainers suite has run, because the `integrationTest`
-exec data is never wired into the aggregation.
+**The measurement was wrong, and correcting it was worth more than any rung.**
 
-Nobody should be asked to raise a number that is measured wrongly. Wiring the
-`integrationTest` exec data into the report is **rung zero**, and it will move `boot/app`
-upward for free.
+`boot/app` reported 25.3% because its `jacocoTestReport` saw only the unit suite's exec
+data; the whole Testcontainers suite was invisible. Two defects, both now fixed:
+
+- Report and gate take **every `*.exec` file**, so `check` counts both suites. Deliberately
+  without a task dependency, so `./gradlew test` still runs with no Docker daemon — which is
+  what the `backend` CI job relies on.
+- `boot/app` had **`jacocoTestCoverageVerification { enabled = false }`**. Its gate was not
+  merely low, it was switched off. Re-enabled; it passes.
+- The root aggregation declared only `testSuiteName = "test"`. A second report,
+  `integrationTestCodeCoverageReport`, now exists.
+
+What that revealed, measured on a clean build:
+
+| | Lines | % |
+|---|---|---|
+| Unit suite alone | 2240 / 5553 | 40.3% |
+| Integration suite alone | 1680 / 5553 | 30.3% |
+| **Union of both** | **3189 / 5553** | **57.4%** |
+
+The integration suite covers **949 lines that no unit test touches**. The project was never
+at 40.3%; it was at 57.4% and measuring itself wrongly. `boot/app` alone went 25.3% → 37.5%
+without a line of new test code.
+
+**The remaining gap to 0.90 is 1809 lines, not 2555** — 29% less than this document
+claimed in version 1.0.
+
+> Per-module gates still measure each module's own unit suite, and that is deliberate: a
+> module's gate should fail for that module's own missing tests, not pass because an
+> integration test in `boot/app` happened to walk through it. The union figure above is the
+> project-health number; the per-module figures are the accountability ones.
 
 Two smaller measurement rules, so the number keeps meaning something:
 
@@ -62,7 +87,7 @@ Lines each subproject must additionally cover to clear each rung, cumulative fro
 |---|---:|---:|---:|---:|---:|
 | `modules/reporting` | 19.8% | 32 | 97 | 162 | 226 |
 | `modules/tenancy` | 21.1% | 65 | 214 | 363 | 511 |
-| `boot/app` | 25.3% | 30 | 158 | 286 | 414 |
+| `boot/app` | 37.5% | — | 80 | 208 | 336 |
 | `modules/notification` | 41.4% | — | 29 | 96 | 164 |
 | `modules/learning` | 46.2% | — | 45 | 286 | 528 |
 | `modules/ai` | 47.4% | — | 13 | 116 | 219 |
@@ -72,7 +97,7 @@ Lines each subproject must additionally cover to clear each rung, cumulative fro
 | `modules/interception` | 56.0% | — | — | 25 | 62 |
 | `shared/tenant-context` | 60.5% | — | — | 10 | 33 |
 | `modules/analytics` | 74.3% | — | — | — | 48 |
-| **Total additional lines** | | **127** | **556** | **1509** | **2555** |
+| **Total additional lines** | | **97** | **478** | **1431** | **2477** |
 
 **Rung 1 costs 127 lines across three subprojects.** That is a week's work for one group,
 not a semester for twenty. The programme does not begin with a wall.

@@ -61,5 +61,11 @@ reporting {
         val testCodeCoverageReport by creating(JacocoCoverageReport::class) {
             testSuiteName.set("test")
         }
+        // boot/app's integration suite is where the Spring context, the RLS
+        // policies and the module wiring are actually exercised. Aggregating
+        // only `test` reported the same number whether or not it had run.
+        val integrationTestCodeCoverageReport by creating(JacocoCoverageReport::class) {
+            testSuiteName.set("integrationTest")
+        }
     }
 }

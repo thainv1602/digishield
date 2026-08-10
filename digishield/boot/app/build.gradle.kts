@@ -148,6 +148,27 @@ tasks.named("check") {
     dependsOn(testing.suites.named("integrationTest"))
 }
 
+// ---------------------------------------------------------------------------
+// Coverage across BOTH suites.
+//
+// jacocoTestReport ships with the unit suite's exec data only, so boot/app's
+// figure ignored every integration test — the Testcontainers suite is most of
+// what exercises this project. Point both the report and the gate at whatever
+// exec files exist instead.
+//
+// Deliberately NO dependsOn(integrationTest): `./gradlew test` must stay
+// runnable without a Docker daemon, which is what the `backend` CI job relies
+// on. The file tree is lazy, so a plain `test` run reports on test.exec alone
+// and `check` picks up both.
+// ---------------------------------------------------------------------------
+val allCoverageData = fileTree(layout.buildDirectory.dir("jacoco")) { include("*.exec") }
+
+tasks.jacocoTestReport {
+    executionData.setFrom(allCoverageData)
+    mustRunAfter(testing.suites.named("integrationTest"))
+}
+
 tasks.jacocoTestCoverageVerification {
-    enabled = false
+    executionData.setFrom(allCoverageData)
+    mustRunAfter(testing.suites.named("integrationTest"))
 }
