@@ -114,6 +114,12 @@ jobs:
       - name: Compare declared schemas against the DTOs
         if: always()
         run: python3 scripts/check-openapi-schemas.py
+      # Names being right says nothing about the values inside them:
+      # BlacklistEntry.type declared [url, phone, account] against an enum
+      # holding six other constants, and was "declared" the whole time.
+      - name: Compare declared enum values against the Java enums
+        if: always()
+        run: python3 scripts/check-openapi-enums.py
 
   # 3b) Backend unit tests — fast feedback before the heavier IT suite.
   backend:

@@ -1,0 +1,19 @@
+# Enum positions whose declared values do not match the Java enum behind them.
+#
+# Accepted debt. scripts/check-openapi-enums.py fails on any mismatch not listed
+# here, and on a line here that no longer mismatches, so the file only shrinks.
+# Fix the spec (or the enum), then run:
+#
+#     python3 scripts/check-openapi-enums.py --update-baseline
+#
+# Entries: 9
+
+paths./account-watchlist/check.get.responses.200.content.application/json.schema.properties.riskLevel
+schemas.Notification.properties.status
+schemas.NotificationInput.properties.status
+schemas.SimCampaign.allOf.properties.status
+schemas.SimTemplate.properties.body_format
+schemas.SimTemplateUpsert.properties.body_format
+schemas.Tenant.properties.status
+schemas.TenantUpdate.properties.status
+schemas.User.properties.status
