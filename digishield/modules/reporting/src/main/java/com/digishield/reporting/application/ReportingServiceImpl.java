@@ -93,12 +93,26 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     @Override
-    public PhishingReportDto triage(UUID reportId, TriageDecision decision) {
+    public PhishingReportDto triage(UUID reportId, TriageDecision decision,
+                                    boolean addToBlacklist) {
         UUID tenantId = TenantContext.requireUuid();
         PhishingReport report = reportRepository.findById(reportId)
                 .filter(r -> tenantId.equals(r.getTenantId()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Không tìm thấy báo cáo phishing: " + reportId));
+
+        // Checked before anything is written, so a request that cannot be
+        // honoured changes nothing at all rather than half-succeeding.
+        if (addToBlacklist) {
+            if (decision == TriageDecision.DISMISS) {
+                throw new IllegalArgumentException(
+                        "Không thể vừa bác bỏ báo cáo vừa chặn người gửi");
+            }
+            if (report.getSender() == null || report.getSender().isBlank()) {
+                throw new IllegalArgumentException(
+                        "Báo cáo không có người gửi để chặn: " + reportId);
+            }
+        }
 
         switch (decision) {
             case CONFIRM_THREAT -> {
@@ -109,6 +123,7 @@ public class ReportingServiceImpl implements ReportingService {
                 eventPublisher.publish(
                         new PhishingReportConfirmedEvent(
                                 tenantId, saved.getUserId(), saved.getId()));
+                blockSenderIfRequested(tenantId, saved, addToBlacklist);
                 return toDto(saved, Instant.now());
             }
             case QUARANTINE -> {
@@ -118,7 +133,9 @@ public class ReportingServiceImpl implements ReportingService {
                 report.setStatus(ReportStatus.QUARANTINED);
                 audit("triage.quarantine", "report:" + reportId,
                         AuditRecorder.Severity.SENSITIVE);
-                return toDto(reportRepository.save(report), Instant.now());
+                PhishingReport held = reportRepository.save(report);
+                blockSenderIfRequested(tenantId, held, addToBlacklist);
+                return toDto(held, Instant.now());
             }
             case DISMISS -> {
                 report.setAiLabel(AiLabel.CLEAN);
@@ -228,6 +245,25 @@ public class ReportingServiceImpl implements ReportingService {
                 t.getRawPayload(),
                 t.getConvertedTemplateId(),
                 t.getCollectedAt());
+    }
+
+    /**
+     * Blocks the reported sender, once. Re-triaging a report must not pile up
+     * duplicate rows, so an indicator already on the list is left alone.
+     */
+    private void blockSenderIfRequested(UUID tenantId, PhishingReport report, boolean requested) {
+        if (!requested) {
+            return;
+        }
+        String sender = report.getSender().trim();
+        if (blacklistRepository.existsByTenantIdAndTypeAndValue(
+                tenantId, BlacklistType.EMAIL, sender)) {
+            return;
+        }
+        blacklistRepository.save(new BlacklistEntry(
+                UUID.randomUUID(), tenantId, BlacklistType.EMAIL, sender,
+                "triage:" + report.getId()));
+        audit("blacklist.add", "email:" + sender, AuditRecorder.Severity.SENSITIVE);
     }
 
     private PhishingReportDto toDto(PhishingReport r, Instant now) {

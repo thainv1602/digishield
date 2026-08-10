@@ -4,6 +4,8 @@ import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.contracts.events.PhishingReportConfirmedEvent;
 import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.api.dto.PhishingReportDto;
+import com.digishield.reporting.domain.BlacklistEntry;
+import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
@@ -23,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -121,7 +124,7 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT);
+        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT, false);
 
         // Assert: what is persisted, and what the client is told
         verify(reportRepository).save(reportCaptor.capture());
@@ -148,7 +151,7 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.DISMISS);
+        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.DISMISS, false);
 
         // Assert
         verify(reportRepository).save(reportCaptor.capture());
@@ -169,7 +172,7 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.QUARANTINE);
+        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.QUARANTINE, false);
 
         // Assert: judged a threat, but the verdict is not final
         verify(reportRepository).save(reportCaptor.capture());
@@ -197,13 +200,99 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         PhishingReportDto quarantined =
-                reportingService.triage(quarantinedId, TriageDecision.QUARANTINE);
+                reportingService.triage(quarantinedId, TriageDecision.QUARANTINE, false);
         PhishingReportDto dismissed =
-                reportingService.triage(dismissedId, TriageDecision.DISMISS);
+                reportingService.triage(dismissedId, TriageDecision.DISMISS, false);
 
         assertThat(quarantined.status()).isNotEqualTo(dismissed.status());
         assertThat(quarantined.aiLabel()).isEqualTo("threat");
         assertThat(dismissed.aiLabel()).isEqualTo("clean");
+    }
+
+    /** Builds a report that carries a sender, so it can be blocked. */
+    private PhishingReport reportFrom(UUID reportId, String sender) {
+        return new PhishingReport(
+                reportId, TENANT_ID, UUID.randomUUID(), "payload",
+                null, 0.0, ReportStatus.SUBMITTED,
+                null, null, sender, null, false, Instant.now());
+    }
+
+    @Test
+    void confirmingWithBlacklistBlocksTheReportedSender() {
+        UUID reportId = UUID.randomUUID();
+        when(reportRepository.findById(reportId))
+                .thenReturn(Optional.of(reportFrom(reportId, "kegian@lua-dao.vn")));
+        when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(blacklistRepository.existsByTenantIdAndTypeAndValue(
+                TENANT_ID, BlacklistType.EMAIL, "kegian@lua-dao.vn")).thenReturn(false);
+
+        reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT, true);
+
+        ArgumentCaptor<BlacklistEntry> entry = ArgumentCaptor.forClass(BlacklistEntry.class);
+        verify(blacklistRepository).save(entry.capture());
+        assertThat(entry.getValue().getType()).isEqualTo(BlacklistType.EMAIL);
+        assertThat(entry.getValue().getValue()).isEqualTo("kegian@lua-dao.vn");
+        assertThat(entry.getValue().getTenantId()).isEqualTo(TENANT_ID);
+    }
+
+    @Test
+    void quarantiningWithBlacklistAlsoBlocksTheSender() {
+        UUID reportId = UUID.randomUUID();
+        when(reportRepository.findById(reportId))
+                .thenReturn(Optional.of(reportFrom(reportId, "kegian@lua-dao.vn")));
+        when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(blacklistRepository.existsByTenantIdAndTypeAndValue(
+                any(), any(), any())).thenReturn(false);
+
+        reportingService.triage(reportId, TriageDecision.QUARANTINE, true);
+
+        verify(blacklistRepository).save(any(BlacklistEntry.class));
+    }
+
+    @Test
+    void reTriagingDoesNotAddTheSameSenderTwice() {
+        UUID reportId = UUID.randomUUID();
+        when(reportRepository.findById(reportId))
+                .thenReturn(Optional.of(reportFrom(reportId, "kegian@lua-dao.vn")));
+        when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
+        // Already on the list from an earlier triage of the same sender.
+        when(blacklistRepository.existsByTenantIdAndTypeAndValue(
+                TENANT_ID, BlacklistType.EMAIL, "kegian@lua-dao.vn")).thenReturn(true);
+
+        reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT, true);
+
+        verify(blacklistRepository, never()).save(any(BlacklistEntry.class));
+    }
+
+    @Test
+    void dismissingCannotAlsoBlockAndWritesNothingAtAll() {
+        UUID reportId = UUID.randomUUID();
+        when(reportRepository.findById(reportId))
+                .thenReturn(Optional.of(reportFrom(reportId, "kegian@lua-dao.vn")));
+
+        assertThatThrownBy(() ->
+                reportingService.triage(reportId, TriageDecision.DISMISS, true))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        // Rejected before any write: the report keeps its status too.
+        verify(reportRepository, never()).save(any());
+        verify(blacklistRepository, never()).save(any());
+    }
+
+    @Test
+    void blockingIsRefusedWhenTheReportHasNoSenderToBlock() {
+        UUID reportId = UUID.randomUUID();
+        when(reportRepository.findById(reportId))
+                .thenReturn(Optional.of(reportFrom(reportId, null)));
+
+        // Better to refuse than to confirm the report and quietly block nothing.
+        assertThatThrownBy(() ->
+                reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT, true))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(reportRepository, never()).save(any());
+        verify(blacklistRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
@@ -213,7 +302,7 @@ class ReportingServiceImplTest {
         when(reportRepository.findById(missingId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        assertThatThrownBy(() -> reportingService.triage(missingId, TriageDecision.CONFIRM_THREAT))
+        assertThatThrownBy(() -> reportingService.triage(missingId, TriageDecision.CONFIRM_THREAT, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(missingId.toString());
 
@@ -232,7 +321,7 @@ class ReportingServiceImplTest {
         when(reportRepository.findById(reportId)).thenReturn(Optional.of(foreignReport));
 
         // Act + Assert: treated as not-found; no cross-tenant mutation or event
-        assertThatThrownBy(() -> reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT))
+        assertThatThrownBy(() -> reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT, false))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(reportId.toString());
 
