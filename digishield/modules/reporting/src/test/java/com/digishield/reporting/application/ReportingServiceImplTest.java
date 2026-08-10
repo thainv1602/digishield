@@ -2,6 +2,7 @@ package com.digishield.reporting.application;
 
 import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.contracts.events.PhishingReportConfirmedEvent;
+import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
@@ -115,7 +116,7 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.triage(reportId, true);
+        PhishingReport result = reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT);
 
         // Assert
         assertThat(result.getStatus()).isEqualTo(ReportStatus.CONFIRMED);
@@ -129,7 +130,7 @@ class ReportingServiceImplTest {
     }
 
     @Test
-    void triageWhenNotConfirmingThreatDismissesAndDoesNotPublish() {
+    void triageWhenDismissingMarksDismissedAndDoesNotPublish() {
         // Arrange
         UUID reportId = UUID.randomUUID();
         PhishingReport report = new PhishingReport(
@@ -139,12 +140,57 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.triage(reportId, false);
+        PhishingReport result = reportingService.triage(reportId, TriageDecision.DISMISS);
 
         // Assert
         assertThat(result.getStatus()).isEqualTo(ReportStatus.DISMISSED);
         assertThat(result.getAiLabel()).isEqualTo(AiLabel.CLEAN);
         verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void triageWhenQuarantiningMarksThreatButPublishesNoEvent() {
+        // Arrange
+        UUID reportId = UUID.randomUUID();
+        PhishingReport report = new PhishingReport(
+                reportId, TENANT_ID, UUID.randomUUID(), "payload",
+                null, 0.0, ReportStatus.SUBMITTED);
+        when(reportRepository.findById(reportId)).thenReturn(Optional.of(report));
+        when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        // Act
+        PhishingReport result = reportingService.triage(reportId, TriageDecision.QUARANTINE);
+
+        // Assert: judged a threat, but the verdict is not final
+        assertThat(result.getStatus()).isEqualTo(ReportStatus.QUARANTINED);
+        assertThat(result.getAiLabel()).isEqualTo(AiLabel.THREAT);
+
+        // The reporter must not be rewarded twice: no event until it is confirmed.
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void triageQuarantineIsDistinctFromDismissEvenThoughNeitherPublishes() {
+        // Both are "not confirmed", which the old boolean could not tell apart:
+        // anything that was not confirm became a dismissal.
+        UUID quarantinedId = UUID.randomUUID();
+        UUID dismissedId = UUID.randomUUID();
+        when(reportRepository.findById(quarantinedId)).thenReturn(Optional.of(new PhishingReport(
+                quarantinedId, TENANT_ID, UUID.randomUUID(), "payload",
+                null, 0.0, ReportStatus.SUBMITTED)));
+        when(reportRepository.findById(dismissedId)).thenReturn(Optional.of(new PhishingReport(
+                dismissedId, TENANT_ID, UUID.randomUUID(), "payload",
+                null, 0.0, ReportStatus.SUBMITTED)));
+        when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PhishingReport quarantined =
+                reportingService.triage(quarantinedId, TriageDecision.QUARANTINE);
+        PhishingReport dismissed =
+                reportingService.triage(dismissedId, TriageDecision.DISMISS);
+
+        assertThat(quarantined.getStatus()).isNotEqualTo(dismissed.getStatus());
+        assertThat(quarantined.getAiLabel()).isEqualTo(AiLabel.THREAT);
+        assertThat(dismissed.getAiLabel()).isEqualTo(AiLabel.CLEAN);
     }
 
     @Test
@@ -154,7 +200,7 @@ class ReportingServiceImplTest {
         when(reportRepository.findById(missingId)).thenReturn(Optional.empty());
 
         // Act + Assert
-        assertThatThrownBy(() -> reportingService.triage(missingId, true))
+        assertThatThrownBy(() -> reportingService.triage(missingId, TriageDecision.CONFIRM_THREAT))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(missingId.toString());
 
@@ -173,7 +219,7 @@ class ReportingServiceImplTest {
         when(reportRepository.findById(reportId)).thenReturn(Optional.of(foreignReport));
 
         // Act + Assert: treated as not-found; no cross-tenant mutation or event
-        assertThatThrownBy(() -> reportingService.triage(reportId, true))
+        assertThatThrownBy(() -> reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining(reportId.toString());
 

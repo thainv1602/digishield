@@ -38,14 +38,15 @@ public interface ReportingService {
     /**
      * Triages a report.
      * <p>
-     * If {@code confirmThreat == true}, the report moves to CONFIRMED and a
-     * {@code PhishingReportConfirmedEvent} is emitted.
+     * Only {@code CONFIRM_THREAT} emits {@code PhishingReportConfirmedEvent};
+     * quarantine deliberately does not, so a report that is later confirmed
+     * rewards its reporter once rather than twice.
      *
-     * @param reportId      the report to triage
-     * @param confirmThreat whether this is confirmed as a threat
+     * @param reportId the report to triage
+     * @param decision what the analyst decided
      * @return the report after triage
      */
-    PhishingReport triage(UUID reportId, boolean confirmThreat);
+    PhishingReport triage(UUID reportId, TriageDecision decision);
 
     /**
      * Lists phishing reports for the SOC inbox, optionally filtered by status.

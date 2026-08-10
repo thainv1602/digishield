@@ -1220,7 +1220,7 @@ Method: POST
 URL:    {{base_url}}/api/v1/reports/phishing/
         {{report_id}}/triage
 Header: Authorization: Bearer {{access_token}}
-Body:   { "confirmThreat": true }
+Body:   { "decision": "confirm_threat" }
 \end{lstlisting}
   \end{block}
 

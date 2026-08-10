@@ -224,7 +224,7 @@
       \begin{itemize}
         \item Độ phủ câu lệnh / nhánh / MC-DC
         \item JUnit 5 + Mockito, \texttt{@SpringBootTest}
-        \item DigiShield có 257 test, JaCoCo đo độ phủ
+        \item DigiShield có 272 test, JaCoCo đo độ phủ
       \end{itemize}
     \end{block}
 
@@ -1262,7 +1262,7 @@ eventRepository.save(event);     // luon ghi log
         không thể đạt tới. Spec thừa hay code thiếu?
       \item \textbf{Không có guard trạng thái}: \texttt{triage()} không kiểm tra
         status hiện tại. Triage lại một báo cáo đã \texttt{CONFIRMED} bằng
-        \texttt{confirmThreat=false} $\Rightarrow$ nó lặng lẽ thành
+        \texttt{decision=dismiss} $\Rightarrow$ nó lặng lẽ thành
         \texttt{DISMISSED} (và ngược lại). \texttt{convert-to-training} cũng
         chạy được trên báo cáo \texttt{DISMISSED}!
     \end{enumerate}
@@ -1362,10 +1362,10 @@ eventRepository.save(event);     // luon ghi log
     \textbf{TC-ID} & \textbf{Loại} & \textbf{Kịch bản} & \textbf{Expected} \\
     \midrule
     TC-ST-1 & valid & POST /reports/phishing với payload mẫu & 200, status \texttt{submitted} \\
-    TC-ST-2 & valid & triage \texttt{confirmThreat=true} report SUBMITTED & status \texttt{confirmed}, aiLabel \texttt{threat}, event published \\
-    TC-ST-3 & valid & triage \texttt{confirmThreat=false} report SUBMITTED & status \texttt{dismissed}, aiLabel \texttt{clean}, KHÔNG có event \\
+    TC-ST-2 & valid & triage \texttt{decision=confirm\_threat} report SUBMITTED & status \texttt{confirmed}, aiLabel \texttt{threat}, event published \\
+    TC-ST-3 & valid & triage \texttt{decision=dismiss} report SUBMITTED & status \texttt{dismissed}, aiLabel \texttt{clean}, KHÔNG có event \\
     TC-ST-4 & valid & convert-to-training report CONFIRMED & \texttt{convertedToTraining=true} \\
-    TC-ST-5 & invalid & triage(false) report đã CONFIRMED & kỳ vọng bị từ chối --- thực tế: đổi thành DISMISSED! \\
+    TC-ST-5 & invalid & triage \texttt{dismiss} report đã CONFIRMED & kỳ vọng bị từ chối --- thực tế: đổi thành DISMISSED! \\
     TC-ST-6 & invalid & convert-to-training report DISMISSED & kỳ vọng bị từ chối --- thực tế: vẫn set flag \\
     TC-ST-7 & invalid & triage id không tồn tại & lỗi ``Không tìm thấy báo cáo'' \\
     \bottomrule
@@ -1442,7 +1442,7 @@ eventRepository.save(event);     // luon ghi log
     \column{0.46\textwidth}
     \small
     \begin{alertblock}{Alternative / Exception flows}
-      \textbf{AF1}: Analyst bác bỏ (\texttt{confirmThreat=false})
+      \textbf{AF1}: Analyst bác bỏ (\texttt{decision=dismiss})
       $\to$ DISMISSED, \textbf{không} có bước 4--6\\[0.25em]
       \textbf{AF2}: Analyst chuyển báo cáo thành bài huấn luyện
       (\texttt{convert-to-training})\\[0.25em]
