@@ -3,6 +3,7 @@ package com.digishield.reporting.application;
 import com.digishield.contracts.events.PhishingReportConfirmedEvent;
 import com.digishield.contracts.events.ThreatIntelConvertedEvent;
 import com.digishield.reporting.api.ReportingService;
+import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
@@ -92,27 +93,42 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     @Override
-    public PhishingReport triage(UUID reportId, boolean confirmThreat) {
+    public PhishingReport triage(UUID reportId, TriageDecision decision) {
         UUID tenantId = TenantContext.requireUuid();
         PhishingReport report = reportRepository.findById(reportId)
                 .filter(r -> tenantId.equals(r.getTenantId()))
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Không tìm thấy báo cáo phishing: " + reportId));
 
-        if (confirmThreat) {
-            report.setAiLabel(AiLabel.THREAT);
-            report.setStatus(ReportStatus.CONFIRMED);
-            PhishingReport saved = reportRepository.save(report);
-            audit("triage.confirm", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
-            eventPublisher.publish(
-                    new PhishingReportConfirmedEvent(tenantId, saved.getUserId(), saved.getId()));
-            return saved;
+        switch (decision) {
+            case CONFIRM_THREAT -> {
+                report.setAiLabel(AiLabel.THREAT);
+                report.setStatus(ReportStatus.CONFIRMED);
+                PhishingReport saved = reportRepository.save(report);
+                audit("triage.confirm", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
+                eventPublisher.publish(
+                        new PhishingReportConfirmedEvent(
+                                tenantId, saved.getUserId(), saved.getId()));
+                return saved;
+            }
+            case QUARANTINE -> {
+                // Labelled a threat so it reads as one everywhere, but no event:
+                // the reporter is rewarded when the verdict is final, not before.
+                report.setAiLabel(AiLabel.THREAT);
+                report.setStatus(ReportStatus.QUARANTINED);
+                audit("triage.quarantine", "report:" + reportId,
+                        AuditRecorder.Severity.SENSITIVE);
+                return reportRepository.save(report);
+            }
+            case DISMISS -> {
+                report.setAiLabel(AiLabel.CLEAN);
+                report.setStatus(ReportStatus.DISMISSED);
+                audit("triage.dismiss", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
+                return reportRepository.save(report);
+            }
+            default -> throw new IllegalArgumentException(
+                    "Quyết định phân loại không hợp lệ: " + decision);
         }
-
-        report.setAiLabel(AiLabel.CLEAN);
-        report.setStatus(ReportStatus.DISMISSED);
-        audit("triage.dismiss", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
-        return reportRepository.save(report);
     }
 
     @Override

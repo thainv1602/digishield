@@ -1519,30 +1519,36 @@ interceptionService.evaluate(request);   // "no crash" ??
 \end{frame}
 
 %--- SLIDE 48 ---------------------------------------------------------
-\begin{frame}[fragile]{BT 2--3: mã nguồn \texttt{triage()} cần test}
+\begin{frame}[fragile,shrink=12]{BT 2--3: mã nguồn \texttt{triage()} cần test}
   \vspace*{-0.5em}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 public PhishingReport triage(UUID reportId,
-                             boolean confirmThreat) {
+                            TriageDecision decision) {
     UUID tenantId = TenantContext.requireUuid();
     PhishingReport report = reportRepository
         .findById(reportId)
         .filter(r -> tenantId.equals(r.getTenantId()))
         .orElseThrow(() -> new IllegalArgumentException(
-            "Khong tim thay bao cao phishing: " + reportId));
-
-    if (confirmThreat) {
+            "Khong tim thay bao cao: " + reportId));
+    switch (decision) {
+      case CONFIRM_THREAT -> {
         report.setAiLabel(AiLabel.THREAT);
         report.setStatus(ReportStatus.CONFIRMED);
         PhishingReport saved = reportRepository.save(report);
-        eventPublisher.publish(
-            new PhishingReportConfirmedEvent(
-                tenantId, saved.getUserId(), saved.getId()));
-        return saved;
+        eventPublisher.publish(new PhishingReportConfirmedEvent(
+            tenantId, saved.getUserId(), saved.getId()));
+        return saved; }
+      case QUARANTINE -> {   // threat, nhung chua chot
+        report.setAiLabel(AiLabel.THREAT);
+        report.setStatus(ReportStatus.QUARANTINED);
+        return reportRepository.save(report); }
+      case DISMISS -> {
+        report.setAiLabel(AiLabel.CLEAN);
+        report.setStatus(ReportStatus.DISMISSED);
+        return reportRepository.save(report); }
+      default -> throw new IllegalArgumentException(
+          "Quyet dinh khong hop le: " + decision);
     }
-    report.setAiLabel(AiLabel.CLEAN);
-    report.setStatus(ReportStatus.DISMISSED);
-    return reportRepository.save(report);
 }
 \end{lstlisting}
 \end{frame}

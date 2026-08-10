@@ -770,7 +770,7 @@ paths:
       parameters:
         - in: query
           name: status
-          schema: { type: string, enum: [new, in_review, confirmed, dismissed, closed] }
+          schema: { type: string, enum: [submitted, triaging, confirmed, quarantined, dismissed] }
       responses:
         '200':
           description: OK
@@ -810,14 +810,16 @@ paths:
           application/json:
             schema:
               type: object
-              required: [confirmThreat]
-              description: >-
-                The handler reads only confirmThreat. The richer vocabulary
-                declared here before (dismiss, quarantine, add_to_blacklist)
-                was never built, so the client offered choices the server
-                could not honour.
+              required: [decision]
               properties:
-                confirmThreat: { type: boolean }
+                decision:
+                  type: string
+                  enum: [confirm_threat, quarantine, dismiss]
+                  description: >-
+                    quarantine records a threat the analyst is holding: the
+                    report is labelled THREAT but no confirmation event is
+                    emitted, so the reporter is rewarded once, when the verdict
+                    becomes final. An unknown value is rejected with 400.
       responses:
         '200':
           description: OK
@@ -2113,7 +2115,7 @@ components:
         aiConfidence: { type: number, format: float }
         reasoning: { type: string }
         blacklistMatch: { type: boolean }
-        status: { type: string, enum: [new, ai_classified, in_review, confirmed, dismissed, quarantined, closed] }
+        status: { type: string, enum: [submitted, triaging, confirmed, quarantined, dismissed] }
         channel: { type: string, enum: [email, sms] }
         ageLabel: { type: string, description: Human-readable age, e.g. "2 gio truoc" }
     BlacklistEntry:

@@ -530,23 +530,27 @@ switch (x) {
   \begin{block}{\small \texttt{ReportingServiceImpl.triage()} --- rút gọn từ code thật}
 \begin{lstlisting}[language=java]
 public PhishingReport triage(UUID reportId,
-                             boolean confirmThreat) {
+                            TriageDecision decision) {
     PhishingReport report = ...;      // tim bao cao (node 1)
-    if (confirmThreat) {              // node 2 - quyet dinh
-        report.setAiLabel(AiLabel.THREAT);
+    switch (decision) {               // node 2 - quyet dinh
+      case CONFIRM_THREAT -> {        // node 3
         report.setStatus(ReportStatus.CONFIRMED);
-        eventPublisher.publish(...);  // node 3
-        return reportRepository.save(report);
+        eventPublisher.publish(...);
+        return reportRepository.save(report); }
+      case QUARANTINE -> {            // node 4
+        report.setStatus(ReportStatus.QUARANTINED);
+        return reportRepository.save(report); }
+      case DISMISS -> {               // node 5
+        report.setStatus(ReportStatus.DISMISSED);
+        return reportRepository.save(report); }
     }
-    report.setAiLabel(AiLabel.CLEAN);
-    report.setStatus(ReportStatus.DISMISSED);   // node 4
-    return reportRepository.save(report);
 }
 \end{lstlisting}
   \end{block}
   \vspace{-0.2em}
-  {\small Nghiệp vụ: analyst xác nhận báo cáo là mối đe dọa (CONFIRMED,
-  phát sự kiện cho module khác) hoặc bỏ qua (DISMISSED).}
+  {\small Nghiệp vụ: analyst xác nhận đe dọa (CONFIRMED, phát sự kiện),
+  tạm giữ để leo thang (QUARANTINED, \textbf{không} phát sự kiện), hoặc
+  bác bỏ (DISMISSED).}
 \end{frame}
 
 %--- SLIDE 14 ---------------------------------------------------------
@@ -563,14 +567,17 @@ public PhishingReport triage(UUID reportId,
     ]
       \node[nd] (n1) at (1.5,4.4) {1};
       \node[dn] (n2) at (1.5,3.3) {2};
-      \node[nd] (n3) at (0.3,2.2) {3};
-      \node[nd] (n4) at (2.7,2.2) {4};
-      \node[ex] (n5) at (1.5,1.1) {5};
+      \node[nd] (n3) at (0.0,2.2) {3};
+      \node[nd] (n4) at (1.5,2.2) {4};
+      \node[nd] (n5) at (3.0,2.2) {5};
+      \node[ex] (n6) at (1.5,1.1) {6};
       \draw[arr] (n1) -- (n2);
-      \draw[arr] (n2) -- node[lbl,left]{T} (n3);
-      \draw[arr] (n2) -- node[lbl,right]{F} (n4);
-      \draw[arr] (n3) -- (n5);
-      \draw[arr] (n4) -- (n5);
+      \draw[arr] (n2) -- node[lbl,left,pos=0.6]{CT} (n3);
+      \draw[arr] (n2) -- node[lbl,right,pos=0.5]{Q} (n4);
+      \draw[arr] (n2) -- node[lbl,right,pos=0.6]{D} (n5);
+      \draw[arr] (n3) -- (n6);
+      \draw[arr] (n4) -- (n6);
+      \draw[arr] (n5) -- (n6);
     \end{tikzpicture}
     \end{center}
 
@@ -581,16 +588,17 @@ public PhishingReport triage(UUID reportId,
       \textbf{Node} & \textbf{Nội dung} \\
       \midrule
       1 & Tìm báo cáo theo \texttt{reportId} \\
-      2 & \texttt{if (confirmThreat)} \\
-      3 & THREAT + CONFIRMED + publish \\
-      4 & CLEAN + DISMISSED \\
-      5 & \texttt{save} + \texttt{return} (exit) \\
+      2 & \texttt{switch (decision)} \\
+      3 & CT: THREAT + CONFIRMED + publish \\
+      4 & Q: THREAT + QUARANTINED \\
+      5 & D: CLEAN + DISMISSED \\
+      6 & \texttt{save} + \texttt{return} (exit) \\
       \bottomrule
     \end{tabular}}
 
     \vspace{0.5em}
-    \textbf{Hai đường đi:} $1{\to}2(T){\to}3{\to}5$ và $1{\to}2(F){\to}4{\to}5$
-    $\Rightarrow$ tối thiểu \textbf{2 test case}.
+    \textbf{Ba đường đi} qua node 3, 4, 5 $\Rightarrow$ tối thiểu
+    \textbf{3 test case}.
   \end{columns}
 
   \vspace{0.3em}
@@ -1609,7 +1617,7 @@ public int benchmark(RiskScope scope) {
   \begin{block}{Việc cần làm trước}
     \begin{itemize}
       \item Hoàn thành bài nộp buổi 3
-      \item Clone và chạy được: \texttt{./gradlew test} (257 test PASS)
+      \item Clone và chạy được: \texttt{./gradlew test} (272 test PASS)
       \item Đọc trước Ammann \& Offutt, chương 2 (Graph Coverage) ---
         mục 2.1--2.2
       \item Suy nghĩ: điều kiện \texttt{A \&\& B \&\& C} cần bao nhiêu test

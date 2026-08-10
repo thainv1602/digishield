@@ -1,6 +1,7 @@
 package com.digishield.reporting.web;
 
 import com.digishield.reporting.api.ReportingService;
+import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.UserReportDto;
 import com.digishield.reporting.domain.PhishingReport;
@@ -14,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -67,11 +70,18 @@ public class ReportingController {
         return ResponseEntity.ok(reportingService.listUserReports(userId));
     }
 
+    /**
+     * Records an analyst's verdict on a report. {@code decision} is one of
+     * {@code confirm_threat}, {@code quarantine} or {@code dismiss}.
+     *
+     * @param id      the report being triaged
+     * @param request the decision
+     */
     @PreAuthorize("hasRole('ANALYST')")
     @PostMapping("/phishing/{id}/triage")
     public ResponseEntity<PhishingReport> triage(@PathVariable("id") UUID id,
                                                  @RequestBody TriageRequest request) {
-        PhishingReport report = reportingService.triage(id, request.confirmThreat());
+        PhishingReport report = reportingService.triage(id, request.toDecision());
         return ResponseEntity.ok(report);
     }
 
@@ -95,8 +105,31 @@ public class ReportingController {
     }
 
     /**
-     * Triage payload.
+     * Triage request body: {@code {"decision": "confirm_threat"}}.
+     *
+     * <p>An unknown value is rejected rather than silently treated as a
+     * dismissal — the previous boolean had no way to say "I do not understand
+     * this", so anything that was not "confirm" cleared the report.
      */
-    public record TriageRequest(boolean confirmThreat) {
+    public record TriageRequest(String decision) {
+
+        private static final String ALLOWED = "confirm_threat | quarantine | dismiss";
+
+        TriageDecision toDecision() {
+            // There is no @ControllerAdvice in this application, so an
+            // IllegalArgumentException would surface as 500. A malformed body is
+            // the caller's error: say 400 explicitly.
+            if (decision == null || decision.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Thiếu trường decision (" + ALLOWED + ")");
+            }
+            try {
+                return TriageDecision.valueOf(decision.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Quyết định phân loại không hợp lệ: " + decision
+                                + " (hợp lệ: " + ALLOWED + ")");
+            }
+        }
     }
 }
