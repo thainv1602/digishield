@@ -86,6 +86,21 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/TokenPair' }
 
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current signed-in principal
+      description: >
+        Resolves the caller from the bearer token. The tenant returned here is the
+        one every later call is scoped to.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401':
+          description: No resolvable principal
   /auth/refresh:
     post:
       tags: [Auth]
@@ -388,6 +403,43 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SimCampaign' }
 
+  /sim/campaigns/{id}:
+    get:
+      tags: [Simulation]
+      summary: Campaign detail with funnel and per-recipient outcome
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SimCampaignDetail' }
+        '404':
+          description: Not found
+  /sim/track/{token}:
+    get:
+      tags: [Simulation]
+      summary: Beacon endpoint for a simulated lure
+      description: >
+        Opened by the recipient, not by the application. Records the interaction and
+        returns a coaching page. Responds with HTML, not JSON, and is deliberately
+        unauthenticated - the token is the credential.
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Coaching page
+          content:
+            text/html:
+              schema: { type: string }
   /sim/events:
     post:
       tags: [Simulation]
@@ -517,6 +569,19 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/RiskScore' }
 
+  /analytics/dashboard:
+    get:
+      tags: [Analytics]
+      summary: Aggregated dashboard payload
+      description: >
+        KPIs, 90-day trend, departments and recent reports in one call, so the
+        dashboard does not need to fan out.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Dashboard' }
   /analytics/benchmark:
     get:
       tags: [Analytics]
@@ -749,6 +814,21 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Subscription' }
 
+  /audit:
+    get:
+      tags: [Tenancy]
+      summary: Audit log of the current tenant
+      description: Also served at /super/audit for platform operators.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditLogEntry' }
+        '403':
+          description: Requires ORG_ADMIN or above
   /plans:
     get:
       tags: [Billing]
@@ -1593,6 +1673,97 @@ components:
         status: { type: string, enum: [trial, active, past_due, canceled] }
         renews_at: { type: string, format: date }
 
+    Me:
+      type: object
+      properties:
+        id: { type: string }
+        tenantId: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { type: string, enum: [super_admin, org_admin, manager, content_editor, analyst, learner] }
+        name: { type: string }
+    AuditLogEntry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        ts: { type: string, format: date-time }
+        actor: { type: string }
+        action: { type: string }
+        target: { type: string }
+        ip: { type: string }
+        severity: { type: string }
+    SimCampaignDetail:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        channel: { type: string }
+        status: { type: string }
+        templateId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
+        funnel:
+          type: object
+          properties:
+            delivered: { type: integer, format: int64 }
+            open: { type: integer, format: int64 }
+            click: { type: integer, format: int64 }
+            submit: { type: integer, format: int64 }
+            report: { type: integer, format: int64 }
+        results:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              department: { type: string }
+              action: { type: string }
+              learningStatus: { type: string }
+    Dashboard:
+      type: object
+      properties:
+        risk_score: { type: integer }
+        risk_delta: { type: integer }
+        phish_prone_pct: { type: number, format: double }
+        phish_prone_pct_delta: { type: number, format: double }
+        industry_avg_pct: { type: number, format: double }
+        training_completion: { type: integer }
+        open_alerts:
+          type: object
+          properties:
+            total: { type: integer }
+            critical: { type: integer }
+            warning: { type: integer }
+        risk_trend:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string }
+              value: { type: integer }
+        benchmarks:
+          type: array
+          items:
+            type: object
+            properties:
+              label: { type: string }
+              value: { type: number, format: double }
+              strong: { type: boolean }
+        departments:
+          type: array
+          items:
+            type: object
+            properties:
+              name: { type: string }
+              score: { type: integer }
+        recent_reports:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string }
+              title: { type: string }
+              who: { type: string }
+              age: { type: string }
+              ai_label: { type: string }
     UsageMetering:
       type: object
       properties:

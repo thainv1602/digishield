@@ -2,10 +2,7 @@
 
 > Version 1.0 · 10/08/2026
 > Derived from `DigiShield_BRD.md`. Every requirement below traces to a real endpoint
-> in `DigiShield_openapi.yaml` (57 paths / 76 operations) and to the module that owns it.
-
-> ⚠️ marks an endpoint that **exists in the code but is absent from `DigiShield_openapi.yaml`**.
-> The generated frontend client cannot see those routes. See §10.
+> in `DigiShield_openapi.yaml` (62 paths / 81 operations) and to the module that owns it.
 
 **How to read a requirement.** Each row carries an ID, the actor who exercises it, the
 API surface it is observable through, and the owning module. A requirement is *done*
@@ -27,7 +24,7 @@ satisfies a lower one. Authoritative mapping: `AUTHZ_MATRIX.md`.
 | FR-AUTH-03 | Complete the hosted-UI redirect and establish a session | all | — (client-side OIDC callback) | Authorization code must be removed from the address bar |
 | FR-AUTH-04 | Request and complete a password reset | all | `POST /auth/forgot-password`, `/auth/reset-password` | |
 | FR-AUTH-05 | Enrol, verify and satisfy a second factor | all | `/auth/mfa/setup`, `/verify`, `/challenge` | |
-| FR-AUTH-06 | Resolve the signed-in principal, including tenant and role | all | `GET /auth/me` ⚠️ | Source of the tenant used to scope every later call |
+| FR-AUTH-06 | Resolve the signed-in principal, including tenant and role | all | `GET /auth/me` | Source of the tenant used to scope every later call |
 | FR-AUTH-07 | List, create, update and deactivate users of the tenant | OA | `/users`, `/users/{id}` | Deactivation must preserve historical records |
 | FR-AUTH-08 | Import users in bulk | OA | `POST /users/import` | Reports accepted and rejected rows separately |
 | FR-AUTH-09 | Suspend a user whose mandatory training is overdue | system | `/users/{id}/suspension` | Triggered by `EnrollmentDueEvent`; never applied to non-learners |
@@ -43,7 +40,7 @@ satisfies a lower one. Authoritative mapping: `AUTHZ_MATRIX.md`.
 | FR-TEN-05 | Meter usage per period | system | `GET /tenants/{id}/usage` | Users, campaigns, messages delivered |
 | FR-TEN-06 | Refuse actions that would exceed the plan quota | system | all mutating endpoints | Must fail with a meaningful error, not a server error |
 | FR-TEN-07 | Enable or disable features per plan tier | SA | `/feature-flags` | |
-| FR-TEN-08 | Record every sensitive action in an audit log | system | `GET /audit` ⚠️ | Actor, target, time, severity — BR-6 |
+| FR-TEN-08 | Record every sensitive action in an audit log | system | `GET /audit` | Actor, target, time, severity — BR-6 |
 
 ## 3. Simulation — `modules/simulation`
 
@@ -51,9 +48,9 @@ satisfies a lower one. Authoritative mapping: `AUTHZ_MATRIX.md`.
 |---|---|---|---|---|
 | FR-SIM-01 | Create a campaign targeting a group, on a channel, in a window | OA, CE | `POST /sim/campaigns` | Channels: email, SMS, QR, voice, attachment, USB, OTT |
 | FR-SIM-02 | Deliver campaign messages to the selected audience | system | — (event driven) | Emits `SimulationDeliveryRequestedEvent` |
-| FR-SIM-03 | Record delivery, open, click and submit per recipient | system | `POST /sim/events`, `/sim/track/{token}` ⚠️ | Duplicate delivery must not double-count |
+| FR-SIM-03 | Record delivery, open, click and submit per recipient | system | `POST /sim/events`, `/sim/track/{token}` | Duplicate delivery must not double-count |
 | FR-SIM-04 | Publish a click so other modules can react | system | — | `UserClickedSimulationEvent` |
-| FR-SIM-05 | Show the funnel and per-recipient outcome of a campaign | OA, MG | `GET /sim/campaigns/{id}` ⚠️ | Delivered → opened → clicked → submitted |
+| FR-SIM-05 | Show the funnel and per-recipient outcome of a campaign | OA, MG | `GET /sim/campaigns/{id}` | Delivered → opened → clicked → submitted |
 | FR-SIM-06 | Record that a credential form was submitted, never its content | system | — | **BR-2. Verified by a test asserting no credential field is persisted** |
 | FR-SIM-07 | Recognise a reported simulation and close it without SOC effort | system | — | Prevents BRK-2 |
 
@@ -92,7 +89,7 @@ satisfies a lower one. Authoritative mapping: `AUTHZ_MATRIX.md`.
 | FR-ANA-03 | Recompute on each relevant behavioural event | system | — | Click, report, course completion |
 | FR-ANA-04 | Publish a recomputation so other modules can segment | system | — | `RiskRecomputedEvent` |
 | FR-ANA-05 | Compare an organisation against a benchmark | OA | `GET /analytics/benchmark` | **BO-3** |
-| FR-ANA-06 | Provide dashboard metrics for each role | all | `GET /analytics/dashboard` ⚠️ | |
+| FR-ANA-06 | Provide dashboard metrics for each role | all | `GET /analytics/dashboard` | |
 
 ## 7. Notification, AI, interception
 
@@ -173,4 +170,3 @@ brochure.
 | The authorization matrix has no test coverage | NFR-SEC-02 | Topic ĐT20 |
 | Coverage is 40% backend, well under the 0.90 target | §8.1 | Distributed across all topics |
 | No backend export endpoint exists | FR-REP-07 | Topic ĐT13 |
-| **Five implemented endpoints are missing from the OpenAPI spec** — `GET /auth/me`, `GET /analytics/dashboard`, `GET /audit`, `GET /sim/track/{token}`, `GET /sim/campaigns/{id}` | marked ⚠️ above | Unassigned. The spec is declared authoritative in §9 and the frontend client is generated from it, so anything absent is unreachable from the generated client |
