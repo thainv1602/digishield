@@ -8,24 +8,5 @@
 #
 #     python3 scripts/check-openapi-schemas.py --update-baseline
 #
-# Entries: 19
+# Entries: 0
 
-GET /compliance/policies response CompliancePolicyView
-GET /compliance/status response ComplianceStatusView
-GET /tenants response TenantView
-GET /tenants/{} response TenantView
-GET /tenants/{}/settings response ScimConfigView
-GET /users response UserView
-GET /users/{} response UserView
-GET /users/{}/badges response BadgeView
-PATCH /tenants/{} response TenantView
-PATCH /users/{} response UserView
-POST /blacklist request AddBlacklistRequest
-POST /interventions/evaluate request EvaluateRequest
-POST /notifications request CreateNotificationRequest
-POST /reports/phishing request SubmitReportRequest
-POST /sim/campaigns request CreateCampaignRequest
-POST /sim/events request RecordEventRequest
-POST /tenants response TenantView
-POST /users response UserView
-POST /users/{}/suspension response UserView
