@@ -229,7 +229,7 @@
         <tr><td class="k">SimulationDeliveryRequestedEvent</td><td class="k">simulation</td><td class="k">notification</td></tr>
         <tr><td class="k">RemediationEnrollmentRequestedEvent</td><td class="k">analytics</td><td class="k">learning</td></tr>
         <tr><td class="k">AidaOrchestrationRequested/Completed</td><td class="k">ai</td><td class="k">ai · analytics</td></tr>
-        <tr><td class="k"><b>RiskRecomputedEvent</b></td><td class="k">analytics</td><td class="k" style="color:var(--evt)"><b>chưa ai nghe</b> — điểm cắm sẵn</td></tr>
+        <tr><td class="k"><b>RiskRecomputedEvent</b></td><td class="k">analytics</td><td class="k" style="color:var(--evt)"><b>chưa ai nghe</b> — điểm tích hợp có sẵn</td></tr>
       </tbody>
     </table>
   </div>
@@ -297,7 +297,7 @@
     </table>
   </div>
 
-  <p>Chạy trong <code>./gradlew check</code> (đều là <b>gate thật</b>, hỏng là đỏ build):</p>
+  <p>Chạy trong <code>./gradlew check</code> (đều là <b>cổng kiểm soát thực</b> — vi phạm sẽ làm build thất bại):</p>
   <ul>
     <li><b>ModularityTests</b> — ranh giới module.</li>
     <li><b>Checkstyle</b> — 46 rule, <code>maxWarnings = 0</code>, <code>ignoreFailures = false</code>.</li>
@@ -331,8 +331,8 @@
   <p>
     Một đề tài được thiết kế cho <b>nhóm 4 người, một học kỳ</b>. Thước đo là số
     <b>phần việc</b> — mỗi phần đi trọn từ <code>domain/</code> tới màn hình và có đủ 5 lớp test.
-    Một đề tài đủ tầm cho 4 người khi có <b>3–5 phần việc độc lập</b>, để mỗi thành viên sở hữu một
-    phần mà không giẫm chân nhau.
+    Một đề tài đủ tầm cho 4 người khi có <b>3–5 phần việc độc lập</b>, để mỗi thành viên phụ trách một
+    phần mà không chồng lấn công việc.
   </p>
   <h3><span class="num">0.9</span>Sản phẩm tài liệu — bắt buộc, tính vào nghiệm thu</h3>
   <p>
@@ -380,7 +380,7 @@
     <p><b>Vì sao OpenAPI đứng riêng một dòng đậm.</b> Tháng 8/2026 phát hiện <b>năm endpoint</b>
     đã chạy trong controller nhưng chưa khai trong OpenAPI — trong đó có <code>GET /auth/me</code>,
     thứ mà client dùng để biết mình là ai. Backend chạy đúng, test xanh, mà frontend vẫn không gọi
-    được. Đây là kiểu lỗi không có gì bắt được ngoài kỷ luật.</p>
+    được. Đây là loại lỗi không công cụ nào phát hiện được; chỉ có kỷ luật quy trình mới ngăn được.</p>
   </div>
 
   <div class="note warn">
@@ -471,7 +471,7 @@
     <header><span class="tid">ĐT03</span><h3>Kênh phi-email: vishing · đính kèm · USB</h3><span class="tag rev">gộp từ ĐT03 + ĐT05 cũ</span><span class="tag dep">cần ĐT06</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 — và <b>BR-3</b> (payload phải vô hại)</dd>
-      <dt>Vì sao gộp</dt><dd>Ba kênh này ở bản trước là hai đề tài rời, mỗi cái chỉ đủ một đến hai phần việc — chưa tới tầm một nhóm bốn người. Chúng dùng chung đúng một cơ chế: <b>dựng mồi ngoài email, gắn beacon, quy về cùng một funnel</b>. Gộp lại thành một đề tài có bốn phần việc thật, thay vì hai đề tài nửa vời.</dd>
+      <dt>Vì sao gộp</dt><dd>Ba kênh này ở bản trước là hai đề tài rời, mỗi cái chỉ đủ một đến hai phần việc — chưa tới tầm một nhóm bốn người. Chúng dùng chung đúng một cơ chế: <b>dựng mồi ngoài email, gắn beacon, quy về cùng một funnel</b>. Gộp lại thành một đề tài có bốn phần việc thật, thay vì hai đề tài chưa đủ khối lượng.</dd>
       <dt>Code</dt><dd>Module <code>simulation</code>. Enum <code>domain/Channel.java</code> đã có sẵn <code>VOICE</code>, <code>USB</code>; template đính kèm dùng <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>). Beacon lấy từ ĐT06.</dd>
       <dt>Phần việc</dt><dd>(1) <b>Vishing</b> — entity kịch bản cuộc gọi + IVR stub, campaign kênh <code>VOICE</code> · (2) <b>Đính kèm</b> — sinh tệp doc/pdf vô hại có nhúng beacon, ghi <code>OPEN</code> khi mở · (3) <b>USB drop</b> — sinh token theo thiết bị, trang tiếp nhận khi người dùng cắm và mở · (4) <b>Funnel hợp nhất</b> — một báo cáo so sánh tỉ lệ mắc giữa ba kênh phi-email với kênh email</dd>
       <dt>Workflow</dt><dd>Mỗi kênh dựng mồi theo cách riêng nhưng đều kết thúc ở một lượt gọi beacon → <code>SimEvent</code> → <code>UserClickedSimulationEvent</code>. Learning và analytics đã nối sẵn, không phải sửa.</dd>
@@ -632,7 +632,7 @@
       <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → feed AIDA (ĐT14).</dd>
       <dt>Phần việc</dt><dd>(1) mở rộng <code>RiskSignalType</code> · (2) công thức tổng hợp điểm · (3) phân khúc theo user/phòng ban · (4) <b>viết consumer đầu tiên cho <code>RiskRecomputedEvent</code></b> — hiện chưa ai nghe</dd>
       <dt>Test</dt><dd>UT tính điểm deterministic; IT recompute qua event.</dd>
-      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm cắm sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT17 xem ai sẽ là consumer đầu tiên.</dd>
+      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm tích hợp có sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT17 xem ai sẽ là consumer đầu tiên.</dd>
     </dl>
   </div>
 
@@ -644,7 +644,7 @@
       <dt>Workflow</dt><dd>Tổng hợp dashboard/benchmark → xuất PDF/CSV → gửi email digest định kỳ.</dd>
       <dt>Phần việc</dt><dd>(1) export CSV (đọc mục <b>Bẫy</b> bên dưới trước) · (2) export PDF · (3) số liệu benchmark giữa các kỳ · (4) digest gửi định kỳ qua <code>scheduler</code></dd>
       <dt>Test</dt><dd>Snapshot test nội dung report; IT job digest.</dd>
-      <dt>Bẫy</dt><dd><b>CSV không chỉ là escape dấu phẩy.</b> Ô bắt đầu bằng <code>=</code>, <code>+</code>, <code>@</code> vẫn là công thức sống khi mở bằng Excel, kể cả khi đã quote đúng RFC-4180. Frontend đã xử lý trong <code>../frontend/src/shared/lib/csv.ts</code> — đọc hàm <code>guardFormula</code> ở đó trước khi viết export phía backend, và nhớ ngoại lệ cho số âm.</dd>
+      <dt>Rủi ro cần lưu ý</dt><dd><b>CSV không chỉ là escape dấu phẩy.</b> Ô bắt đầu bằng <code>=</code>, <code>+</code>, <code>@</code> vẫn là công thức sống khi mở bằng Excel, kể cả khi đã quote đúng RFC-4180. Frontend đã xử lý trong <code>../frontend/src/shared/lib/csv.ts</code> — đọc hàm <code>guardFormula</code> ở đó trước khi viết export phía backend, và nhớ ngoại lệ cho số âm.</dd>
     </dl>
   </div>
 </section>
