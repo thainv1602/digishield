@@ -24,7 +24,7 @@ public interface SimulationService {
      * @param groupId    target audience group (may be null)
      * @return the newly created campaign
      */
-    SimCampaign createCampaign(Channel channel, UUID templateId, UUID groupId);
+    SimCampaignDto createCampaign(Channel channel, UUID templateId, UUID groupId);
 
     /**
      * Launches ("sends") a campaign to the given recipients: creates a tracking

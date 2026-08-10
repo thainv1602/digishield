@@ -3,6 +3,7 @@ package com.digishield.reporting.application;
 import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.contracts.events.PhishingReportConfirmedEvent;
 import com.digishield.reporting.api.TriageDecision;
+import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
@@ -87,7 +88,7 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.submit(userId, "suspicious email body", "email");
+        PhishingReportDto result = reportingService.submit(userId, "suspicious email body", "email");
 
         // Assert
         verify(reportRepository).save(reportCaptor.capture());
@@ -100,7 +101,11 @@ class ReportingServiceImplTest {
         assertThat(persisted.getStatus()).isEqualTo(ReportStatus.SUBMITTED);
         assertThat(persisted.getAiLabel()).isNull();
         assertThat(persisted.getAiConfidence()).isEqualTo(0.0);
-        assertThat(result).isSameAs(persisted);
+        // The caller gets a DTO describing that row, not the entity itself:
+        // the JPA object never crosses the HTTP boundary.
+        assertThat(result.id()).isEqualTo(persisted.getId());
+        assertThat(result.status()).isEqualTo("submitted");
+        assertThat(result.channel()).isEqualTo("email");
         verifyNoInteractions(eventPublisher);
     }
 
@@ -116,11 +121,14 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT);
+        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.CONFIRM_THREAT);
 
-        // Assert
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.CONFIRMED);
-        assertThat(result.getAiLabel()).isEqualTo(AiLabel.THREAT);
+        // Assert: what is persisted, and what the client is told
+        verify(reportRepository).save(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().getStatus()).isEqualTo(ReportStatus.CONFIRMED);
+        assertThat(reportCaptor.getValue().getAiLabel()).isEqualTo(AiLabel.THREAT);
+        assertThat(result.status()).isEqualTo("confirmed");
+        assertThat(result.aiLabel()).isEqualTo("threat");
 
         verify(eventPublisher).publish(eventCaptor.capture());
         PhishingReportConfirmedEvent event = eventCaptor.getValue();
@@ -140,11 +148,13 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.triage(reportId, TriageDecision.DISMISS);
+        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.DISMISS);
 
         // Assert
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.DISMISSED);
-        assertThat(result.getAiLabel()).isEqualTo(AiLabel.CLEAN);
+        verify(reportRepository).save(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().getStatus()).isEqualTo(ReportStatus.DISMISSED);
+        assertThat(reportCaptor.getValue().getAiLabel()).isEqualTo(AiLabel.CLEAN);
+        assertThat(result.status()).isEqualTo("dismissed");
         verifyNoInteractions(eventPublisher);
     }
 
@@ -159,11 +169,14 @@ class ReportingServiceImplTest {
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        PhishingReport result = reportingService.triage(reportId, TriageDecision.QUARANTINE);
+        PhishingReportDto result = reportingService.triage(reportId, TriageDecision.QUARANTINE);
 
         // Assert: judged a threat, but the verdict is not final
-        assertThat(result.getStatus()).isEqualTo(ReportStatus.QUARANTINED);
-        assertThat(result.getAiLabel()).isEqualTo(AiLabel.THREAT);
+        verify(reportRepository).save(reportCaptor.capture());
+        assertThat(reportCaptor.getValue().getStatus()).isEqualTo(ReportStatus.QUARANTINED);
+        assertThat(reportCaptor.getValue().getAiLabel()).isEqualTo(AiLabel.THREAT);
+        assertThat(result.status()).isEqualTo("quarantined");
+        assertThat(result.aiLabel()).isEqualTo("threat");
 
         // The reporter must not be rewarded twice: no event until it is confirmed.
         verifyNoInteractions(eventPublisher);
@@ -183,14 +196,14 @@ class ReportingServiceImplTest {
                 null, 0.0, ReportStatus.SUBMITTED)));
         when(reportRepository.save(any(PhishingReport.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        PhishingReport quarantined =
+        PhishingReportDto quarantined =
                 reportingService.triage(quarantinedId, TriageDecision.QUARANTINE);
-        PhishingReport dismissed =
+        PhishingReportDto dismissed =
                 reportingService.triage(dismissedId, TriageDecision.DISMISS);
 
-        assertThat(quarantined.getStatus()).isNotEqualTo(dismissed.getStatus());
-        assertThat(quarantined.getAiLabel()).isEqualTo(AiLabel.THREAT);
-        assertThat(dismissed.getAiLabel()).isEqualTo(AiLabel.CLEAN);
+        assertThat(quarantined.status()).isNotEqualTo(dismissed.status());
+        assertThat(quarantined.aiLabel()).isEqualTo("threat");
+        assertThat(dismissed.aiLabel()).isEqualTo("clean");
     }
 
     @Test

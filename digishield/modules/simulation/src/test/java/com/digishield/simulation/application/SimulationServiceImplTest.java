@@ -3,6 +3,7 @@ package com.digishield.simulation.application;
 import com.digishield.contracts.events.UserClickedSimulationEvent;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.digishield.simulation.api.dto.SimCampaignDto;
 import com.digishield.simulation.domain.CampaignStatus;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.SimAction;
@@ -189,7 +190,7 @@ class SimulationServiceImplTest {
         when(campaignRepository.save(any(SimCampaign.class))).thenAnswer(inv -> inv.getArgument(0));
 
         // Act
-        SimCampaign result = simulationService.createCampaign(Channel.EMAIL, templateId, groupId);
+        SimCampaignDto result = simulationService.createCampaign(Channel.EMAIL, templateId, groupId);
 
         // Assert: a DRAFT campaign was persisted for the current tenant
         verify(campaignRepository).save(campaignCaptor.capture());
@@ -199,7 +200,12 @@ class SimulationServiceImplTest {
         assertThat(persisted.getStatus()).isEqualTo(CampaignStatus.DRAFT);
         assertThat(persisted.getTemplateId()).isEqualTo(templateId);
         assertThat(persisted.getGroupId()).isEqualTo(groupId);
-        assertThat(result).isSameAs(persisted);
+        // The caller gets a DTO describing that row: lower-cased enums, no
+        // tenantId, and no JPA entity crossing the HTTP boundary.
+        assertThat(result.id()).isEqualTo(persisted.getId());
+        assertThat(result.channel()).isEqualTo("email");
+        assertThat(result.status()).isEqualTo("draft");
+        assertThat(result.templateId()).isEqualTo(templateId);
     }
 
     @Test

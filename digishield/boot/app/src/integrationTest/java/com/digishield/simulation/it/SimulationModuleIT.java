@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.digishield.contracts.events.UserClickedSimulationEvent;
 import com.digishield.shared.tenantcontext.TenantContext;
+import com.digishield.simulation.api.dto.SimCampaignDto;
 import com.digishield.simulation.api.SimulationService;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.SimAction;
-import com.digishield.simulation.domain.SimCampaign;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -137,9 +137,9 @@ class SimulationModuleIT {
         TenantContext.set(TENANT);
 
         UUID userId = UUID.randomUUID();
-        SimCampaign campaign = simulationService.createCampaign(Channel.EMAIL, null, null);
+        SimCampaignDto campaign = simulationService.createCampaign(Channel.EMAIL, null, null);
 
-        simulationService.recordEvent(campaign.getId(), userId, SimAction.CLICK);
+        simulationService.recordEvent(campaign.id(), userId, SimAction.CLICK);
 
         var published = testEventListener.ofType(UserClickedSimulationEvent.class);
         assertThat(published).hasSize(1);
@@ -147,7 +147,7 @@ class SimulationModuleIT {
         UserClickedSimulationEvent event = published.iterator().next();
         assertThat(event.tenantId().toString()).isEqualTo(TENANT);
         assertThat(event.userId()).isEqualTo(userId);
-        assertThat(event.campaignId()).isEqualTo(campaign.getId());
+        assertThat(event.campaignId()).isEqualTo(campaign.id());
     }
 
     /**
@@ -157,8 +157,8 @@ class SimulationModuleIT {
     void recordingNonClickPublishesNoEvent() {
         TenantContext.set(TENANT);
 
-        SimCampaign campaign = simulationService.createCampaign(Channel.SMS, null, null);
-        simulationService.recordEvent(campaign.getId(), UUID.randomUUID(), SimAction.DELIVERED);
+        SimCampaignDto campaign = simulationService.createCampaign(Channel.SMS, null, null);
+        simulationService.recordEvent(campaign.id(), UUID.randomUUID(), SimAction.DELIVERED);
 
         assertThat(testEventListener.ofType(UserClickedSimulationEvent.class)).isEmpty();
     }

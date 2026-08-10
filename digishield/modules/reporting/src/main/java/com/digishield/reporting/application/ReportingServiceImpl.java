@@ -65,13 +65,13 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     @Override
-    public PhishingReport submit(UUID userId, String payload, String channel) {
+    public PhishingReportDto submit(UUID userId, String payload, String channel) {
         UUID tenantId = TenantContext.requireUuid();
         PhishingReport report = new PhishingReport(
                 UUID.randomUUID(), tenantId, userId, payload,
                 null, 0.0, ReportStatus.SUBMITTED);
         report.setChannel(channel);
-        return reportRepository.save(report);
+        return toDto(reportRepository.save(report), Instant.now());
     }
 
     @Override
@@ -93,7 +93,7 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     @Override
-    public PhishingReport triage(UUID reportId, TriageDecision decision) {
+    public PhishingReportDto triage(UUID reportId, TriageDecision decision) {
         UUID tenantId = TenantContext.requireUuid();
         PhishingReport report = reportRepository.findById(reportId)
                 .filter(r -> tenantId.equals(r.getTenantId()))
@@ -109,7 +109,7 @@ public class ReportingServiceImpl implements ReportingService {
                 eventPublisher.publish(
                         new PhishingReportConfirmedEvent(
                                 tenantId, saved.getUserId(), saved.getId()));
-                return saved;
+                return toDto(saved, Instant.now());
             }
             case QUARANTINE -> {
                 // Labelled a threat so it reads as one everywhere, but no event:
@@ -118,13 +118,13 @@ public class ReportingServiceImpl implements ReportingService {
                 report.setStatus(ReportStatus.QUARANTINED);
                 audit("triage.quarantine", "report:" + reportId,
                         AuditRecorder.Severity.SENSITIVE);
-                return reportRepository.save(report);
+                return toDto(reportRepository.save(report), Instant.now());
             }
             case DISMISS -> {
                 report.setAiLabel(AiLabel.CLEAN);
                 report.setStatus(ReportStatus.DISMISSED);
                 audit("triage.dismiss", "report:" + reportId, AuditRecorder.Severity.SENSITIVE);
-                return reportRepository.save(report);
+                return toDto(reportRepository.save(report), Instant.now());
             }
             default -> throw new IllegalArgumentException(
                     "Quyết định phân loại không hợp lệ: " + decision);

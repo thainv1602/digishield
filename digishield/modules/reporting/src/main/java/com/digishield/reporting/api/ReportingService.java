@@ -25,7 +25,7 @@ public interface ReportingService {
      * @param channel the channel it came from (email | sms; may be null)
      * @return the newly created report (status SUBMITTED)
      */
-    PhishingReport submit(UUID userId, String payload, String channel);
+    PhishingReportDto submit(UUID userId, String payload, String channel);
 
     /**
      * Lists the reports submitted by a single user (their own "My reports").
@@ -46,7 +46,7 @@ public interface ReportingService {
      * @param decision what the analyst decided
      * @return the report after triage
      */
-    PhishingReport triage(UUID reportId, TriageDecision decision);
+    PhishingReportDto triage(UUID reportId, TriageDecision decision);
 
     /**
      * Lists phishing reports for the SOC inbox, optionally filtered by status.
