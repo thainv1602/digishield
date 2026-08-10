@@ -755,6 +755,7 @@ paths:
               type: object
               required: [payload]
               properties:
+                userId: { type: string, format: uuid }
                 payload: { type: string, description: Email content/headers/link }
                 channel: { type: string, enum: [email, sms] }
       responses:
@@ -809,10 +810,14 @@ paths:
           application/json:
             schema:
               type: object
-              required: [decision]
+              required: [confirmThreat]
+              description: >-
+                The handler reads only confirmThreat. The richer vocabulary
+                declared here before (dismiss, quarantine, add_to_blacklist)
+                was never built, so the client offered choices the server
+                could not honour.
               properties:
-                decision: { type: string, enum: [confirm_threat, dismiss, quarantine] }
-                add_to_blacklist: { type: boolean, default: false }
+                confirmThreat: { type: boolean }
       responses:
         '200':
           description: OK
@@ -856,7 +861,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/BlacklistEntry' }
+            schema: { $ref: '#/components/schemas/BlacklistEntryInput' }
       responses:
         '201': { description: Created }
 
@@ -1131,7 +1136,7 @@ paths:
       requestBody:
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Tenant' }
+            schema: { $ref: '#/components/schemas/TenantUpdate' }
       responses:
         '200':
           description: OK
@@ -1150,7 +1155,7 @@ paths:
           description: OK
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/TenantSettings' }
+              schema: { $ref: '#/components/schemas/ScimConfig' }
     patch:
       tags: [Tenancy]
       summary: Update tenant configuration
@@ -1489,8 +1494,10 @@ paths:
               type: object
               required: [answers]
               properties:
-                answers: { type: object }
-                anonymous: { type: boolean, default: false }
+                answers:
+                  type: object
+                  description: questionId -> index of the selected option
+                  additionalProperties: { type: integer }
       responses:
         '202': { description: Accepted }
 
@@ -1621,7 +1628,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/Notification' }
+            schema: { $ref: '#/components/schemas/NotificationInput' }
       responses:
         '201': { description: Created }
 
@@ -1821,7 +1828,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: '#/components/schemas/CompliancePolicy' }
+            schema: { $ref: '#/components/schemas/CompliancePolicyInput' }
       responses:
         '201': { description: Created }
 
@@ -1841,8 +1848,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  compliant_pct: { type: number }
-                  overdue_count: { type: integer }
+                  compliantPct: { type: number }
+                  compliantCount: { type: integer }
+                  totalCount: { type: integer }
+                  overdueCount: { type: integer }
+                  policyCount: { type: integer }
+                  completedCount: { type: integer }
+                  dueSoonCount: { type: integer }
 
   /interventions/evaluate:
     post:
@@ -1857,13 +1869,13 @@ paths:
           application/json:
             schema:
               type: object
-              required: [user_id, amount, dest_account]
+              required: [userId, amount, destAccount]
               properties:
-                user_id: { type: string, format: uuid }
+                userId: { type: string, format: uuid }
                 amount: { type: number }
-                dest_account: { type: string }
-                on_call: { type: boolean, description: User is currently on a call }
-                new_payee: { type: boolean, description: First-time payee }
+                destAccount: { type: string }
+                onCall: { type: boolean, description: User is currently on a call }
+                newPayee: { type: boolean, description: First-time payee }
       responses:
         '200':
           description: Intervention decision
@@ -1930,9 +1942,8 @@ paths:
               schema:
                 type: object
                 properties:
-                  matched: { type: boolean }
-                  risk_level: { type: string, enum: [none, watch, high, confirmed] }
-                  source: { type: string }
+                  inWatchlist: { type: boolean }
+                  riskLevel: { type: string, enum: [none, watch, high, confirmed] }
 
 components:
   securitySchemes:
@@ -1984,10 +1995,21 @@ components:
         org_id: { type: string, format: uuid }
         department_id: { type: string, format: uuid }
         email: { type: string, format: email }
+        name: { type: string }
         role: { type: string, enum: [super_admin, org_admin, manager, content_editor, analyst, learner] }
         status: { type: string, enum: [active, invited, disabled] }
-        risk_score: { type: integer }
+        department: { type: string }
         locale: { type: string, example: vi }
+        phone: { type: string }
+        riskScore: { type: integer, minimum: 0, maximum: 100 }
+        risk_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          deprecated: true
+          description: >-
+            The same value as riskScore. UserView carries both spellings, so
+            both reach the client; prefer riskScore.
 
     UserInput:
       type: object
@@ -2054,13 +2076,11 @@ components:
 
     SimCampaignInput:
       type: object
-      required: [template_id, target_filter]
+      required: [channel, templateId]
       properties:
-        template_id: { type: string, format: uuid }
-        target_filter:
-          type: object
-          example: { group_id: "g_123" }
-        scheduled_at: { type: string, format: date-time }
+        channel: { type: string, enum: [email, sms, qr, usb, voice, zalo, teams, slack] }
+        templateId: { type: string, format: uuid }
+        groupId: { type: string, format: uuid }
 
     SimCampaign:
       allOf:
@@ -2073,25 +2093,29 @@ components:
 
     SimEvent:
       type: object
-      required: [campaign_id, user_id, action]
+      description: Payload recording one tracked interaction with a campaign.
+      required: [campaignId, userId, action]
       properties:
-        campaign_id: { type: string, format: uuid }
-        user_id: { type: string, format: uuid }
-        action: { type: string, enum: [delivered, open, click, submit, report] }
-        channel: { type: string, enum: [email, sms, qr, usb, voice, zalo, teams, slack] }
-        ts: { type: string, format: date-time }
+        campaignId: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        action: { type: string, enum: [DELIVERED, OPEN, CLICK, SUBMIT, REPORT] }
 
     Report:
       type: object
       properties:
         id: { type: string, format: uuid }
-        org_id: { type: string, format: uuid }
-        user_id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        reporter: { type: string }
+        subject: { type: string }
+        sender: { type: string }
         payload: { type: string }
-        ai_label: { type: string, enum: [clean, spam, threat] }
-        ai_confidence: { type: number, format: float }
+        aiLabel: { type: string, enum: [clean, spam, threat] }
+        aiConfidence: { type: number, format: float }
+        reasoning: { type: string }
+        blacklistMatch: { type: boolean }
         status: { type: string, enum: [new, ai_classified, in_review, confirmed, dismissed, quarantined, closed] }
-
+        channel: { type: string, enum: [email, sms] }
+        ageLabel: { type: string, description: Human-readable age, e.g. "2 gio truoc" }
     BlacklistEntry:
       type: object
       properties:
@@ -2099,7 +2123,14 @@ components:
         type: { type: string, enum: [url, phone, account] }
         value: { type: string }
         source: { type: string, example: NCSC }
-        added_at: { type: string, format: date-time }
+
+    BlacklistEntryInput:
+      type: object
+      required: [type, value]
+      properties:
+        type: { type: string, enum: [url, phone, account] }
+        value: { type: string }
+        source: { type: string, example: NCSC }
 
     RiskScore:
       type: object
@@ -2111,12 +2142,14 @@ components:
 
     Badge:
       type: object
+      description: A badge as awarded to a user; BadgeCatalog is the definition.
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        criteria_json: { type: object }
-        icon_ref: { type: string }
-        awarded_at: { type: string, format: date-time }
+        description: { type: string }
+        iconRef: { type: string }
+        earned: { type: boolean }
+        awardedAt: { type: string, format: date-time }
 
     PointsEntry:
       type: object
@@ -2148,6 +2181,17 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
+        userId: { type: string, format: uuid }
+        type: { type: string, enum: [reminder, alert, system] }
+        channel: { type: string, enum: [in_app, email, sms] }
+        status: { type: string, enum: [scheduled, sent, read] }
+        title: { type: string }
+        body: { type: string }
+        scheduledAt: { type: string, format: date-time }
+
+    NotificationInput:
+      type: object
+      properties:
         user_id: { type: string, format: uuid }
         type: { type: string, enum: [reminder, alert, system] }
         channel: { type: string, enum: [in_app, email, sms] }
@@ -2176,10 +2220,22 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
+        name: { type: string }
         framework: { type: string, example: ISO27001 }
-        mapping_json: { type: object }
+        dueRule: { type: string, example: "annual" }
         mandatory: { type: boolean }
+        completionPct: { type: integer, minimum: 0, maximum: 100 }
+
+    CompliancePolicyInput:
+      type: object
+      required: [name, framework]
+      properties:
+        name: { type: string }
+        framework: { type: string, example: ISO27001 }
         due_rule: { type: string, example: "annual" }
+        mandatory: { type: boolean }
+        mapping_json: { type: object }
+        course_id: { type: string, format: uuid }
 
     InterventionDecision:
       type: object
@@ -2212,11 +2268,21 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
+        tenantId: { type: string, format: uuid }
         name: { type: string }
         tier: { type: string, enum: [pool, bridge, silo] }
-        data_region: { type: string, example: vn }
+        dataRegion: { type: string, example: vn }
         status: { type: string, enum: [provisioning, active, suspended, offboarding] }
-        created_at: { type: string, format: date-time }
+        userCount: { type: integer }
+        domain: { type: string }
+
+    TenantUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        tier: { type: string, enum: [pool, bridge, silo] }
+        status: { type: string, enum: [provisioning, active, suspended, offboarding] }
+        data_region: { type: string, example: vn }
 
     TenantSettings:
       type: object

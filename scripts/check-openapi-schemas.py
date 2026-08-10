@@ -202,18 +202,28 @@ def handlers() -> dict[tuple[str, str], dict]:
             paths = paths_in_annotation(m.group(3)) or [""]
             # The method signature is the next line that is not another
             # annotation; gather until the body opens.
-            sig, j = "", idx + 1
+            # Skip the annotations stacked above the method, then take the
+            # signature. Once it has started, keep taking lines even when they
+            # begin with '@' -- a wrapped signature continues with
+            # "@RequestBody Foo body) {", and skipping those lines lost every
+            # request body whose signature spanned two lines.
+            sig, j, started = "", idx + 1, False
             while j < len(lines) and j < idx + 12:
                 s = lines[j].strip()
-                if s.startswith("@") or not s:
+                if not started and (s.startswith("@") or not s):
                     j += 1
                     continue
+                started = True
                 sig += " " + s
                 if "{" in s or ";" in s:
                     break
                 j += 1
-            sig = sig.strip()
-            ret = re.match(r"^((?:[\w.]+)(?:\s*<.*?>)?)\s+\w+\s*\(", sig)
+            # Drop modifiers so both "ResponseEntity<X> f(" and
+            # "public ResponseEntity<X> f(" parse; without this every handler
+            # declared public was silently uncomparable.
+            sig = re.sub(r"^(?:public|protected|private|static|final)\s+", "",
+                         sig.strip()).strip()
+            ret = re.match(r"^((?:[\w.]+)(?:\s*<.*>)?)\s+\w+\s*\(", sig)
             returns = base_type(ret.group(1)) if ret else None
             bm = re.search(r"@RequestBody(?:\([^)]*\))?\s+((?:[\w.]+)(?:\s*<[^>]*>)?)\s+\w+", sig)
             body = base_type(bm.group(1)) if bm else None
