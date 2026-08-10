@@ -86,7 +86,7 @@ jobs:
             # spans both: a controller change and a spec change are equally
             # capable of leaving the two out of step.
             contract:
-              - '{digishield/**/*.java,docs/DigiShield_openapi.yaml,scripts/check-openapi-routes.py,scripts/openapi-route-baseline.txt}'
+              - '{digishield/**/*.java,docs/DigiShield_openapi.yaml,scripts/check-openapi-*.py,scripts/openapi-*-baseline.txt}'
 
   # 3a) Route contract — every route Spring serves must be declared in the
   #     OpenAPI spec, because the frontend client is generated from that file.
@@ -100,12 +100,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install PyYAML
+        run: python3 -m pip install --quiet pyyaml
       # --strict makes the contract bidirectional: a path declared in the spec
       # with no controller behind it fails too. Affordable now that the two
       # sides match exactly (121 operations each); without it the spec could
       # still grow client methods that 404.
       - name: Compare controller routes against the spec
         run: python3 scripts/check-openapi-routes.py --strict
+      # Routes prove a path is declared; this proves the declaration is true.
+      # Course was declared the whole time and still described fields the
+      # server never sends.
+      - name: Compare declared schemas against the DTOs
+        if: always()
+        run: python3 scripts/check-openapi-schemas.py
 
   # 3b) Backend unit tests — fast feedback before the heavier IT suite.
   backend:

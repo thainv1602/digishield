@@ -8,3 +8,6 @@ Thumbs.db
 
 # Build/tool logs (e.g. XeTeX/LaTeX compile logs)
 *.log
+
+# Python bytecode from the contract-check scripts
+__pycache__/
