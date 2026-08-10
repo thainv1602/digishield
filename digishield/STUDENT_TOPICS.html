@@ -271,7 +271,9 @@
 7. web/             endpoint ở *Controller
 8. contracts/       event, nếu module khác cần phản ứng
 9. openapi          cập nhật ../docs/DigiShield_openapi.yaml
-10. test            5 lớp bên dưới → ./gradlew check → PR → CI xanh</code></pre>
+10. FRD             thêm/sửa mã FR trong ../docs/DigiShield_FRD.md
+11. sơ đồ           sequence cho luồng mới; BPMN nếu là quy trình nghiệp vụ
+12. test            5 lớp bên dưới → ./gradlew check → PR → CI xanh</code></pre>
 
   <h3><span class="num">0.7</span>Test &amp; CI/CD — chạy ở đâu</h3>
   <div class="note warn">
@@ -300,7 +302,8 @@
     <li><b>ModularityTests</b> — ranh giới module.</li>
     <li><b>Checkstyle</b> — 46 rule, <code>maxWarnings = 0</code>, <code>ignoreFailures = false</code>.</li>
     <li><b>SpotBugs</b> — phân tích bytecode, <code>effort = MAX</code>, ngoại lệ khai báo trong <code>config/spotbugs/exclude.xml</code>.</li>
-    <li><b>JaCoCo</b> — sàn LINE <b>0.15</b> mỗi subproject. Đây là <em>ratchet chống tụt</em>, không phải mục tiêu; mục tiêu dài hạn 0.50.</li>
+    <li><b>JaCoCo</b> — sàn LINE mỗi subproject. Hiện <b>0.15</b>, <b>đích 0.90</b> theo <code>DigiShield_FRD.md</code> §8.1.
+      Sàn nâng theo bậc và <em>chỉ nâng khi mọi module đã vượt</em>, nên nó không bao giờ cao hơn thực tế.</li>
   </ul>
 
   <p>Các chặng của workflow, chạy <b>tuần tự và fail-fast</b>:</p>
@@ -331,6 +334,55 @@
     Một đề tài đủ tầm cho 4 người khi có <b>3–5 phần việc độc lập</b>, để mỗi thành viên sở hữu một
     phần mà không giẫm chân nhau.
   </p>
+  <h3><span class="num">0.9</span>Sản phẩm tài liệu — bắt buộc, tính vào nghiệm thu</h3>
+  <p>
+    Toàn bộ đề tài gộp lại phải ra được một <b>quyển báo cáo</b>. Nghĩa là mỗi nhóm không chỉ nộp
+    code: phần tài liệu tương ứng cũng là sản phẩm bàn giao, và thiếu nó thì đề tài chưa xong.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Sản phẩm</th><th>Nhóm phải làm gì</th><th>Ở đâu</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="k">FRD</td>
+          <td>Mỗi chức năng mới phải có một mã <code>FR-xxx-nn</code>: mô tả, actor, endpoint, module. Sửa hành vi cũ thì sửa dòng cũ, không thêm dòng mới.</td>
+          <td class="k">../docs/DigiShield_FRD.md</td>
+        </tr>
+        <tr>
+          <td class="k">BRD</td>
+          <td>Chỉ đụng khi đề tài <em>đổi luật nghiệp vụ</em> hoặc thêm ràng buộc. Đa số đề tài không phải sửa BRD — nếu thấy phải sửa, hỏi lại trước.</td>
+          <td class="k">../docs/DigiShield_BRD.md</td>
+        </tr>
+        <tr>
+          <td class="k">Sequence</td>
+          <td><b>Bắt buộc</b> nếu luồng đi qua từ hai module trở lên. Vẽ bằng Mermaid, đặt cạnh luồng tương ứng.</td>
+          <td class="k">../docs/DigiShield_Technical_Design.md</td>
+        </tr>
+        <tr>
+          <td class="k">BPMN</td>
+          <td>Chỉ khi đề tài hiện thực một <em>quy trình có người duyệt</em> (ví dụ ĐT05). Ba quy trình đã có sẵn file <code>.bpmn</code> để tham khảo.</td>
+          <td class="k">../docs/*.bpmn</td>
+        </tr>
+        <tr>
+          <td class="k">OpenAPI</td>
+          <td>Mọi endpoint mới. <b>Client frontend sinh tự động từ file này</b> — endpoint không khai ở đây thì frontend không gọi được, dù backend đã chạy.</td>
+          <td class="k">../docs/DigiShield_openapi.yaml</td>
+        </tr>
+        <tr>
+          <td class="k">ER</td>
+          <td>Khi thêm bảng hoặc đổi quan hệ. Kèm file migration tương ứng.</td>
+          <td class="k">Technical_Design §5</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">
+    <p><b>Vì sao OpenAPI đứng riêng một dòng đậm.</b> Tháng 8/2026 phát hiện <b>năm endpoint</b>
+    đã chạy trong controller nhưng chưa khai trong OpenAPI — trong đó có <code>GET /auth/me</code>,
+    thứ mà client dùng để biết mình là ai. Backend chạy đúng, test xanh, mà frontend vẫn không gọi
+    được. Đây là kiểu lỗi không có gì bắt được ngoài kỷ luật.</p>
+  </div>
+
   <div class="note warn">
     <p><b>Phụ thuộc cần lưu ý khi giao đề.</b> ĐT06 (web beacon) là hạ tầng nền cho
     <b>ĐT01, ĐT02, ĐT03 và ĐT09</b> — bốn đề tài, không liền số. Nếu giao song song thì bốn nhóm
@@ -396,6 +448,7 @@
   <div class="topic">
     <header><span class="tid">ĐT01</span><h3>QR-code phishing (quishing)</h3><span class="tag dep">cần ĐT06</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 · FR-SIM-05</dd>
       <dt>Code</dt><dd>Service sinh QR (ZXing) trong <code>simulation/application/</code>; endpoint <code>POST /api/v1/sim/campaigns/{id}/qr</code>; landing + tracking đi qua ĐT06. Chấm điểm link: <code>ai/AiClient.classify</code>.</dd>
       <dt>Workflow</dt><dd>Tạo campaign kênh <code>QR</code> → sinh QR trỏ beacon → người quét → ghi <code>SimEvent(CLICK)</code> → publish event → learning ghi danh, analytics cộng risk.</dd>
       <dt>Phần việc</dt><dd>(1) sinh QR + phát token · (2) landing page cho người quét · (3) funnel &amp; báo cáo riêng kênh <code>QR</code> · (4) chấm điểm link bằng <code>AiClient.classify</code></dd>
@@ -406,6 +459,7 @@
   <div class="topic">
     <header><span class="tid">ĐT02</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT06 · ĐT17</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-02 · FR-SIM-03 · FR-NOT-01</dd>
       <dt>Code</dt><dd>Cài <code>notification/api/NotificationGateway</code> cho SMS (AWS SNS/Twilio, kèm stub offline); campaign kênh <code>SMS</code>; track theo số điện thoại. Model tiếng Việt: <code>research/phase2</code> (PhoBERT).</dd>
       <dt>Workflow</dt><dd>Campaign <code>SMS</code> → gateway gửi → link rút gọn trỏ beacon → track CLICK/SUBMIT.</dd>
       <dt>Phần việc</dt><dd>(1) gateway SMS thật (SNS/Twilio) + stub offline · (2) link rút gọn &amp; track theo số điện thoại · (3) funnel kênh <code>SMS</code> · (4) phân loại nội dung tiếng Việt (<code>research/phase2</code>)</dd>
@@ -416,6 +470,7 @@
   <div class="topic">
     <header><span class="tid">ĐT03</span><h3>Kênh phi-email: vishing · đính kèm · USB</h3><span class="tag rev">gộp từ ĐT03 + ĐT05 cũ</span><span class="tag dep">cần ĐT06</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 — và <b>BR-3</b> (payload phải vô hại)</dd>
       <dt>Vì sao gộp</dt><dd>Ba kênh này ở bản trước là hai đề tài rời, mỗi cái chỉ đủ một đến hai phần việc — chưa tới tầm một nhóm bốn người. Chúng dùng chung đúng một cơ chế: <b>dựng mồi ngoài email, gắn beacon, quy về cùng một funnel</b>. Gộp lại thành một đề tài có bốn phần việc thật, thay vì hai đề tài nửa vời.</dd>
       <dt>Code</dt><dd>Module <code>simulation</code>. Enum <code>domain/Channel.java</code> đã có sẵn <code>VOICE</code>, <code>USB</code>; template đính kèm dùng <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>). Beacon lấy từ ĐT06.</dd>
       <dt>Phần việc</dt><dd>(1) <b>Vishing</b> — entity kịch bản cuộc gọi + IVR stub, campaign kênh <code>VOICE</code> · (2) <b>Đính kèm</b> — sinh tệp doc/pdf vô hại có nhúng beacon, ghi <code>OPEN</code> khi mở · (3) <b>USB drop</b> — sinh token theo thiết bị, trang tiếp nhận khi người dùng cắm và mở · (4) <b>Funnel hợp nhất</b> — một báo cáo so sánh tỉ lệ mắc giữa ba kênh phi-email với kênh email</dd>
@@ -428,6 +483,7 @@
   <div class="topic">
     <header><span class="tid">ĐT04</span><h3>Landing page builder + credential-capture</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-SIM-03 · <b>FR-SIM-06</b> — và <b>BR-2</b> (không bao giờ lưu giá trị mật khẩu)</dd>
       <dt>Code</dt><dd>Entity <code>LandingPage</code> + repo + CRUD; trang public render HTML; form <b>chỉ ghi “đã nhập hay chưa”</b> — tuyệt đối không lưu mật khẩu.</dd>
       <dt>Workflow</dt><dd>Builder tạo page → gắn campaign → người nhập → sinh <code>SimAction.SUBMIT</code> → data-entry funnel.</dd>
       <dt>Phần việc</dt><dd>(1) entity <code>LandingPage</code> + CRUD · (2) trình soạn và render trang public · (3) ghi nhận <code>SUBMIT</code> mà không lưu mật khẩu · (4) data-entry funnel + e2e điền form</dd>
@@ -438,6 +494,7 @@
   <div class="topic">
     <header><span class="tid">ĐT05</span><h3>Quy trình duyệt nội dung mô phỏng</h3><span class="tag new">thay đề tài đính kèm đã gộp vào ĐT03</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd><b>FR-AI-06</b> — và <b>BR-4</b> (người duyệt phải khác người tạo)</dd>
       <dt>Vấn đề thật</dt><dd>Nội dung mồi do AI sinh ra rồi gửi thẳng tới nhân viên thật, mà <b>chưa có luồng duyệt nào</b>. <code>domain/TemplateStatus.java</code> chỉ có hai trạng thái <code>DRAFT</code> và <code>APPROVED</code>; endpoint tạo template nhận một cờ <code>approved</code> — nghĩa là người tạo tự duyệt nội dung của chính mình. Quy trình duyệt đã được đặc tả sẵn ở <code>../docs/DigiShield_bpmn_content_approval.bpmn</code> nhưng chưa ai thực thi.</dd>
       <dt>Code</dt><dd>Module <code>ai</code>: <code>domain/TemplateStatus.java</code>, <code>domain/AiTemplate.java</code>, <code>web/AiController.java</code>, <code>application/AiServiceImpl.java</code>. Phân quyền dựa vào vai trò <code>content_editor</code> và <code>org_admin</code> (xem <code>../docs/AUTHZ_MATRIX.md</code>).</dd>
       <dt>Phần việc</dt><dd>(1) <b>Mô hình trạng thái</b> — thêm <code>PENDING_REVIEW</code>, <code>REJECTED</code>, người duyệt, thời điểm, lý do từ chối (+ migration) · (2) <b>Endpoint &amp; phân quyền</b> — gửi duyệt / duyệt / từ chối, người tạo <b>không được</b> tự duyệt · (3) <b>Chặn ở điểm sử dụng</b> — campaign từ chối template chưa <code>APPROVED</code>, kể cả khi gọi thẳng API · (4) <b>Màn hình hàng đợi duyệt</b> + ghi audit mọi quyết định</dd>
@@ -450,6 +507,7 @@
   <div class="topic">
     <header><span class="tid">ĐT06</span><h3>Web beacon endpoints — hạ tầng nền</h3><span class="tag rev">giao sớm</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-SIM-03 · FR-SIM-04 · NFR-PERF-01</dd>
       <dt>Code</dt><dd>Controller mới <code>web/TrackingController.java</code>: <code>GET /t/open.gif</code> (pixel 1×1), <code>GET /t/click</code> (redirect + ghi CLICK). Ánh xạ token → <code>SimEvent</code>. Hiện event chỉ vào được qua <code>POST /api/v1/sim/events</code>.</dd>
       <dt>Workflow</dt><dd>Email/QR/SMS nhúng URL beacon → mở/nhấn → ghi event → publish <code>UserClickedSimulationEvent</code>.</dd>
       <dt>Phần việc</dt><dd>(1) <code>/t/open.gif</code> trả pixel · (2) <code>/t/click</code> redirect · (3) token idempotent chống đếm trùng · (4) chống bot + đo tải bằng k6</dd>
@@ -478,6 +536,7 @@
   <div class="topic">
     <header><span class="tid">ĐT07</span><h3>Nút “Report Phishing” (add-in Outlook/Gmail)</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-REP-01</dd>
       <dt>Code</dt><dd>Backend đã có API report + triage. Việc mới là <b>extension</b> (thư mục mới, ví dụ <code>../report-addin/</code>) gọi API, và endpoint nhận payload từ add-in.</dd>
       <dt>Workflow</dt><dd>Bấm nút → add-in POST email → <code>PhishingReport(NEW)</code> → analyst triage → publish <code>PhishingReportConfirmedEvent</code> → analytics cập nhật risk; <code>convert-to-training</code>.</dd>
       <dt>Phần việc</dt><dd>(1) add-in Outlook · (2) add-in Gmail · (3) endpoint nhận và chuẩn hoá payload email · (4) e2e “bấm report → hiện trong SOC inbox”</dd>
@@ -488,6 +547,7 @@
   <div class="topic">
     <header><span class="tid">ĐT08</span><h3>Abuse-mailbox auto-triage</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-AI-02 · FR-REP-02</dd>
       <dt>Code</dt><dd>Trong <code>ReportingServiceImpl</code> gọi <code>AiClient.classify()</code> để tự xếp hạng <code>PhishingReport</code>; thêm cột priority (migration + entity).</dd>
       <dt>Workflow</dt><dd>Nạp email report → AI phân loại → sắp hàng đợi SOC theo mức độ → gợi ý hành động.</dd>
       <dt>Phần việc</dt><dd>(1) gọi <code>classify</code> khi nạp report · (2) cột priority + migration · (3) sắp hàng đợi SOC + gợi ý hành động · (4) đo chất lượng xếp hạng trên tập mẫu cố định</dd>
@@ -516,6 +576,7 @@
   <div class="topic">
     <header><span class="tid">ĐT09</span><h3>Micro-learning “teachable moment”</h3><span class="tag dep">cần ĐT06</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-LRN-03 · FR-LRN-04 — và <b>BR-5</b> (ghi danh tự động, đúng một lần)</dd>
       <dt>Code</dt><dd>Mở rộng <code>CoachingPage</code> + endpoint trang học tương tác; nối vào redirect của ĐT06.</dd>
       <dt>Workflow</dt><dd>Click phishing → redirect sang coaching page + micro-quiz. <code>SimulationClickListener</code> đã ghi danh remediation sẵn — <b>đừng ghi danh lần hai</b>.</dd>
       <dt>Phần việc</dt><dd>(1) mở rộng <code>CoachingPage</code> · (2) trang học tương tác + micro-quiz · (3) nối vào redirect của ĐT06 · (4) đo hiệu quả (tỉ lệ hoàn thành, click lặp lại)</dd>
@@ -526,6 +587,7 @@
   <div class="topic">
     <header><span class="tid">ĐT10</span><h3>Trình tạo chương trình đào tạo tự động</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-LRN-02 · FR-NOT-02</dd>
       <dt>Code</dt><dd>Entity <code>TrainingProgram</code> + engine sinh kế hoạch trong <code>learning/application/</code>; dùng <code>notification</code> để nhắc và profile <code>scheduler</code> để chạy theo lịch.</dd>
       <dt>Workflow</dt><dd>Wizard chọn nội dung → lịch → task calendar → auto-enroll (publish <code>EnrollmentAssignedEvent</code>).</dd>
       <dt>Phần việc</dt><dd>(1) entity <code>TrainingProgram</code> · (2) engine sinh kế hoạch · (3) lịch chạy qua profile <code>scheduler</code> + nhắc qua <code>notification</code> · (4) wizard phía frontend</dd>
@@ -536,6 +598,7 @@
   <div class="topic">
     <header><span class="tid">ĐT11</span><h3>Lộ trình học thích ứng theo năng lực &amp; rủi ro</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-LRN-02 · FR-LRN-06</dd>
       <dt>Code</dt><dd>Trong <code>LearningServiceImpl</code> dùng <code>assessments/placement</code> + risk score (từ <code>analytics</code>, qua interface trong <code>api/</code>) để chọn khoá/độ khó (<code>domain/CourseLevel.java</code>).</dd>
       <dt>Workflow</dt><dd>Placement + risk → thuật toán chọn nội dung → lộ trình cá nhân.</dd>
       <dt>Phần việc</dt><dd>(1) bài kiểm tra xếp lớp (placement) · (2) thuật toán chọn nội dung theo năng lực + risk · (3) lộ trình cá nhân hoá · (4) đo và hiệu chỉnh thuật toán</dd>
@@ -564,6 +627,7 @@
   <div class="topic">
     <header><span class="tid">ĐT12</span><h3>Human Risk Score engine</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-ANA-01 · FR-ANA-03 · <b>FR-ANA-04</b> — mục tiêu <b>BO-1</b></dd>
       <dt>Code</dt><dd>Mở rộng <code>RiskSignalType</code> + logic tổng hợp trong <code>AnalyticsServiceImpl</code>; publish <code>RiskRecomputedEvent</code>.</dd>
       <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → feed AIDA (ĐT14).</dd>
       <dt>Phần việc</dt><dd>(1) mở rộng <code>RiskSignalType</code> · (2) công thức tổng hợp điểm · (3) phân khúc theo user/phòng ban · (4) <b>viết consumer đầu tiên cho <code>RiskRecomputedEvent</code></b> — hiện chưa ai nghe</dd>
@@ -575,6 +639,7 @@
   <div class="topic">
     <header><span class="tid">ĐT13</span><h3>Báo cáo lãnh đạo + xuất định kỳ &amp; benchmark</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd><b>FR-REP-07</b> · FR-ANA-05 — mục tiêu <b>BO-3</b></dd>
       <dt>Code</dt><dd>Service export (PDF: OpenPDF/Flying Saucer; CSV) trong <code>analytics/application/</code>; endpoint export ở <code>web/AnalyticsController.java</code>; digest chạy bằng <code>scheduler</code> + <code>notification</code>.</dd>
       <dt>Workflow</dt><dd>Tổng hợp dashboard/benchmark → xuất PDF/CSV → gửi email digest định kỳ.</dd>
       <dt>Phần việc</dt><dd>(1) export CSV (đọc mục <b>Bẫy</b> bên dưới trước) · (2) export PDF · (3) số liệu benchmark giữa các kỳ · (4) digest gửi định kỳ qua <code>scheduler</code></dd>
@@ -598,6 +663,7 @@
   <div class="topic">
     <header><span class="tid">ĐT14</span><h3>AIDA orchestration nâng cao</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-AI-04 · FR-AI-05</dd>
       <dt>Code</dt><dd>Mở rộng orchestration có sẵn: rule chọn test/training theo <code>RiskScore</code> (từ ĐT12); drip/follow-up dùng <code>scheduler</code>. Giảm phụ thuộc Claude bằng <code>MlAiClient</code> (self-host, xem <code>research/</code>).</dd>
       <dt>Workflow</dt><dd><code>AidaOrchestrationRequestedEvent</code> → chọn hành động theo risk → tạo campaign (<code>simulation</code>) / ghi danh (<code>learning</code>) → follow-up → <code>AidaOrchestrationCompletedEvent</code>.</dd>
       <dt>Phần việc</dt><dd>(1) rule chọn hành động theo <code>RiskScore</code> · (2) drip/follow-up theo lịch · (3) bật <code>MlAiClient</code> self-host · (4) đo kết quả orchestration qua <code>AidaRun</code></dd>
@@ -630,6 +696,7 @@
   <div class="topic">
     <header><span class="tid">ĐT15</span><h3>Nâng chất lượng test &amp; siết gate</h3></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FRD §8.1 (chính sách coverage) · NFR-PERF-01</dd>
       <dt>Việc còn lại</dt>
       <dd>
         <b>1. Mutation testing.</b> Thêm <b>PITest</b> cho backend và đặt ngưỡng mutation score. Đây là
@@ -671,6 +738,7 @@
   <div class="topic">
     <header><span class="tid">ĐT16</span><h3>Gói dịch vụ, hạn mức &amp; đo lường sử dụng</h3><span class="tag new">mới</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-TEN-04 · FR-TEN-05 · <b>FR-TEN-06</b> · FR-TEN-07</dd>
       <dt>Code</dt><dd>Module <code>modules/tenancy/</code>. Đã có sẵn nhưng chưa chạy thật: <code>domain/Plan.java</code>, <code>Subscription.java</code>, <code>UsageMetering.java</code>, <code>TenantTier.java</code>, <code>FeatureFlag.java</code>, <code>BusinessThresholds.java</code>, và job <code>application/UsageMeteringJob.java</code>.</dd>
       <dt>Phần việc</dt>
       <dd>
@@ -687,6 +755,7 @@
   <div class="topic">
     <header><span class="tid">ĐT17</span><h3>Thông báo đa kênh &amp; realtime</h3><span class="tag new">mới</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd><b>FR-NOT-01 · FR-NOT-02 · FR-NOT-03</b></dd>
       <dt>Code</dt><dd>Module <code>modules/notification/</code>. Hiện <b>cả hai cổng ra đều là stub</b>: <code>application/LoggingNotificationGateway.java</code> chỉ ghi log, <code>application/NoopRealtimeNotifier.java</code> không làm gì. <code>domain/NotificationChannel.java</code> mới có <code>IN_APP, EMAIL</code>.</dd>
       <dt>Phần việc</dt>
       <dd>
@@ -703,6 +772,7 @@
   <div class="topic">
     <header><span class="tid">ĐT18</span><h3>SCIM/SSO provisioning &amp; quản trị người dùng</h3><span class="tag new">mới</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd>FR-AUTH-07 · FR-AUTH-08 · FR-TEN-03</dd>
       <dt>Code</dt><dd><code>tenancy/domain/ScimConfig.java</code> đã có các trường (<code>idpName</code>, <code>scimEndpoint</code>, <code>clientId</code>, <code>lastSyncAt</code>) nhưng chưa có luồng đồng bộ. Cộng <code>domain/Group.java</code> + <code>GroupMember.java</code>, và <code>modules/auth</code> + Cognito.</dd>
       <dt>Phần việc</dt>
       <dd>
@@ -719,6 +789,7 @@
   <div class="topic">
     <header><span class="tid">ĐT19</span><h3>Song ngữ đầu-cuối (i18n)</h3><span class="tag new">mới</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd><b>NFR-I18N-01</b></dd>
       <dt>Vấn đề thật</dt><dd>Bất đối xứng rõ rệt: frontend có <code>shared/i18n/messages.ts</code> <b>1108 dòng</b>, còn backend <b>hardcode tiếng Việt</b> ngay trong service (ví dụ <code>"Không tìm thấy báo cáo phishing: "</code>). Đường <code>Accept-Language</code> đã thông sẵn từ FE (xem interceptor trong <code>shared/api/client.ts</code>) nhưng backend chưa dùng.</dd>
       <dt>Phần việc</dt>
       <dd>
@@ -735,6 +806,7 @@
   <div class="topic">
     <header><span class="tid">ĐT20</span><h3>RBAC &amp; kiểm soát truy cập đa tenant</h3><span class="tag new">mới</span></header>
     <dl>
+      <dt>Yêu cầu</dt><dd><b>NFR-SEC-01 · NFR-SEC-02</b> — và <b>BR-7</b> (không tổ chức nào đọc được dữ liệu tổ chức khác)</dd>
       <dt>Code</dt><dd><code>modules/auth</code> + <code>shared/security/</code> (<code>MethodSecurityConfig</code>, <code>TenantAccessGuard</code>, <code>Roles</code>) + <code>shared/persistence/RlsTenantAspect.java</code>. Ma trận quyền đã có sẵn: <code>../docs/AUTHZ_MATRIX.md</code>.</dd>
       <dt>Vấn đề thật</dt><dd>Ma trận đã viết ra nhưng <b>chỉ enforce ở profile non-dev</b> — nghĩa là chạy dev sẽ không bao giờ thấy lỗi phân quyền, và hiện chưa có bộ test nào phủ hết ma trận đó.</dd>
       <dt>Phần việc</dt>
