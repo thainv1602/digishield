@@ -52,21 +52,45 @@ class TriageRequestTest {
         "  dismiss  ,    DISMISS",
     })
     void acceptsEveryDecisionCaseAndSpacingInsensitively(String wire, TriageDecision expected) {
-        assertThat(new ReportingController.TriageRequest(wire).toDecision()).isEqualTo(expected);
+        assertThat(new ReportingController.TriageRequest(wire, null).toDecision()).isEqualTo(expected);
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"", "   ", "confirm", "CONFIRM_THREATS", "delete", "true"})
     @DisplayName("an unrecognised decision is a 400, never a silent dismissal")
     void rejectsUnknownDecisions(String wire) {
-        assertThatThrownBy(() -> new ReportingController.TriageRequest(wire).toDecision())
+        assertThatThrownBy(() -> new ReportingController.TriageRequest(wire, null).toDecision())
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
     }
 
     @Test
+    @DisplayName("add_to_blacklist is read from the wire name the browser sends")
+    void readsTheBlacklistFlagFromTheWireName() throws Exception {
+        String body = "{\"decision\":\"confirm_threat\",\"add_to_blacklist\":true}";
+
+        ReportingController.TriageRequest request =
+                mapper.readValue(body, ReportingController.TriageRequest.class);
+
+        assertThat(request.blocksSender()).isTrue();
+    }
+
+    @Test
+    @DisplayName("a missing or null flag means do not block, never null-pointer")
+    void treatsAnAbsentFlagAsFalse() throws Exception {
+        ReportingController.TriageRequest absent = mapper.readValue(
+                "{\"decision\":\"dismiss\"}", ReportingController.TriageRequest.class);
+        ReportingController.TriageRequest explicitNull = mapper.readValue(
+                "{\"decision\":\"dismiss\",\"add_to_blacklist\":null}",
+                ReportingController.TriageRequest.class);
+
+        assertThat(absent.blocksSender()).isFalse();
+        assertThat(explicitNull.blocksSender()).isFalse();
+    }
+
+    @Test
     void rejectsAMissingDecision() {
-        assertThatThrownBy(() -> new ReportingController.TriageRequest(null).toDecision())
+        assertThatThrownBy(() -> new ReportingController.TriageRequest(null, null).toDecision())
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("400");
     }

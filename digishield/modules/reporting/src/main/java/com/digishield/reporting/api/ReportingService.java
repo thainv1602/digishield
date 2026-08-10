@@ -41,11 +41,15 @@ public interface ReportingService {
      * quarantine deliberately does not, so a report that is later confirmed
      * rewards its reporter once rather than twice.
      *
-     * @param reportId the report to triage
-     * @param decision what the analyst decided
+     * @param reportId       the report to triage
+     * @param decision       what the analyst decided
+     * @param addToBlacklist also block the reported sender. Only meaningful for
+     *                       a threat verdict; rejected for {@code DISMISS}, and
+     *                       rejected when the report carries no sender, so the
+     *                       analyst is never told a block happened when none did
      * @return the report after triage
      */
-    PhishingReportDto triage(UUID reportId, TriageDecision decision);
+    PhishingReportDto triage(UUID reportId, TriageDecision decision, boolean addToBlacklist);
 
     /**
      * Lists phishing reports for the SOC inbox, optionally filtered by status.

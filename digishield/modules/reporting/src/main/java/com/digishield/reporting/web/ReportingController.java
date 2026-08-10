@@ -5,8 +5,10 @@ import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.UserReportDto;
 import com.digishield.reporting.domain.ReportStatus;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 
@@ -80,7 +83,8 @@ public class ReportingController {
     @PostMapping("/phishing/{id}/triage")
     public ResponseEntity<PhishingReportDto> triage(@PathVariable("id") UUID id,
                                                     @RequestBody TriageRequest request) {
-        PhishingReportDto report = reportingService.triage(id, request.toDecision());
+        PhishingReportDto report = reportingService.triage(
+                id, request.toDecision(), request.blocksSender());
         return ResponseEntity.ok(report);
     }
 
@@ -104,15 +108,33 @@ public class ReportingController {
     }
 
     /**
+     * A rejected triage is the caller's error, not a server fault. Without this
+     * the service's IllegalArgumentException left Spring to answer 500 -- for a
+     * mistyped report id as much as for a contradictory request.
+     *
+     * @param e the rejection
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<Map<String, String>> handleRejected(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+    }
+
+    /**
      * Triage request body: {@code {"decision": "confirm_threat"}}.
      *
      * <p>An unknown value is rejected rather than silently treated as a
      * dismissal — the previous boolean had no way to say "I do not understand
      * this", so anything that was not "confirm" cleared the report.
      */
-    public record TriageRequest(String decision) {
+    public record TriageRequest(
+            String decision,
+            @JsonProperty("add_to_blacklist") Boolean addToBlacklist) {
 
         private static final String ALLOWED = "confirm_threat | quarantine | dismiss";
+
+        boolean blocksSender() {
+            return Boolean.TRUE.equals(addToBlacklist);
+        }
 
         TriageDecision toDecision() {
             // There is no @ControllerAdvice in this application, so an

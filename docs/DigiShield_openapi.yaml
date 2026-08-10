@@ -815,6 +815,15 @@ paths:
                 decision:
                   type: string
                   enum: [confirm_threat, quarantine, dismiss]
+                add_to_blacklist:
+                  type: boolean
+                  default: false
+                  description: >-
+                    Also block the reported sender (as an EMAIL indicator).
+                    Rejected with 400 alongside dismiss, and rejected when the
+                    report carries no sender, so a block is never reported as
+                    done when nothing was blocked. Re-triaging the same sender
+                    does not create a duplicate entry.
                   description: >-
                     quarantine records a threat the analyst is holding: the
                     report is labelled THREAT but no confirmation event is
@@ -2122,7 +2131,7 @@ components:
       type: object
       properties:
         id: { type: string, format: uuid }
-        type: { type: string, enum: [url, phone, account] }
+        type: { type: string, enum: [domain, url, email, ip, phone, hash] }
         value: { type: string }
         source: { type: string, example: NCSC }
 
@@ -2130,7 +2139,7 @@ components:
       type: object
       required: [type, value]
       properties:
-        type: { type: string, enum: [url, phone, account] }
+        type: { type: string, enum: [domain, url, email, ip, phone, hash] }
         value: { type: string }
         source: { type: string, example: NCSC }
 
