@@ -521,6 +521,7 @@
         <tr><td class="k">E</td><td class="k">ĐT14</td><td class="k">ai</td><td>AI &amp; tự động hoá.</td></tr>
         <tr><td class="k">F</td><td class="k">ĐT15</td><td class="k">e2e · buildSrc · CI</td><td>Chất lượng &amp; DevSecOps. <span class="tag rev">viết lại</span></td></tr>
         <tr><td class="k">G</td><td class="k">ĐT16–20</td><td class="k">tenancy · notification · auth</td><td>Nền tảng vận hành. <span class="tag new">mới</span></td></tr>
+        <tr><td class="k">+</td><td class="k">dự phòng</td><td class="k">reporting · interception · learning · tenancy · auth</td><td>Tám đề nhỏ, đậm kỹ thuật kiểm thử, giữ từ danh mục 15 đề trước.</td></tr>
       </tbody>
     </table>
   </div>
@@ -951,6 +952,48 @@
       <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành đã gộp vào ĐT15. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
     </dl>
   </div>
+</section>
+
+<hr>
+
+<section>
+  <div class="shead marked">
+    <span class="marker">+</span>
+    <div>
+      <p class="eyebrow">Đề tài dự phòng · từ danh mục 15 đề trước</p>
+      <h2>Tám đề tài nhỏ, đậm kỹ thuật kiểm thử</h2>
+    </div>
+  </div>
+  <p>
+    Danh mục 15 đề tài trước (<code>Software Testing Slide/BTL-15-de-tai.md</code>) có tám đề
+    <b>không có chỗ trong 20 đề ở trên</b>. Chúng được giữ lại vì một lý do cụ thể: chúng
+    <em>nhỏ, gọn trong một module, nhiều nhánh logic</em> — hình dạng lý tưởng cho một môn kiểm
+    thử, nơi việc thiết kế ca mới là nội dung.
+  </p>
+  <div class="note">
+    <p><b>Khi nào dùng.</b> Nhóm nào muốn một đề tài mà phần lớn công sức nằm ở thiết kế ca chứ
+    không ở dựng hạ tầng, hoặc nhóm nhận đề lớn nhưng thấy quá tầm, có thể xin đổi sang một trong
+    tám đề này. Chúng đã được đặc tả đủ để bắt tay vào làm ngay.</p>
+  </div>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Module</th><th>Đề tài</th><th>Độ khó</th><th>Kỹ thuật trọng tâm</th></tr></thead>
+      <tbody>
+        <tr><td class="k">reporting</td><td>Chuẩn hoá &amp; chống trùng blacklist theo <code>BlacklistType</code> — domain viết thường, điện thoại E.164, URL canonical</td><td class="k">TB</td><td>Phân hoạch tương đương · giá trị biên</td></tr>
+        <tr><td class="k">interception</td><td>Watchlist hết hạn — <code>AccountWatchEntry</code> tự hết hiệu lực, <code>check</code> bỏ qua entry quá hạn</td><td class="k">TB</td><td><b>Test theo thời gian</b> với <code>Clock</code> tiêm vào · biên ngày</td></tr>
+        <tr><td class="k">interception</td><td>Rules engine can thiệp v2 — ngưỡng cấu hình (số tiền + watchlist-hit + tần suất) → <code>BLOCK</code>/<code>WARN</code>/<code>ALLOW</code></td><td class="k tN"><b>Khó</b></td><td><b>Bảng quyết định lớn</b> · phủ nhánh và điều kiện</td></tr>
+        <tr><td class="k">learning</td><td>Engine trao huy hiệu — trao <code>Badge</code> khi điểm vượt ngưỡng <code>PointRule</code>, kích hoạt bằng sự kiện</td><td class="k">TB</td><td>Test hướng sự kiện · listener · ngưỡng biên</td></tr>
+        <tr><td class="k">learning</td><td>Chấm quiz + chính sách làm lại — điểm, đạt/trượt, số lần retry và thời gian chờ</td><td class="k">TB</td><td>Phủ nhánh · biên điểm và số lần thử</td></tr>
+        <tr><td class="k">learning</td><td>Quy tắc cấp chứng chỉ — cấp <code>Certificate</code> khi hoàn thành khoá và đạt bài đánh giá</td><td class="k">TB</td><td><b>Máy trạng thái</b> · tổ hợp điều kiện</td></tr>
+        <tr><td class="k">tenancy</td><td>Proration khi đổi gói — tính tín dụng và phí cho <code>ChangePlanCommand</code></td><td class="k tN"><b>Khó</b></td><td>Nhiều nhánh số học · biên ngày và tiền</td></tr>
+        <tr><td class="k">auth</td><td>Vòng đời token đặt lại mật khẩu — phát hành, hết hạn, dùng một lần</td><td class="k">TB</td><td><b>Máy trạng thái</b> · biên thời gian · ca dùng lại</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="font-size:14px;color:var(--muted)">
+    Đề tài dự phòng vẫn chịu đủ mọi nghĩa vụ ở mục 0.6 – 0.10: mã FR, sản phẩm tài liệu, năm lớp
+    test, coverage &gt; 0.90 trên package của nhóm, bảng đặc tả ca và thang điểm 100.
+  </p>
 </section>
 
 <hr>

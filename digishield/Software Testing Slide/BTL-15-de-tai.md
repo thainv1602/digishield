@@ -1,6 +1,26 @@
 # Bài tập lớn — Kiểm thử Phần mềm (2025–2026)
 ## 15 đề tài trên nền codebase DigiShield
 
+> ⚠️ **Bản này đã được thay thế. Danh mục đề tài đang dùng: [`../STUDENT_TOPICS.html`](../STUDENT_TOPICS.html)** (20 đề tài, mở bằng trình duyệt).
+>
+> **Đối chiếu 15 đề tài ở đây với bản 20:**
+>
+> | Đề cũ | Trạng thái |
+> |---|---|
+> | 02 Auto-triage report | → **ĐT08** |
+> | 08 Endpoint funnel campaign | → **ĐT03** (funnel hợp nhất) |
+> | 09 Phát hiện người tái phạm · 10 Risk-score suy giảm | → **ĐT12** (một phần) |
+> | 11 Feature-flag · 12 Chặn quota | → **ĐT16** |
+> | 14 Gộp thông báo digest | → **ĐT17** |
+> | **01, 03, 04, 05, 06, 07, 13, 15** | **Không có trong bản 20** — giữ lại làm *đề tài dự phòng*, xem mục “Đề tài dự phòng” trong `STUDENT_TOPICS.html` |
+>
+> **Hai chi tiết trong file này đã lạc hậu:** nhánh `develop` không tồn tại (chỉ có `main` và
+> `deploy/jetson`), và ba workflow `backend-ci.yml` / `frontend-ci.yml` / `commit-lint.yml` đã
+> gộp thành một `.github/workflows/ci-cd.yml`.
+>
+> Phần **rubric**, **bảng đặc tả ca kiểm thử** và **cổng coverage theo package** trong file này
+> vẫn đúng và đã được đưa sang bản 20 (mục 0.10).
+
 Mỗi nhóm **5 sinh viên** nhận **một đề tài**: xây **một chức năng mới** bám module có sẵn, viết **test đủ tầng đạt coverage > 90%**, giữ **pipeline CI xanh**.
 
 - **Codebase:** Spring Modulith (Java 25, Spring Boot 4.1) + React/Vite. Đã có sẵn JaCoCo (aggregation) và GitHub Actions (`backend-ci.yml`, `frontend-ci.yml`, `commit-lint.yml`).
