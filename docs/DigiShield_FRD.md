@@ -125,6 +125,20 @@ Five test layers are mandatory for every requirement: backend unit, backend inte
 frontend unit, API collection (Newman), end-to-end. A requirement with a passing
 implementation but a missing layer is **not** complete.
 
+**Per endpoint**, three artefacts are required without exception:
+
+| Artefact | Obligation |
+|---|---|
+| OpenAPI | Declared in `DigiShield_openapi.yaml`. Absent means the generated frontend client cannot reach it, however well the backend works |
+| Postman | A request with a `pm.test` script asserting status, schema, required fields, **and at least one failure case**. A request without assertions does not count |
+| Selenium | At least one scenario for any endpoint serving a user-facing flow. Internal service-to-service endpoints are exempt, stated as such in the pull request |
+
+**Sequence diagrams are tiered, not universal.** Required when a flow crosses two or more
+modules, publishes or consumes an event, calls an external service, or makes an
+authorization decision beyond ordinary `@PreAuthorize`. Not required for CRUD confined to
+one module: a repeated controller → service → repository chain carries no information, and
+eighty of them would bury the fifteen that do.
+
 **Coverage floor — line coverage, measured per module.**
 
 | Stage | Backend floor | Notes |

@@ -290,8 +290,10 @@
 8. contracts/       event, nếu module khác cần phản ứng
 9. openapi          cập nhật ../docs/DigiShield_openapi.yaml
 10. FRD             thêm/sửa mã FR trong ../docs/DigiShield_FRD.md
-11. sơ đồ           sequence cho luồng mới; BPMN nếu là quy trình nghiệp vụ
-12. test            5 lớp bên dưới → ./gradlew check → PR → CI xanh</code></pre>
+11. sơ đồ           sequence nếu luồng thoả tiêu chí mục 0.9; BPMN nếu là quy trình
+12. postman         request + test script cho MỌI endpoint mới, kèm ca lỗi
+13. e2e             kịch bản Selenium cho luồng người dùng mới
+14. test            5 lớp → ./gradlew check → PR → CI xanh</code></pre>
 
   <h3><span class="num">0.7</span>Test &amp; CI/CD — chạy ở đâu</h3>
   <div class="note warn">
@@ -313,6 +315,22 @@
         <tr><td class="k">5</td><td>E2E</td><td>Selenium</td><td class="k">e2e/ (đã ở <code>main</code>)</td><td class="k">./gradlew :e2e:test -De2e.enabled=true</td></tr>
       </tbody>
     </table>
+  </div>
+
+  <div class="note warn">
+    <p><b>Mỗi endpoint mới phải có đủ ba thứ này — không có ngoại lệ:</b></p>
+    <ul style="margin-top:2px">
+      <li><b>OpenAPI</b> — khai trong <code>../docs/DigiShield_openapi.yaml</code>. Thiếu thì
+        client frontend sinh ra không gọi được, dù backend chạy đúng.</li>
+      <li><b>Postman</b> — một request trong <code>postman/digishield.postman_collection.json</code>
+        kèm <b>test script</b>: <code>pm.test</code> kiểm mã trạng thái, schema, các trường bắt
+        buộc, và <b>ít nhất một ca lỗi</b> (401/403/404/422 tuỳ endpoint). Request không có
+        assertion không tính là đã làm.</li>
+      <li><b>Selenium</b> — nếu endpoint phục vụ một luồng người dùng, phải có tối thiểu
+        <b>một kịch bản e2e</b> đi trọn luồng đó (Page Object trong <code>e2e/…/pages</code>,
+        kịch bản trong <code>…/scenarios</code>). Endpoint chỉ dùng nội bộ giữa các service thì
+        không cần, nhưng phải nói rõ lý do trong PR.</li>
+    </ul>
   </div>
 
   <p>Chạy trong <code>./gradlew check</code> (đều là <b>cổng kiểm soát thực</b> — vi phạm sẽ làm build thất bại):</p>
@@ -373,7 +391,12 @@
         </tr>
         <tr>
           <td class="k">Sequence</td>
-          <td><b>Bắt buộc</b> nếu luồng đi qua từ hai module trở lên. Vẽ bằng Mermaid, đặt cạnh luồng tương ứng.</td>
+          <td><b>Bắt buộc</b> khi luồng thoả <em>bất kỳ</em> điều nào: đi qua từ hai module trở lên ·
+            có publish hoặc nghe event · gọi dịch vụ ngoài (LLM, email/SMS gateway, IdP) ·
+            có quyết định phân quyền riêng ngoài <code>@PreAuthorize</code> thông thường.<br>
+            <b>Không bắt buộc</b> cho CRUD gọn trong một module — chuỗi controller → service →
+            repository lặp lại không mang thêm thông tin nào. Endpoint loại này vẫn phải có mã FR,
+            khai OpenAPI và request Postman.</td>
           <td class="k">../docs/DigiShield_Technical_Design.md</td>
         </tr>
         <tr>
