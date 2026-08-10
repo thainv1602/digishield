@@ -349,10 +349,10 @@ class InterceptionServiceImplTest {
         \item Đặt tên: \texttt{*IT.java}
         \item Cần Docker (trừ slice test \texttt{@WebMvcTest})
         \item Lệnh: \texttt{./gradlew integrationTest}
-        \item 7 file / 19 test: \texttt{TenantIsolationIT},
-          \texttt{SimulationModuleIT}, \texttt{RlsCoverageIT},
-          \texttt{RiskRollupIT}, \texttt{InterceptionControllerIT},
-          \texttt{SecurityHeadersIT}, \texttt{SimTrackingPageCspIT}
+        \item 9 file / 30 test, ví dụ
+          \texttt{TenantIsolationIT}, \texttt{RlsCoverageIT},
+          \texttt{SimulationModuleIT},
+          \texttt{InterceptionControllerIT}\ldots
       \end{itemize}
     \end{block}
   \end{columns}
@@ -1398,9 +1398,9 @@ class ModularityTests {
     \column{0.58\textwidth}
     \textbf{DigiShield áp dụng đúng tinh thần này:}
     \begin{itemize}\small
-      \item 176 unit test trong \texttt{src/test} các module --- phủ
+      \item 257 unit test trong \texttt{src/test} các module --- phủ
         logic nhánh, biên, exception
-      \item Chỉ \textbf{7 file IT} (19 test) trong \texttt{src/integrationTest}
+      \item Chỉ \textbf{9 file IT} (30 test) trong \texttt{src/integrationTest}
         --- mỗi file gác một rủi ro \emph{không thể} kiểm chứng cách khác:
         RLS, độ phủ RLS, event xuyên module, wiring HTTP, security header, CSP
     \end{itemize}

@@ -220,18 +220,19 @@
     \end{block}
 
     \column{0.48\textwidth}
-    \begin{block}{Trang login DigiShield (bản demo-login)}
+    \begin{block}{Trang login DigiShield (dev sign-in)}
       \begin{itemize}
-        \item Input email: \texttt{\#login-email}
-        \item Input mật khẩu: \texttt{\#login-pw}
-        \item 4 nút persona: Admin / Learner / Analyst / Super
-        \item Nút submit \texttt{type="submit"}
-        \item Prefill: \texttt{admin@coquan.gov.vn} / \texttt{demo1234}
+        \item \texttt{\#login-role} --- 6 vai trò, chọn bằng lớp
+              \texttt{Select}: \texttt{selectByValue("analyst")}
+        \item \texttt{\#login-email}, \texttt{\#login-submit}
+        \item \alert{Không có ô mật khẩu}: dev profile
+              \texttt{permitAll}
+        \item Email tự điền theo vai trò
       \end{itemize}
     \end{block}
 
-    {\scriptsize Bản demo-login = revision \texttt{b403e67\textasciitilde1}
-    (như buổi 10); \texttt{main} hiện dùng Cognito.}
+    {\scriptsize \texttt{npm run dev} không đặt \texttt{VITE\_COGNITO\_*}
+    nên \texttt{/login} hiện dev sign-in form (như buổi 10).}
   \end{columns}
 \end{frame}
 
@@ -249,23 +250,22 @@
 
 \begin{lstlisting}
 // src/features/auth/LoginPage.tsx (rut gon)
-function doLogin(e) {
+const onSubmit = (e: FormEvent) => {
   e.preventDefault();
-  setSubmitting(true);
-  setTimeout(() => {              // <-- cho 600ms!
-    const role = personaToRole(persona);
-    login({ id: 'me', role, email, ... },
-          'demo-token');
-    navigate(defaultRouteForPersona(persona));
-  }, 600);
-}
+  login({ id: `dev-${role}`, role, email, ... },
+        'dev-token');
+  navigate(defaultRouteForRole(role));
+};
+// src/app/router.tsx: moi route deu lazy
+const SocInboxPage = lazy(
+    () => import('@/features/soc/SocInboxPage'));
 \end{lstlisting}
 
   \begin{itemize}
-    \item Dev login xử lý phía client, \textbf{cố tình trễ 600ms}
-          rồi mới \texttt{navigate}
-    \item SPA React: sau khi \texttt{navigate}, trang mới còn phải
-          \textbf{render bất đồng bộ} (lazy import, \texttt{Suspense})
+    \item \texttt{navigate} chạy \textbf{ngay}, không có độ trễ nhân tạo
+    \item Nhưng router dùng \texttt{lazy} + \texttt{Suspense} cho
+          \alert{30 route}: trang mới phải \textbf{tải chunk JS rồi mới
+          render} $\Rightarrow$ URL và DOM đổi \textbf{sau} cú click
   \end{itemize}
 \end{frame}
 
@@ -283,13 +283,13 @@ function doLogin(e) {
   ]
     \draw[arr] (0,0) -- (12.3,0) node[font=\scriptsize,anchor=north west,
       xshift=-0.65cm,yshift=-2pt]{thời gian};
-    \foreach \x/\t in {0.5/0ms, 4.0/50ms, 8.0/600ms, 11.0/700ms}{
+    \foreach \x/\t in {0.5/0ms, 4.0/5ms, 8.0/180ms, 11.0/260ms}{
       \draw[darkgray] (\x,-0.08) -- (\x,0.08);
       \node[font=\scriptsize,below] at (\x,-0.1) {\t};
     }
     \node[ev,above] at (0.5,0.35) {click\\Đăng nhập};
     \node[bad,above] at (4.0,0.35) {assert URL\\\textbf{FAIL!}};
-    \node[ev,above] at (8.0,0.35) {\texttt{navigate()}\\sau 600ms};
+    \node[ev,above] at (8.0,0.35) {chunk route\\tai xong};
     \node[ev,above] at (11.0,0.35) {trang mới\\render xong};
   \end{tikzpicture}
   \end{center}
@@ -322,7 +322,7 @@ assertTrue(driver.getCurrentUrl()
   \begin{alertblock}{Vì sao TUYỆT ĐỐI tránh \texttt{Thread.sleep}?}
     \small
     \begin{itemize}
-      \item \textbf{Chậm}: luôn đợi đủ 3s dù trang xong sau 0.7s
+      \item \textbf{Chậm}: luôn đợi đủ 3s dù trang xong sau 0.3s
             --- 100 test $\times$ 3s = 5 phút lãng phí
       \item \textbf{Vẫn flaky}: máy CI chậm, trang mất 3.5s
             $\Rightarrow$ vẫn fail
@@ -404,7 +404,7 @@ WebElement input = wait.until(ExpectedConditions
 
 %---------------------------------------------------------------------
 \begin{frame}[fragile]{Demo: sửa test login buổi 10 bằng explicit wait (1/2)}
-  \begin{alertblock}{Trước (buổi 10) --- fail vì \texttt{setTimeout} 600ms}
+  \begin{alertblock}{Trước (buổi 10) --- fail vì điều hướng SPA chưa xong}
 \begin{lstlisting}[language=Java]
 driver.findElement(By.cssSelector(
     "button[type='submit']")).click();
@@ -429,7 +429,7 @@ new WebDriverWait(driver, Duration.ofSeconds(5))
   \end{exampleblock}
 
   \begin{itemize}
-    \item 600ms trễ + thời gian render $<$ 5s timeout $\Rightarrow$
+    \item Thời gian tải chunk + render $<$ 5s timeout $\Rightarrow$
           test pass, và chỉ chờ \textbf{đúng bằng thời gian thực tế}
   \end{itemize}
 \end{frame}
@@ -618,21 +618,18 @@ wait.until(ExpectedConditions.refreshed(
 \begin{frame}[fragile]{Vấn đề: selector rải rác khắp các test}
 \begin{lstlisting}[language=Java]
 @Test void testLogin() {
+  new Select(driver.findElement(By.id("login-role")))
+        .selectByValue("analyst");
   driver.findElement(By.id("login-email")).clear();
   driver.findElement(By.id("login-email"))
-        .sendKeys("analyst@coquan.gov.vn");
-  driver.findElement(By.id("login-pw"))
-        .sendKeys("demo1234");
-  driver.findElement(By.xpath(
-      "//button[text()='Analyst']")).click();
-  driver.findElement(By.cssSelector(
-      "button[type='submit']")).click();
+        .sendKeys("analyst@dev.digishield.local");
+  driver.findElement(By.id("login-submit")).click();
   // ... lap lai o testWatchlist, testInbox, ...
 }
 \end{lstlisting}
 
   \begin{alertblock}{Hệ quả khi UI đổi}
-    Frontend đổi \texttt{\#login-pw} thành \texttt{\#login-password}
+    Frontend đổi \texttt{\#login-role} thành \texttt{\#login-persona}
     $\Rightarrow$ sửa \textbf{hàng chục} test. Selector trùng lặp,
     test dài, khó đọc, không diễn đạt nghiệp vụ.
   \end{alertblock}
@@ -754,10 +751,9 @@ src/test/java/com/digishield/e2e/
     \toprule
     \textbf{Trang} & \textbf{Element} & \textbf{Locator thật} \\
     \midrule
-    \texttt{/login} & email / mật khẩu
-      & \texttt{\#login-email}, \texttt{\#login-pw} \\
-    \texttt{/login} & nút persona (Analyst\ldots)
-      & XPath theo text nút \\
+    \texttt{/login} & vai trò / email / submit
+      & \texttt{\#login-role} (\texttt{Select}),
+        \texttt{\#login-email}, \texttt{\#login-submit} \\
     \texttt{/soc/watchlist} & ô Quick Check (input tra cứu)
       & \texttt{form input[type='text']} \\
     \texttt{/soc/watchlist} & giá trị trong bảng
@@ -789,10 +785,9 @@ public class LoginPage {
   private final WebDriverWait wait;
 
   // Locator that cua LoginPage.tsx
+  private final By role = By.id("login-role");
   private final By email = By.id("login-email");
-  private final By password = By.id("login-pw");
-  private final By submit =
-      By.cssSelector("button[type='submit']");
+  private final By submit = By.id("login-submit");
 
   public LoginPage(WebDriver driver) {
     this.driver = driver;
@@ -808,20 +803,17 @@ public class LoginPage {
   public LoginPage open() {
     driver.get(URL);
     wait.until(ExpectedConditions
-        .visibilityOfElementLocated(email));
+        .visibilityOfElementLocated(role));
     return this;
   }
 
-  // Persona: "Admin"|"Learner"|"Analyst"|"Super"
-  public void loginAs(String persona,
-                      String user, String pw) {
-    driver.findElement(By.xpath(
-      "//button[normalize-space()='"
-      + persona + "']")).click();
+  // roleValue: "analyst"|"learner"|"org_admin"|...
+  public void loginAs(String roleValue,
+                      String userEmail) {
+    new Select(driver.findElement(role))
+        .selectByValue(roleValue);
     WebElement e = driver.findElement(email);
-    e.clear(); e.sendKeys(user);
-    WebElement p = driver.findElement(password);
-    p.clear(); p.sendKeys(pw);
+    e.clear(); e.sendKeys(userEmail);
     wait.until(ExpectedConditions
         .elementToBeClickable(submit)).click();
   }
@@ -831,12 +823,12 @@ public class LoginPage {
 %---------------------------------------------------------------------
 \begin{frame}[fragile]{\texttt{LoginPage} --- method trả về page object kế tiếp}
 \begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
-  // Persona Analyst -> mac dinh ve /soc/inbox
+  // Role analyst -> mac dinh ve /soc/inbox
   public SocInboxPage loginAsAnalyst(
-      String user, String pw) {
-    loginAs("Analyst", user, pw);
+      String userEmail) {
+    loginAs("analyst", userEmail);
     wait.until(ExpectedConditions
-        .urlContains("/soc/inbox"));  // cho 600ms
+        .urlContains("/soc/inbox"));  // cho route
     return new SocInboxPage(driver);
   }
 
@@ -854,7 +846,7 @@ public class LoginPage {
   \begin{itemize}
     \item Wait \texttt{urlContains} \textbf{nằm trong} page object:
           mọi test dùng login đều được ``miễn dịch'' với
-          \texttt{setTimeout} 600ms
+          độ trễ tải chunk route
   \end{itemize}
 \end{frame}
 
@@ -950,8 +942,8 @@ public class SocInboxPage {
 void analystSeesThreatReports() {
   SocInboxPage inbox = new LoginPage(driver)
       .open()
-      .loginAsAnalyst("analyst@coquan.gov.vn",
-                      "demo1234");
+      .loginAsAnalyst(
+          "analyst@dev.digishield.local");
 
   inbox.filterBy("THREAT");
 
@@ -977,10 +969,10 @@ public class LoginPageF {
   @FindBy(id = "login-email")
   private WebElement email;
 
-  @FindBy(id = "login-pw")
-  private WebElement password;
+  @FindBy(id = "login-role")
+  private WebElement role;
 
-  @FindBy(css = "button[type='submit']")
+  @FindBy(id = "login-submit")
   private WebElement submit;
 
   public LoginPageF(WebDriver driver) {
@@ -1050,8 +1042,9 @@ public class LoginPageF {
     Mục tiêu & Luồng chặn hoạt động xuyên suốt UI $\to$ API $\to$ DB \\
     Tiền điều kiện & Backend dev (H2 seed) + frontend :5173 đang chạy;
       chưa có giá trị \texttt{0909123456} trong watchlist \\
-    Dữ liệu & persona Analyst; \texttt{analyst@coquan.gov.vn} /
-      \texttt{demo1234}; giá trị chặn \texttt{0909123456} \\
+    Dữ liệu & vai trò \texttt{analyst};
+      \texttt{analyst@dev.digishield.local};
+      giá trị chặn \texttt{0909123456} \\
     Các bước & (1) đăng nhập Analyst; (2) thêm entry watchlist;
       (3) mở \texttt{/soc/watchlist}; (4) tra cứu Quick Check;
       (5) kiểm chéo API \texttt{check} \\
@@ -1210,12 +1203,12 @@ class AnalystBlocksAccountE2E {
   @Test
   void analystBlocksScamAccountEndToEnd()
       throws Exception {
-    // (1) Dang nhap persona Analyst (cho 600ms
-    //     duoc dong goi trong LoginPage)
+    // (1) Dang nhap role analyst (wait duoc
+    //     dong goi trong LoginPage)
     SocInboxPage inbox = new LoginPage(driver)
         .open()
-        .loginAsAnalyst("analyst@coquan.gov.vn",
-                        "demo1234");
+        .loginAsAnalyst(
+            "analyst@dev.digishield.local");
     // (2) Chan tai khoan qua API (UI add la stub)
     ApiHelper.blockAccount(VALUE);
     // (3) UI: entry moi hien thi trong bang
@@ -1241,8 +1234,8 @@ class AnalystBlocksAccountE2E {
     \toprule
     \textbf{Bước} & \textbf{Hành động} & \textbf{Kiểm chứng} \\
     \midrule
-    (1) & login persona Analyst & auth flow + điều hướng
-      \texttt{/soc/inbox} (vượt \texttt{setTimeout} 600ms) \\
+    (1) & login vai trò analyst & auth flow + điều hướng
+      \texttt{/soc/inbox} (chờ chunk route render) \\
     (2) & \texttt{POST /blacklist} +
       \texttt{POST /account-watchlist} & API nhận dữ liệu, trả 201 \\
     (3) & mở \texttt{/soc/watchlist} & UI đọc \texttt{GET /blacklist}
@@ -1281,7 +1274,7 @@ class AnalystBlocksAccountE2E {
 
   \begin{block}{Ca kiểm thử E2E-RBAC-01 (tiêu cực)}
     \begin{itemize}
-      \item \textbf{Arrange}: đăng nhập persona \textbf{Learner}
+      \item \textbf{Arrange}: đăng nhập vai trò \textbf{learner}
             (role \texttt{learner}) $\to$ về \texttt{/learn}
       \item \textbf{Act}: gõ thẳng URL \texttt{/soc/inbox}
       \item \textbf{Assert}: bị redirect sang \texttt{/403},
@@ -1302,8 +1295,8 @@ class AnalystBlocksAccountE2E {
 @Test
 void learnerCannotOpenSocInbox() {
   LoginPage login = new LoginPage(driver).open();
-  login.loginAs("Learner",
-      "learner@coquan.gov.vn", "demo1234");
+  login.loginAs("learner",
+      "learner@dev.digishield.local");
   WebDriverWait wait = new WebDriverWait(
       driver, Duration.ofSeconds(5));
   wait.until(ExpectedConditions
@@ -1325,22 +1318,22 @@ void learnerCannotOpenSocInbox() {
 \end{frame}
 
 %---------------------------------------------------------------------
-\begin{frame}[fragile]{Data-driven E2E: một test --- bốn persona}
-  Bảng định tuyến thật \texttt{defaultRouteForPersona}
-  (\texttt{roles.ts}) --- mỗi persona có trang chủ riêng:
+\begin{frame}[fragile]{Data-driven E2E: một test --- bốn vai trò}
+  Bảng định tuyến thật \texttt{defaultRouteForRole}
+  (\texttt{roles.ts}) --- mỗi vai trò có trang chủ riêng:
 
 \begin{lstlisting}[language=Java,basicstyle=\ttfamily\scriptsize]
 @ParameterizedTest(name = "{0} -> {2}")
 @CsvSource({
-  "Admin,   admin@coquan.gov.vn,   /dashboard",
-  "Learner, learner@coquan.gov.vn, /learn",
-  "Analyst, analyst@coquan.gov.vn, /soc/inbox",
-  "Super,   super@coquan.gov.vn,   /super/tenants"
+  "org_admin,  org_admin@dev.digishield.local,  /dashboard",
+  "learner,    learner@dev.digishield.local,    /learn",
+  "analyst,    analyst@dev.digishield.local,    /soc/inbox",
+  "super_admin,super_admin@dev.digishield.local,/super/tenants"
 })
-void loginLandsOnPersonaHome(String persona,
+void loginLandsOnRoleHome(String role,
     String email, String route) {
   new LoginPage(driver).open()
-      .loginAs(persona, email, "demo1234");
+      .loginAs(role, email);
   new WebDriverWait(driver, Duration.ofSeconds(5))
       .until(ExpectedConditions
           .urlContains(route));
@@ -1518,7 +1511,7 @@ public class DriverFactory {
     \textbf{Nguyên nhân} & \textbf{Biểu hiện trên DigiShield}
       & \textbf{Khắc phục} \\
     \midrule
-    Wait sai / thiếu & login 600ms; bảng đổ dữ liệu chậm
+    Wait sai / thiếu & login chờ chunk route; bảng đổ dữ liệu chậm
       & explicit wait đúng điều kiện \\
     Dữ liệu phụ thuộc & test A thêm \texttt{0909123456},
       test B đếm số hàng $\Rightarrow$ lệch
@@ -1579,7 +1572,7 @@ String value = "0909" + System.currentTimeMillis()
   \setbeamerfont{itemize/enumerate body}{size=\small}
   \begin{block}{Chuẩn bị môi trường (như buổi 10)}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
-git switch --detach b403e67~1  # ban demo-login
+# Lam viec trên main - khong can checkout revision cu
 # Terminal 1 - backend dev (H2 seed)
 ./gradlew :boot:app:bootRun \
     --args='--spring.profiles.active=dev'
