@@ -710,12 +710,11 @@ wait.until(ExpectedConditions.refreshed(
 \end{frame}
 
 %---------------------------------------------------------------------
-\begin{frame}[fragile]{Cấu trúc thư mục đề xuất}
+\begin{frame}[fragile]{Cấu trúc thư mục \texttt{e2e/} trong repo}
 \begin{lstlisting}[basicstyle=\ttfamily\scriptsize]
 src/test/java/com/digishield/e2e/
  |-- pages/
  |    |-- LoginPage.java
- |    |-- DashboardPage.java
  |    |-- WatchlistPage.java
  |    |-- SocInboxPage.java
  |-- support/
@@ -724,8 +723,6 @@ src/test/java/com/digishield/e2e/
  |    |-- ScreenshotOnFailure.java
  |-- scenarios/
       |-- AnalystBlocksAccountE2E.java
-      |-- RoleBasedAccessE2E.java
-      |-- PersonaLandingE2E.java
 \end{lstlisting}
 
   \begin{block}{Quy ước đặt tên}
@@ -733,6 +730,9 @@ src/test/java/com/digishield/e2e/
       \item Page object: \texttt{<Tên trang>Page}
       \item Kịch bản: \texttt{<Nghiệp vụ>E2E} --- mỗi file một
             luồng nghiệp vụ
+      \item Đây là cây thư mục \textbf{đang có} trong repo; bài tập
+            hôm nay thêm \texttt{DashboardPage} và các kịch bản mới
+            theo đúng quy ước trên
     \end{itemize}
   \end{block}
 \end{frame}
@@ -832,10 +832,10 @@ public class LoginPage {
     return new SocInboxPage(driver);
   }
 
-  // Persona Admin -> mac dinh ve /dashboard
+  // Role org_admin -> /dashboard (bai tap hom nay)
   public DashboardPage loginAsAdmin(
-      String user, String pw) {
-    loginAs("Admin", user, pw);
+      String userEmail) {
+    loginAs("org_admin", userEmail);
     wait.until(ExpectedConditions
         .urlContains("/dashboard"));
     return new DashboardPage(driver);
