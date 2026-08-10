@@ -426,7 +426,12 @@
     <p><b>Vì sao OpenAPI đứng riêng một dòng đậm.</b> Tháng 8/2026 phát hiện <b>năm endpoint</b>
     đã chạy trong controller nhưng chưa khai trong OpenAPI — trong đó có <code>GET /auth/me</code>,
     thứ mà client dùng để biết mình là ai. Backend chạy đúng, test xanh, mà frontend vẫn không gọi
-    được. Đây là loại lỗi không công cụ nào phát hiện được; chỉ có kỷ luật quy trình mới ngăn được.</p>
+    được.</p>
+    <p>Khi viết công cụ so khớp thật thì con số không phải năm mà là <b>40</b>: năm cái kia chỉ là
+    những cái tình cờ đụng phải. Bài học không phải "cần kỷ luật hơn" — con người đã đủ kỷ luật mà
+    vẫn lệch 40 chỗ. Bài học là <b>thứ gì không được đo thì trôi</b>. Nay
+    <code>scripts/check-openapi-routes.py</code> chạy trong CI và so hai chiều: route phục vụ mà
+    không khai thì đỏ, và path khai mà không có controller cũng đỏ.</p>
   </div>
 
 <h3><span class="num">0.10</span>Đây là môn kiểm thử — chức năng chỉ là phương tiện</h3>
