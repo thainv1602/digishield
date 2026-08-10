@@ -158,26 +158,44 @@
 <div class="page">
 
 <header class="mast">
-  <p class="eyebrow">Hướng dẫn triển khai · cập nhật 09.08.2026</p>
+  <p class="eyebrow">Hướng dẫn triển khai · cập nhật 10.08.2026</p>
   <h1>DigiShield — 20 đề tài sinh viên</h1>
   <p class="standfirst">
-    Với mỗi đề tài, tài liệu này chỉ rõ ba thứ: <b>code ở đâu</b>, <b>làm gì</b>, và
-    <b>nghiệm thu thế nào</b>. Đọc phần <b>0</b> trước — nó mô tả kiến trúc và “công thức đóng góp”
-    áp dụng cho <em>mọi</em> đề tài, để phần từng đề tài chỉ nói điểm khác biệt.
+    Với mỗi đề tài, tài liệu này chỉ rõ bốn thứ: <b>yêu cầu nào thuộc về mình</b>,
+    <b>code ở đâu</b>, <b>làm gì</b>, và <b>nghiệm thu thế nào</b>. Đọc phần <b>0</b> trước —
+    nó mô tả kiến trúc, “công thức đóng góp” và <b>sản phẩm tài liệu bắt buộc</b>, áp dụng cho
+    <em>mọi</em> đề tài.
   </p>
   <div class="factbar">
     <span><b>20</b> đề tài · 7 nhóm</span>
-    <span><b>9</b> module nghiệp vụ</span>
-    <span><b>10</b> domain event</span>
+    <span><b>38/64</b> mã FR có đề tài nhận</span>
     <span><b>5</b> lớp test bắt buộc</span>
+    <span>coverage đích <b>0.90</b></span>
+    <span><b>6</b> sản phẩm tài liệu</span>
   </div>
 </header>
 
 <div class="note warn">
-  <p><b>Có gì thay đổi so với bản 15 đề tài.</b> Phần CI/CD (mục 0.7) đã được viết lại: repo giờ chỉ
-  còn <em>một</em> workflow, e2e đã nằm trên <code>main</code>, và đích deploy là cụm k3s trên
-  Jetson chứ không phải EKS. ĐT15 được viết lại vì phần lớn việc của nó đã xong.
-  Thêm mục 0.8 (quy mô nhóm) và năm đề tài mới ĐT16–ĐT20.</p>
+  <p><b>Tiêu chí “hoàn thành” đã thay đổi — 10.08.2026.</b> Nếu bạn đã đọc bản trước, đọc lại
+  ba mục sau, vì code chạy được không còn là đủ:</p>
+  <ul style="margin-top:2px">
+    <li><b>Mỗi đề tài gánh một số mã yêu cầu.</b> Dòng <em>Yêu cầu</em> ở đầu mỗi thẻ liệt kê
+      mã <code>FR-xxx</code> mà nhóm chịu trách nhiệm, lấy từ
+      <code>../docs/DigiShield_FRD.md</code>. Vài đề tài còn gánh cả <b>business rule</b> —
+      ví dụ ĐT04 chịu trách nhiệm “không bao giờ lưu giá trị mật khẩu”.</li>
+    <li><b>Tài liệu là sản phẩm bàn giao, không phải việc làm sau.</b> Xem
+      <b>mục 0.9</b>: FRD, sequence, OpenAPI, ER… mỗi loại thay đổi chạm tài liệu nào, và
+      loại nào <em>không</em> được chạm.</li>
+    <li><b>Coverage đích 0.90</b> theo LINE, tính riêng từng module (mục 0.7). Sàn hiện tại là
+      0.15 và nâng theo bậc — nhưng đích đã chốt, và nó là điều kiện nghiệm thu của nhóm nào
+      đụng module đó, không phải việc của riêng ĐT15.</li>
+  </ul>
+  <p style="margin-top:2px">Công thức đóng góp (mục 0.6) vì thế dài thêm hai bước: ghi FRD, và
+  vẽ sequence khi luồng đi qua từ hai module trở lên.</p>
+  <p style="margin-top:2px"><b>38/64</b> mã yêu cầu đã có đề tài nhận. Số còn lại
+  là <em>hành vi đang chạy</em> — đăng nhập, danh mục khoá học, blocklist… — không nhóm nào phải
+  xây, nhưng <b>mọi nhóm đều phải không làm hỏng</b>. Nếu đề tài của bạn chạm vào một trong số đó,
+  test của bạn phải chứng minh nó còn nguyên.</p>
 </div>
 
 <!-- ══════════════ 0 ══════════════ -->
@@ -483,7 +501,7 @@
   <div class="topic">
     <header><span class="tid">ĐT04</span><h3>Landing page builder + credential-capture</h3></header>
     <dl>
-      <dt>Yêu cầu</dt><dd>FR-SIM-03 · <b>FR-SIM-06</b> — và <b>BR-2</b> (không bao giờ lưu giá trị mật khẩu)</dd>
+      <dt>Yêu cầu</dt><dd>FR-SIM-03 · <b>FR-SIM-06</b> — và <b>BR-2</b> (không bao giờ lưu giá trị mật khẩu) · NFR-SEC-03</dd>
       <dt>Code</dt><dd>Entity <code>LandingPage</code> + repo + CRUD; trang public render HTML; form <b>chỉ ghi “đã nhập hay chưa”</b> — tuyệt đối không lưu mật khẩu.</dd>
       <dt>Workflow</dt><dd>Builder tạo page → gắn campaign → người nhập → sinh <code>SimAction.SUBMIT</code> → data-entry funnel.</dd>
       <dt>Phần việc</dt><dd>(1) entity <code>LandingPage</code> + CRUD · (2) trình soạn và render trang public · (3) ghi nhận <code>SUBMIT</code> mà không lưu mật khẩu · (4) data-entry funnel + e2e điền form</dd>
@@ -547,7 +565,7 @@
   <div class="topic">
     <header><span class="tid">ĐT08</span><h3>Abuse-mailbox auto-triage</h3></header>
     <dl>
-      <dt>Yêu cầu</dt><dd>FR-AI-02 · FR-REP-02</dd>
+      <dt>Yêu cầu</dt><dd>FR-AI-02 · FR-REP-02 · FR-SIM-07</dd>
       <dt>Code</dt><dd>Trong <code>ReportingServiceImpl</code> gọi <code>AiClient.classify()</code> để tự xếp hạng <code>PhishingReport</code>; thêm cột priority (migration + entity).</dd>
       <dt>Workflow</dt><dd>Nạp email report → AI phân loại → sắp hàng đợi SOC theo mức độ → gợi ý hành động.</dd>
       <dt>Phần việc</dt><dd>(1) gọi <code>classify</code> khi nạp report · (2) cột priority + migration · (3) sắp hàng đợi SOC + gợi ý hành động · (4) đo chất lượng xếp hạng trên tập mẫu cố định</dd>
@@ -639,7 +657,7 @@
   <div class="topic">
     <header><span class="tid">ĐT13</span><h3>Báo cáo lãnh đạo + xuất định kỳ &amp; benchmark</h3></header>
     <dl>
-      <dt>Yêu cầu</dt><dd><b>FR-REP-07</b> · FR-ANA-05 — mục tiêu <b>BO-3</b></dd>
+      <dt>Yêu cầu</dt><dd><b>FR-REP-07</b> · FR-ANA-05 — mục tiêu <b>BO-3</b> · NFR-SEC-04</dd>
       <dt>Code</dt><dd>Service export (PDF: OpenPDF/Flying Saucer; CSV) trong <code>analytics/application/</code>; endpoint export ở <code>web/AnalyticsController.java</code>; digest chạy bằng <code>scheduler</code> + <code>notification</code>.</dd>
       <dt>Workflow</dt><dd>Tổng hợp dashboard/benchmark → xuất PDF/CSV → gửi email digest định kỳ.</dd>
       <dt>Phần việc</dt><dd>(1) export CSV (đọc mục <b>Bẫy</b> bên dưới trước) · (2) export PDF · (3) số liệu benchmark giữa các kỳ · (4) digest gửi định kỳ qua <code>scheduler</code></dd>
