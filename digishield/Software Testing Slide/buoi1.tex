@@ -858,7 +858,7 @@ public List<InterventionEventView> listInterventions(
 
   \vspace{0.3em}
   \begin{exampleblock}{Vì sao dùng DigiShield để học kiểm thử?}
-    \small Codebase thật, nghiệp vụ nhạy cảm về an toàn, có sẵn 176 test
+    \small Codebase thật, nghiệp vụ nhạy cảm về an toàn, có sẵn 257 test
     tự động làm mẫu, đủ ``đất'' cho mọi kỹ thuật: unit, integration, API, E2E.
   \end{exampleblock}
 \end{frame}
@@ -995,7 +995,7 @@ public InterventionDecision evaluate(EvaluateRequest req) {
     \begin{block}{Con số hiện tại}
       \small
       \begin{itemize}
-        \item \textbf{176 unit test} / 27 class test
+        \item \textbf{257 unit test} / 30 class test
         \item JUnit 5 + Mockito + AssertJ
         \item JaCoCo đo độ phủ (Buổi 4)
         \item \texttt{ModularityTests} kiểm tra ranh giới module
@@ -1126,7 +1126,7 @@ npm run dev    # mo http://localhost:5173
 > Task :boot:app:test
 
 BUILD SUCCESSFUL
-176 tests completed, 0 failed
+257 tests completed, 0 failed
 \end{lstlisting}
   \end{block}
 
@@ -1196,7 +1196,8 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
     \begin{enumerate}
       \item Cài JDK 25, Node 20+, clone repo DigiShield
       \item Chạy backend profile dev, xác nhận \texttt{localhost:8080/api/v1}
-      \item Chạy frontend, đăng nhập demo \texttt{admin@coquan.gov.vn} / \texttt{demo1234}
+      \item Chạy frontend, dev sign-in: chọn vai trò rồi bấm Đăng nhập
+            (không có ô mật khẩu; email tự điền theo vai trò)
       \item Dạo quanh ứng dụng: Dashboard, SOC Inbox, Watchlist
     \end{enumerate}
   \end{block}
@@ -1211,8 +1212,10 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
     \end{enumerate}
   \end{block}
 
-  {\scriptsize \textbf{Ghi chú}: \texttt{main} nay đăng nhập qua Cognito ---
-  bản demo-login: \texttt{git switch --detach b403e67\textasciitilde1}.\par}
+  {\scriptsize \textbf{Ghi chú}: bản deploy đăng nhập qua Cognito, nhưng
+  \texttt{npm run dev} không đặt \texttt{VITE\_COGNITO\_*} nên
+  \texttt{/login} hiện dev sign-in form --- làm việc thẳng trên
+  \texttt{main}.\par}
 \end{frame}
 
 %---------------------------------------------------------------------
@@ -1220,7 +1223,7 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
   \begin{enumerate}
     \item Trong bài thực hành, khi bạn sửa assertion và test fail:
           fail đó là \textbf{failure của phần mềm} hay \textbf{fault của test}?
-    \item Nếu 176 test đều pass, ta kết luận được gì --- và
+    \item Nếu 257 test đều pass, ta kết luận được gì --- và
           \textbf{không} kết luận được gì --- về chất lượng DigiShield?
           (Nguyên tắc 1)
     \item Module nào của DigiShield bạn dự đoán chứa nhiều lỗi tiềm ẩn nhất?
@@ -1302,7 +1305,7 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
     \begin{itemize}
       \item Chạy backend DigiShield (profile dev, H2)
       \item Chạy frontend, đăng nhập demo
-      \item Chạy \texttt{./gradlew test} --- 176 test
+      \item Chạy \texttt{./gradlew test} --- 257 test
       \item Đọc test thật, làm hỏng và sửa lại một test
     \end{itemize}
 
