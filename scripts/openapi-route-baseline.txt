@@ -1,0 +1,52 @@
+# Routes served by a controller but not declared in docs/DigiShield_openapi.yaml.
+#
+# This is accepted debt, not a permission slip. scripts/check-openapi-routes.py
+# fails on any undeclared route that is NOT listed here, and equally fails on a
+# line here that has since been declared or deleted -- so the file can only
+# shrink. Never add a line by hand to silence the check; declare the route in
+# the spec instead, then run:
+#
+#     python3 scripts/check-openapi-routes.py --update-baseline
+#
+# Entries: 40
+
+GET /ai/orchestration/runs
+GET /ai/templates
+POST /ai/templates
+DELETE /ai/templates/{}
+PATCH /ai/templates/{}
+POST /ai/templates/{}/submit
+GET /auth/profile
+PATCH /auth/profile
+DELETE /blacklist/{}
+POST /courses
+DELETE /courses/{}
+PUT /courses/{}
+GET /enrollments
+PATCH /enrollments/{}
+GET /gamification/badges
+POST /gamification/badges
+DELETE /gamification/badges/{}
+GET /gamification/point-rules
+DELETE /groups/{}
+PATCH /groups/{}
+GET /groups/{}/members
+POST /groups/{}/members
+DELETE /groups/{}/members/{}
+GET /lessons
+POST /lessons
+DELETE /lessons/{}
+GET /lessons/{}
+PUT /lessons/{}
+GET /lessons/{}/quiz
+POST /notifications/read-all
+GET /qr
+GET /reports/phishing/mine/{}
+GET /settings/mail-domain/verify
+POST /settings/sms/test
+POST /sim/campaigns/{}/send
+GET /super/audit
+GET /super/scim
+POST /tenants/{}/impersonate
+GET /tenants/{}/thresholds
+PATCH /tenants/{}/thresholds
