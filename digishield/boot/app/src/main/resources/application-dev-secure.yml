@@ -20,8 +20,9 @@ spring:
   datasource:
     url: jdbc:h2:mem:digishield;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
     driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    # Credentials deliberately absent rather than set to an empty string: Boot
+    # applies the embedded-H2 defaults, and a literal empty password in a
+    # committed file is a finding in its own right.
 
   jpa:
     hibernate:
