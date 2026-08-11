@@ -167,30 +167,34 @@
     <em>mọi</em> đề tài.
   </p>
   <div class="factbar">
-    <span><b>20</b> đề tài · 7 nhóm</span>
+    <span><b>19</b> đề tài · 6 nhóm</span>
     <span><b>38/64</b> mã FR có đề tài nhận</span>
     <span><b>5</b> lớp test bắt buộc</span>
     <span>coverage đích <b>0.90</b></span>
     <span><b>6</b> sản phẩm tài liệu</span>
-    <span>thang điểm <b>100</b></span>
+    <span>thang điểm <b>10</b></span>
   </div>
 </header>
 
 <div class="note warn">
-  <p><b>Tiêu chí “hoàn thành” đã thay đổi — 10.08.2026.</b> Nếu bạn đã đọc bản trước, đọc lại
-  ba mục sau, vì code chạy được không còn là đủ:</p>
+  <p><b>Tiêu chí “hoàn thành” đã thay đổi — 11.08.2026.</b> Nếu bạn đã đọc bản trước, đọc lại
+  bốn mục sau, vì code chạy được không còn là đủ:</p>
   <ul style="margin-top:2px">
     <li><b>Mỗi đề tài gánh một số mã yêu cầu.</b> Dòng <em>Yêu cầu</em> ở đầu mỗi thẻ liệt kê
       mã <code>FR-xxx</code> mà nhóm chịu trách nhiệm, lấy từ
       <code>../docs/DigiShield_FRD.md</code>. Vài đề tài còn gánh cả <b>business rule</b> —
       ví dụ ĐT4 chịu trách nhiệm “không bao giờ lưu giá trị mật khẩu”.</li>
+    <li><b>Mỗi nhóm một PR, và có điểm cho việc đọc bài nhóm khác.</b> Cả bốn phần việc đi
+      chung một nhánh — xem <b>mục 0.6</b>. Nhóm ĐT<i>n</i> nhận xét PR của ĐT<i>n−1</i> bằng
+      “Comment” (không Approve), tác giả phải trả lời từng ý, và việc đó ăn <b>1 điểm</b> trên
+      thang 10.</li>
     <li><b>Tài liệu là sản phẩm bàn giao, không phải việc làm sau.</b> Xem
       <b>mục 0.9</b>: FRD, sequence, OpenAPI, ER… mỗi loại thay đổi chạm tài liệu nào, và
       loại nào <em>không</em> được chạm.</li>
     <li><b>Coverage &gt; 0.90 trên package nhóm tự viết</b> — không phải toàn module (mục 0.10).
       Sàn toàn module là chuyện riêng, nâng dần theo lộ trình.</li>
     <li><b>Đây là môn kiểm thử.</b> Mỗi đề tài có <em>kỹ thuật kiểm thử</em> bắt buộc phải dùng và
-      phải thể hiện trong báo cáo; kèm <b>bảng đặc tả ca</b> và thang điểm 100 ở mục 0.10.</li>
+      phải thể hiện trong báo cáo; kèm <b>bảng đặc tả ca</b> và thang điểm 10 ở mục 0.10.</li>
   </ul>
   <p style="margin-top:2px">Công thức đóng góp (mục 0.6) vì thế dài thêm hai bước: ghi FRD, và
   vẽ sequence khi luồng đi qua từ hai module trở lên.</p>
@@ -550,28 +554,37 @@
     nếu có ca hỏng trong quá trình làm — một bộ test chưa bao giờ đỏ là một bộ test chưa được kiểm chứng.
   </p>
 
-  <h4 style="font-size:15px;font-weight:640;margin:10px 0 0">Thang điểm 100</h4>
+  <h4 style="font-size:15px;font-weight:640;margin:10px 0 0">Thang điểm 10</h4>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Tiêu chí</th><th>Điểm</th><th>Đạt tối đa khi</th></tr></thead>
       <tbody>
-        <tr><td>Chức năng chạy đúng</td><td class="k">25</td><td>Build được, endpoint đúng đặc tả FR, demo được luồng</td></tr>
-        <tr><td>Test đủ 5 lớp</td><td class="k">25</td><td>Đủ unit · IT · FE unit · Postman · e2e; <b>có ca tiêu cực và ca biên</b></td></tr>
-        <tr><td>Coverage &gt; 0.90</td><td class="k">20</td><td>Trên package của nhóm; <code>:check</code> xanh</td></tr>
-        <tr><td>Pipeline xanh</td><td class="k">15</td><td>PR qua CI gate; không commit làm đỏ CI</td></tr>
-        <tr><td>Báo cáo &amp; đặc tả ca</td><td class="k">15</td><td>Bảng đặc tả đầy đủ + HTML report + ảnh fail + <b>nêu rõ kỹ thuật đã dùng</b></td></tr>
+        <tr><td>Chức năng chạy đúng</td><td class="k">2.0</td><td>Build được, endpoint đúng đặc tả FR, demo được luồng</td></tr>
+        <tr><td>Test đủ 5 lớp</td><td class="k">2.5</td><td>Đủ unit · IT · FE unit · Postman · e2e; <b>có ca tiêu cực và ca biên</b></td></tr>
+        <tr><td>Coverage &gt; 0.90</td><td class="k">2.0</td><td>Trên package của nhóm; <code>:check</code> xanh</td></tr>
+        <tr><td>Pipeline xanh</td><td class="k">1.0</td><td>PR qua CI gate; không commit làm đỏ CI</td></tr>
+        <tr><td>Nhận xét chéo</td><td class="k">1.0</td><td><b>0.5 cho nhận xét mình viết</b>: chỉ ra vấn đề thật, trỏ đúng dòng hoặc đúng ca kiểm thử — “LGTM” không có điểm. <b>0.5 cho cách trả lời nhận xét nhận được</b>: mọi ý đều được sửa, hoặc nói rõ vì sao không sửa</td></tr>
+        <tr><td>Báo cáo &amp; đặc tả ca</td><td class="k">1.5</td><td>Bảng đặc tả đầy đủ + HTML report + ảnh fail + <b>nêu rõ kỹ thuật đã dùng</b></td></tr>
       </tbody>
     </table>
   </div>
   <p style="font-size:14px;color:var(--muted)">
-    Trừ điểm: Checkstyle hoặc SpotBugs cảnh báo · commit sai Conventional Commits · chạm code của nhóm khác.
+    Trừ điểm: Checkstyle hoặc SpotBugs cảnh báo · commit sai Conventional Commits · chạm code của nhóm khác ·
+    nhận xét chéo qua loa hoặc bỏ qua ý người khác nêu.
+  </p>
+  <p style="font-size:14px;color:var(--muted)">
+    1 điểm của <i>Nhận xét chéo</i> lấy nửa từ <i>Chức năng chạy đúng</i> (2.5→2.0) và nửa từ
+    <i>Pipeline xanh</i> (1.5→1.0). Lý do đứng ngay ở mục 0.10: đây là môn kiểm thử, chức năng chỉ
+    là phương tiện — còn “pipeline xanh” là việc gần như nhị phân, đã xanh thì xanh.
   </p>
 
     <div class="note warn">
-    <p><b>Phụ thuộc cần lưu ý khi giao đề.</b> ĐT6 (web beacon) là hạ tầng nền cho
-    <b>ĐT1, ĐT2, ĐT3 và ĐT9</b> — bốn đề tài, không liền số. Nếu giao song song thì bốn nhóm
-    chờ một nhóm. Hoặc giao ĐT6 sớm hơn một nhịp, hoặc yêu cầu bốn đề tài kia tự stub beacon rồi
-    thay sau. ĐT4 và ĐT5 <em>không</em> phụ thuộc ĐT6.</p>
+    <p><b>Lưu ý khi giao đề.</b> Không đề tài nào phụ thuộc đề tài nào — mọi thứ chúng dựa vào đều
+    đã có trên <code>main</code> (xem mục 0.8). Trước đây ĐT1, ĐT2, ĐT3 và ĐT9 mang nhãn “cần ĐT6”,
+    trong khi <code>GET /api/v1/sim/track/{token}</code> đã ghi CLICK từ lâu; nhãn đó đã gỡ, giao
+    song song được cả 19.</p>
+    <p>Thứ còn cần canh là <b>ĐT18 (song ngữ) và ĐT19 (RBAC)</b>: không chờ ai, nhưng chạm gần hết
+    màn hình và endpoint nên sẽ đụng merge với mọi nhóm khác. Giao sớm, cho nhóm chắc tay.</p>
   </div>
 </section>
 
@@ -1039,7 +1052,7 @@
   </div>
   <p style="font-size:14px;color:var(--muted)">
     Đề tài dự phòng vẫn chịu đủ mọi nghĩa vụ ở mục 0.6 – 0.10: mã FR, sản phẩm tài liệu, năm lớp
-    test, coverage &gt; 0.90 trên package của nhóm, bảng đặc tả ca và thang điểm 100.
+    test, coverage &gt; 0.90 trên package của nhóm, bảng đặc tả ca và thang điểm 10.
   </p>
 </section>
 
