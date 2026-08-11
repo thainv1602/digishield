@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import com.digishield.auth.api.AuthProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -12,9 +14,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -39,6 +38,15 @@ class AuthorizationEnforcementIT {
     @Value("${local.server.port}")
     private int port;
 
+    /**
+     * The dev-secure provider, used to mint tokens in-process. There is no HTTP
+     * endpoint that hands them out: an anonymous token-issuing route would mean
+     * a filter chain with CSRF off and permitAll, which is real attack surface
+     * in exchange for convenience a test does not need.
+     */
+    @Autowired
+    private AuthProvider authProvider;
+
     private final HttpClient client = HttpClient.newHttpClient();
 
     private String get(String path, String bearer) {
@@ -57,11 +65,7 @@ class AuthorizationEnforcementIT {
     }
 
     private String tokenFor(String role) {
-        String body = get("/dev/token?email=" + role + "@dev.local", null);
-        assertThat(body).startsWith("200|");
-        Matcher m = Pattern.compile("\"access_token\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
-        assertThat(m.find()).as("dev token endpoint returned a token").isTrue();
-        return m.group(1);
+        return authProvider.login(role + "@dev.local", "").accessToken();
     }
 
     private int statusOf(String path, String role) {

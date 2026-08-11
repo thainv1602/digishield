@@ -9,8 +9,9 @@
 #   ./gradlew :boot:app:bootRun --args='--spring.profiles.active=dev-secure'
 #
 # Tokens are minted locally by DevSecureJwtConfig, so no identity provider is
-# needed: POST /api/v1/auth/login returns a signed JWT whose role comes from the
-# email local part (analyst@..., org_admin@..., learner@...).
+# needed. One per role is printed to the console at startup; the role comes from
+# the email local part (analyst@..., org_admin@..., learner@...). No endpoint
+# hands them out — that would need a permitAll chain with CSRF disabled.
 spring:
   threads:
     virtual:
