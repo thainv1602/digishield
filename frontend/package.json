@@ -20,7 +20,7 @@
     "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json,md}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json,md}\"",
-    "gen:api": "orval --config ./orval.config.ts"
+    "gen:api": "node scripts/gen-api.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.51.0",

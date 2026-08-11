@@ -10,7 +10,11 @@ from the OpenAPI specification and **should not be hand-edited or committed**
 npm run gen:api
 ```
 
-This runs `orval --config ./orval.config.ts`, which:
+This runs `scripts/gen-api.mjs`, a thin wrapper around
+`orval --config ./orval.config.ts` that fails the build when orval does not
+finish (orval reports its own errors and still exits 0) and empties this
+directory first, since orval overwrites but never prunes. The generation
+itself:
 
 1. Reads the spec at `../docs/DigiShield_openapi.yaml`.
 2. Emits fully typed TanStack Query (react-query) hooks here, split per OpenAPI
@@ -26,6 +30,15 @@ This runs `orval --config ./orval.config.ts`, which:
 The generated client is a deterministic build artifact of the spec. Regenerate
 it after `npm install` (or wire `gen:api` into a `postinstall` / CI step) so the
 client always matches the contract in `docs/DigiShield_openapi.yaml`.
+
+## Nothing imports this yet
+
+No component imports the generated client: every feature hand-writes its own
+`src/features/*/api.ts` on top of `apiRequest`. What this tree buys today is a
+contract check - `tsconfig.json` includes all of `src`, so `npm run typecheck`
+compiles these files even though nothing references them, and a spec that
+cannot produce a client that compiles fails CI. It is not proof that the
+hand-written fetchers agree with the spec; nothing checks that yet.
 
 ## Usage example (after generation)
 
