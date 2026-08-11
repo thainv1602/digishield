@@ -4,6 +4,7 @@ import com.digishield.shared.tenantcontext.TenantContext;
 import com.digishield.tenancy.api.GroupView;
 import com.digishield.tenancy.domain.AuditLog;
 import com.digishield.tenancy.domain.Group;
+import com.digishield.tenancy.domain.FeatureFlag;
 import com.digishield.tenancy.domain.GroupMember;
 import com.digishield.tenancy.infrastructure.AuditLogRepository;
 import com.digishield.tenancy.infrastructure.GroupMemberRepository;
@@ -59,6 +60,9 @@ class TenancyGroupsAndAuditTest {
 
     @Mock
     private AuditLogRepository auditLogRepository;
+
+    @Mock
+    private com.digishield.tenancy.infrastructure.FeatureFlagRepository featureFlagRepository;
 
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -258,5 +262,48 @@ class TenancyGroupsAndAuditTest {
         assertThat(entry.getSeverity()).isEqualTo("critical");
         // The operator is put back where they were, not left inside the tenant.
         assertThat(TenantContext.get()).isEqualTo(TENANT.toString());
+    }
+
+    // ---- feature flags -----------------------------------------------------
+
+    @Test
+    @DisplayName("turning a flag on for the first time creates it")
+    void aFlagIsCreatedOnFirstUse() {
+        when(featureFlagRepository.findByTenantIdAndKey(TENANT, "qr_campaigns"))
+                .thenReturn(Optional.empty());
+        when(featureFlagRepository.save(any(FeatureFlag.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        var flag = tenancyService.setFeatureFlag(TENANT, "qr_campaigns", true);
+
+        assertThat(flag.key()).isEqualTo("qr_campaigns");
+        assertThat(flag.enabled()).isTrue();
+    }
+
+    @Test
+    @DisplayName("turning an existing flag off updates it rather than adding a second row")
+    void anExistingFlagIsUpdatedInPlace() {
+        FeatureFlag existing = new FeatureFlag(UUID.randomUUID(), TENANT, "qr_campaigns", true);
+        when(featureFlagRepository.findByTenantIdAndKey(TENANT, "qr_campaigns"))
+                .thenReturn(Optional.of(existing));
+        when(featureFlagRepository.save(any(FeatureFlag.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        var flag = tenancyService.setFeatureFlag(TENANT, "qr_campaigns", false);
+
+        assertThat(flag.enabled()).isFalse();
+        assertThat(existing.isEnabled()).isFalse();
+    }
+
+    @Test
+    @DisplayName("re-evaluating a static group just recounts its members")
+    void evaluatingAStaticGroupRecounts() {
+        UUID groupId = UUID.randomUUID();
+        when(groupRepository.findById(groupId))
+                .thenReturn(Optional.of(staticGroup(groupId, TENANT, "Kế toán")));
+        when(groupRepository.save(any(Group.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(groupMemberRepository.countByGroupId(groupId)).thenReturn(3L);
+
+        assertThat(tenancyService.evaluateGroup(TENANT, groupId).memberCount()).isEqualTo(3);
     }
 }

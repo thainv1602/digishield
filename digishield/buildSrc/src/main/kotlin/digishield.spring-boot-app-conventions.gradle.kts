@@ -113,7 +113,7 @@ tasks.jacocoTestCoverageVerification {
                 // digishield.spring-module-conventions. Note this task measures
                 // the `test` (unit) suite only, so boot/app scores 25.3% here
                 // even though its integration tests exercise a good deal more.
-                minimum = "0.30".toBigDecimal()
+                minimum = "0.50".toBigDecimal()
             }
         }
     }
