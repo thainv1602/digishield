@@ -1,9 +1,20 @@
 # Authorization matrix (`@PreAuthorize`)
 
-Role-based access control enforced via method security. **Only active in non-`dev`
-profiles** (`@EnableMethodSecurity` lives on the `!dev` `SecurityConfig`), so it is
-inert in the permissive `dev`/prod-like demo and enforces only in prod. Requires the
-JWT `cognito:groups → ROLE_*` mapping (PR #51) to resolve roles.
+Role-based access control enforced via method security. `@EnableMethodSecurity` lives
+on the `!dev` `SecurityConfig`, so it is inert under the permissive `dev` profile.
+Requires the JWT `cognito:groups → ROLE_*` mapping (PR #51) to resolve roles.
+
+**To exercise this table locally, run the `dev-secure` profile** — not `dev`:
+
+```bash
+./gradlew :boot:app:bootRun --args='--spring.profiles.active=dev-secure'
+curl "http://localhost:8080/dev/token?email=analyst@dev.local"   # signed JWT, role from the local part
+```
+
+It loads the real security chain on H2 and mints its own tokens, so no identity
+provider is needed. `AuthorizationEnforcementIT` runs against it and fails if any rule
+below stops denying — before this profile existed, that test could not be written at
+all and the table was enforced only in production.
 
 ## Role hierarchy (`MethodSecurityConfig`)
 `SUPER_ADMIN` → `ORG_ADMIN` → (`MANAGER`, `ANALYST`, `CONTENT_EDITOR`) → `LEARNER`.

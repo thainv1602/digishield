@@ -913,10 +913,11 @@
       <dt>Vấn đề thật</dt><dd>Ma trận đã viết ra nhưng <b>chỉ enforce ở profile non-dev</b> — nghĩa là chạy dev sẽ không bao giờ thấy lỗi phân quyền, và hiện chưa có bộ test nào phủ hết ma trận đó.</dd>
       <dt>Phần việc — chức năng</dt>
       <dd>
-        (1) <b>Bật được phân quyền ngoài prod</b>. Thêm profile <code>dev-secure</code>
-        (hoặc thuộc tính bật/tắt) để <code>@PreAuthorize</code> và <code>TenantAccessGuard</code>
-        thật sự chạy khi phát triển và khi test. Không có bước này thì ba phần dưới không
-        kiểm được ở đâu ngoài prod.<br>
+        (1) <s>Bật được phân quyền ngoài prod</s> — <b>đã làm sẵn</b>: profile
+        <code>dev-secure</code> nạp chuỗi security thật trên H2 và tự cấp token
+        (<code>GET /dev/token?email=analyst@dev.local</code>), kèm
+        <code>AuthorizationEnforcementIT</code> làm mẫu. Nhóm nhận đề bắt đầu từ đây
+        thay vì phải dựng.<br>
         (2) <b><code>GET /auth/permissions</code></b> — trả về danh sách năng lực của
         người đang đăng nhập (suy ra từ vai trò + quyền theo tenant), để frontend
         <em>ẩn/khoá</em> đúng những thao tác người dùng không được phép thay vì đoán
