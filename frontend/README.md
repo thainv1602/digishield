@@ -83,25 +83,38 @@ The `@` path alias maps to `src/` (configured in both `tsconfig.json` and
 
 ## API client generation (orval)
 
-The HTTP client is **generated**, never hand-written:
-
 ```bash
 npm run gen:api
 ```
 
 This reads the contract at `../docs/DigiShield_openapi.yaml` and emits typed
 TanStack Query hooks into `src/api/generated/` (split per OpenAPI tag), with
-models under `src/api/generated/model/`. Every request is routed through our
-hand-written axios instance `src/shared/api/client.ts` (the orval **mutator**),
-which applies:
+models under `src/api/generated/model/`. Requests it makes are routed through
+the hand-written axios instance `src/shared/api/client.ts` (the orval
+**mutator**), which applies:
 
 - `baseURL` from `VITE_API_BASE_URL`,
 - `Authorization: Bearer <token>` and `X-Tenant-Id` request headers,
 - centralized **401** handling (clears auth + redirects to `/login`).
 
-The generated folder is git-ignored (a build artifact). Regenerate it after
-`npm install` or wire `gen:api` into CI / a `postinstall` hook (frontend CI runs
-`npm run gen:api` before lint/typecheck/build). See `src/api/generated/README.md`.
+**What the screens actually call.** No component imports the generated client:
+all 12 features hand-write their own `src/features/*/api.ts` (88 calls through
+`apiRequest`) — see the section below. The generated tree is therefore not the
+app's HTTP layer but a **contract check**: `tsconfig.json` includes all of
+`src`, so `npm run typecheck` compiles it even though nothing imports it, and a
+spec that cannot produce a client that compiles fails CI. Either adopt it in the
+features or drop the generation — keeping both means the hand-written fetchers
+can drift from the spec without anything noticing.
+
+The generated folder is git-ignored (a build artifact) and is emptied before
+each run, since orval overwrites but never prunes. Regenerate it after
+`npm install`; frontend CI runs `npm run gen:api` before lint/typecheck/build.
+See `src/api/generated/README.md`.
+
+`gen:api` runs through `scripts/gen-api.mjs` rather than calling orval directly:
+orval catches its own errors, prints them and **exits 0**, so a spec it cannot
+read used to look exactly like a successful run. The wrapper judges the run by
+its output and fails the build.
 
 ---
 
