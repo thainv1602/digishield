@@ -32,6 +32,8 @@ import re
 import sys
 from pathlib import Path
 
+import yaml
+
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "docs" / "DigiShield_openapi.yaml"
 BASELINE = Path(__file__).resolve().parent / "openapi-route-baseline.txt"
@@ -161,8 +163,57 @@ def write_baseline(entries: set[tuple[str, str]]) -> None:
     BASELINE.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+class _DuplicateKeyLoader(yaml.SafeLoader):
+    """A loader that refuses a mapping with the same key twice.
+
+    PyYAML keeps the last of a duplicated key without a word, so every check
+    here happily read a spec that orval refuses to parse at all - which is how
+    a stray second `description:` left the generated frontend client frozen at
+    the previous day's spec while three green checks said the contract held.
+    """
+
+
+def _no_duplicate_keys(loader, node, deep=False):
+    seen: dict = {}
+    for key_node, _ in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        where = f"line {key_node.start_mark.line + 1}"
+        if key in seen:
+            raise yaml.constructor.ConstructorError(
+                None, None,
+                f"duplicated key {key!r} ({where}, first at {seen[key]})",
+                node.start_mark)
+        seen[key] = where
+    return yaml.SafeLoader.construct_mapping(loader, node, deep)
+
+
+_DuplicateKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicate_keys)
+
+
+def spec_parses() -> str | None:
+    """Return the parse error the generator would hit, or None."""
+    try:
+        yaml.load(SPEC.read_text(encoding="utf-8"), Loader=_DuplicateKeyLoader)
+        return None
+    except yaml.YAMLError as e:
+        return str(e)
+
+
 def main() -> int:
     strict = "--strict" in sys.argv
+
+    broken = spec_parses()
+    if broken:
+        print("[FAIL] docs/DigiShield_openapi.yaml does not parse strictly:\n")
+        print(broken)
+        print(
+            "\nThe frontend client is generated from this file. orval stops on\n"
+            "this and leaves the previously generated client in place, so the\n"
+            "app keeps building against a stale contract. Fix the YAML."
+        )
+        return 1
+
     code = routes_from_code()
     spec = routes_from_spec()
 
