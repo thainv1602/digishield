@@ -27,11 +27,12 @@ class SimulationClickRiskListener {
 
     @ApplicationModuleListener
     void on(UserClickedSimulationEvent event) {
+        String previousTenant = TenantContext.get();
         TenantContext.set(event.tenantId().toString());
         try {
             analyticsService.recordSimulationClick(event.tenantId(), event.userId());
         } finally {
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
     }
 }

@@ -31,6 +31,7 @@ class ThreatIntelConvertedListener {
 
     @ApplicationModuleListener
     void on(ThreatIntelConvertedEvent event) {
+        String previousTenant = TenantContext.get();
         TenantContext.set(event.tenantId().toString());
         try {
             learningService.createCoachingPage(
@@ -40,7 +41,7 @@ class ThreatIntelConvertedListener {
             LOG.warn("Creating coaching page {} from threat intel failed: {}",
                     event.coachingPageId(), e.toString());
         } finally {
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
     }
 }

@@ -51,6 +51,7 @@ class AidaOrchestrationListener {
     @ApplicationModuleListener
     void on(AidaOrchestrationRequestedEvent event) {
         UUID tenantId = event.tenantId();
+        String previousTenant = TenantContext.get();
         TenantContext.set(tenantId.toString());
         int evaluated = 0;
         int enrolled = 0;
@@ -65,7 +66,7 @@ class AidaOrchestrationListener {
                 }
             }
         } finally {
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
         eventPublisher.publish(
                 new AidaOrchestrationCompletedEvent(tenantId, event.runId(), evaluated, enrolled, event.locale()));

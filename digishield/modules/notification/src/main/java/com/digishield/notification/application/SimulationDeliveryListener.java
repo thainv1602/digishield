@@ -51,6 +51,7 @@ class SimulationDeliveryListener {
 
     @ApplicationModuleListener
     void on(SimulationDeliveryRequestedEvent event) {
+        String previousTenant = TenantContext.get();
         TenantContext.set(event.tenantId().toString());
         try {
             NotificationChannel channel = toChannel(event.channel());
@@ -82,7 +83,7 @@ class SimulationDeliveryListener {
                 }
             }
         } finally {
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
     }
 

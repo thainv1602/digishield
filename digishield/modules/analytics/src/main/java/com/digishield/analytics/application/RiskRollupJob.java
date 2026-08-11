@@ -64,6 +64,7 @@ public class RiskRollupJob {
         int done = 0;
         int failed = 0;
         for (UUID tenantId : tenantIds) {
+            String previousTenant = TenantContext.get();
             TenantContext.set(tenantId.toString());
             try {
                 rollupService.rollup(now);
@@ -75,7 +76,7 @@ public class RiskRollupJob {
                 failed++;
                 LOG.error("Risk rollup failed for tenant {}", tenantId, e);
             } finally {
-                TenantContext.clear();
+                TenantContext.restore(previousTenant);
             }
         }
         LOG.info("Risk rollup finished: {} succeeded, {} failed", done, failed);

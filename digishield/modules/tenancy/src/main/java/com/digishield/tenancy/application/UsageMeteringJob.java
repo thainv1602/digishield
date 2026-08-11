@@ -73,6 +73,7 @@ public class UsageMeteringJob {
         YearMonth month = YearMonth.now(zone);
         int done = 0;
         for (UUID tenantId : tenantIds) {
+            String previousTenant = TenantContext.get();
             TenantContext.set(tenantId.toString());
             try {
                 meter(tenantId, month);
@@ -83,7 +84,7 @@ public class UsageMeteringJob {
                 // nothing saying which.
                 LOG.error("Usage metering failed for tenant {}", tenantId, e);
             } finally {
-                TenantContext.clear();
+                TenantContext.restore(previousTenant);
             }
         }
         LOG.info("Usage metering finished for {} of {} tenant(s), period {}",
