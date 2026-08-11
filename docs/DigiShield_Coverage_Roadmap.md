@@ -1,6 +1,6 @@
 # DigiShield — Coverage roadmap to 0.90
 
-> Version 1.1 · 10/08/2026 — rung zero completed; figures corrected
+> Version 1.2 · 11/08/2026 — rung one cleared; the floor is 0.30 and the figures re-measured
 > Expands `DigiShield_FRD.md` §8.1, which sets the policy. This file sets the schedule.
 
 The target is **0.90 line coverage, measured per subproject**. Per subproject rather than
@@ -33,8 +33,9 @@ Measured on 10/08/2026 from `jacocoTestReport`, unit suite:
 | **Total (per-module, unit suites)** | **2283 / 5295** | **43.1%** |
 | **Union incl. integration suite** | **3189 / 5553** | **57.4%** |
 
-The current floor is `0.15`. The weakest subproject is at 19.8%, so the gate is presently
-about 4 points below what is already true — it protects against regression and nothing more.
+The current floor is `0.30`. The weakest subproject is `modules/tenancy` at 32.8%, so the
+gate sits under what is already true by the customary margin — it protects against
+regression, and now at a level that means something.
 
 ## 2. Rung zero — done, and it changed the numbers
 
@@ -84,24 +85,26 @@ Two smaller measurement rules, so the number keeps meaning something:
 
 Lines each subproject must additionally cover to clear each rung, cumulative from today:
 
-| Subproject | now | → 0.30 | → 0.50 | → 0.70 | → 0.90 |
-|---|---:|---:|---:|---:|---:|
-| `modules/reporting` | 19.8% | 32 | 97 | 162 | 226 |
-| `modules/tenancy` | 21.1% | 65 | 214 | 363 | 511 |
-| `boot/app` | 37.5% | — | 80 | 208 | 336 |
-| `modules/notification` | 41.4% | — | 29 | 96 | 164 |
-| `modules/learning` | 46.2% | — | 45 | 286 | 528 |
-| `modules/ai` | 47.4% | — | 13 | 116 | 219 |
-| `modules/simulation` | 50.3% | — | — | 66 | 133 |
-| `modules/auth` | 52.7% | — | — | 92 | 200 |
-| `shared/security` | 53.2% | — | — | 7 | 17 |
-| `modules/interception` | 56.0% | — | — | 25 | 62 |
-| `shared/tenant-context` | 60.5% | — | — | 10 | 33 |
-| `modules/analytics` | 74.3% | — | — | — | 48 |
-| **Total additional lines** | | **97** | **478** | **1431** | **2477** |
+| Subproject | now | → 0.50 | → 0.70 | → 0.90 |
+|---|---:|---:|---:|---:|
+| `modules/tenancy` | 32.8% | 129 | 277 | 426 |
+| `boot/app` | 40.2% | 69 | 207 | 345 |
+| `modules/notification` | 42.2% | 28 | 96 | 165 |
+| `modules/reporting` | 43.5% | 24 | 96 | 168 |
+| `modules/learning` | 46.2% | 47 | 288 | 530 |
+| `modules/ai` | 47.5% | 14 | 117 | 220 |
+| `modules/simulation` | 50.4% | — | 70 | 140 |
+| `modules/auth` | 52.8% | — | 93 | 201 |
+| `shared/security` | 53.2% | — | 8 | 18 |
+| `modules/interception` | 56.0% | — | 26 | 63 |
+| `shared/tenant-context` | 66.9% | — | 4 | 28 |
+| `modules/analytics` | 74.0% | — | — | 51 |
+| **Total additional lines** | | **311** | **1282** | **2355** |
 
-**Rung 1 costs 127 lines across three subprojects.** That is a week's work for one group,
-not a semester for twenty. The programme does not begin with a wall.
+**Rung 1 is done.** The floor is 0.30 and every subproject clears it; the weakest,
+`modules/tenancy`, sits at 32.8% after its groups and audit trail were covered. Rung 2
+costs the lines in the 0.50 column — still not a semester's work, and spread across
+several teams rather than one.
 
 The cost is not linear: 0.70 → 0.90 alone accounts for **1046** of the 2555 lines, because
 the last stretch is error paths, edge cases and branches that ordinary use never reaches.

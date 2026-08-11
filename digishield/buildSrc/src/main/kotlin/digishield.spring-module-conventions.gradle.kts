@@ -122,11 +122,12 @@ tasks.jacocoTestCoverageVerification {
                 counter = "LINE"
                 value = "COVEREDRATIO"
                 // A ratchet, not a target. The floor sits just under the least
-                // covered subproject (modules/reporting, 19.6% at the time of
-                // writing) so it catches a module sliding backwards without
-                // failing the build today. Raise it as the weakest module
-                // improves; the long-term target is still 0.50.
-                minimum = "0.15".toBigDecimal()
+                // covered subproject so it catches a module sliding backwards
+                // without failing the build today. Raised to 0.30 once the
+                // weakest, modules/tenancy, reached 32.8% — groups and the audit
+                // trail were the untested parts. Raise it again as the next
+                // weakest improves; the long-term target is still 0.50.
+                minimum = "0.30".toBigDecimal()
             }
         }
     }
