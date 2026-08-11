@@ -1161,12 +1161,18 @@ paths:
     get:
       tags: [Tenancy]
       summary: Tenant configuration (branding, policy, language)
+      description: >-
+        A tenant with no identity provider connected still answers 200, with
+        connected=false and syncStatus=never. 404 means the tenant itself does
+        not exist.
       responses:
         '200':
           description: OK
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ScimConfig' }
+        '404':
+          description: No such tenant
     patch:
       tags: [Tenancy]
       summary: Update tenant configuration

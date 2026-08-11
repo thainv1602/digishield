@@ -56,7 +56,12 @@ public interface TenancyService {
                      String ip, String severity);
 
     /**
-     * Gets the SCIM / SSO configuration of a tenant ({@code null} if none).
+     * Gets the SCIM / SSO configuration of a tenant.
+     *
+     * <p>A tenant that has never connected an IdP gets a view saying exactly
+     * that - not connected, {@code syncStatus=never} - rather than nothing.
+     *
+     * @return {@code null} only when the tenant does not exist
      */
     ScimConfigView getScimConfig(UUID tenantId);
 

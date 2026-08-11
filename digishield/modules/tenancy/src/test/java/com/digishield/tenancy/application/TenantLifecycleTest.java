@@ -245,19 +245,13 @@ class TenantLifecycleTest {
         assertThat(updated.defaultLocale()).isEqualTo("en");
     }
 
-    @Test
-    @DisplayName("a tenant with no SCIM configuration reads as null, not as a disconnected view")
-    void scimIsNullWhenUnconfigured() {
-        when(scimConfigRepository.findByTenantId(TENANT)).thenReturn(Optional.empty());
-
-        // GET /tenants/{id}/settings then answers 200 with an empty body, while
-        // the spec declares a ScimConfig object. Pinned so the difference is
-        // visible; a client reading .connected() on it gets a null pointer.
-        assertThat(service.getScimConfig(TENANT)).isNull();
-    }
+    // The companion case - no SCIM row at all - now answers with a
+    // not-connected view rather than nothing, and lives with the rest of that
+    // behaviour in ScimConfigLookupTest.
 
     @Test
     void scimConfigurationIsMapped() {
+        when(tenantRepository.existsById(TENANT)).thenReturn(true);
         when(scimConfigRepository.findByTenantId(TENANT)).thenReturn(Optional.of(
                 new ScimConfig(UUID.randomUUID(), TENANT, "Entra ID", true,
                         "idp-tenant", "client-1", "https://scim.example/v2", null, 42, 0)));

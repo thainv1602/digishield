@@ -290,11 +290,15 @@ class TenantController {
 
     /**
      * Returns the SCIM / SSO settings of a tenant (connected IdP status).
+     *
+     * <p>A tenant with no IdP connected still has settings to report, so the
+     * absent case here is the tenant itself: 404, never a 200 with no body.
      */
     @PreAuthorize("hasRole('SUPER_ADMIN') or (hasRole('ORG_ADMIN') and @tenantGuard.isSelf(#tenantId))")
     @GetMapping("/api/v1/tenants/{tenantId}/settings")
     ResponseEntity<ScimConfigView> settings(@PathVariable UUID tenantId) {
-        return ResponseEntity.ok(tenancyService.getScimConfig(tenantId));
+        ScimConfigView view = tenancyService.getScimConfig(tenantId);
+        return view != null ? ResponseEntity.ok(view) : ResponseEntity.notFound().build();
     }
 
     /**
@@ -304,7 +308,8 @@ class TenantController {
     @GetMapping("/api/v1/super/scim")
     ResponseEntity<ScimConfigView> superScim() {
         UUID tenantId = TenantContext.requireUuid();
-        return ResponseEntity.ok(tenancyService.getScimConfig(tenantId));
+        ScimConfigView view = tenancyService.getScimConfig(tenantId);
+        return view != null ? ResponseEntity.ok(view) : ResponseEntity.notFound().build();
     }
 
     /**
