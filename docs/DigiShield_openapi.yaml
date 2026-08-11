@@ -1954,7 +1954,13 @@ paths:
                 type: object
                 properties:
                   inWatchlist: { type: boolean }
-                  riskLevel: { type: string, enum: [none, watch, high, confirmed] }
+                  riskLevel:
+                    type: string
+                    enum: [WATCH, HIGH, CONFIRMED]
+                    nullable: true
+                    description: >-
+                      The enum constant's own name, upper case. Null rather
+                      than a "none" value when the account is not listed.
 
 components:
   securitySchemes:
@@ -2008,7 +2014,7 @@ components:
         email: { type: string, format: email }
         name: { type: string }
         role: { type: string, enum: [super_admin, org_admin, manager, content_editor, analyst, learner] }
-        status: { type: string, enum: [active, invited, disabled] }
+        status: { type: string, enum: [pending, active, suspended, disabled] }
         department: { type: string }
         locale: { type: string, example: vi }
         phone: { type: string }
@@ -2076,7 +2082,7 @@ components:
         subject: { type: string }
         body_ref: { type: string }
         body: { type: string }
-        body_format: { type: string, enum: [html, markdown, text] }
+        body_format: { type: string, enum: [text, html] }
         category: { type: string }
         logo_url: { type: string }
         attachments:
@@ -2100,7 +2106,7 @@ components:
           properties:
             id: { type: string, format: uuid }
             org_id: { type: string, format: uuid }
-            status: { type: string, enum: [draft, scheduled, running, collecting, completed, reported, cancelled] }
+            status: { type: string, enum: [draft, scheduled, running, completed, cancelled] }
 
     SimEvent:
       type: object
@@ -2195,7 +2201,7 @@ components:
         userId: { type: string, format: uuid }
         type: { type: string, enum: [reminder, alert, system] }
         channel: { type: string, enum: [in_app, email, sms] }
-        status: { type: string, enum: [scheduled, sent, read] }
+        status: { type: string, enum: [scheduled, sent, read, failed] }
         title: { type: string }
         body: { type: string }
         scheduledAt: { type: string, format: date-time }
@@ -2207,7 +2213,7 @@ components:
         type: { type: string, enum: [reminder, alert, system] }
         channel: { type: string, enum: [in_app, email, sms] }
         payload: { type: object }
-        status: { type: string, enum: [scheduled, sent, read] }
+        status: { type: string, enum: [scheduled, sent, read, failed] }
         scheduled_at: { type: string, format: date-time }
 
     ThreatIntel:
@@ -2283,7 +2289,7 @@ components:
         name: { type: string }
         tier: { type: string, enum: [pool, bridge, silo] }
         dataRegion: { type: string, example: vn }
-        status: { type: string, enum: [provisioning, active, suspended, offboarding] }
+        status: { type: string, enum: [provisioning, active, suspended, deactivated] }
         userCount: { type: integer }
         domain: { type: string }
 
@@ -2292,7 +2298,7 @@ components:
       properties:
         name: { type: string }
         tier: { type: string, enum: [pool, bridge, silo] }
-        status: { type: string, enum: [provisioning, active, suspended, offboarding] }
+        status: { type: string, enum: [provisioning, active, suspended, deactivated] }
         data_region: { type: string, example: vn }
 
     TenantSettings:
@@ -2437,7 +2443,7 @@ components:
         channel: { type: string, enum: [email, sms, qr, usb, voice, zalo, teams, slack] }
         subject: { type: string }
         body: { type: string }
-        body_format: { type: string, enum: [html, markdown, text] }
+        body_format: { type: string, enum: [text, html] }
         category: { type: string }
         logo_url: { type: string }
         attachments:

@@ -6,14 +6,5 @@
 #
 #     python3 scripts/check-openapi-enums.py --update-baseline
 #
-# Entries: 9
+# Entries: 0
 
-paths./account-watchlist/check.get.responses.200.content.application/json.schema.properties.riskLevel
-schemas.Notification.properties.status
-schemas.NotificationInput.properties.status
-schemas.SimCampaign.allOf.properties.status
-schemas.SimTemplate.properties.body_format
-schemas.SimTemplateUpsert.properties.body_format
-schemas.Tenant.properties.status
-schemas.TenantUpdate.properties.status
-schemas.User.properties.status
