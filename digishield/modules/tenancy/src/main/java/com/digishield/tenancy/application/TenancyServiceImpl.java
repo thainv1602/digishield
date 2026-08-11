@@ -229,9 +229,34 @@ public class TenancyServiceImpl implements TenancyService {
     @Override
     @Transactional(readOnly = true)
     public ScimConfigView getScimConfig(UUID tenantId) {
+        // A super admin reads any tenant's row; an org admin is held to their own
+        // by RLS and by @PreAuthorize. Without this the console asked for another
+        // tenant's SCIM config and RLS hid the row, which read as "not configured"
+        // however carefully that IdP had been connected.
+        return PlatformScope.isAvailable()
+                ? PlatformScope.call(() -> fetchScimConfig(tenantId))
+                : fetchScimConfig(tenantId);
+    }
+
+    /**
+     * A tenant that has never connected an IdP has no {@code scim_config} row.
+     *
+     * <p>That is not the same as having no settings: the screen still has
+     * something true to say - not connected, never synced - and returning
+     * {@code null} made the endpoint answer 200 with an empty body, so the SCIM
+     * card rendered nothing at all rather than an honest "Chưa kết nối".
+     *
+     * @return {@code null} only when the tenant itself does not exist, which the
+     *         controller turns into 404
+     */
+    private ScimConfigView fetchScimConfig(UUID tenantId) {
+        if (!tenantRepository.existsById(tenantId)) {
+            return null;
+        }
         return scimConfigRepository.findByTenantId(tenantId)
                 .map(this::toScimView)
-                .orElse(null);
+                .orElseGet(() -> new ScimConfigView(tenantId, null, false, null, null,
+                        null, null, 0, 0, "never"));
     }
 
     @Override

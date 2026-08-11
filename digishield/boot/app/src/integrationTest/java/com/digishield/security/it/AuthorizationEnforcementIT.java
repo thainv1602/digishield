@@ -1,5 +1,6 @@
 package com.digishield.security.it;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -8,9 +9,12 @@ import com.digishield.auth.api.AuthProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.net.URI;
+import java.util.UUID;
+import javax.sql.DataSource;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -48,6 +52,28 @@ class AuthorizationEnforcementIT {
     private AuthProvider authProvider;
 
     private final HttpClient client = HttpClient.newHttpClient();
+
+    @Autowired
+    private DataSource dataSource;
+
+    /**
+     * The dev seeder is {@code @Profile("dev")}, so under {@code dev-secure} the
+     * tenant table starts empty. Both organisations named below have to exist
+     * for the assertions to mean anything: without them a 404 from "no such
+     * tenant" and a 200 from "allowed" are indistinguishable, and the isolation
+     * test would pass on a database with nothing in it.
+     */
+    @BeforeEach
+    void seedTheTwoOrganisations() {
+        new JdbcTemplate(dataSource).update("""
+                MERGE INTO tenant (id, tenant_id, name, tier, data_region, status)
+                KEY (id) VALUES
+                    (?, ?, 'Own Org',   'POOL', 'in-country', 'ACTIVE'),
+                    (?, ?, 'Other Org', 'POOL', 'in-country', 'ACTIVE')
+                """,
+                UUID.fromString(OWN_TENANT), UUID.fromString(OWN_TENANT),
+                UUID.fromString(OTHER_TENANT), UUID.fromString(OTHER_TENANT));
+    }
 
     private String get(String path, String bearer) {
         try {
