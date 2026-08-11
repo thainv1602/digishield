@@ -36,6 +36,7 @@ class AidaOrchestrationCompletedListener {
 
     @ApplicationModuleListener
     void on(AidaOrchestrationCompletedEvent event) {
+        String previousTenant = TenantContext.get();
         TenantContext.set(event.tenantId().toString());
         // This runs on an async listener thread with no request locale, so restore the
         // triggering request's language (carried on the event) before resolving the summary;
@@ -58,7 +59,7 @@ class AidaOrchestrationCompletedListener {
             // Clear the locale too: the listener thread is pooled and would otherwise leak
             // this locale into the next, unrelated task.
             LocaleContextHolder.resetLocaleContext();
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
     }
 

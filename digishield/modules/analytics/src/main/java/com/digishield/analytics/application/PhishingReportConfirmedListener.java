@@ -28,11 +28,12 @@ class PhishingReportConfirmedListener {
 
     @ApplicationModuleListener
     void on(PhishingReportConfirmedEvent event) {
+        String previousTenant = TenantContext.get();
         TenantContext.set(event.tenantId().toString());
         try {
             analyticsService.recordConfirmedReport(event.tenantId(), event.userId());
         } finally {
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
     }
 }

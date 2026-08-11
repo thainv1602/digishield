@@ -48,6 +48,7 @@ public class OverdueSuspensionListener {
         // The sweep runs without a caller, so the rank guards inside setSuspended
         // see no authenticated role and stand aside. The tenant still has to be
         // set: everything below reads it to scope the lookup.
+        String previousTenant = TenantContext.get();
         TenantContext.set(event.tenantId().toString());
         try {
             UserView user = authService.getUser(event.userId());
@@ -67,7 +68,7 @@ public class OverdueSuspensionListener {
             // The learner has been deleted since the sweep read the enrollment.
             LOG.info("[auth] No user {} to suspend for overdue training", event.userId());
         } finally {
-            TenantContext.clear();
+            TenantContext.restore(previousTenant);
         }
     }
 

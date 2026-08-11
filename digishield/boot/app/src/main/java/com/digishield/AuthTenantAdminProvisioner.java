@@ -43,11 +43,7 @@ class AuthTenantAdminProvisioner implements TenantAdminProvisioner {
         } finally {
             // Restored rather than cleared: this runs inside the super admin's
             // own request, which still has work to do in their tenant.
-            if (previous == null) {
-                TenantContext.clear();
-            } else {
-                TenantContext.set(previous);
-            }
+            TenantContext.restore(previous);
         }
     }
 }

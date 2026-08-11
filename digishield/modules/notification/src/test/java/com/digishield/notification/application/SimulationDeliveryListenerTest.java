@@ -56,6 +56,33 @@ class SimulationDeliveryListenerTest {
         listener = new SimulationDeliveryListener(notificationService, messages, BASE_URL);
     }
 
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("running inline leaves the caller's tenant intact")
+    void doesNotStealTheCallersTenantWhenItRunsInline() {
+        // @Async is inert here, as it is in any plain unit or slice context, so
+        // the listener runs on the caller's thread. It used to clear the
+        // ThreadLocal in its finally block, which took the caller's tenant with
+        // it and broke the very campaign send that published the event.
+        String caller = "11111111-1111-1111-1111-111111111111";
+        com.digishield.shared.tenantcontext.TenantContext.set(caller);
+        try {
+            listener.on(event("EMAIL", "Subject", "Body {{link}}", "html"));
+
+            assertThat(com.digishield.shared.tenantcontext.TenantContext.get())
+                    .isEqualTo(caller);
+        } finally {
+            com.digishield.shared.tenantcontext.TenantContext.clear();
+        }
+    }
+
+    @org.junit.jupiter.api.Test
+    @org.junit.jupiter.api.DisplayName("on a thread with no tenant, it leaves none behind")
+    void leavesNothingBehindOnItsOwnThread() {
+        listener.on(event("EMAIL", "Subject", "Body {{link}}", "html"));
+
+        assertThat(com.digishield.shared.tenantcontext.TenantContext.get()).isNull();
+    }
+
     private static SimulationDeliveryRequestedEvent event(
             String channel, String subject, String body, String bodyFormat) {
         return new SimulationDeliveryRequestedEvent(

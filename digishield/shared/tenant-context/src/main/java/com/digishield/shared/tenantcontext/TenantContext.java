@@ -60,6 +60,27 @@ public final class TenantContext {
     /**
      * Removes the tenant id from the current thread (always call within a finally block).
      */
+    /**
+     * Restores whatever was set before a scoped override, clearing when there
+     * was nothing.
+     *
+     * <p>Listeners and jobs must restore rather than clear. On their own thread
+     * -- which is where {@code @ApplicationModuleListener} puts them while
+     * {@code @Async} is active -- clearing is right. But the same code runs
+     * inline on the caller's thread when it is not, and clearing there wipes a
+     * tenant the caller still needs: a campaign send lost its tenant halfway
+     * through exactly this way.
+     *
+     * @param previous the value captured before the override, may be null
+     */
+    public static void restore(String previous) {
+        if (previous == null) {
+            clear();
+        } else {
+            set(previous);
+        }
+    }
+
     public static void clear() {
         CURRENT_TENANT.remove();
     }
