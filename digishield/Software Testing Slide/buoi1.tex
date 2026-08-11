@@ -858,7 +858,7 @@ public List<InterventionEventView> listInterventions(
 
   \vspace{0.3em}
   \begin{exampleblock}{Vì sao dùng DigiShield để học kiểm thử?}
-    \small Codebase thật, nghiệp vụ nhạy cảm về an toàn, có sẵn 284 test
+    \small Codebase thật, nghiệp vụ nhạy cảm về an toàn, có sẵn 296 test
     tự động làm mẫu, đủ ``đất'' cho mọi kỹ thuật: unit, integration, API, E2E.
   \end{exampleblock}
 \end{frame}
@@ -995,7 +995,7 @@ public InterventionDecision evaluate(EvaluateRequest req) {
     \begin{block}{Con số hiện tại}
       \small
       \begin{itemize}
-        \item \textbf{284 unit test} / 31 class test
+        \item \textbf{296 unit test} / 31 class test
         \item JUnit 5 + Mockito + AssertJ
         \item JaCoCo đo độ phủ (Buổi 4)
         \item \texttt{ModularityTests} kiểm tra ranh giới module
@@ -1126,7 +1126,7 @@ npm run dev    # mo http://localhost:5173
 > Task :boot:app:test
 
 BUILD SUCCESSFUL
-284 tests completed, 0 failed
+296 tests completed, 0 failed
 \end{lstlisting}
   \end{block}
 
@@ -1223,7 +1223,7 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
   \begin{enumerate}
     \item Trong bài thực hành, khi bạn sửa assertion và test fail:
           fail đó là \textbf{failure của phần mềm} hay \textbf{fault của test}?
-    \item Nếu 284 test đều pass, ta kết luận được gì --- và
+    \item Nếu 296 test đều pass, ta kết luận được gì --- và
           \textbf{không} kết luận được gì --- về chất lượng DigiShield?
           (Nguyên tắc 1)
     \item Module nào của DigiShield bạn dự đoán chứa nhiều lỗi tiềm ẩn nhất?
@@ -1305,7 +1305,7 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
     \begin{itemize}
       \item Chạy backend DigiShield (profile dev, H2)
       \item Chạy frontend, đăng nhập demo
-      \item Chạy \texttt{./gradlew test} --- 284 test
+      \item Chạy \texttt{./gradlew test} --- 296 test
       \item Đọc test thật, làm hỏng và sửa lại một test
     \end{itemize}
 
