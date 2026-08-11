@@ -18,7 +18,12 @@ spring:
       enabled: true
 
   datasource:
-    url: jdbc:h2:mem:digishield;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
+    # A database of its own, not `mem:digishield`. The integration suite runs
+    # several Spring contexts in one JVM, and two profiles sharing one in-memory
+    # database means whichever context shuts down first drops the schema the
+    # others are still using — which is how SimTrackingPageCspIT started failing
+    # on CI while passing alone locally.
+    url: jdbc:h2:mem:digishield-secure;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
     driver-class-name: org.h2.Driver
     # Credentials deliberately absent rather than set to an empty string: Boot
     # applies the embedded-H2 defaults, and a literal empty password in a
