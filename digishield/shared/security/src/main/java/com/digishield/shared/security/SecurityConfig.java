@@ -94,12 +94,21 @@ public class SecurityConfig {
     private final String rolesClaim;
     /** -1 when actuator shares the application port. */
     private final int managementPort;
+    /**
+     * A decoder supplied by the application, if any. Present in the
+     * {@code dev-secure} profile, which mints and verifies its own tokens so
+     * authorization can be exercised without an identity provider; absent in
+     * production, where the issuer is discovered from {@code issuer-uri}.
+     */
+    private final ObjectProvider<JwtDecoder> suppliedDecoder;
 
     public SecurityConfig(
             @Value("${digishield.auth.jwt.issuer-uri:}") String issuerUri,
             @Value("${digishield.auth.jwt.audience:}") String audience,
             @Value("${digishield.auth.jwt.roles-claim:cognito:groups}") String rolesClaim,
-            @Value("${management.server.port:}") String managementPort) {
+            @Value("${management.server.port:}") String managementPort,
+            ObjectProvider<JwtDecoder> suppliedDecoder) {
+        this.suppliedDecoder = suppliedDecoder;
         this.issuerUri = issuerUri;
         this.audience = audience;
         this.rolesClaim = rolesClaim;
@@ -129,9 +138,11 @@ public class SecurityConfig {
                 })
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        if (StringUtils.hasText(issuerUri)) {
+        JwtDecoder supplied = suppliedDecoder.getIfAvailable();
+        if (StringUtils.hasText(issuerUri) || supplied != null) {
             LOG.info("JWT resource server enabled — issuer={}, audience={}, rolesClaim={}",
-                    issuerUri, StringUtils.hasText(audience) ? audience : "(any)", rolesClaim);
+                    supplied != null ? "(decoder bean)" : issuerUri,
+                    StringUtils.hasText(audience) ? audience : "(any)", rolesClaim);
             http
                     .authorizeHttpRequests(auth -> auth
                             // Servlet ERROR forwards are re-evaluated by the filter
@@ -191,7 +202,7 @@ public class SecurityConfig {
                                     // every context boot — including the Flyway migration
                                     // job's — depend on the IdP being reachable (crashed
                                     // the ArgoCD PreSync hook on the Jetson cluster).
-                                    .decoder(lazyJwtDecoder())
+                                    .decoder(supplied != null ? supplied : lazyJwtDecoder())
                                     .jwtAuthenticationConverter(jwtAuthenticationConverter())));
         } else {
             LOG.warn("No JWT issuer configured (AUTH_JWT_ISSUER_URI unset) in a non-dev profile — "

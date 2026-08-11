@@ -97,6 +97,14 @@ def routes_from_code() -> dict[tuple[str, str], str]:
             text = java.read_text(encoding="utf-8")
             if "Mapping" not in text:
                 continue
+            # Profile-gated dev helpers are not part of the product API and must
+            # not be declared in the spec: /dev/token exists only under
+            # dev-secure, to mint a token for local authorization testing.
+            # Declaring it would put a credential-issuing endpoint in the
+            # published contract; leaving it undeclared without this skip would
+            # fail the check for a route production never serves.
+            if '@Profile("dev' in text:
+                continue
             cm = CLASS_MAPPING.search(text)
             prefix = cm.group(1) if cm else ""
             rel = str(java.relative_to(ROOT))

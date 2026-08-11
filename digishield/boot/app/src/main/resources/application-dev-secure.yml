@@ -1,0 +1,49 @@
+# Local profile with authorization switched ON.
+#
+# The `dev` profile answers "does the feature work"; this one answers "does the
+# guard work". @EnableMethodSecurity and the RLS aspect both live on
+# @Profile("!dev"), so under `dev` every @PreAuthorize is inert and the only
+# place authorization has ever been exercised is production. Run this profile
+# INSTEAD of `dev` (not alongside it) and the real security chain loads.
+#
+#   ./gradlew :boot:app:bootRun --args='--spring.profiles.active=dev-secure'
+#
+# Tokens are minted locally by DevSecureJwtConfig, so no identity provider is
+# needed: POST /api/v1/auth/login returns a signed JWT whose role comes from the
+# email local part (analyst@..., org_admin@..., learner@...).
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: jdbc:h2:mem:digishield;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1;NON_KEYWORDS=VALUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: false
+
+  cache:
+    type: none
+
+management:
+  health:
+    redis:
+      enabled: false
+
+digishield:
+  auth:
+    jwt:
+      # Left blank on purpose: DevSecureJwtConfig supplies the JwtDecoder bean,
+      # so no issuer is contacted and startup needs no network.
+      issuer-uri: ""
