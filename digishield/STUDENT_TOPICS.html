@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DigiShield — 20 đề tài sinh viên</title>
+<title>DigiShield — 19 đề tài sinh viên</title>
 
 <style>
   :root {
@@ -159,7 +159,7 @@
 
 <header class="mast">
   <p class="eyebrow">Hướng dẫn triển khai · cập nhật 10.08.2026</p>
-  <h1>DigiShield — 20 đề tài sinh viên</h1>
+  <h1>DigiShield — 19 đề tài sinh viên</h1>
   <p class="standfirst">
     Với mỗi đề tài, tài liệu này chỉ rõ bốn thứ: <b>yêu cầu nào thuộc về mình</b>,
     <b>code ở đâu</b>, <b>làm gì</b>, và <b>nghiệm thu thế nào</b>. Đọc phần <b>0</b> trước —
@@ -521,7 +521,7 @@
 <section>
   <div class="shead">
     <p class="eyebrow">Tổng quan</p>
-    <h2>20 đề tài, 7 nhóm</h2>
+    <h2>19 đề tài, 6 nhóm</h2>
   </div>
   <div class="tablewrap">
     <table>
@@ -532,8 +532,7 @@
         <tr><td class="k">C</td><td class="k">ĐT09–11</td><td class="k">learning</td><td>Đào tạo &amp; LMS.</td></tr>
         <tr><td class="k">D</td><td class="k">ĐT12–13</td><td class="k">analytics</td><td>Phân tích &amp; rủi ro.</td></tr>
         <tr><td class="k">E</td><td class="k">ĐT14</td><td class="k">ai</td><td>AI &amp; tự động hoá.</td></tr>
-        <tr><td class="k">F</td><td class="k">ĐT15</td><td class="k">e2e · buildSrc · CI</td><td>Chất lượng &amp; DevSecOps. <span class="tag rev">viết lại</span></td></tr>
-        <tr><td class="k">G</td><td class="k">ĐT16–20</td><td class="k">tenancy · notification · auth</td><td>Nền tảng vận hành. <span class="tag new">mới</span></td></tr>
+        <tr><td class="k">F</td><td class="k">ĐT15–19</td><td class="k">tenancy · notification · auth</td><td>Nền tảng vận hành. <span class="tag new">mới</span></td></tr>
         <tr><td class="k">+</td><td class="k">dự phòng</td><td class="k">reporting · interception · learning · tenancy · auth</td><td>Tám đề nhỏ, đậm kỹ thuật kiểm thử, giữ từ danh mục 15 đề trước.</td></tr>
       </tbody>
     </table>
@@ -583,7 +582,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT02</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT06 · ĐT17</span></header>
+    <header><span class="tid">ĐT02</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT06 · ĐT16</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-02 · FR-SIM-03 · FR-NOT-01</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Bảng quyết định (provider × trạng thái gửi) · ca tiêu cực khi gateway từ chối</dd>
@@ -769,7 +768,7 @@
       <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → feed AIDA (ĐT14).</dd>
       <dt>Phần việc</dt><dd>(1) mở rộng <code>RiskSignalType</code> · (2) công thức tổng hợp điểm · (3) phân khúc theo user/phòng ban · (4) <b>viết consumer đầu tiên cho <code>RiskRecomputedEvent</code></b> — hiện chưa ai nghe</dd>
       <dt>Test</dt><dd>UT tính điểm deterministic; IT recompute qua event.</dd>
-      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm tích hợp có sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT17 xem ai sẽ là consumer đầu tiên.</dd>
+      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm tích hợp có sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT16 xem ai sẽ là consumer đầu tiên.</dd>
     </dl>
   </div>
 
@@ -818,56 +817,8 @@
   <div class="shead marked">
     <span class="marker">F</span>
     <div>
-      <p class="eyebrow">e2e · buildSrc · CI</p>
-      <h2>Chất lượng &amp; DevSecOps — ĐT15 <span class="tag rev">viết lại</span></h2>
-    </div>
-  </div>
-  <div class="note ok">
-    <p><b>Phần lớn việc của bản cũ đã xong.</b> Đề tài này được viết lại để không giao lại việc đã làm:</p>
-    <ul>
-      <li>Checkstyle <code>ignoreFailures = false</code> — <b>xong</b>, 0 violation, không còn ngoại lệ nào.</li>
-      <li>SpotBugs — <b>xong</b>, enforced, <code>effort = MAX</code>.</li>
-      <li>JaCoCo — đã nâng <b>0.10 → 0.15</b>. Còn xa 0.50.</li>
-      <li>E2E gate — <b>đã là gate thật</b>, không còn <code>continue-on-error</code>.</li>
-      <li>FE coverage — đã có <b>130 test</b>, branch <b>57%</b> (auth + shared logic).</li>
-    </ul>
-  </div>
-  <div class="topic">
-    <header><span class="tid">ĐT15</span><h3>Nâng chất lượng test &amp; siết gate</h3></header>
-    <dl>
-      <dt>Yêu cầu</dt><dd>FRD §8.1 (chính sách coverage) · NFR-PERF-01</dd>
-      <dt>Kỹ thuật kiểm thử</dt><dd><b>Kiểm thử đột biến (PITest)</b> — đo chất lượng test chứ không chỉ độ phủ</dd>
-      <dt>Việc còn lại</dt>
-      <dd>
-        <b>1. Mutation testing.</b> Thêm <b>PITest</b> cho backend và đặt ngưỡng mutation score. Đây là
-        việc giá trị nhất còn lại: coverage chỉ nói code <em>được chạy</em>, mutation nói test
-        <em>có bắt lỗi</em> hay không.<br>
-        <b>2. Nâng sàn coverage.</b> Sàn per-project đang bị chặn bởi module yếu nhất
-        (<code>reporting</code> ~19.6%). Viết test cho <code>reporting</code> và <code>tenancy</code>
-        rồi nâng sàn dần; đồng thời cân nhắc thêm verification trên <b>bản aggregate</b>, vì sàn
-        per-project không bắt được suy giảm diện rộng.<br>
-        <b>3. Coverage của integration test không được tính.</b> <code>testCodeCoverageReport</code>
-        cho ra cùng một con số dù có chạy Testcontainers hay không — exec data của
-        <code>integrationTest</code> chưa được nối vào bản aggregate. Sửa chỗ này làm con số CI công bố
-        đúng với thực tế.<br>
-        <b>4. Performance.</b> Thêm <b>k6</b> cho endpoint nóng (tracking event, dashboard), chạy
-        non-blocking trước, thành gate sau.<br>
-        <b>5. FE coverage.</b> 130 test nhưng mới phủ auth + shared logic; các trang nghiệp vụ chưa có.
-      </dd>
-      <dt>Nghiệm thu</dt><dd>Pipeline xanh với gate thật; mutation score có ngưỡng; sàn JaCoCo cao hơn lúc nhận đề và <em>giải thích được vì sao dừng ở mức đó</em>.</dd>
-    </dl>
-  </div>
-</section>
-
-<hr>
-
-<!-- ══════════════ NHÓM G ══════════════ -->
-<section>
-  <div class="shead marked">
-    <span class="marker">G</span>
-    <div>
       <p class="eyebrow">tenancy · notification · auth <span class="tag new">mới</span></p>
-      <h2>Nền tảng vận hành — ĐT16–20</h2>
+      <h2>Nền tảng vận hành — ĐT15–19</h2>
     </div>
   </div>
   <p>
@@ -876,7 +827,7 @@
   </p>
 
   <div class="topic">
-    <header><span class="tid">ĐT16</span><h3>Gói dịch vụ, hạn mức &amp; đo lường sử dụng</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT15</span><h3>Gói dịch vụ, hạn mức &amp; đo lường sử dụng</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-TEN-04 · FR-TEN-05 · <b>FR-TEN-06</b> · FR-TEN-07</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân tích giá trị biên tại hạn mức: dưới · vừa chạm · vượt · ca tiêu cực khi vượt</dd>
@@ -894,7 +845,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT17</span><h3>Thông báo đa kênh &amp; realtime</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT16</span><h3>Thông báo đa kênh &amp; realtime</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>FR-NOT-01 · FR-NOT-02 · FR-NOT-03</b></dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Bảng quyết định định tuyến kênh · test retry và dead-letter</dd>
@@ -912,7 +863,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT18</span><h3>SCIM/SSO provisioning &amp; quản trị người dùng</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT17</span><h3>SCIM/SSO provisioning &amp; quản trị người dùng</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-AUTH-07 · FR-AUTH-08 · FR-TEN-03</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Máy trạng thái vòng đời tài khoản (tạo · sửa · khoá · gỡ) · ca tiêu cực với payload SCIM sai chuẩn</dd>
@@ -930,7 +881,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT19</span><h3>Song ngữ đầu-cuối (i18n)</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT18</span><h3>Song ngữ đầu-cuối (i18n)</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>NFR-I18N-01</b></dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Table-driven theo locale · ca fallback khi thiếu khoá dịch</dd>
@@ -948,7 +899,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT20</span><h3>RBAC &amp; kiểm soát truy cập đa tenant</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT19</span><h3>RBAC &amp; kiểm soát truy cập đa tenant</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>NFR-SEC-01 · NFR-SEC-02</b> — và <b>BR-7</b> (không tổ chức nào đọc được dữ liệu tổ chức khác)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Table-driven trên toàn ma trận</b> endpoint × vai trò — cả ca cho phép lẫn ca từ chối</dd>
@@ -962,7 +913,7 @@
         (4) <b>Audit &amp; hồi quy</b> — mọi hành động nhạy cảm phải để lại bản ghi; thêm test chống hồi quy.
       </dd>
       <dt>Test</dt><dd>Đây là đề tài mà <em>sản phẩm chính là test</em>, nên đủ 5 lớp một cách tự nhiên: UT guard, IT trên Postgres thật (RLS chỉ sống ở đó), Postman ca 401/403, e2e đăng nhập sai vai trò bị chặn.</dd>
-      <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành đã gộp vào ĐT15. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
+      <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành trước đây gộp vào đề tài Chất lượng &amp; DevSecOps; đề tài đó nay đã bỏ, nên mảng quan sát/vận hành hiện <b>không thuộc đề tài nào</b>. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
     </dl>
   </div>
 </section>
