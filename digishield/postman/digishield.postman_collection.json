@@ -47,7 +47,7 @@
             "exec": [
               "pm.test('200 OK', () => pm.response.to.have.status(200));",
               "const d = pm.response.json();",
-              "pm.test('decision is valid', () => pm.expect(['PAUSE','WARN','ALLOW']).to.include(d.decision));"
+              "pm.test('decision is valid', () => pm.expect(['pause','warn','allow','block']).to.include(d.decision));"
             ]
           }
         }
