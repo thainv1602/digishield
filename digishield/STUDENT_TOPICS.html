@@ -523,6 +523,12 @@
     <p class="eyebrow">Tổng quan</p>
     <h2>19 đề tài, 6 nhóm</h2>
   </div>
+  <p>
+    <b>Mọi đề tài đều giao một chức năng mới, và chức năng đó phải được chứng minh
+    bằng đủ 5 lớp test.</b> Không đề tài nào chỉ viết test cho code người khác đã làm:
+    thiếu phần chức năng thì không có gì để thiết kế ca kiểm thử, mà thiếu phần test thì
+    không đạt yêu cầu môn học.
+  </p>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Nhóm</th><th>Đề tài</th><th>Module chính</th><th>Ghi chú</th></tr></thead>
@@ -905,14 +911,30 @@
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Table-driven trên toàn ma trận</b> endpoint × vai trò — cả ca cho phép lẫn ca từ chối</dd>
       <dt>Code</dt><dd><code>modules/auth</code> + <code>shared/security/</code> (<code>MethodSecurityConfig</code>, <code>TenantAccessGuard</code>, <code>Roles</code>) + <code>shared/persistence/RlsTenantAspect.java</code>. Ma trận quyền đã có sẵn: <code>../docs/AUTHZ_MATRIX.md</code>.</dd>
       <dt>Vấn đề thật</dt><dd>Ma trận đã viết ra nhưng <b>chỉ enforce ở profile non-dev</b> — nghĩa là chạy dev sẽ không bao giờ thấy lỗi phân quyền, và hiện chưa có bộ test nào phủ hết ma trận đó.</dd>
-      <dt>Phần việc</dt>
+      <dt>Phần việc — chức năng</dt>
+      <dd>
+        (1) <b>Bật được phân quyền ngoài prod</b>. Thêm profile <code>dev-secure</code>
+        (hoặc thuộc tính bật/tắt) để <code>@PreAuthorize</code> và <code>TenantAccessGuard</code>
+        thật sự chạy khi phát triển và khi test. Không có bước này thì ba phần dưới không
+        kiểm được ở đâu ngoài prod.<br>
+        (2) <b><code>GET /auth/permissions</code></b> — trả về danh sách năng lực của
+        người đang đăng nhập (suy ra từ vai trò + quyền theo tenant), để frontend
+        <em>ẩn/khoá</em> đúng những thao tác người dùng không được phép thay vì đoán
+        theo tên vai trò. Đây là phần người dùng nhìn thấy: nút không dùng được thì
+        không hiện ra.<br>
+        (3) <b>Chặn ma trận trôi</b>. <code>AUTHZ_MATRIX.md</code> đang là bảng viết tay,
+        không gì buộc nó khớp với <code>@PreAuthorize</code> trong code. Viết một check CI
+        so hai bên và bắt CI đỏ khi lệch — cùng khuôn với ba check hợp đồng OpenAPI đã có
+        trong <code>scripts/</code>.
+      </dd>
+      <dt>Phần việc — kiểm thử</dt>
       <dd>
         (1) <b>Test ma trận</b> — sinh test từ <code>AUTHZ_MATRIX.md</code>: mỗi endpoint × mỗi vai trò, khẳng định cho phép/từ chối đúng như bảng.<br>
         (2) <b>Cô lập tenant lớp 2</b> — mở rộng <code>TenantIsolationIT</code> ra mọi bảng có <code>tenant_id</code>, chứng minh RLS chặn kể cả khi query quên <code>WHERE</code>.<br>
         (3) <b>Đường super-admin “step into tenant”</b> — header <code>X-Acting-Tenant</code> đã có phía FE; chứng minh nó chỉ có tác dụng với <code>SUPER_ADMIN</code> đã xác thực.<br>
         (4) <b>Audit &amp; hồi quy</b> — mọi hành động nhạy cảm phải để lại bản ghi; thêm test chống hồi quy.
       </dd>
-      <dt>Test</dt><dd>Đây là đề tài mà <em>sản phẩm chính là test</em>, nên đủ 5 lớp một cách tự nhiên: UT guard, IT trên Postgres thật (RLS chỉ sống ở đó), Postman ca 401/403, e2e đăng nhập sai vai trò bị chặn.</dd>
+      <dt>Test</dt><dd>Chức năng ở trên nhỏ nhưng đủ để kiểm: endpoint mới, một profile mới và một check CI. Phần còn lại của đề tài là chứng minh những gì đã có thật sự đúng, nên đủ 5 lớp một cách tự nhiên: UT guard, IT trên Postgres thật (RLS chỉ sống ở đó), Postman ca 401/403, e2e đăng nhập sai vai trò bị chặn.</dd>
       <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành trước đây gộp vào đề tài Chất lượng &amp; DevSecOps; đề tài đó nay đã bỏ, nên mảng quan sát/vận hành hiện <b>không thuộc đề tài nào</b>. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
     </dl>
   </div>
