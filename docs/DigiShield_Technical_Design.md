@@ -3,7 +3,7 @@
 > Version 1.0 · 06/27/2026
 > Document with diagrams (Mermaid) + API specification. To be used alongside **DigiShield_Product_Technical_Spec_v2.docx** (product specification), **DigiShield_openapi.yaml** (machine-readable API specification) and **DigiShield_Architecture.html** (as-built architecture diagrams).
 >
-> The ```mermaid``` blocks render directly on GitHub, GitLab, VS Code (Mermaid extension), Obsidian, etc. If you need images, use [mermaid.live](https://mermaid.live) and paste the code to export PNG/SVG.
+> The ```mermaid``` blocks render directly on GitHub, GitLab, VS Code (Mermaid extension), Obsidian, etc. For the written report, every block is already rendered to SVG under [`diagrams/`](diagrams/), named after the section it belongs to — see [`diagrams/README.md`](diagrams/README.md) before regenerating them, since the default settings drop all label text outside a browser.
 
 ---
 
@@ -1201,7 +1201,7 @@ sequenceDiagram
     GW->>MW: Validate JWT, extract tenant_id
     MW->>MW: Create "tenant context" for the request
     MW->>SVC: Call service with context
-    SVC->>DB: SET app.tenant_id = <tenant_id>; query
+    SVC->>DB: SET app.tenant_id, then query
     DB-->>SVC: Return only the correct tenant's data (RLS)
 ```
 
