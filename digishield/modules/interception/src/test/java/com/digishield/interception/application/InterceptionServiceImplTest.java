@@ -95,8 +95,10 @@ class InterceptionServiceImplTest {
         // Act
         InterventionDecision decision = interceptionService.evaluate(request);
 
-        // Assert: decision shape
-        assertThat(decision.decision()).isEqualTo(Decision.PAUSE.name());
+        // Assert: decision shape. The literal, not Decision.PAUSE.name():
+        // asserting the implementation's own expression cannot catch the
+        // spelling changing, which is exactly what went wrong here.
+        assertThat(decision.decision()).isEqualTo("pause");
         assertThat(decision.signals()).containsExactly("ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT");
         assertThat(decision.message()).isNotBlank();
 
@@ -127,7 +129,7 @@ class InterceptionServiceImplTest {
         InterventionDecision decision = interceptionService.evaluate(request);
 
         // Assert
-        assertThat(decision.decision()).isEqualTo(Decision.WARN.name());
+        assertThat(decision.decision()).isEqualTo("warn");
         assertThat(decision.signals()).containsExactly("WATCHLIST_HIT");
 
         verify(eventRepository).save(eventCaptor.capture());
@@ -148,7 +150,7 @@ class InterceptionServiceImplTest {
         InterventionDecision decision = interceptionService.evaluate(request);
 
         // Assert: without a watchlist hit the rule falls through to ALLOW
-        assertThat(decision.decision()).isEqualTo(Decision.ALLOW.name());
+        assertThat(decision.decision()).isEqualTo("allow");
         assertThat(decision.signals()).containsExactly("ON_CALL", "NEW_PAYEE");
 
         verify(eventRepository).save(eventCaptor.capture());
@@ -168,7 +170,7 @@ class InterceptionServiceImplTest {
         InterventionDecision decision = interceptionService.evaluate(request);
 
         // Assert
-        assertThat(decision.decision()).isEqualTo(Decision.ALLOW.name());
+        assertThat(decision.decision()).isEqualTo("allow");
         assertThat(decision.signals()).isEmpty();
 
         verify(eventRepository).save(eventCaptor.capture());

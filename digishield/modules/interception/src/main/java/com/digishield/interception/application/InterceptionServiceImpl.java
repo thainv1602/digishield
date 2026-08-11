@@ -87,7 +87,10 @@ public class InterceptionServiceImpl implements InterceptionService {
                 String.join(",", signals), decision, Instant.now());
         eventRepository.save(event);
 
-        return new InterventionDecision(decision.name(), signals, message);
+        // Lower case, like InterventionEventView below and like the spec: the
+        // same enum was leaving this class spelled two different ways.
+        return new InterventionDecision(
+                decision.name().toLowerCase(Locale.ROOT), signals, message);
     }
 
     @Override

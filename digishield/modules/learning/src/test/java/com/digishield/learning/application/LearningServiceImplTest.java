@@ -413,7 +413,7 @@ class LearningServiceImplTest {
         assertThat(event.courseId()).isEqualTo(courseId);
 
         // Assert: returned view
-        assertThat(view.status()).isEqualTo("ASSIGNED");
+        assertThat(view.status()).isEqualTo("assigned");
         assertThat(view.userId()).isEqualTo(userId);
         assertThat(view.courseId()).isEqualTo(courseId);
     }
@@ -435,7 +435,7 @@ class LearningServiceImplTest {
         verify(enrollmentRepository, never()).save(any(Enrollment.class));
         // Assert: event still published (idempotent assignment semantics)
         verify(eventPublisher).publishEvent(any(EnrollmentAssignedEvent.class));
-        assertThat(view.status()).isEqualTo("IN_PROGRESS");
+        assertThat(view.status()).isEqualTo("in_progress");
         assertThat(view.score()).isEqualTo(50);
     }
 

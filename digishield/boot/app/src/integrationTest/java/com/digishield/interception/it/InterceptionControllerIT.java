@@ -51,7 +51,7 @@ class InterceptionControllerIT {
     @Test
     void evaluateReturnsPauseDecision() throws Exception {
         InterventionDecision pause = new InterventionDecision(
-                "PAUSE",
+                "pause",
                 List.of("ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT"),
                 "Giao dịch đang được tạm dừng để bảo vệ bạn.");
 
@@ -68,7 +68,7 @@ class InterceptionControllerIT {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.decision").value("PAUSE"))
+                .andExpect(jsonPath("$.decision").value("pause"))
                 .andExpect(jsonPath("$.signals.length()").value(3))
                 .andExpect(jsonPath("$.signals[0]").value("ON_CALL"))
                 .andExpect(jsonPath("$.signals[2]").value("WATCHLIST_HIT"))
