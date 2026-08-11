@@ -143,7 +143,7 @@ eighty of them would bury the fifteen that do.
 
 | Stage | Backend floor | Notes |
 |---|---|---|
-| Today | 0.30 | A ratchet set just under the weakest module |
+| Today | 0.50 | A ratchet set just under the weakest module |
 | Target | **0.90** | Per subproject, not aggregate — an average cannot hide an untested module |
 
 The floor rises in steps; each step is only taken once every module clears it, so the

@@ -127,7 +127,7 @@ tasks.jacocoTestCoverageVerification {
                 // weakest, modules/tenancy, reached 32.8% — groups and the audit
                 // trail were the untested parts. Raise it again as the next
                 // weakest improves; the long-term target is still 0.50.
-                minimum = "0.30".toBigDecimal()
+                minimum = "0.50".toBigDecimal()
             }
         }
     }
