@@ -65,6 +65,7 @@ import com.digishield.learning.api.LearnerDirectory;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -796,15 +797,19 @@ public class LearningServiceImpl implements LearningService {
      * moment a sweep gets round to writing OVERDUE. Reporting the stored value
      * would show ASSIGNED to someone who is already late, for as long as the job
      * took to run.
+     *
+     * <p>Lower case, as the spec declares and as every other status on the wire
+     * is spelled. The learner portal compares with its own toLowerCase(), which
+     * is the only reason the difference never showed on screen.
      */
     private String statusOf(Enrollment enrollment) {
         if (enrollment.getStatus() == null) {
             return null;
         }
         if (enrollment.isOverdue(Instant.now())) {
-            return EnrollmentStatus.OVERDUE.name();
+            return EnrollmentStatus.OVERDUE.name().toLowerCase(Locale.ROOT);
         }
-        return enrollment.getStatus().name();
+        return enrollment.getStatus().name().toLowerCase(Locale.ROOT);
     }
 
     private BadgeView toBadgeView(Badge b) {

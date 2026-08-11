@@ -8,7 +8,5 @@
 #
 #     python3 scripts/check-openapi-emission.py --update-baseline
 #
-# Entries: 2
+# Entries: 0
 
-mismatch   schemas.Enrollment.properties.status
-mismatch   schemas.InterventionDecision.properties.decision

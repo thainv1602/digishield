@@ -163,7 +163,7 @@ export default function AidaPage() {
             )}
             {evaluate.data && (
               <ResultBox tone="info">
-                {t('Quyết định: ')}<strong>{evaluate.data.decision}</strong>
+                {t('Quyết định: ')}<strong>{evaluate.data.decision?.toUpperCase()}</strong>
                 {evaluate.data.signals?.length > 0 && t(' · Tín hiệu: {signals}', { signals: evaluate.data.signals.join(', ') })}
                 {evaluate.data.message && (
                   <div style={{ marginTop: 6, color: 'var(--color-muted)' }}>{evaluate.data.message}</div>
