@@ -375,6 +375,19 @@
     Một đề tài đủ tầm cho 4 người khi có <b>3–5 phần việc độc lập</b>, để mỗi thành viên phụ trách một
     phần mà không chồng lấn công việc.
   </p>
+  <p>
+    <b>Không đề tài nào chờ đề tài nào.</b> Mọi thứ một đề tài dựa vào phải là code
+    <b>đã có trên <code>main</code></b>, và mục <i>Code</i> phải gọi tên đúng lớp hoặc endpoint đó —
+    không được viện dẫn thứ nhóm khác sẽ làm. Trước đây bốn đề tài mang nhãn “cần ĐT6”, trong khi
+    <code>GET /api/v1/sim/track/{token}</code> đã ghi CLICK từ lâu: một nút thắt tưởng tượng, đủ để
+    treo bốn nhóm nếu nhóm kia trễ.
+  </p>
+  <p>
+    Khi hai đề tài chạm cùng một chỗ, chia theo <b>quyền sở hữu</b> chứ đừng xếp trước sau: ĐT16 sở
+    hữu đường truyền SMS (provider thật sau <code>NotificationGateway</code>), ĐT2 sở hữu nội dung
+    mồi nhử và gửi qua interface đó — dev đã có <code>LoggingNotificationGateway</code> nên cả hai
+    khởi động cùng lúc, gặp nhau ở interface.
+  </p>
   <h3><span class="num">0.9</span>Sản phẩm tài liệu — bắt buộc, tính vào nghiệm thu</h3>
   <p>
     Toàn bộ đề tài gộp lại phải ra được một <b>quyển báo cáo</b>. Nghĩa là mỗi nhóm không chỉ nộp
@@ -533,7 +546,7 @@
     <table>
       <thead><tr><th>Nhóm</th><th>Đề tài</th><th>Module chính</th><th>Ghi chú</th></tr></thead>
       <tbody>
-        <tr><td class="k">A</td><td class="k">ĐT1–6</td><td class="k">simulation · ai</td><td>Mô phỏng đa kênh &amp; nội dung. ĐT6 là nền cho ĐT1–3 và ĐT9. <b>ĐT3</b> gộp ba kênh phi-email; <b>ĐT5</b> là đề tài duyệt nội dung, thay chỗ đề tài đính kèm cũ.</td></tr>
+        <tr><td class="k">A</td><td class="k">ĐT1–6</td><td class="k">simulation · ai</td><td>Mô phỏng đa kênh &amp; nội dung. <b>ĐT3</b> gộp ba kênh phi-email; <b>ĐT5</b> là đề tài duyệt nội dung, thay chỗ đề tài đính kèm cũ.</td></tr>
         <tr><td class="k">B</td><td class="k">ĐT7–8</td><td class="k">reporting · interception</td><td>Báo cáo phishing &amp; SOC.</td></tr>
         <tr><td class="k">C</td><td class="k">ĐT9–11</td><td class="k">learning</td><td>Đào tạo &amp; LMS.</td></tr>
         <tr><td class="k">D</td><td class="k">ĐT12–13</td><td class="k">analytics</td><td>Phân tích &amp; rủi ro.</td></tr>
@@ -576,11 +589,11 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT1</span><h3>QR-code phishing (quishing)</h3><span class="tag dep">cần ĐT6</span></header>
+    <header><span class="tid">ĐT1</span><h3>QR-code phishing (quishing)</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 · FR-SIM-05</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân hoạch tương đương (token hợp lệ · hết hạn · sai định dạng) · phân tích giá trị biên cho thời hạn QR</dd>
-      <dt>Code</dt><dd>Service sinh QR (ZXing) trong <code>simulation/application/</code>; endpoint <code>POST /api/v1/sim/campaigns/{id}/qr</code>; landing + tracking đi qua ĐT6. Chấm điểm link: <code>ai/AiClient.classify</code>.</dd>
+      <dt>Code</dt><dd>Service sinh QR (ZXing) trong <code>simulation/application/</code>; endpoint <code>POST /api/v1/sim/campaigns/{id}/qr</code>; landing + tracking dùng <code>SimTrackingController</code> đã có: <code>GET /api/v1/sim/track/{token}</code> ghi CLICK và trả trang cảnh báo — QR chỉ cần trỏ vào đó. Chấm điểm link: <code>ai/AiClient.classify</code>.</dd>
       <dt>Workflow</dt><dd>Tạo campaign kênh <code>QR</code> → sinh QR trỏ beacon → người quét → ghi <code>SimEvent(CLICK)</code> → publish event → learning ghi danh, analytics cộng risk.</dd>
       <dt>Phần việc</dt><dd>(1) sinh QR + phát token · (2) landing page cho người quét · (3) funnel &amp; báo cáo riêng kênh <code>QR</code> · (4) chấm điểm link bằng <code>AiClient.classify</code></dd>
       <dt>Test</dt><dd>UT bộ sinh QR; IT ingest event kênh QR; e2e “quét QR → click → submit”.</dd>
@@ -588,24 +601,24 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT2</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT6 · ĐT16</span></header>
+    <header><span class="tid">ĐT2</span><h3>SMS phishing (smishing)</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-02 · FR-SIM-03 · FR-NOT-01</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Bảng quyết định (provider × trạng thái gửi) · ca tiêu cực khi gateway từ chối</dd>
-      <dt>Code</dt><dd>Cài <code>notification/api/NotificationGateway</code> cho SMS (AWS SNS/Twilio, kèm stub offline); campaign kênh <code>SMS</code>; track theo số điện thoại. Model tiếng Việt: <code>research/phase2</code> (PhoBERT).</dd>
+      <dt>Code</dt><dd>Gửi qua <code>notification/api/NotificationGateway.deliver(...)</code> đã có — <code>NotificationChannel.SMS</code> đã tồn tại và <code>LoggingNotificationGateway</code> chạy được ngay ở dev, nên đề tài này <b>không chờ</b> ai cài provider thật (việc đó của ĐT16). Việc ở đây là campaign kênh <code>SMS</code>; track theo số điện thoại. Model tiếng Việt: <code>research/phase2</code> (PhoBERT).</dd>
       <dt>Workflow</dt><dd>Campaign <code>SMS</code> → gateway gửi → link rút gọn trỏ beacon → track CLICK/SUBMIT.</dd>
-      <dt>Phần việc</dt><dd>(1) gateway SMS thật (SNS/Twilio) + stub offline · (2) link rút gọn &amp; track theo số điện thoại · (3) funnel kênh <code>SMS</code> · (4) phân loại nội dung tiếng Việt (<code>research/phase2</code>)</dd>
+      <dt>Phần việc</dt><dd>(1) mồi nhử SMS: sinh nội dung theo template + gửi hàng loạt qua gateway · (2) link rút gọn &amp; track theo số điện thoại · (3) funnel kênh <code>SMS</code> · (4) phân loại nội dung tiếng Việt (<code>research/phase2</code>)</dd>
       <dt>Test</dt><dd>UT mock provider; contract test payload; IT funnel SMS.</dd>
     </dl>
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT3</span><h3>Kênh phi-email: vishing · đính kèm · USB</h3><span class="tag rev">gộp từ ĐT3 + ĐT5 cũ</span><span class="tag dep">cần ĐT6</span></header>
+    <header><span class="tid">ĐT3</span><h3>Kênh phi-email: vishing · đính kèm · USB</h3><span class="tag rev">gộp từ ĐT3 + ĐT5 cũ</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 — và <b>BR-3</b> (payload phải vô hại)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Máy trạng thái cho vòng đời cuộc gọi · phủ nhánh cho ba kênh · ca tiêu cực với tệp không hợp lệ</dd>
       <dt>Vì sao gộp</dt><dd>Ba kênh này ở bản trước là hai đề tài rời, mỗi cái chỉ đủ một đến hai phần việc — chưa tới tầm một nhóm bốn người. Chúng dùng chung đúng một cơ chế: <b>dựng mồi ngoài email, gắn beacon, quy về cùng một funnel</b>. Gộp lại thành một đề tài có bốn phần việc thật, thay vì hai đề tài chưa đủ khối lượng.</dd>
-      <dt>Code</dt><dd>Module <code>simulation</code>. Enum <code>domain/Channel.java</code> đã có sẵn <code>VOICE</code>, <code>USB</code>; template đính kèm dùng <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>). Beacon lấy từ ĐT6.</dd>
+      <dt>Code</dt><dd>Module <code>simulation</code>. Enum <code>domain/Channel.java</code> đã có sẵn <code>VOICE</code>, <code>USB</code>; template đính kèm dùng <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>). Beacon: dùng <code>GET /api/v1/sim/track/{token}</code> đã có.</dd>
       <dt>Phần việc</dt><dd>(1) <b>Vishing</b> — entity kịch bản cuộc gọi + IVR stub, campaign kênh <code>VOICE</code> · (2) <b>Đính kèm</b> — sinh tệp doc/pdf vô hại có nhúng beacon, ghi <code>OPEN</code> khi mở · (3) <b>USB drop</b> — sinh token theo thiết bị, trang tiếp nhận khi người dùng cắm và mở · (4) <b>Funnel hợp nhất</b> — một báo cáo so sánh tỉ lệ mắc giữa ba kênh phi-email với kênh email</dd>
       <dt>Workflow</dt><dd>Mỗi kênh dựng mồi theo cách riêng nhưng đều kết thúc ở một lượt gọi beacon → <code>SimEvent</code> → <code>UserClickedSimulationEvent</code>. Learning và analytics đã nối sẵn, không phải sửa.</dd>
       <dt>Test</dt><dd>UT state-machine cuộc gọi; UT sinh beacon trong tệp đính kèm; IT cho từng kênh vào đúng funnel; e2e ít nhất một kênh đi trọn.</dd>
@@ -640,12 +653,12 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT6</span><h3>Web beacon endpoints — hạ tầng nền</h3><span class="tag rev">giao sớm</span></header>
+    <header><span class="tid">ĐT6</span><h3>Web beacon endpoints — hạ tầng nền</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-03 · FR-SIM-04 · NFR-PERF-01</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân tích giá trị biên cho chống đếm trùng · test tải · ca tiêu cực với token giả mạo</dd>
-      <dt>Code</dt><dd>Controller mới <code>web/TrackingController.java</code>: <code>GET /t/open.gif</code> (pixel 1×1), <code>GET /t/click</code> (redirect + ghi CLICK). Ánh xạ token → <code>SimEvent</code>. Hiện event chỉ vào được qua <code>POST /api/v1/sim/events</code>.</dd>
-      <dt>Workflow</dt><dd>Email/QR/SMS nhúng URL beacon → mở/nhấn → ghi event → publish <code>UserClickedSimulationEvent</code>.</dd>
+      <dt>Code</dt><dd>Click đã theo dõi được: <code>simulation/web/SimTrackingController.java</code> phục vụ <code>GET /api/v1/sim/track/{token}</code>, không cần đăng nhập, ghi CLICK qua <code>trackClick(token)</code>. Đề tài này thêm phần <b>chưa có</b>: <code>GET /t/open.gif</code> (pixel 1×1 → sự kiện OPEN, hiện không đo được ai mở mail), <code>GET /t/click</code> dạng redirect thay vì trang HTML, chống đếm trùng theo token, chống bot. Vì click đã chạy, không đề tài nào phải chờ đề tài này.</dd>
+      <dt>Workflow</dt><dd>Email/QR/SMS nhúng URL beacon → <b>mở</b> (mới) hoặc nhấn (đã có) → ghi event → publish <code>UserClickedSimulationEvent</code>.</dd>
       <dt>Phần việc</dt><dd>(1) <code>/t/open.gif</code> trả pixel · (2) <code>/t/click</code> redirect · (3) token idempotent chống đếm trùng · (4) chống bot + đo tải bằng k6</dd>
       <dt>Test</dt><dd>IT beacon → event; test chống bot &amp; chống đếm trùng (idempotent theo token); k6 load cho endpoint nóng.</dd>
     </dl>
@@ -712,13 +725,13 @@
   </p>
 
   <div class="topic">
-    <header><span class="tid">ĐT9</span><h3>Micro-learning “teachable moment”</h3><span class="tag dep">cần ĐT6</span></header>
+    <header><span class="tid">ĐT9</span><h3>Micro-learning “teachable moment”</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-LRN-03 · FR-LRN-04 — và <b>BR-5</b> (ghi danh tự động, đúng một lần)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Test hướng sự kiện cho listener · phủ nhánh · biên số lần click</dd>
-      <dt>Code</dt><dd>Mở rộng <code>CoachingPage</code> + endpoint trang học tương tác; nối vào redirect của ĐT6.</dd>
+      <dt>Code</dt><dd>Mở rộng <code>CoachingPage</code> + endpoint trang học tương tác; thay trang cảnh báo tĩnh mà <code>SimTrackingController.clickedPage()</code> đang trả bằng trang học này.</dd>
       <dt>Workflow</dt><dd>Click phishing → redirect sang coaching page + micro-quiz. <code>SimulationClickListener</code> đã ghi danh remediation sẵn — <b>đừng ghi danh lần hai</b>.</dd>
-      <dt>Phần việc</dt><dd>(1) mở rộng <code>CoachingPage</code> · (2) trang học tương tác + micro-quiz · (3) nối vào redirect của ĐT6 · (4) đo hiệu quả (tỉ lệ hoàn thành, click lặp lại)</dd>
+      <dt>Phần việc</dt><dd>(1) mở rộng <code>CoachingPage</code> · (2) trang học tương tác + micro-quiz · (3) thay trang cảnh báo của <code>SimTrackingController</code> · (4) đo hiệu quả (tỉ lệ hoàn thành, click lặp lại)</dd>
       <dt>Test</dt><dd>IT click → enroll đúng một lần; e2e trải nghiệm learner.</dd>
     </dl>
   </div>
@@ -771,7 +784,7 @@
       <dt>Yêu cầu</dt><dd>FR-ANA-01 · FR-ANA-03 · <b>FR-ANA-04</b> — mục tiêu <b>BO-1</b></dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân tích giá trị biên cho ngưỡng điểm · table-driven cho công thức tổng hợp</dd>
       <dt>Code</dt><dd>Mở rộng <code>RiskSignalType</code> + logic tổng hợp trong <code>AnalyticsServiceImpl</code>; publish <code>RiskRecomputedEvent</code>.</dd>
-      <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → feed AIDA (ĐT14).</dd>
+      <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → nguồn cho orchestration đọc.</dd>
       <dt>Phần việc</dt><dd>(1) mở rộng <code>RiskSignalType</code> · (2) công thức tổng hợp điểm · (3) phân khúc theo user/phòng ban · (4) <b>viết consumer đầu tiên cho <code>RiskRecomputedEvent</code></b> — hiện chưa ai nghe</dd>
       <dt>Test</dt><dd>UT tính điểm deterministic; IT recompute qua event.</dd>
       <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm tích hợp có sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT16 xem ai sẽ là consumer đầu tiên.</dd>
@@ -808,7 +821,7 @@
     <dl>
       <dt>Yêu cầu</dt><dd>FR-AI-04 · FR-AI-05</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Bảng quyết định</b> (mức rủi ro × trạng thái học → hành động)</dd>
-      <dt>Code</dt><dd>Mở rộng orchestration có sẵn: rule chọn test/training theo <code>RiskScore</code> (từ ĐT12); drip/follow-up dùng <code>scheduler</code>. Giảm phụ thuộc Claude bằng <code>MlAiClient</code> (self-host, xem <code>research/</code>).</dd>
+      <dt>Code</dt><dd>Mở rộng orchestration có sẵn: rule chọn test/training theo <code>RiskScore</code> — <code>analytics/domain/RiskScore.java</code> và <code>RiskScoring</code> đã có trên main, nên đọc cái đang chạy chứ không chờ ĐT12 làm sâu thêm; drip/follow-up dùng <code>scheduler</code>. Giảm phụ thuộc Claude bằng <code>MlAiClient</code> (self-host, xem <code>research/</code>).</dd>
       <dt>Workflow</dt><dd><code>AidaOrchestrationRequestedEvent</code> → chọn hành động theo risk → tạo campaign (<code>simulation</code>) / ghi danh (<code>learning</code>) → follow-up → <code>AidaOrchestrationCompletedEvent</code>.</dd>
       <dt>Phần việc</dt><dd>(1) rule chọn hành động theo <code>RiskScore</code> · (2) drip/follow-up theo lịch · (3) bật <code>MlAiClient</code> self-host · (4) đo kết quả orchestration qua <code>AidaRun</code></dd>
       <dt>Test</dt><dd>UT rule chọn hành động; IT orchestration end-to-end với <code>StubAiClient</code>.</dd>
@@ -855,11 +868,11 @@
     <dl>
       <dt>Yêu cầu</dt><dd><b>FR-NOT-01 · FR-NOT-02 · FR-NOT-03</b></dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Bảng quyết định định tuyến kênh · test retry và dead-letter</dd>
-      <dt>Code</dt><dd>Module <code>modules/notification/</code>. Hiện <b>cả hai cổng ra đều là stub</b>: <code>application/LoggingNotificationGateway.java</code> chỉ ghi log, <code>application/NoopRealtimeNotifier.java</code> không làm gì. <code>domain/NotificationChannel.java</code> mới có <code>IN_APP, EMAIL</code>.</dd>
+      <dt>Code</dt><dd>Module <code>modules/notification/</code>. Hiện <b>cả hai cổng ra đều là stub</b>: <code>application/LoggingNotificationGateway.java</code> chỉ ghi log, <code>application/NoopRealtimeNotifier.java</code> không làm gì. <code>domain/NotificationChannel.java</code> đã có <code>IN_APP, EMAIL, SMS</code>; cái thiếu là đường truyền thật phía sau.</dd>
       <dt>Phần việc</dt>
       <dd>
         (1) <b>Gateway email thật</b> (SES/SMTP) với retry + ghi nhận thất bại.<br>
-        (2) <b>Kênh SMS</b> — mở rộng enum + gateway, dùng chung cho ĐT2.<br>
+        (2) <b>Kênh SMS</b> — cài provider thật (SNS/Twilio) sau <code>NotificationGateway</code>; enum <code>SMS</code> đã có. Đề tài này sở hữu <b>đường truyền</b>, nội dung mồi nhử là của ĐT2; hai bên gặp nhau ở interface nên chạy song song được, không ai chờ ai.<br>
         (3) <b>Realtime</b> — cài <code>RealtimeNotifier</code> bằng WebSocket thay <code>NoopRealtimeNotifier</code>; phía FE <code>useAlertStream</code> <b>đã sẵn sàng</b> và đã có 18 test, chỉ chờ server đẩy.<br>
         (4) <b>Tuỳ chọn nhận &amp; digest</b> — người dùng chọn kênh, gộp thông báo theo lịch.
       </dd>
@@ -914,8 +927,8 @@
       <dt>Phần việc — chức năng</dt>
       <dd>
         (1) <s>Bật được phân quyền ngoài prod</s> — <b>đã làm sẵn</b>: profile
-        <code>dev-secure</code> nạp chuỗi security thật trên H2 và tự cấp token
-        (<code>GET /dev/token?email=analyst@dev.local</code>), kèm
+        <code>dev-secure</code> nạp chuỗi security thật trên H2 và tự mint token
+        trong tiến trình qua <code>AuthProvider.login("analyst@dev.local", "")</code> — không có endpoint phát token, vì một route phát token vô danh nghĩa là một filter chain tắt CSRF và permitAll, đổi lấy tiện lợi mà bài test không cần. Kèm
         <code>AuthorizationEnforcementIT</code> làm mẫu. Nhóm nhận đề bắt đầu từ đây
         thay vì phải dựng.<br>
         (2) <b><code>GET /auth/permissions</code></b> — trả về danh sách năng lực của
