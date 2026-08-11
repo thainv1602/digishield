@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DigiShield — 20 đề tài sinh viên</title>
+<title>DigiShield — 19 đề tài sinh viên</title>
 
 <style>
   :root {
@@ -159,7 +159,7 @@
 
 <header class="mast">
   <p class="eyebrow">Hướng dẫn triển khai · cập nhật 10.08.2026</p>
-  <h1>DigiShield — 20 đề tài sinh viên</h1>
+  <h1>DigiShield — 19 đề tài sinh viên</h1>
   <p class="standfirst">
     Với mỗi đề tài, tài liệu này chỉ rõ bốn thứ: <b>yêu cầu nào thuộc về mình</b>,
     <b>code ở đâu</b>, <b>làm gì</b>, và <b>nghiệm thu thế nào</b>. Đọc phần <b>0</b> trước —
@@ -183,7 +183,7 @@
     <li><b>Mỗi đề tài gánh một số mã yêu cầu.</b> Dòng <em>Yêu cầu</em> ở đầu mỗi thẻ liệt kê
       mã <code>FR-xxx</code> mà nhóm chịu trách nhiệm, lấy từ
       <code>../docs/DigiShield_FRD.md</code>. Vài đề tài còn gánh cả <b>business rule</b> —
-      ví dụ ĐT04 chịu trách nhiệm “không bao giờ lưu giá trị mật khẩu”.</li>
+      ví dụ ĐT4 chịu trách nhiệm “không bao giờ lưu giá trị mật khẩu”.</li>
     <li><b>Tài liệu là sản phẩm bàn giao, không phải việc làm sau.</b> Xem
       <b>mục 0.9</b>: FRD, sequence, OpenAPI, ER… mỗi loại thay đổi chạm tài liệu nào, và
       loại nào <em>không</em> được chạm.</li>
@@ -406,7 +406,7 @@
         </tr>
         <tr>
           <td class="k">BPMN</td>
-          <td>Chỉ khi đề tài hiện thực một <em>quy trình có người duyệt</em> (ví dụ ĐT05). Ba quy trình đã có sẵn file <code>.bpmn</code> để tham khảo.</td>
+          <td>Chỉ khi đề tài hiện thực một <em>quy trình có người duyệt</em> (ví dụ ĐT5). Ba quy trình đã có sẵn file <code>.bpmn</code> để tham khảo.</td>
           <td class="k">../docs/*.bpmn</td>
         </tr>
         <tr>
@@ -508,10 +508,10 @@
   </p>
 
     <div class="note warn">
-    <p><b>Phụ thuộc cần lưu ý khi giao đề.</b> ĐT06 (web beacon) là hạ tầng nền cho
-    <b>ĐT01, ĐT02, ĐT03 và ĐT09</b> — bốn đề tài, không liền số. Nếu giao song song thì bốn nhóm
-    chờ một nhóm. Hoặc giao ĐT06 sớm hơn một nhịp, hoặc yêu cầu bốn đề tài kia tự stub beacon rồi
-    thay sau. ĐT04 và ĐT05 <em>không</em> phụ thuộc ĐT06.</p>
+    <p><b>Phụ thuộc cần lưu ý khi giao đề.</b> ĐT6 (web beacon) là hạ tầng nền cho
+    <b>ĐT1, ĐT2, ĐT3 và ĐT9</b> — bốn đề tài, không liền số. Nếu giao song song thì bốn nhóm
+    chờ một nhóm. Hoặc giao ĐT6 sớm hơn một nhịp, hoặc yêu cầu bốn đề tài kia tự stub beacon rồi
+    thay sau. ĐT4 và ĐT5 <em>không</em> phụ thuộc ĐT6.</p>
   </div>
 </section>
 
@@ -521,19 +521,18 @@
 <section>
   <div class="shead">
     <p class="eyebrow">Tổng quan</p>
-    <h2>20 đề tài, 7 nhóm</h2>
+    <h2>19 đề tài, 6 nhóm</h2>
   </div>
   <div class="tablewrap">
     <table>
       <thead><tr><th>Nhóm</th><th>Đề tài</th><th>Module chính</th><th>Ghi chú</th></tr></thead>
       <tbody>
-        <tr><td class="k">A</td><td class="k">ĐT01–06</td><td class="k">simulation · ai</td><td>Mô phỏng đa kênh &amp; nội dung. ĐT06 là nền cho ĐT01–03 và ĐT09. <b>ĐT03</b> gộp ba kênh phi-email; <b>ĐT05</b> là đề tài duyệt nội dung, thay chỗ đề tài đính kèm cũ.</td></tr>
-        <tr><td class="k">B</td><td class="k">ĐT07–08</td><td class="k">reporting · interception</td><td>Báo cáo phishing &amp; SOC.</td></tr>
-        <tr><td class="k">C</td><td class="k">ĐT09–11</td><td class="k">learning</td><td>Đào tạo &amp; LMS.</td></tr>
+        <tr><td class="k">A</td><td class="k">ĐT1–6</td><td class="k">simulation · ai</td><td>Mô phỏng đa kênh &amp; nội dung. ĐT6 là nền cho ĐT1–3 và ĐT9. <b>ĐT3</b> gộp ba kênh phi-email; <b>ĐT5</b> là đề tài duyệt nội dung, thay chỗ đề tài đính kèm cũ.</td></tr>
+        <tr><td class="k">B</td><td class="k">ĐT7–8</td><td class="k">reporting · interception</td><td>Báo cáo phishing &amp; SOC.</td></tr>
+        <tr><td class="k">C</td><td class="k">ĐT9–11</td><td class="k">learning</td><td>Đào tạo &amp; LMS.</td></tr>
         <tr><td class="k">D</td><td class="k">ĐT12–13</td><td class="k">analytics</td><td>Phân tích &amp; rủi ro.</td></tr>
         <tr><td class="k">E</td><td class="k">ĐT14</td><td class="k">ai</td><td>AI &amp; tự động hoá.</td></tr>
-        <tr><td class="k">F</td><td class="k">ĐT15</td><td class="k">e2e · buildSrc · CI</td><td>Chất lượng &amp; DevSecOps. <span class="tag rev">viết lại</span></td></tr>
-        <tr><td class="k">G</td><td class="k">ĐT16–20</td><td class="k">tenancy · notification · auth</td><td>Nền tảng vận hành. <span class="tag new">mới</span></td></tr>
+        <tr><td class="k">F</td><td class="k">ĐT15–19</td><td class="k">tenancy · notification · auth</td><td>Nền tảng vận hành. <span class="tag new">mới</span></td></tr>
         <tr><td class="k">+</td><td class="k">dự phòng</td><td class="k">reporting · interception · learning · tenancy · auth</td><td>Tám đề nhỏ, đậm kỹ thuật kiểm thử, giữ từ danh mục 15 đề trước.</td></tr>
       </tbody>
     </table>
@@ -548,7 +547,7 @@
     <span class="marker">A</span>
     <div>
       <p class="eyebrow">modules/simulation</p>
-      <h2>Mô phỏng đa kênh &amp; nội dung — ĐT01–06</h2>
+      <h2>Mô phỏng đa kênh &amp; nội dung — ĐT1–6</h2>
     </div>
   </div>
   <p>
@@ -564,18 +563,18 @@
   </p>
   <div class="flow evt">
     <span class="step"><b>Người dùng</b><span>mở / nhấn</span></span><span class="arrow">→</span>
-    <span class="step"><b>Beacon (ĐT06)</b><span>ghi SimEvent</span></span><span class="arrow">→</span>
+    <span class="step"><b>Beacon (ĐT6)</b><span>ghi SimEvent</span></span><span class="arrow">→</span>
     <span class="step"><b>simulation</b><span>publish event</span></span><span class="arrow">⇢</span>
     <span class="step"><b>learning</b><span>ghi danh remediation</span></span>
     <span class="step"><b>analytics</b><span>cộng RiskSignal</span></span>
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT01</span><h3>QR-code phishing (quishing)</h3><span class="tag dep">cần ĐT06</span></header>
+    <header><span class="tid">ĐT1</span><h3>QR-code phishing (quishing)</h3><span class="tag dep">cần ĐT6</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 · FR-SIM-05</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân hoạch tương đương (token hợp lệ · hết hạn · sai định dạng) · phân tích giá trị biên cho thời hạn QR</dd>
-      <dt>Code</dt><dd>Service sinh QR (ZXing) trong <code>simulation/application/</code>; endpoint <code>POST /api/v1/sim/campaigns/{id}/qr</code>; landing + tracking đi qua ĐT06. Chấm điểm link: <code>ai/AiClient.classify</code>.</dd>
+      <dt>Code</dt><dd>Service sinh QR (ZXing) trong <code>simulation/application/</code>; endpoint <code>POST /api/v1/sim/campaigns/{id}/qr</code>; landing + tracking đi qua ĐT6. Chấm điểm link: <code>ai/AiClient.classify</code>.</dd>
       <dt>Workflow</dt><dd>Tạo campaign kênh <code>QR</code> → sinh QR trỏ beacon → người quét → ghi <code>SimEvent(CLICK)</code> → publish event → learning ghi danh, analytics cộng risk.</dd>
       <dt>Phần việc</dt><dd>(1) sinh QR + phát token · (2) landing page cho người quét · (3) funnel &amp; báo cáo riêng kênh <code>QR</code> · (4) chấm điểm link bằng <code>AiClient.classify</code></dd>
       <dt>Test</dt><dd>UT bộ sinh QR; IT ingest event kênh QR; e2e “quét QR → click → submit”.</dd>
@@ -583,7 +582,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT02</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT06 · ĐT17</span></header>
+    <header><span class="tid">ĐT2</span><h3>SMS phishing (smishing)</h3><span class="tag dep">cần ĐT6 · ĐT16</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-02 · FR-SIM-03 · FR-NOT-01</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Bảng quyết định (provider × trạng thái gửi) · ca tiêu cực khi gateway từ chối</dd>
@@ -595,12 +594,12 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT03</span><h3>Kênh phi-email: vishing · đính kèm · USB</h3><span class="tag rev">gộp từ ĐT03 + ĐT05 cũ</span><span class="tag dep">cần ĐT06</span></header>
+    <header><span class="tid">ĐT3</span><h3>Kênh phi-email: vishing · đính kèm · USB</h3><span class="tag rev">gộp từ ĐT3 + ĐT5 cũ</span><span class="tag dep">cần ĐT6</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-01 · FR-SIM-03 — và <b>BR-3</b> (payload phải vô hại)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Máy trạng thái cho vòng đời cuộc gọi · phủ nhánh cho ba kênh · ca tiêu cực với tệp không hợp lệ</dd>
       <dt>Vì sao gộp</dt><dd>Ba kênh này ở bản trước là hai đề tài rời, mỗi cái chỉ đủ một đến hai phần việc — chưa tới tầm một nhóm bốn người. Chúng dùng chung đúng một cơ chế: <b>dựng mồi ngoài email, gắn beacon, quy về cùng một funnel</b>. Gộp lại thành một đề tài có bốn phần việc thật, thay vì hai đề tài chưa đủ khối lượng.</dd>
-      <dt>Code</dt><dd>Module <code>simulation</code>. Enum <code>domain/Channel.java</code> đã có sẵn <code>VOICE</code>, <code>USB</code>; template đính kèm dùng <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>). Beacon lấy từ ĐT06.</dd>
+      <dt>Code</dt><dd>Module <code>simulation</code>. Enum <code>domain/Channel.java</code> đã có sẵn <code>VOICE</code>, <code>USB</code>; template đính kèm dùng <code>ai/domain/AiTemplate.java</code> (đã có <code>AttachmentView</code>). Beacon lấy từ ĐT6.</dd>
       <dt>Phần việc</dt><dd>(1) <b>Vishing</b> — entity kịch bản cuộc gọi + IVR stub, campaign kênh <code>VOICE</code> · (2) <b>Đính kèm</b> — sinh tệp doc/pdf vô hại có nhúng beacon, ghi <code>OPEN</code> khi mở · (3) <b>USB drop</b> — sinh token theo thiết bị, trang tiếp nhận khi người dùng cắm và mở · (4) <b>Funnel hợp nhất</b> — một báo cáo so sánh tỉ lệ mắc giữa ba kênh phi-email với kênh email</dd>
       <dt>Workflow</dt><dd>Mỗi kênh dựng mồi theo cách riêng nhưng đều kết thúc ở một lượt gọi beacon → <code>SimEvent</code> → <code>UserClickedSimulationEvent</code>. Learning và analytics đã nối sẵn, không phải sửa.</dd>
       <dt>Test</dt><dd>UT state-machine cuộc gọi; UT sinh beacon trong tệp đính kèm; IT cho từng kênh vào đúng funnel; e2e ít nhất một kênh đi trọn.</dd>
@@ -609,7 +608,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT04</span><h3>Landing page builder + credential-capture</h3></header>
+    <header><span class="tid">ĐT4</span><h3>Landing page builder + credential-capture</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-03 · <b>FR-SIM-06</b> — và <b>BR-2</b> (không bao giờ lưu giá trị mật khẩu) · NFR-SEC-03</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Ca tiêu cực là trọng tâm</b>: khẳng định không trường mật khẩu nào được ghi · phân hoạch dữ liệu nhập</dd>
@@ -621,7 +620,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT05</span><h3>Quy trình duyệt nội dung mô phỏng</h3><span class="tag new">thay đề tài đính kèm đã gộp vào ĐT03</span></header>
+    <header><span class="tid">ĐT5</span><h3>Quy trình duyệt nội dung mô phỏng</h3><span class="tag new">thay đề tài đính kèm đã gộp vào ĐT3</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>FR-AI-06</b> — và <b>BR-4</b> (người duyệt phải khác người tạo)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Máy trạng thái</b> DRAFT → PENDING_REVIEW → APPROVED/REJECTED (kể cả chuyển đổi bất hợp lệ) · bảng quyết định cho quyền duyệt</dd>
@@ -635,7 +634,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT06</span><h3>Web beacon endpoints — hạ tầng nền</h3><span class="tag rev">giao sớm</span></header>
+    <header><span class="tid">ĐT6</span><h3>Web beacon endpoints — hạ tầng nền</h3><span class="tag rev">giao sớm</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-SIM-03 · FR-SIM-04 · NFR-PERF-01</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân tích giá trị biên cho chống đếm trùng · test tải · ca tiêu cực với token giả mạo</dd>
@@ -655,7 +654,7 @@
     <span class="marker">B</span>
     <div>
       <p class="eyebrow">modules/reporting · modules/interception</p>
-      <h2>Báo cáo phishing &amp; SOC — ĐT07–08</h2>
+      <h2>Báo cáo phishing &amp; SOC — ĐT7–8</h2>
     </div>
   </div>
   <p>
@@ -665,7 +664,7 @@
   </p>
 
   <div class="topic">
-    <header><span class="tid">ĐT07</span><h3>Nút “Report Phishing” (add-in Outlook/Gmail)</h3></header>
+    <header><span class="tid">ĐT7</span><h3>Nút “Report Phishing” (add-in Outlook/Gmail)</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-REP-01</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân hoạch payload email · ca tiêu cực khi thiếu trường bắt buộc</dd>
@@ -677,7 +676,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT08</span><h3>Abuse-mailbox auto-triage</h3></header>
+    <header><span class="tid">ĐT8</span><h3>Abuse-mailbox auto-triage</h3></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-AI-02 · FR-REP-02 · FR-SIM-07</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Bảng quyết định</b> (từ khoá × nguồn × điểm AI → nhãn ưu tiên)</dd>
@@ -697,7 +696,7 @@
     <span class="marker">C</span>
     <div>
       <p class="eyebrow">modules/learning</p>
-      <h2>Đào tạo &amp; LMS — ĐT09–11</h2>
+      <h2>Đào tạo &amp; LMS — ĐT9–11</h2>
     </div>
   </div>
   <p>
@@ -707,13 +706,13 @@
   </p>
 
   <div class="topic">
-    <header><span class="tid">ĐT09</span><h3>Micro-learning “teachable moment”</h3><span class="tag dep">cần ĐT06</span></header>
+    <header><span class="tid">ĐT9</span><h3>Micro-learning “teachable moment”</h3><span class="tag dep">cần ĐT6</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-LRN-03 · FR-LRN-04 — và <b>BR-5</b> (ghi danh tự động, đúng một lần)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Test hướng sự kiện cho listener · phủ nhánh · biên số lần click</dd>
-      <dt>Code</dt><dd>Mở rộng <code>CoachingPage</code> + endpoint trang học tương tác; nối vào redirect của ĐT06.</dd>
+      <dt>Code</dt><dd>Mở rộng <code>CoachingPage</code> + endpoint trang học tương tác; nối vào redirect của ĐT6.</dd>
       <dt>Workflow</dt><dd>Click phishing → redirect sang coaching page + micro-quiz. <code>SimulationClickListener</code> đã ghi danh remediation sẵn — <b>đừng ghi danh lần hai</b>.</dd>
-      <dt>Phần việc</dt><dd>(1) mở rộng <code>CoachingPage</code> · (2) trang học tương tác + micro-quiz · (3) nối vào redirect của ĐT06 · (4) đo hiệu quả (tỉ lệ hoàn thành, click lặp lại)</dd>
+      <dt>Phần việc</dt><dd>(1) mở rộng <code>CoachingPage</code> · (2) trang học tương tác + micro-quiz · (3) nối vào redirect của ĐT6 · (4) đo hiệu quả (tỉ lệ hoàn thành, click lặp lại)</dd>
       <dt>Test</dt><dd>IT click → enroll đúng một lần; e2e trải nghiệm learner.</dd>
     </dl>
   </div>
@@ -769,7 +768,7 @@
       <dt>Workflow</dt><dd>Các event (click, report, hoàn thành học) → cộng <code>RiskSignal</code> → tính <code>RiskScore</code> theo user/phòng ban → phân khúc → feed AIDA (ĐT14).</dd>
       <dt>Phần việc</dt><dd>(1) mở rộng <code>RiskSignalType</code> · (2) công thức tổng hợp điểm · (3) phân khúc theo user/phòng ban · (4) <b>viết consumer đầu tiên cho <code>RiskRecomputedEvent</code></b> — hiện chưa ai nghe</dd>
       <dt>Test</dt><dd>UT tính điểm deterministic; IT recompute qua event.</dd>
-      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm tích hợp có sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT17 xem ai sẽ là consumer đầu tiên.</dd>
+      <dt>Lưu ý</dt><dd><code>RiskRecomputedEvent</code> hiện <b>chưa module nào nghe</b>. Đây là điểm tích hợp có sẵn, và cũng là cơ hội: nhóm nào làm ĐT12 nên bàn với nhóm ĐT14/ĐT16 xem ai sẽ là consumer đầu tiên.</dd>
     </dl>
   </div>
 
@@ -818,56 +817,8 @@
   <div class="shead marked">
     <span class="marker">F</span>
     <div>
-      <p class="eyebrow">e2e · buildSrc · CI</p>
-      <h2>Chất lượng &amp; DevSecOps — ĐT15 <span class="tag rev">viết lại</span></h2>
-    </div>
-  </div>
-  <div class="note ok">
-    <p><b>Phần lớn việc của bản cũ đã xong.</b> Đề tài này được viết lại để không giao lại việc đã làm:</p>
-    <ul>
-      <li>Checkstyle <code>ignoreFailures = false</code> — <b>xong</b>, 0 violation, không còn ngoại lệ nào.</li>
-      <li>SpotBugs — <b>xong</b>, enforced, <code>effort = MAX</code>.</li>
-      <li>JaCoCo — đã nâng <b>0.10 → 0.15</b>. Còn xa 0.50.</li>
-      <li>E2E gate — <b>đã là gate thật</b>, không còn <code>continue-on-error</code>.</li>
-      <li>FE coverage — đã có <b>130 test</b>, branch <b>57%</b> (auth + shared logic).</li>
-    </ul>
-  </div>
-  <div class="topic">
-    <header><span class="tid">ĐT15</span><h3>Nâng chất lượng test &amp; siết gate</h3></header>
-    <dl>
-      <dt>Yêu cầu</dt><dd>FRD §8.1 (chính sách coverage) · NFR-PERF-01</dd>
-      <dt>Kỹ thuật kiểm thử</dt><dd><b>Kiểm thử đột biến (PITest)</b> — đo chất lượng test chứ không chỉ độ phủ</dd>
-      <dt>Việc còn lại</dt>
-      <dd>
-        <b>1. Mutation testing.</b> Thêm <b>PITest</b> cho backend và đặt ngưỡng mutation score. Đây là
-        việc giá trị nhất còn lại: coverage chỉ nói code <em>được chạy</em>, mutation nói test
-        <em>có bắt lỗi</em> hay không.<br>
-        <b>2. Nâng sàn coverage.</b> Sàn per-project đang bị chặn bởi module yếu nhất
-        (<code>reporting</code> ~19.6%). Viết test cho <code>reporting</code> và <code>tenancy</code>
-        rồi nâng sàn dần; đồng thời cân nhắc thêm verification trên <b>bản aggregate</b>, vì sàn
-        per-project không bắt được suy giảm diện rộng.<br>
-        <b>3. Coverage của integration test không được tính.</b> <code>testCodeCoverageReport</code>
-        cho ra cùng một con số dù có chạy Testcontainers hay không — exec data của
-        <code>integrationTest</code> chưa được nối vào bản aggregate. Sửa chỗ này làm con số CI công bố
-        đúng với thực tế.<br>
-        <b>4. Performance.</b> Thêm <b>k6</b> cho endpoint nóng (tracking event, dashboard), chạy
-        non-blocking trước, thành gate sau.<br>
-        <b>5. FE coverage.</b> 130 test nhưng mới phủ auth + shared logic; các trang nghiệp vụ chưa có.
-      </dd>
-      <dt>Nghiệm thu</dt><dd>Pipeline xanh với gate thật; mutation score có ngưỡng; sàn JaCoCo cao hơn lúc nhận đề và <em>giải thích được vì sao dừng ở mức đó</em>.</dd>
-    </dl>
-  </div>
-</section>
-
-<hr>
-
-<!-- ══════════════ NHÓM G ══════════════ -->
-<section>
-  <div class="shead marked">
-    <span class="marker">G</span>
-    <div>
       <p class="eyebrow">tenancy · notification · auth <span class="tag new">mới</span></p>
-      <h2>Nền tảng vận hành — ĐT16–20</h2>
+      <h2>Nền tảng vận hành — ĐT15–19</h2>
     </div>
   </div>
   <p>
@@ -876,7 +827,7 @@
   </p>
 
   <div class="topic">
-    <header><span class="tid">ĐT16</span><h3>Gói dịch vụ, hạn mức &amp; đo lường sử dụng</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT15</span><h3>Gói dịch vụ, hạn mức &amp; đo lường sử dụng</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-TEN-04 · FR-TEN-05 · <b>FR-TEN-06</b> · FR-TEN-07</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Phân tích giá trị biên tại hạn mức: dưới · vừa chạm · vượt · ca tiêu cực khi vượt</dd>
@@ -894,7 +845,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT17</span><h3>Thông báo đa kênh &amp; realtime</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT16</span><h3>Thông báo đa kênh &amp; realtime</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>FR-NOT-01 · FR-NOT-02 · FR-NOT-03</b></dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Bảng quyết định định tuyến kênh · test retry và dead-letter</dd>
@@ -902,7 +853,7 @@
       <dt>Phần việc</dt>
       <dd>
         (1) <b>Gateway email thật</b> (SES/SMTP) với retry + ghi nhận thất bại.<br>
-        (2) <b>Kênh SMS</b> — mở rộng enum + gateway, dùng chung cho ĐT02.<br>
+        (2) <b>Kênh SMS</b> — mở rộng enum + gateway, dùng chung cho ĐT2.<br>
         (3) <b>Realtime</b> — cài <code>RealtimeNotifier</code> bằng WebSocket thay <code>NoopRealtimeNotifier</code>; phía FE <code>useAlertStream</code> <b>đã sẵn sàng</b> và đã có 18 test, chỉ chờ server đẩy.<br>
         (4) <b>Tuỳ chọn nhận &amp; digest</b> — người dùng chọn kênh, gộp thông báo theo lịch.
       </dd>
@@ -912,7 +863,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT18</span><h3>SCIM/SSO provisioning &amp; quản trị người dùng</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT17</span><h3>SCIM/SSO provisioning &amp; quản trị người dùng</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd>FR-AUTH-07 · FR-AUTH-08 · FR-TEN-03</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Máy trạng thái vòng đời tài khoản (tạo · sửa · khoá · gỡ) · ca tiêu cực với payload SCIM sai chuẩn</dd>
@@ -930,7 +881,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT19</span><h3>Song ngữ đầu-cuối (i18n)</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT18</span><h3>Song ngữ đầu-cuối (i18n)</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>NFR-I18N-01</b></dd>
       <dt>Kỹ thuật kiểm thử</dt><dd>Table-driven theo locale · ca fallback khi thiếu khoá dịch</dd>
@@ -948,7 +899,7 @@
   </div>
 
   <div class="topic">
-    <header><span class="tid">ĐT20</span><h3>RBAC &amp; kiểm soát truy cập đa tenant</h3><span class="tag new">mới</span></header>
+    <header><span class="tid">ĐT19</span><h3>RBAC &amp; kiểm soát truy cập đa tenant</h3><span class="tag new">mới</span></header>
     <dl>
       <dt>Yêu cầu</dt><dd><b>NFR-SEC-01 · NFR-SEC-02</b> — và <b>BR-7</b> (không tổ chức nào đọc được dữ liệu tổ chức khác)</dd>
       <dt>Kỹ thuật kiểm thử</dt><dd><b>Table-driven trên toàn ma trận</b> endpoint × vai trò — cả ca cho phép lẫn ca từ chối</dd>
@@ -962,7 +913,7 @@
         (4) <b>Audit &amp; hồi quy</b> — mọi hành động nhạy cảm phải để lại bản ghi; thêm test chống hồi quy.
       </dd>
       <dt>Test</dt><dd>Đây là đề tài mà <em>sản phẩm chính là test</em>, nên đủ 5 lớp một cách tự nhiên: UT guard, IT trên Postgres thật (RLS chỉ sống ở đó), Postman ca 401/403, e2e đăng nhập sai vai trò bị chặn.</dd>
-      <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành đã gộp vào ĐT15. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
+      <dt>Vì sao thay đề tài Observability</dt><dd>Đề tài quan sát/vận hành phần lớn là cấu hình dashboard và alert, rất khó nghiệm thu theo khuôn 5 lớp test (không rõ “Postman test cho một biểu đồ Grafana” là gì). Phần vận hành trước đây gộp vào đề tài Chất lượng &amp; DevSecOps; đề tài đó nay đã bỏ, nên mảng quan sát/vận hành hiện <b>không thuộc đề tài nào</b>. Đề tài RBAC ngược lại: sản phẩm kiểm được, rủi ro thật, và có ma trận sẵn làm đặc tả.</dd>
     </dl>
   </div>
 </section>
