@@ -282,7 +282,7 @@
   </p>
 
   <h3><span class="num">0.6</span>Công thức đóng góp chuẩn — áp dụng cho mọi đề tài</h3>
-<pre><code>1. git switch -c feat/&lt;slug&gt;          # nhánh từ main; KHÔNG push thẳng main
+<pre><code>1. git switch -c feat/&lt;slug&gt;          # MỘT nhánh cho cả nhóm, từ main; KHÔNG push thẳng main
 2. domain/          entity + enum
 3. migration        V2026.MM.DD.NNN__*.sql          [nếu đổi schema]
 4. infrastructure/  repository
@@ -295,7 +295,54 @@
 11. sơ đồ           sequence nếu luồng thoả tiêu chí mục 0.9; BPMN nếu là quy trình
 12. postman         request + test script cho MỌI endpoint mới, kèm ca lỗi
 13. e2e             kịch bản Selenium cho luồng người dùng mới
-14. test            5 lớp → ./gradlew check → PR → CI xanh</code></pre>
+14. test            5 lớp → ./gradlew check → CI xanh
+15. duyệt chéo      nhóm kế tiếp review + comment → tác giả trả lời từng ý
+                    → rồi giảng viên mới xem &amp; merge</code></pre>
+
+  <h4 style="font-size:15px;font-weight:640;margin:10px 0 0">Mỗi nhóm một PR</h4>
+  <p>
+    Cả bốn phần việc đi chung <b>một nhánh, một PR</b> — 19 nhóm là 19 PR, không phải bảy chục.
+    Mỗi phần việc là một chuỗi commit riêng để người duyệt đọc được từng phần.
+  </p>
+  <p>
+    <b>Mở PR ở dạng draft ngay ngày đầu</b>, khi mới có commit rỗng cũng được. Draft vẫn chạy đủ
+    CI, nên nhóm biết mình phá vỡ thứ gì trong vòng vài phút thay vì phát hiện ở tuần cuối. Bấm
+    “Ready for review” khi cả bốn phần đã xong và CI xanh.
+  </p>
+  <p>
+    Lưu ý một luật của nhánh <code>main</code>: <b>mọi push sau khi giảng viên approve đều huỷ
+    approve đó</b> (<code>dismiss stale reviews</code>). Nên chỉ xin duyệt khi PR đã thật sự xong —
+    sửa thêm một dòng là phải xin lại từ đầu. Vì vậy hãy xong vòng nhận xét chéo <b>trước</b>, rồi
+    mới mời giảng viên.
+  </p>
+
+  <h4 style="font-size:15px;font-weight:640;margin:10px 0 0">Nhận xét chéo — bắt buộc, trước khi giảng viên xem</h4>
+  <p>
+    <b>Nhóm ĐT<i>n</i> đọc và nhận xét PR của nhóm ĐT<i>n−1</i></b>; ĐT1 nhận xét ĐT19. Mỗi nhóm
+    nhận xét đúng một PR và được đúng một nhóm nhận xét — vòng tròn, không ai tự đọc bài mình,
+    không đôi nào đọc qua lại cho nhau.
+  </p>
+  <p>
+    Nhận xét nộp bằng <b>“Review changes → Comment”</b> trên GitHub — <b>không dùng “Approve”</b>,
+    cũng không dùng “Request changes”. Sinh viên chỉ ra vấn đề; phán quyết PR có được vào hay không
+    là của giảng viên. Tác giả phải <b>trả lời từng ý</b>, sửa hoặc nói rõ vì sao không sửa.
+    PR chưa có nhận xét của nhóm được phân công và chưa được trả lời thì <b>giảng viên chưa xem</b>.
+    Đây không phải thủ tục: đọc test của người khác là nội dung của môn học, và nó lọc sẵn những
+    lỗi hiển nhiên trước khi tới người có quyền merge.
+  </p>
+  <p>
+    Về mặt kỹ thuật thì approve của sinh viên vốn cũng không mở được nút merge: <code>main</code>
+    yêu cầu review từ <i>code owner</i>, và <code>.github/CODEOWNERS</code> chỉ ghi tài khoản giảng
+    viên. Nhưng lý do cấm “Approve” không phải kỹ thuật — một dấu tick xanh dưới PR đọc như “đã có
+    người chịu trách nhiệm”, mà trách nhiệm đó không thuộc về nhóm bạn. Nhận xét thì có giá trị dù
+    ai viết. Cách làm này cũng không cần đổi bất kỳ quyền nào: repo là public, ai có tài khoản
+    GitHub cũng nhận xét được.
+  </p>
+  <p>
+    Người duyệt đọc gì: mô tả PR có nói rõ <i>vì sao</i> không; test có thể đỏ được không (một
+    assertion so kết quả với chính công thức của code thì không chứng minh gì); endpoint mới đã khai
+    trong OpenAPI chưa; và ca lỗi — không chỉ đường đi đẹp.
+  </p>
 
   <h3><span class="num">0.7</span>Test &amp; CI/CD — chạy ở đâu</h3>
   <div class="note warn">
