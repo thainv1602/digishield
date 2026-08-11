@@ -58,21 +58,29 @@ class SimulationDeliveryListener {
                 // No transport for this channel — do not quietly deliver over the
                 // wrong one. The campaign still records DELIVERED/click tracking.
                 LOG.warn("Campaign {} uses channel {}, which has no delivery transport; "
-                                + "skipping the send for user {}",
-                        event.campaignId(), event.channel(), event.userId());
+                                + "skipping the send for {} recipient(s)",
+                        event.campaignId(), event.channel(), event.recipients().size());
                 return;
             }
 
-            String link = publicBaseUrl + event.trackPath();
             String title = StringUtils.hasText(event.subject())
                     ? event.subject()
                     : messages.get("simulation.delivery.fallback.subject");
-            String body = renderBody(event, link, channel);
 
-            notificationService.send(event.userId(), NotificationType.SYSTEM, channel, title, body);
-        } catch (Exception e) {
-            // Never let a delivery failure break the campaign launch.
-            LOG.warn("Simulation delivery for user {} failed: {}", event.userId(), e.toString());
+            // The event now carries the whole audience, so one failure must still
+            // cost only its own recipient: catch per person, not per campaign.
+            for (SimulationDeliveryRequestedEvent.Recipient recipient : event.recipients()) {
+                try {
+                    String link = publicBaseUrl + recipient.trackPath();
+                    String body = renderBody(event, link, channel);
+                    notificationService.send(
+                            recipient.userId(), NotificationType.SYSTEM, channel, title, body);
+                } catch (Exception e) {
+                    // Never let one delivery failure break the campaign launch.
+                    LOG.warn("Simulation delivery for user {} failed: {}",
+                            recipient.userId(), e.toString());
+                }
+            }
         } finally {
             TenantContext.clear();
         }
