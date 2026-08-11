@@ -103,7 +103,7 @@ satisfies a lower one. Authoritative mapping: `AUTHZ_MATRIX.md`.
 | FR-AI-03 | Moderate generated content before it can be approved | system | `POST /ai/moderate` | ai |
 | FR-AI-04 | Orchestrate campaign and training decisions from risk | system | `POST /ai/orchestration/run` | ai |
 | FR-AI-05 | Function with no external AI provider reachable | system | — | Degrades to a deterministic local client |
-| FR-AI-06 | Require approval by someone other than the author before content reaches an employee | CE, OA | `/ai/templates/{id}` | **BR-4 — not yet implemented; see topic ĐT05** |
+| FR-AI-06 | Require approval by someone other than the author before content reaches an employee | CE, OA | `/ai/templates/{id}` | **BR-4 — not yet implemented; see topic ĐT5** |
 | FR-INT-01 | Evaluate a transaction or account for fraud indicators | system | `POST /interventions/evaluate` | interception |
 | FR-INT-02 | Maintain an account watchlist and check against it | AN | `/account-watchlist`, `/check` | interception |
 
@@ -154,10 +154,11 @@ Excluded from measurement, and only these: generated sources (the OpenAPI client
 framework configuration classes, and `package-info`. Nothing is excluded because it is
 merely inconvenient to test.
 
-> **Distributing the work.** Reaching 0.90 is not one team's task. Each of the twenty
+> **Distributing the work.** Reaching 0.90 is not one team's task. Each of the nineteen
 > capstone topics (`digishield/STUDENT_TOPICS.html`) owns one or more modules; the floor
-> is an acceptance criterion of the topic that touches the module. Topic ĐT15 does not
-> raise coverage by itself — it maintains the gate and stops it slipping back.
+> is an acceptance criterion of the topic that touches the module. Maintaining the gate
+> itself belonged to a quality topic that has since been dropped, so nobody currently
+> stops the floor slipping back.
 >
 > The rungs, the per-module cost of each, and the procedure for raising the floor are in
 > **[`DigiShield_Coverage_Roadmap.md`](DigiShield_Coverage_Roadmap.md)**.
@@ -167,7 +168,7 @@ merely inconvenient to test.
 | Direction | Where |
 |---|---|
 | Business objective → requirement | BO-1 → FR-ANA-01 · BO-2 → FR-LRN-03 · BO-3 → FR-ANA-05 · BO-4 → FR-REP-01…06 · BO-5 → NFR-OPS-01 |
-| Business rule → requirement | BR-2 → FR-SIM-06 · BR-3 → topic ĐT03 · BR-4 → FR-AI-06 · BR-5 → FR-LRN-03 · BR-6 → FR-TEN-08, FR-REP-02 · BR-7 → NFR-SEC-01 |
+| Business rule → requirement | BR-2 → FR-SIM-06 · BR-3 → topic ĐT3 · BR-4 → FR-AI-06 · BR-5 → FR-LRN-03 · BR-6 → FR-TEN-08, FR-REP-02 · BR-7 → NFR-SEC-01 |
 | Requirement → API | Column *API* above; authoritative definition in `DigiShield_openapi.yaml` |
 | Requirement → module | Section heading; module boundaries enforced by `ModularityTests` |
 | Requirement → test | Five layers per §8.1; per-module coverage reported by CI |
@@ -179,11 +180,11 @@ brochure.
 
 | Gap | Requirement | Where it is scheduled |
 |---|---|---|
-| Content approval is a boolean set by the author | FR-AI-06 | Topic ĐT05 |
+| Content approval is a boolean set by the author | FR-AI-06 | Topic ĐT5 |
 | `RiskRecomputedEvent` is published but nothing consumes it | FR-ANA-04 | Topic ĐT12 |
-| Notification gateways are stubs; realtime push is a no-op | FR-NOT-01…03 | Topic ĐT17 |
-| Quota enforcement is not applied at mutating endpoints | FR-TEN-06 | Topic ĐT16 |
-| Backend messages are hardcoded Vietnamese | NFR-I18N-01 | Topic ĐT19 |
-| The authorization matrix has no test coverage | NFR-SEC-02 | Topic ĐT20 |
+| Notification gateways are stubs; realtime push is a no-op | FR-NOT-01…03 | Topic ĐT16 |
+| Quota enforcement is not applied at mutating endpoints | FR-TEN-06 | Topic ĐT15 |
+| Backend messages are hardcoded Vietnamese | NFR-I18N-01 | Topic ĐT18 |
+| The authorization matrix has no test coverage | NFR-SEC-02 | Topic ĐT19 |
 | Coverage is 40% backend, well under the 0.90 target | §8.1 | Distributed across all topics |
 | No backend export endpoint exists | FR-REP-07 | Topic ĐT13 |

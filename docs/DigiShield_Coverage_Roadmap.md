@@ -76,7 +76,8 @@ Two smaller measurement rules, so the number keeps meaning something:
 - The exclusion list stays closed — generated sources, framework configuration,
   `package-info`. Nothing is excluded for being inconvenient to test.
 - Coverage measures execution, not assertion. `./gradlew check` also runs **SpotBugs** and
-  **Checkstyle**, and topic ĐT15 adds **PITest**: mutation score is what distinguishes a
+  **Checkstyle**. **PITest** is not wired yet and belongs to no topic since the quality
+  topic was dropped: mutation score is what distinguishes a
   test that checks something from a test that merely runs it.
 
 ## 3. The rungs
@@ -113,21 +114,22 @@ assigned to one group. Topics from `digishield/STUDENT_TOPICS.html`:
 
 | Subproject | Topics that own it |
 |---|---|
-| `modules/reporting` | ĐT07 · ĐT08 · ĐT13 |
-| `modules/tenancy` | ĐT16 · ĐT18 |
-| `boot/app` | ĐT15 (composition root and the integration suite) |
-| `modules/notification` | ĐT02 · ĐT17 |
-| `modules/learning` | ĐT09 · ĐT10 · ĐT11 |
-| `modules/ai` | ĐT05 · ĐT08 · ĐT14 |
-| `modules/simulation` | ĐT01 – ĐT06 |
-| `modules/auth` | ĐT18 · ĐT20 |
-| `shared/security` · `shared/tenant-context` | ĐT20 |
-| `modules/interception` | ĐT07 · ĐT08 |
+| `modules/reporting` | ĐT7 · ĐT8 · ĐT13 |
+| `modules/tenancy` | ĐT15 · ĐT17 |
+| `boot/app` | unassigned (composition root and the integration suite) |
+| `modules/notification` | ĐT2 · ĐT16 |
+| `modules/learning` | ĐT9 · ĐT10 · ĐT11 |
+| `modules/ai` | ĐT5 · ĐT8 · ĐT14 |
+| `modules/simulation` | ĐT1 – ĐT6 |
+| `modules/auth` | ĐT17 · ĐT19 |
+| `shared/security` · `shared/tenant-context` | ĐT19 |
+| `modules/interception` | ĐT7 · ĐT8 |
 | `modules/analytics` | ĐT12 · ĐT13 |
 
-**ĐT15 does not raise coverage on behalf of others.** It owns the measurement: wiring
-integration coverage in, adding PITest, raising the floor when a rung is cleared, and
-refusing the rise when it is not.
+**Nobody owns the measurement.** The quality topic that used to hold it -- adding
+PITest, raising the floor when a rung is cleared, refusing the rise when it is not --
+has been dropped from the capstone list, so that work is currently unassigned. Wiring
+integration coverage into the aggregate is already done.
 
 ## 5. Raising the floor
 
