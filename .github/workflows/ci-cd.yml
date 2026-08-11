@@ -120,6 +120,13 @@ jobs:
       - name: Compare declared enum values against the Java enums
         if: always()
         run: python3 scripts/check-openapi-enums.py
+      # The three above compare the spec with the *shape* of the code and never
+      # read a mapper. TenantView was declared lower case, listed lower case in
+      # the spec, and returned POOL: all three passed while the super-admin
+      # console counted zero live tenants. This one reads what the code writes.
+      - name: Compare the case enums reach the wire in
+        if: always()
+        run: python3 scripts/check-openapi-emission.py
 
   # 3b) Backend unit tests — fast feedback before the heavier IT suite.
   backend:

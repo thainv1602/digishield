@@ -1,0 +1,14 @@
+# Known disagreements between the spec and what the server writes, and enum
+# positions whose emitted case this check cannot read. One per line, prefixed
+# by which it is.
+#
+# A mismatch here is debt, not permission: the spec promises one spelling and
+# the server writes another. Shrinking this list is the point; growing it
+# needs a reason.
+#
+#     python3 scripts/check-openapi-emission.py --update-baseline
+#
+# Entries: 2
+
+mismatch   schemas.Enrollment.properties.status
+mismatch   schemas.InterventionDecision.properties.decision
