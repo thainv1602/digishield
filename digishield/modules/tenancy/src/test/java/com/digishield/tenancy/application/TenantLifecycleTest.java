@@ -200,15 +200,11 @@ class TenantLifecycleTest {
 
         assertThat(view.name()).isEqualTo("Cơ quan ABC");
         assertThat(view.dataRegion()).isEqualTo("vn");
-        // Upper case, and deliberately pinned as such: TenantView emits
-        // getTier().name() while every other DTO in the codebase lower-cases its
-        // enums, and DigiShield_openapi.yaml declares [pool, bridge, silo] and
-        // [provisioning, active, ...] in lower case. The frontend believes the
-        // spec — TenantConsolePage counts `t.status === 'active'`, which never
-        // matches — so this assertion records a live mismatch rather than
-        // endorsing it. Fixing it means changing the wire, not this test.
-        assertThat(view.tier()).isEqualTo("POOL");
-        assertThat(view.status()).isEqualTo("ACTIVE");
+        // Lower case, as the spec declares and as every other DTO emits. These
+        // used to be POOL and ACTIVE, which is why the super-admin console —
+        // comparing against "active" — counted no live tenants at all.
+        assertThat(view.tier()).isEqualTo("pool");
+        assertThat(view.status()).isEqualTo("active");
     }
 
     @Test

@@ -496,9 +496,15 @@ public class TenancyServiceImpl implements TenancyService {
                 tenant.getId(),
                 tenant.getTenantId(),
                 tenant.getName(),
-                tenant.getTier() != null ? tenant.getTier().name() : null,
+                // Lower case, like every other DTO in the codebase and like the
+                // spec: these emitted POOL and ACTIVE while the frontend
+                // compared against "active", so the super-admin console counted
+                // zero live tenants however many there were.
+                tenant.getTier() != null
+                        ? tenant.getTier().name().toLowerCase(Locale.ROOT) : null,
                 tenant.getDataRegion(),
-                tenant.getStatus() != null ? tenant.getStatus().name() : null,
+                tenant.getStatus() != null
+                        ? tenant.getStatus().name().toLowerCase(Locale.ROOT) : null,
                 tenant.getUserCount(),
                 tenant.getDomain()
         );

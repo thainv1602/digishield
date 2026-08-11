@@ -815,6 +815,11 @@ paths:
                 decision:
                   type: string
                   enum: [confirm_threat, quarantine, dismiss]
+                  description: >-
+                    quarantine records a threat the analyst is holding: the
+                    report is labelled THREAT but no confirmation event is
+                    emitted, so the reporter is rewarded once, when the verdict
+                    becomes final. An unknown value is rejected with 400.
                 add_to_blacklist:
                   type: boolean
                   default: false
@@ -824,11 +829,6 @@ paths:
                     report carries no sender, so a block is never reported as
                     done when nothing was blocked. Re-triaging the same sender
                     does not create a duplicate entry.
-                  description: >-
-                    quarantine records a threat the analyst is holding: the
-                    report is labelled THREAT but no confirmation event is
-                    emitted, so the reporter is rewarded once, when the verdict
-                    becomes final. An unknown value is rejected with 400.
       responses:
         '200':
           description: OK
@@ -1076,7 +1076,7 @@ paths:
                   type: string
                 tier:
                   type: string
-                  enum: [POOL, BRIDGE, SILO]
+                  enum: [pool, bridge, silo]
                 dataRegion:
                   type: string
                 adminEmail:

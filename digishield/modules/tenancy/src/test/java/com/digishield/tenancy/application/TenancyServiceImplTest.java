@@ -149,9 +149,9 @@ class TenancyServiceImplTest {
         // Assert: returned view reflects the persisted tenant
         assertThat(view.id()).isEqualTo(persisted.getId());
         assertThat(view.name()).isEqualTo("Acme Corp");
-        assertThat(view.tier()).isEqualTo("SILO");
+        assertThat(view.tier()).isEqualTo("silo");
         assertThat(view.dataRegion()).isEqualTo("eu-west-1");
-        assertThat(view.status()).isEqualTo("PROVISIONING");
+        assertThat(view.status()).isEqualTo("provisioning");
     }
 
     @Test
@@ -164,8 +164,9 @@ class TenancyServiceImplTest {
         TenantView view = tenancyService.createTenant(
                 new CreateTenantCommand("Acme Corp", "pool", "eu-west-1", null));
 
-        // Assert
-        assertThat(view.tier()).isEqualTo("POOL");
+        // Assert: accepted in either case on the way in, always lower case on
+        // the way out — the spelling the spec declares.
+        assertThat(view.tier()).isEqualTo("pool");
     }
 
     @Test

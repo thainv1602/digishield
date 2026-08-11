@@ -3,7 +3,10 @@ import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { useCreateTenant, useUpdateTenant, type Tenant } from './api';
 
-const TIERS = ['POOL', 'BRIDGE', 'SILO'];
+// Lower case, like the status list below and like the values the API
+// returns: an option whose value does not match the tenant's own tier
+// leaves the select showing the wrong row as selected.
+const TIERS = ['pool', 'bridge', 'silo'];
 const STATUSES = ['provisioning', 'active', 'suspended', 'deactivated'];
 
 /**
@@ -27,7 +30,7 @@ export function TenantFormDrawer({
   const editing = tenant != null;
 
   const [name, setName] = useState('');
-  const [tier, setTier] = useState('POOL');
+  const [tier, setTier] = useState('pool');
   const [status, setStatus] = useState('active');
   const [region, setRegion] = useState('in-country');
   const [adminEmail, setAdminEmail] = useState('');
@@ -35,7 +38,7 @@ export function TenantFormDrawer({
   useEffect(() => {
     if (!open) return;
     setName(tenant?.name ?? '');
-    setTier(tenant?.tier ?? 'POOL');
+    setTier(tenant?.tier ?? 'pool');
     setStatus(tenant?.status ?? 'active');
     setRegion(tenant?.dataRegion ?? 'in-country');
   }, [open, tenant]);
@@ -80,7 +83,7 @@ export function TenantFormDrawer({
         <Select label={t('Mức cô lập (tier)')} value={tier} onChange={(e) => setTier(e.target.value)}>
           {TIERS.map((x) => (
             <option key={x} value={x}>
-              {x}
+              {x.toUpperCase()}
             </option>
           ))}
         </Select>

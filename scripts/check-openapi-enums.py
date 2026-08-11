@@ -119,7 +119,7 @@ DECLARED = {
     "paths./reports/phishing/{id}/triage.post.requestBody.content.application/json"
     ".schema.properties.decision": "TriageDecision:exact:lower",
     "paths./tenants.post.requestBody.content.application/json.schema"
-    ".properties.tier": "TenantTier:exact:upper",
+    ".properties.tier": "TenantTier:exact:lower",
 }
 
 

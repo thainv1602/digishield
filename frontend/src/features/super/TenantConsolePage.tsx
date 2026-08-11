@@ -44,7 +44,7 @@ function toRow(dto: TenantDto): TenantRow {
     id: dto.id,
     org: dto.name ?? '—',
     domain: dto.domain ?? '—',
-    type: dto.tier ?? '—',
+    type: dto.tier?.toUpperCase() ?? '—',
     users: dto.userCount != null ? dto.userCount.toLocaleString('vi-VN') : '—',
     status: statusMeta(dto.status),
     region: dto.dataRegion ?? '—',
