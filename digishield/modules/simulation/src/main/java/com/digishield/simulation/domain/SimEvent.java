@@ -5,17 +5,31 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.UUID;
+
+import org.springframework.data.domain.Persistable;
 
 /**
  * A user interaction event within a simulation campaign.
  */
 @Entity
 @Table(name = "sim_event")
-public class SimEvent {
+public class SimEvent implements Persistable<UUID> {
+
+    /**
+     * Ids are assigned by the caller, so Spring Data would treat every
+     * instance as detached and call merge() -- a SELECT before each INSERT.
+     * Saying so explicitly keeps inserts on the persist() path, which is
+     * also the only path Hibernate will batch.
+     */
+    @Transient
+    private boolean newEntity = true;
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -50,6 +64,7 @@ public class SimEvent {
         this.ts = ts;
     }
 
+    @Override
     public UUID getId() {
         return id;
     }
@@ -72,5 +87,16 @@ public class SimEvent {
 
     public Instant getTs() {
         return ts;
+    }
+
+    @Override
+    public boolean isNew() {
+        return newEntity;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.newEntity = false;
     }
 }

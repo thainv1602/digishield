@@ -3,10 +3,15 @@ package com.digishield.simulation.domain;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Transient;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.util.UUID;
+
+import org.springframework.data.domain.Persistable;
 
 /**
  * A single recipient of a launched simulation campaign. Its {@code id} doubles
@@ -14,7 +19,16 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "sim_recipient")
-public class SimRecipient {
+public class SimRecipient implements Persistable<UUID> {
+
+    /**
+     * Ids are assigned by the caller, so Spring Data would treat every
+     * instance as detached and call merge() -- a SELECT before each INSERT.
+     * Saying so explicitly keeps inserts on the persist() path, which is
+     * also the only path Hibernate will batch.
+     */
+    @Transient
+    private boolean newEntity = true;
 
     @Id
     @Column(name = "id", nullable = false, updatable = false)
@@ -47,6 +61,7 @@ public class SimRecipient {
         this.deliveredAt = deliveredAt;
     }
 
+    @Override
     public UUID getId() {
         return id;
     }
@@ -73,5 +88,16 @@ public class SimRecipient {
 
     public void setClickedAt(Instant clickedAt) {
         this.clickedAt = clickedAt;
+    }
+
+    @Override
+    public boolean isNew() {
+        return newEntity;
+    }
+
+    @PostLoad
+    @PostPersist
+    void markNotNew() {
+        this.newEntity = false;
     }
 }

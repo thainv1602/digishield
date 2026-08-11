@@ -59,8 +59,9 @@ class SimulationDeliveryListenerTest {
     private static SimulationDeliveryRequestedEvent event(
             String channel, String subject, String body, String bodyFormat) {
         return new SimulationDeliveryRequestedEvent(
-                UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(),
-                channel, TRACK_PATH, subject, body, bodyFormat);
+                UUID.randomUUID(), UUID.randomUUID(), channel, subject, body, bodyFormat,
+                java.util.List.of(new SimulationDeliveryRequestedEvent.Recipient(
+                        UUID.randomUUID(), TRACK_PATH)));
     }
 
     private Sent capture() {

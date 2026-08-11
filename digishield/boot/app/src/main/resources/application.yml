@@ -40,6 +40,14 @@ spring:
     properties:
       hibernate:
         format_sql: false
+        # A campaign send inserts one recipient row and one event row per person.
+        # Unbatched that is a round trip each, which is most of the cost of a
+        # large send; the entities implement Persistable so the inserts stay on
+        # the persist() path, which is the only one Hibernate will batch.
+        jdbc:
+          batch_size: 100
+        order_inserts: true
+        order_updates: true
     open-in-view: false
 
   # Redis (cache). Endpoint from env; the dev profile overrides cache.type=none.
