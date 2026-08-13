@@ -1,11 +1,15 @@
 package com.digishield.reporting.application;
 
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
+import com.digishield.reporting.api.dto.OpenReportCountsDto;
+import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.UserReportDto;
+import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.BlacklistEntry;
 import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
+import com.digishield.reporting.infrastructure.AiLabelCount;
 import com.digishield.reporting.infrastructure.BlacklistEntryRepository;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
 import com.digishield.reporting.infrastructure.ThreatIntelRepository;
@@ -16,12 +20,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -31,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -165,5 +173,84 @@ class ReportingQueriesTest {
                 .isInstanceOf(IllegalArgumentException.class);
 
         verify(reportRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("the recent panel asks the database for its handful, not for everything")
+    void recentReportsAreLimitedInTheQuery() {
+        ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
+        when(reportRepository.findByTenantIdOrderByReportedAtDesc(eq(TENANT), any(Pageable.class)))
+                .thenReturn(List.of(reportedAt(Instant.now())));
+
+        List<PhishingReportDto> recent = service.listRecentReports(6);
+
+        assertThat(recent).hasSize(1);
+        verify(reportRepository).findByTenantIdOrderByReportedAtDesc(eq(TENANT), pageable.capture());
+        assertThat(pageable.getValue().getPageSize()).isEqualTo(6);
+        assertThat(pageable.getValue().getPageNumber()).isZero();
+        // The unbounded overload is what the dashboard used to call.
+        verify(reportRepository, never()).findByTenantIdOrderByReportedAtDesc(TENANT);
+    }
+
+    @Test
+    @DisplayName("asking for no recent reports touches the database at all")
+    void recentReportsWithANonPositiveLimitSkipsTheQuery() {
+        assertThat(service.listRecentReports(0)).isEmpty();
+        assertThat(service.listRecentReports(-3)).isEmpty();
+
+        verify(reportRepository, never()).findByTenantIdOrderByReportedAtDesc(eq(TENANT), any(Pageable.class));
+    }
+
+    @Test
+    @DisplayName("open alerts are counted per verdict, only over the open statuses")
+    void openReportsAreCountedByVerdict() {
+        ArgumentCaptor<Collection<ReportStatus>> statuses = ArgumentCaptor.captor();
+        when(reportRepository.countByAiLabel(eq(TENANT), any()))
+                .thenReturn(List.of(
+                        new AiLabelCount(AiLabel.THREAT, 3L),
+                        new AiLabelCount(AiLabel.SPAM, 11L)));
+
+        OpenReportCountsDto counts = service.countOpenReports();
+
+        assertThat(counts.threat()).isEqualTo(3L);
+        assertThat(counts.spam()).isEqualTo(11L);
+        assertThat(counts.clean()).isZero();
+
+        // Only the two statuses still awaiting an analyst; a triaged report is
+        // not an open alert, and this is the filter that used to be a pair of
+        // string comparisons in the boot module.
+        verify(reportRepository).countByAiLabel(eq(TENANT), statuses.capture());
+        assertThat(statuses.getValue())
+                .containsExactlyInAnyOrder(ReportStatus.SUBMITTED, ReportStatus.TRIAGING);
+    }
+
+    @Test
+    @DisplayName("a verdict with no open reports counts zero, not the previous verdict's total")
+    void verdictsWithoutOpenReportsAreZero() {
+        when(reportRepository.countByAiLabel(eq(TENANT), any()))
+                .thenReturn(List.of(new AiLabelCount(AiLabel.THREAT, 2L)));
+
+        OpenReportCountsDto counts = service.countOpenReports();
+
+        assertThat(counts.threat()).isEqualTo(2L);
+        assertThat(counts.spam()).isZero();
+        assertThat(counts.clean()).isZero();
+    }
+
+    @Test
+    @DisplayName("reports the classifier never labelled are dropped, not folded into a verdict")
+    void unlabelledOpenReportsAreIgnored() {
+        // ai_label is nullable, so the group-by yields a null bucket. Folding it
+        // into any verdict would overstate that verdict.
+        when(reportRepository.countByAiLabel(eq(TENANT), any()))
+                .thenReturn(List.of(
+                        new AiLabelCount(null, 7L),
+                        new AiLabelCount(AiLabel.SPAM, 1L)));
+
+        OpenReportCountsDto counts = service.countOpenReports();
+
+        assertThat(counts.spam()).isEqualTo(1L);
+        assertThat(counts.threat()).isZero();
+        assertThat(counts.clean()).isZero();
     }
 }

@@ -5,6 +5,7 @@ import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
 import com.digishield.reporting.api.dto.ThreatIntelDto;
 import com.digishield.reporting.api.dto.UserReportDto;
+import com.digishield.reporting.api.dto.OpenReportCountsDto;
 import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.ReportStatus;
 
@@ -58,6 +59,30 @@ public interface ReportingService {
      * @return report views (newest first)
      */
     List<PhishingReportDto> listReports(ReportStatus status);
+
+    /**
+     * The newest reports, for the dashboard's "recent reports" panel.
+     *
+     * <p>Separate from {@link #listReports(ReportStatus)} because the caller
+     * wants a handful and the SOC inbox wants everything; sharing one method
+     * meant the dashboard loaded the tenant's entire report history on every
+     * page view and threw nearly all of it away.
+     *
+     * @param limit how many to return; zero or negative yields an empty list
+     * @return report views, newest first, at most {@code limit} of them
+     */
+    List<PhishingReportDto> listRecentReports(int limit);
+
+    /**
+     * Counts the reports still awaiting triage, split by the verdict the AI
+     * gave them.
+     *
+     * <p>Aggregated in the database rather than by walking the tenant's report
+     * history, which is what the dashboard's open-alert tile used to do.
+     *
+     * @return open-report counts per AI verdict; zeroes when there are none
+     */
+    OpenReportCountsDto countOpenReports();
 
     /**
      * Lists blacklist entries for the current tenant.

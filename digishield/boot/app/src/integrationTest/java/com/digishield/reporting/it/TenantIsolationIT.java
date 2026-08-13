@@ -6,10 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.digishield.reporting.domain.AiLabel;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
+import com.digishield.reporting.infrastructure.AiLabelCount;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
 import com.digishield.shared.tenantcontext.PlatformScope;
 import com.digishield.shared.tenantcontext.TenantContext;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.context.SecurityContextHolder;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import javax.sql.DataSource;
@@ -200,6 +204,71 @@ class TenantIsolationIT {
         // (2) Pure-DB path: with app.tenant_id never set, RLS hides everything.
         long visibleWithNoGuc = countRowsWithoutTenantGuc();
         assertThat(visibleWithNoGuc).isZero();
+    }
+
+    /**
+     * The dashboard's open-alert tile is a GROUP BY, not a row fetch. An
+     * aggregate is exactly where a leak would be hardest to notice — a wrong
+     * count carries no tenant id with it — so this pins that RLS filters the
+     * rows before they are counted, and that closed reports are left out.
+     */
+    @Test
+    void openAlertCountsAreAggregatedPerTenantAndOnlyOverOpenStatuses() {
+        Instant now = Instant.now();
+        saveReport(TENANT_A, AiLabel.THREAT, ReportStatus.SUBMITTED, now);
+        saveReport(TENANT_A, AiLabel.THREAT, ReportStatus.TRIAGING, now);
+        saveReport(TENANT_A, AiLabel.SPAM, ReportStatus.SUBMITTED, now);
+        // Already dealt with: not an open alert.
+        saveReport(TENANT_A, AiLabel.THREAT, ReportStatus.CONFIRMED, now);
+        saveReport(TENANT_A, AiLabel.SPAM, ReportStatus.DISMISSED, now);
+        // Another tenant's open threats must not reach tenant A's total.
+        saveReport(TENANT_B, AiLabel.THREAT, ReportStatus.SUBMITTED, now);
+        saveReport(TENANT_B, AiLabel.THREAT, ReportStatus.SUBMITTED, now);
+
+        List<AiLabelCount> forA = runAsTenant(TENANT_A, () ->
+                reportRepository.countByAiLabel(TENANT_A, ReportStatus.openStatuses()));
+
+        assertThat(forA)
+                .as("two open threats and one open spam, ignoring the confirmed and dismissed rows")
+                .containsExactlyInAnyOrder(
+                        new AiLabelCount(AiLabel.THREAT, 2L),
+                        new AiLabelCount(AiLabel.SPAM, 1L));
+
+        List<AiLabelCount> forB = runAsTenant(TENANT_B, () ->
+                reportRepository.countByAiLabel(TENANT_B, ReportStatus.openStatuses()));
+
+        assertThat(forB).containsExactly(new AiLabelCount(AiLabel.THREAT, 2L));
+    }
+
+    /**
+     * The recent-reports panel asks for a handful. This checks the limit is
+     * applied by the database in the right order, rather than the caller
+     * fetching everything and keeping the head.
+     */
+    @Test
+    void recentReportsAreTheNewestFewAndStayWithinTheTenant() {
+        Instant now = Instant.now();
+        saveReport(TENANT_A, AiLabel.CLEAN, ReportStatus.SUBMITTED, now.minus(Duration.ofDays(3)));
+        saveReport(TENANT_A, AiLabel.SPAM, ReportStatus.SUBMITTED, now.minus(Duration.ofDays(2)));
+        UUID newest = saveReport(TENANT_A, AiLabel.THREAT, ReportStatus.SUBMITTED, now);
+        saveReport(TENANT_B, AiLabel.THREAT, ReportStatus.SUBMITTED, now.plus(Duration.ofDays(1)));
+
+        List<PhishingReport> head = runAsTenant(TENANT_A, () ->
+                reportRepository.findByTenantIdOrderByReportedAtDesc(TENANT_A, PageRequest.of(0, 2)));
+
+        assertThat(head).hasSize(2);
+        assertThat(head.getFirst().getId()).isEqualTo(newest);
+        // Tenant B's row is newer than every one of A's, and still absent.
+        assertThat(head).extracting(PhishingReport::getTenantId).containsOnly(TENANT_A);
+    }
+
+    private UUID saveReport(UUID tenantId, AiLabel label, ReportStatus status, Instant reportedAt) {
+        return runAsTenant(tenantId, () -> {
+            PhishingReport report = new PhishingReport(
+                    UUID.randomUUID(), tenantId, UUID.randomUUID(), "suspicious-email-payload",
+                    label, 0.9, status, null, null, "kegian@lua-dao.vn", null, false, reportedAt);
+            return reportRepository.save(report).getId();
+        });
     }
 
     private UUID saveReportForTenant(UUID tenantId) {

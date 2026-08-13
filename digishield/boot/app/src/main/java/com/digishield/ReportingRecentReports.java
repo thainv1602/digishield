@@ -26,9 +26,10 @@ class ReportingRecentReports implements RecentReportsProvider {
         if (limit <= 0) {
             return List.of();
         }
-        // listReports(null) returns all reports newest-first; take the head.
-        return reportingService.listReports(null).stream()
-                .limit(limit)
+        // Limited in the query. This used to fetch every report the tenant had
+        // and keep the first few, so the cost of the panel grew with history
+        // rather than with the handful actually shown.
+        return reportingService.listRecentReports(limit).stream()
                 .map(ReportingRecentReports::toView)
                 .toList();
     }
