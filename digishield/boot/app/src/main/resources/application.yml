@@ -197,6 +197,27 @@ digishield:
       base-url: ${AI_ML_BASE_URL:http://localhost:8085}
       min-confidence: ${AI_ML_MIN_CONFIDENCE:0.6}
       timeout-ms: ${AI_ML_TIMEOUT_MS:2000}
+  analytics:
+    # Peer phish-prone rates the dashboard draws next to the organisation's own.
+    #
+    # These are reference figures somebody has to supply, NOT something the
+    # product measures: DigiShield observes only the tenant it is serving, and
+    # row-level security keeps other tenants' data out of every query, so an
+    # "industry average" cannot be computed from what we store. They sit here so
+    # a stale figure is a config change rather than a rebuild, and so the
+    # assumption is visible to whoever operates the deployment.
+    #
+    # The values below are the ones that were previously compiled into
+    # AnalyticsServiceImpl. Their source was never recorded -- treat them as
+    # placeholders and replace them with a citable benchmark (and note it here)
+    # before showing this dashboard to a customer.
+    #
+    # Both are percentages, and both are required: the app refuses to start if
+    # either is missing or falls outside 0..100, rather than drawing a bar from
+    # a number nobody chose.
+    benchmark:
+      industry-avg-pct: ${ANALYTICS_INDUSTRY_AVG_PCT:11.2}
+      finance-avg-pct: ${ANALYTICS_FINANCE_AVG_PCT:14.8}
 
 ---
 # API run mode

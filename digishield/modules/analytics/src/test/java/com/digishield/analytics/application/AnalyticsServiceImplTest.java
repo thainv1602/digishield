@@ -18,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -64,7 +63,13 @@ class AnalyticsServiceImplTest {
     @Mock
     private com.digishield.analytics.api.DashboardMetricsProvider dashboardMetricsProvider;
 
-    @InjectMocks
+    /**
+     * Deliberately not the values shipped in application.yml: if the service
+     * ever falls back to a compiled-in figure again, these assertions fail
+     * instead of silently agreeing with it.
+     */
+    private static final BenchmarkProperties BENCHMARKS = new BenchmarkProperties(7.5, 9.25);
+
     private AnalyticsServiceImpl analyticsService;
 
     @Captor
@@ -76,6 +81,15 @@ class AnalyticsServiceImplTest {
     @BeforeEach
     void setUp() {
         TenantContext.set(TENANT_ID.toString());
+        analyticsService = new AnalyticsServiceImpl(
+                riskScoreRepository,
+                departmentRiskRepository,
+                riskSignalRepository,
+                eventPublisher,
+                messages,
+                recentReportsProvider,
+                dashboardMetricsProvider,
+                BENCHMARKS);
     }
 
     @AfterEach
@@ -287,5 +301,41 @@ class AnalyticsServiceImplTest {
             assertThat(r.age()).isEqualTo("2p");
             assertThat(r.aiLabel()).isEqualTo("threat");
         });
+    }
+
+    @Test
+    void dashboardPeerBenchmarksComeFromConfigurationNotFromLiterals() {
+        // Arrange: no history at all, so every number on the peer rows has to
+        // have come from configuration rather than from the tenant's data.
+        when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(List.of());
+        when(departmentRiskRepository.findByTenantIdOrderByRiskScoreDesc(TENANT_ID)).thenReturn(List.of());
+        when(dashboardMetricsProvider.openAlerts())
+                .thenReturn(new com.digishield.analytics.api.DashboardMetricsProvider.OpenAlertCounts(0, 0, 0));
+
+        // Act
+        DashboardDto dto = analyticsService.dashboard();
+
+        // Assert: the headline comparison and both peer bars carry the configured
+        // rates -- 11.2 and 14.8 were the compiled-in values, so seeing them here
+        // would mean the literals came back.
+        assertThat(dto.industryAvgPct()).isEqualTo(7.5);
+        assertThat(dto.benchmarks()).extracting(DashboardDto.Benchmark::value)
+                .containsExactly(0.0, 7.5, 9.25);
+
+        // Only the organisation's own row is the measured one.
+        assertThat(dto.benchmarks()).extracting(DashboardDto.Benchmark::strong)
+                .containsExactly(true, false, false);
+    }
+
+    @Test
+    void benchmarkRatesUsesTheConfiguredIndustryAverage() {
+        // Arrange
+        when(riskScoreRepository.findByTenantIdAndScope(TENANT_ID, RiskScope.ORG)).thenReturn(List.of());
+
+        // Act
+        com.digishield.analytics.api.dto.BenchmarkDto dto = analyticsService.benchmarkRates();
+
+        // Assert
+        assertThat(dto.industryAvgPct()).isEqualTo(7.5);
     }
 }
