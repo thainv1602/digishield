@@ -36,8 +36,6 @@ import java.util.UUID;
 @Transactional
 public class AnalyticsServiceImpl implements AnalyticsService {
 
-    private static final double INDUSTRY_AVG_PHISH_PRONE_PCT = 11.2;
-
     /** How many recent phishing reports the dashboard panel shows. */
     private static final int RECENT_REPORTS_LIMIT = 6;
 
@@ -48,6 +46,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     private final Messages messages;
     private final RecentReportsProvider recentReportsProvider;
     private final DashboardMetricsProvider dashboardMetricsProvider;
+    private final BenchmarkProperties benchmarkProperties;
 
     public AnalyticsServiceImpl(RiskScoreRepository riskScoreRepository,
                                 DepartmentRiskRepository departmentRiskRepository,
@@ -55,7 +54,8 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                                 EventPublisher eventPublisher,
                                 Messages messages,
                                 RecentReportsProvider recentReportsProvider,
-                                DashboardMetricsProvider dashboardMetricsProvider) {
+                                DashboardMetricsProvider dashboardMetricsProvider,
+                                BenchmarkProperties benchmarkProperties) {
         this.riskScoreRepository = riskScoreRepository;
         this.departmentRiskRepository = departmentRiskRepository;
         this.riskSignalRepository = riskSignalRepository;
@@ -63,6 +63,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
         this.messages = messages;
         this.recentReportsProvider = recentReportsProvider;
         this.dashboardMetricsProvider = dashboardMetricsProvider;
+        this.benchmarkProperties = benchmarkProperties;
     }
 
     @Override
@@ -143,7 +144,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     public BenchmarkDto benchmarkRates() {
         UUID tenantId = TenantContext.requireUuid();
         double orgPct = orgPhishPronePct(tenantId);
-        return new BenchmarkDto(orgPct, INDUSTRY_AVG_PHISH_PRONE_PCT);
+        return new BenchmarkDto(orgPct, benchmarkProperties.industryAvgPct());
     }
 
     @Override
@@ -180,10 +181,14 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 .map(d -> new DashboardDto.Department(d.getName(), d.getRiskScore()))
                 .toList();
 
+        // Only the first row is measured. The peer rates come from configuration
+        // because nothing here can observe another organisation.
         List<DashboardDto.Benchmark> benchmarks = List.of(
                 new DashboardDto.Benchmark(messages.get("dashboard.benchmark.org"), orgPhishProne, true),
-                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.govAvg"), INDUSTRY_AVG_PHISH_PRONE_PCT, false),
-                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.financeAvg"), 14.8, false));
+                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.govAvg"),
+                        benchmarkProperties.industryAvgPct(), false),
+                new DashboardDto.Benchmark(messages.get("dashboard.benchmark.financeAvg"),
+                        benchmarkProperties.financeAvgPct(), false));
 
         List<DashboardDto.TrendPoint> trend = orgRiskTrend(tenantId);
 
@@ -216,7 +221,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
                 riskDelta,
                 orgPhishProne,
                 phishPronePctDelta,
-                INDUSTRY_AVG_PHISH_PRONE_PCT,
+                benchmarkProperties.industryAvgPct(),
                 trainingCompletion,
                 new DashboardDto.OpenAlerts(alerts.total(), alerts.critical(), alerts.warning()),
                 trend,
