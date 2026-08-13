@@ -1,9 +1,11 @@
-import { useState } from 'react';
-import { ProgressBar, RiskGauge, StatusPill } from '@/shared/ui';
+import { useMemo, useState } from 'react';
+import { ProgressBar, RiskGauge, StatusPill, riskColor, riskLabel } from '@/shared/ui';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useT } from '@/shared/i18n/I18nProvider';
 import { useDashboard } from './api';
+import { RiskTrendChart, TrendAxis } from './RiskTrendChart';
+import { shortDate, sliceByDays } from './trend';
 
 /**
  * AdminDashboardPage — security/admin overview inside AppShell.
@@ -16,29 +18,51 @@ import { useDashboard } from './api';
 
 type AiLabel = 'threat' | 'spam' | 'clean';
 
-// Benchmark bar colors by index (first = your org, then averages).
-const BENCHMARK_COLORS = ['var(--color-blue)', 'var(--color-amber)', 'var(--color-red)'] as const;
-
 const labelToVariant = { threat: 'threat', spam: 'warning', clean: 'safe' } as const;
 const labelToText = { threat: 'THREAT', spam: 'SPAM', clean: 'CLEAN' } as const;
 const dotColor = { threat: 'var(--color-red)', spam: 'var(--color-amber)', clean: 'var(--color-teal)' } as const;
-
-/** Pick a department bar color from the risk score (0..100). */
-function deptColor(score: number): string {
-  if (score >= 70) return 'var(--color-red)';
-  if (score >= 40) return 'var(--color-amber)';
-  return 'var(--color-teal)';
-}
 
 /** Coerce an unknown AI label string to one of the three known variants. */
 function normalizeLabel(value: string | null | undefined): AiLabel {
   return value === 'threat' || value === 'spam' || value === 'clean' ? value : 'clean';
 }
 
-/** Format a signed delta with the matching ▲/▼ glyph. */
-function deltaText(delta: number, suffix = ''): string {
-  const arrow = delta >= 0 ? '▲' : '▼';
-  return `${arrow} ${delta >= 0 ? '+' : ''}${delta}${suffix}`;
+/**
+ * A signed change against the previous period.
+ *
+ * Colour encodes whether the movement is *good*, not merely whether it points
+ * up: risk and phish-prone falling is an improvement, training completion
+ * rising is. Every delta used to be painted one fixed colour regardless of
+ * sign, so a worsening number still read as reassuring.
+ *
+ * `upIsGood` has no default on purpose — the polarity is the whole point, and a
+ * default would let the next caller reintroduce the bug by omission.
+ */
+function Delta({
+  value,
+  suffix = '',
+  upIsGood,
+}: {
+  value: number;
+  suffix?: string;
+  upIsGood: boolean;
+}) {
+  const neutral = value === 0;
+  const good = (value > 0) === upIsGood;
+  const color = neutral
+    ? 'var(--color-muted)'
+    : good
+      ? 'var(--color-teal)'
+      : 'var(--color-red)';
+  const arrow = neutral ? '' : value > 0 ? '▲ ' : '▼ ';
+  return (
+    <span style={{ color, fontWeight: 600, fontSize: 12 }}>
+      {arrow}
+      {value > 0 ? '+' : ''}
+      {value}
+      {suffix}
+    </span>
+  );
 }
 
 const labelStyle: React.CSSProperties = {
@@ -61,6 +85,11 @@ export default function AdminDashboardPage() {
   const t = useT();
   const { data, isLoading, isError, refetch } = useDashboard();
   const [rangeDays, setRangeDays] = useState(90);
+  // Computed before the early returns below — hooks cannot sit behind a branch.
+  const trend = useMemo(
+    () => sliceByDays(data?.risk_trend ?? [], rangeDays),
+    [data?.risk_trend, rangeDays],
+  );
 
   if (isLoading) {
     return <DashboardState>{t('Đang tải bảng điều khiển…')}</DashboardState>;
@@ -83,16 +112,25 @@ export default function AdminDashboardPage() {
   }
 
   const riskScore = data.risk_score ?? 0;
-  const benchmarks = (data.benchmarks ?? []).map((b, i) => ({
+  // Emphasis, not identity: this organisation carries the accent and the peer
+  // averages recede to grey. They used to be painted amber and red, which are
+  // the reserved warning/danger colours — an industry average is not an alert,
+  // and colouring it by row index also meant the meaning moved if the backend
+  // ever reordered the list.
+  const benchmarks = (data.benchmarks ?? []).map((b) => ({
     label: b.label,
     value: b.value,
     strong: b.strong,
-    color: BENCHMARK_COLORS[i] ?? 'var(--color-muted)',
+    color: b.strong ? 'var(--color-blue)' : 'var(--color-muted)',
   }));
+  // riskColor/riskLabel are the shared 70/40 scale. The page previously carried
+  // its own copy of those thresholds, so the bar could disagree with the pills
+  // and the gauge elsewhere in the app.
   const departments = (data.departments ?? []).map((d) => ({
     name: d.name,
     score: d.score,
-    color: deptColor(d.score),
+    color: riskColor(d.score),
+    band: riskLabel(d.score),
   }));
   const recentReports = (data.recent_reports ?? []).map((r) => ({
     id: r.id,
@@ -121,8 +159,8 @@ export default function AdminDashboardPage() {
           <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div style={{ ...labelStyle, marginBottom: 10, alignSelf: 'flex-start' }}>Risk Score</div>
             <RiskGauge score={riskScore} size={150} />
-            <div style={{ fontSize: 12, color: 'var(--color-amber)', fontWeight: 500, marginTop: 4 }}>
-              {deltaText(data.risk_delta ?? 0)} {t('vs tháng trước')}
+            <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 4 }}>
+              <Delta value={data.risk_delta ?? 0} upIsGood={false} /> {t('vs tháng trước')}
             </div>
           </div>
 
@@ -142,22 +180,11 @@ export default function AdminDashboardPage() {
             >
               {phishPronePct}%
             </div>
-            <span
-              style={{
-                background: 'var(--pill-safe-bg)',
-                color: 'var(--pill-safe-fg)',
-                borderRadius: 99,
-                padding: '2px 8px',
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              {deltaText(data.phish_prone_pct_delta ?? 0, '%')}
-            </span>
+            <Delta value={data.phish_prone_pct_delta ?? 0} suffix="%" upIsGood={false} />
             <span style={{ fontSize: 12, color: 'var(--color-muted)' }}> {t('so tháng trước')}</span>
             <div style={{ fontSize: 12, color: 'var(--color-muted)', marginTop: 10 }}>
               {t('TB ngành gov')}:{' '}
-              <strong style={{ color: 'var(--color-amber)', fontFamily: "'JetBrains Mono', monospace" }}>
+              <strong style={{ color: 'var(--color-text)', fontFamily: "'JetBrains Mono', monospace" }}>
                 {data.industry_avg_pct ?? 0}%
               </strong>
             </div>
@@ -205,7 +232,7 @@ export default function AdminDashboardPage() {
                 fontFamily: "'Space Grotesk', system-ui",
                 fontSize: 38,
                 fontWeight: 700,
-                color: 'var(--color-red)',
+                color: 'var(--color-text)',
                 letterSpacing: '-.02em',
                 lineHeight: 1,
                 marginBottom: 10,
@@ -213,16 +240,21 @@ export default function AdminDashboardPage() {
             >
               {openAlerts.total}
             </div>
+            {/* The dot carries the severity; the label stays in ink. Painting
+                the count red made a quiet inbox of zero look like an incident,
+                and put the value itself on a colour it has to compete with. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
                 <Dot color="var(--color-red)" />
-                <span style={{ color: 'var(--color-red)', fontWeight: 500 }}>
+                <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>
                   {openAlerts.critical} critical
                 </span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12 }}>
                 <Dot color="var(--color-amber)" />
-                <span style={{ color: 'var(--color-muted)' }}>{openAlerts.warning} warning</span>
+                <span style={{ color: 'var(--color-text)', fontWeight: 500 }}>
+                  {openAlerts.warning} warning
+                </span>
               </div>
             </div>
           </div>
@@ -251,7 +283,11 @@ export default function AdminDashboardPage() {
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text)' }}>
                   {t('Xu hướng rủi ro')}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>{rangeDays} {t('ngày qua')}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-muted)' }}>
+                  {trend.length > 0
+                    ? `${shortDate(trend[0]!.date)} – ${shortDate(trend[trend.length - 1]!.date)}`
+                    : t('Chưa có dữ liệu')}
+                </div>
               </div>
               <select
                 aria-label={t('Khoảng thời gian')}
@@ -259,7 +295,7 @@ export default function AdminDashboardPage() {
                 onChange={(e) => setRangeDays(Number(e.target.value))}
                 style={{
                   fontSize: 12,
-                  color: 'var(--color-muted)',
+                  color: 'var(--color-text)',
                   background: 'var(--color-bg)',
                   borderRadius: 6,
                   padding: '4px 10px',
@@ -272,65 +308,16 @@ export default function AdminDashboardPage() {
                 <option value={90}>90D</option>
               </select>
             </div>
-            <svg
-              viewBox="0 0 480 88"
-              width="100%"
-              height={88}
-              preserveAspectRatio="none"
-              style={{ display: 'block' }}
-            >
-              <defs>
-                <linearGradient id="riskTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#2566EB" stopOpacity="0.15" />
-                  <stop offset="100%" stopColor="#2566EB" stopOpacity="0.01" />
-                </linearGradient>
-              </defs>
-              <line x1="0" y1="22" x2="480" y2="22" stroke="rgba(105,120,143,.08)" strokeWidth="1" />
-              <line x1="0" y1="44" x2="480" y2="44" stroke="rgba(105,120,143,.08)" strokeWidth="1" />
-              <line x1="0" y1="66" x2="480" y2="66" stroke="rgba(105,120,143,.08)" strokeWidth="1" />
-              {(() => {
-                // Show only the most recent slice of points for the chosen range.
-                const fullTrend = data.risk_trend ?? [];
-                const keep = Math.max(2, Math.round((fullTrend.length * rangeDays) / 90));
-                const trend = fullTrend.slice(-keep);
-                if (trend.length === 0) return null;
-                const W = 480;
-                const H = 88;
-                const pts = trend.map((p, i) => {
-                  const x = trend.length === 1 ? W : (i / (trend.length - 1)) * W;
-                  // value 0..100 -> y (inverted, with a little top/bottom padding)
-                  const y = H - 10 - (Math.max(0, Math.min(100, p.value)) / 100) * (H - 20);
-                  return [Number(x.toFixed(1)), Number(y.toFixed(1))] as const;
-                });
-                const first = pts[0];
-                const last = pts[pts.length - 1];
-                if (!first || !last) return null;
-                const line = pts.map(([x, y]) => `${x},${y}`).join(' ');
-                const area = `M${first[0]},${first[1]} ${pts
-                  .slice(1)
-                  .map(([x, y]) => `L${x},${y}`)
-                  .join(' ')} L${W},${H} L0,${H}Z`;
-                return (
-                  <>
-                    <path d={area} fill="url(#riskTrendGrad)" />
-                    <polyline
-                      points={line}
-                      fill="none"
-                      stroke="var(--color-blue)"
-                      strokeWidth="2.5"
-                      strokeLinejoin="round"
-                      strokeLinecap="round"
-                    />
-                    <circle cx={last[0]} cy={last[1]} r="4" fill="var(--color-blue)" />
-                  </>
-                );
-              })()}
-            </svg>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>01/04</span>
-              <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>01/05</span>
-              <span style={{ fontSize: 11, color: 'var(--color-muted)' }}>27/06</span>
-            </div>
+            {trend.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--color-muted)', padding: '24px 0' }}>
+                {t('Chưa có điểm rủi ro nào trong khoảng này.')}
+              </div>
+            ) : (
+              <>
+                <RiskTrendChart points={trend} />
+                <TrendAxis points={trend} />
+              </>
+            )}
           </div>
 
           {/* Benchmark bar chart */}
@@ -362,7 +349,7 @@ export default function AdminDashboardPage() {
                       style={{
                         fontSize: 12,
                         fontWeight: 600,
-                        color: b.strong ? 'var(--color-blue)' : 'var(--color-muted)',
+                        color: 'var(--color-text)',
                         fontFamily: "'JetBrains Mono', monospace",
                       }}
                     >
@@ -427,11 +414,27 @@ export default function AdminDashboardPage() {
                       fontSize: 12,
                       fontWeight: 600,
                       fontFamily: "'JetBrains Mono', monospace",
-                      color: d.color,
+                      color: 'var(--color-text)',
                       flexShrink: 0,
                     }}
                   >
                     {d.score}
+                  </div>
+                  {/* The band spelled out, so the colour is never the only thing
+                      saying "high". Amber sits at 2.69:1 on white, below the 3:1
+                      floor for a mark, which makes a written label mandatory
+                      rather than decorative. */}
+                  <div
+                    style={{
+                      width: 76,
+                      textAlign: 'right',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: 'var(--color-text-soft)',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {d.band}
                   </div>
                 </div>
               ))}
