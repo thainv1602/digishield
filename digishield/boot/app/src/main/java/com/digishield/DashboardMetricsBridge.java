@@ -4,7 +4,7 @@ import com.digishield.analytics.api.DashboardMetricsProvider;
 import com.digishield.learning.api.EnrollmentView;
 import com.digishield.learning.api.LearningService;
 import com.digishield.reporting.api.ReportingService;
-import com.digishield.reporting.api.dto.PhishingReportDto;
+import com.digishield.reporting.api.dto.OpenReportCountsDto;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.stereotype.Component;
 
@@ -43,23 +43,16 @@ class DashboardMetricsBridge implements DashboardMetricsProvider {
 
     @Override
     public OpenAlertCounts openAlerts() {
-        int critical = 0;
-        int warning = 0;
-        // listReports(null) returns all reports; count the still-open ones by
-        // AI severity (threat -> critical, spam -> warning).
-        for (PhishingReportDto r : reportingService.listReports(null)) {
-            String status = r.status() == null ? "" : r.status().toLowerCase();
-            boolean open = status.equals("submitted") || status.equals("triaging");
-            if (!open) {
-                continue;
-            }
-            String label = r.aiLabel() == null ? "" : r.aiLabel().toLowerCase();
-            if (label.equals("threat")) {
-                critical++;
-            } else if (label.equals("spam")) {
-                warning++;
-            }
-        }
+        // The reporting module aggregates this in the database. It used to be a
+        // scan of every report the tenant had ever filed, each mapped to a DTO
+        // and counted here, on every dashboard load.
+        OpenReportCountsDto open = reportingService.countOpenReports();
+
+        // Which verdict is which severity is the dashboard's call, not the
+        // reporting module's. `clean` is deliberately unmapped: an untriaged
+        // report the AI cleared is not an alert waiting for anyone.
+        int critical = Math.toIntExact(open.threat());
+        int warning = Math.toIntExact(open.spam());
         return new OpenAlertCounts(critical + warning, critical, warning);
     }
 }

@@ -5,6 +5,7 @@ import com.digishield.contracts.events.ThreatIntelConvertedEvent;
 import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.TriageDecision;
 import com.digishield.reporting.api.dto.BlacklistEntryDto;
+import com.digishield.reporting.api.dto.OpenReportCountsDto;
 import com.digishield.reporting.api.dto.PhishingReportDto;
 import com.digishield.reporting.api.dto.ThreatIntelConvertResultDto;
 import com.digishield.reporting.api.dto.ThreatIntelDto;
@@ -15,6 +16,7 @@ import com.digishield.reporting.domain.BlacklistType;
 import com.digishield.reporting.domain.PhishingReport;
 import com.digishield.reporting.domain.ReportStatus;
 import com.digishield.reporting.domain.ThreatIntel;
+import com.digishield.reporting.infrastructure.AiLabelCount;
 import com.digishield.reporting.infrastructure.BlacklistEntryRepository;
 import com.digishield.reporting.infrastructure.PhishingReportRepository;
 import com.digishield.reporting.infrastructure.ThreatIntelRepository;
@@ -22,12 +24,15 @@ import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.AuditRecorder;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -157,6 +162,37 @@ public class ReportingServiceImpl implements ReportingService {
                 : reportRepository.findByTenantIdOrderByReportedAtDesc(tenantId);
         Instant now = Instant.now();
         return reports.stream().map(r -> toDto(r, now)).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PhishingReportDto> listRecentReports(int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+        UUID tenantId = TenantContext.requireUuid();
+        List<PhishingReport> reports = reportRepository.findByTenantIdOrderByReportedAtDesc(
+                tenantId, PageRequest.of(0, limit));
+        Instant now = Instant.now();
+        return reports.stream().map(r -> toDto(r, now)).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public OpenReportCountsDto countOpenReports() {
+        UUID tenantId = TenantContext.requireUuid();
+        Map<AiLabel, Long> counts = new EnumMap<>(AiLabel.class);
+        for (AiLabelCount row : reportRepository.countByAiLabel(tenantId, ReportStatus.openStatuses())) {
+            // ai_label is nullable, so the group-by yields a null bucket for
+            // reports the classifier never labelled. They belong to no verdict.
+            if (row.aiLabel() != null) {
+                counts.put(row.aiLabel(), row.count());
+            }
+        }
+        return new OpenReportCountsDto(
+                counts.getOrDefault(AiLabel.THREAT, 0L),
+                counts.getOrDefault(AiLabel.SPAM, 0L),
+                counts.getOrDefault(AiLabel.CLEAN, 0L));
     }
 
     @Override
