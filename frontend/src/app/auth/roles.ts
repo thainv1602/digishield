@@ -26,6 +26,27 @@ export const ADMIN_ROLES: Role[] = [
   ROLES.CONTENT_EDITOR,
 ];
 
+/* ── Backend gate mirrors ──────────────────────────────────────────────────
+ * Belonging to the admin console is not the same as passing the API's own
+ * check: several admin pages sit behind a narrower @PreAuthorize than the
+ * console itself. The lists below mirror one backend gate each, expanded
+ * through the role hierarchy in MethodSecurityConfig
+ * (SUPER_ADMIN > ORG_ADMIN > {MANAGER, ANALYST, CONTENT_EDITOR}). Route
+ * guards and sidebar links both read them, so a page can never be offered to
+ * a role whose very first request would come back 403.
+ * ------------------------------------------------------------------------ */
+
+/** Mirrors AnalyticsController's `hasAnyRole('ANALYST','MANAGER')`. */
+export const ANALYTICS_ROLES: Role[] = [
+  ROLES.SUPER_ADMIN,
+  ROLES.ORG_ADMIN,
+  ROLES.MANAGER,
+  ROLES.ANALYST,
+];
+
+/** Mirrors `hasRole('MANAGER')` — SimulationController and compliance reads. */
+export const MANAGER_ROLES: Role[] = [ROLES.SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.MANAGER];
+
 /* ── UI personas: group the 6 RBAC roles into the 4 sidebar nav trees ── */
 export type Persona = 'admin' | 'learner' | 'analyst' | 'super';
 
@@ -63,16 +84,22 @@ export interface NavItem {
   badge?: string;
   /** Hidden from manager/content_editor (page is org-admin-only end to end). */
   orgAdminOnly?: boolean;
+  /**
+   * Restrict the link to the roles the page's API actually admits. Use one of
+   * the backend gate mirrors above rather than a hand-written list, so the
+   * sidebar and the route guard cannot drift apart.
+   */
+  roles?: Role[];
 }
 
 /** Persona-scoped nav trees, derived from the prototype's sidebar. */
 export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
   admin: [
-    { key: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: 'grid', section: 'Quản trị · Admin' },
-    { key: 'campaigns', label: 'Mô phỏng', path: '/campaigns/new', icon: 'triangle', section: 'Quản trị · Admin' },
+    { key: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: 'grid', section: 'Quản trị · Admin', roles: ANALYTICS_ROLES },
+    { key: 'campaigns', label: 'Mô phỏng', path: '/campaigns/new', icon: 'triangle', section: 'Quản trị · Admin', roles: MANAGER_ROLES },
     { key: 'users', label: 'Người dùng', path: '/users', icon: 'users', section: 'Quản trị · Admin', orgAdminOnly: true },
     { key: 'groups', label: 'Nhóm', path: '/groups', icon: 'layers', section: 'Quản trị · Admin', orgAdminOnly: true },
-    { key: 'compliance', label: 'Tuân thủ', path: '/compliance', icon: 'clipboard-check', section: 'Quản trị · Admin' },
+    { key: 'compliance', label: 'Tuân thủ', path: '/compliance', icon: 'clipboard-check', section: 'Quản trị · Admin', roles: MANAGER_ROLES },
     { key: 'content', label: 'Content Studio', path: '/content/studio', icon: 'pen-square', section: 'Quản trị · Admin' },
     { key: 'audit', label: 'Nhật ký kiểm toán', path: '/super/audit', icon: 'file-text', section: 'Quản trị · Admin', orgAdminOnly: true },
     { key: 'org', label: 'Cài đặt tổ chức', path: '/settings/org', icon: 'settings', section: 'Hệ thống', orgAdminOnly: true },
@@ -87,6 +114,10 @@ export const NAV_BY_PERSONA: Record<Persona, NavItem[]> = {
     { key: 'my-reports', label: 'Báo cáo của tôi', path: '/learn/reports', icon: 'shield-alert', section: 'Học viên · Learner' },
   ],
   analyst: [
+    // The analytics API admits ANALYST, and the role matrix in the UI/UX spec
+    // gives Overview to Admin, Manager and Analyst alike — without this link the
+    // page was reachable only by typing the URL.
+    { key: 'dashboard', label: 'Tổng quan', path: '/dashboard', icon: 'grid', section: 'SOC Analyst' },
     { key: 'inbox', label: 'Hộp báo cáo', path: '/soc/inbox', icon: 'inbox', section: 'SOC Analyst' },
     { key: 'alerts', label: 'Trung tâm cảnh báo', path: '/soc/alerts', icon: 'bell', section: 'SOC Analyst' },
     { key: 'watchlist', label: 'Watchlist', path: '/soc/watchlist', icon: 'eye', section: 'SOC Analyst' },
@@ -117,10 +148,15 @@ export function navForRole(role: Role): NavItem[] {
     persona === 'super'
       ? [...NAV_BY_PERSONA.super, ...NAV_BY_PERSONA.admin]
       : (NAV_BY_PERSONA[persona] ?? []);
-  return canOrgAdmin(role) ? items : items.filter((i) => !i.orgAdminOnly);
+  const visible = items.filter((i) => !i.roles || i.roles.includes(role));
+  return canOrgAdmin(role) ? visible : visible.filter((i) => !i.orgAdminOnly);
 }
 
 export function defaultRouteForRole(role: Role): string {
+  // A content editor shares the admin nav tree but not its analytics gate, so
+  // the shared landing page would bounce them straight to /403. Their own
+  // first-class page is the studio.
+  if (role === ROLES.CONTENT_EDITOR) return '/content/studio';
   switch (roleToPersona(role)) {
     case 'learner':
       return '/learn';
