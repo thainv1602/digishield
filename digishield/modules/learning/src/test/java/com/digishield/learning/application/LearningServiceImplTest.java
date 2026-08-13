@@ -590,6 +590,50 @@ class LearningServiceImplTest {
         assertThat(status.compliantPct()).isZero();
     }
 
+    @Test
+    void completionPctIsCountedInTheDatabaseNotByLoadingEnrollments() {
+        when(enrollmentRepository.countByTenantId(TENANT_ID)).thenReturn(8L);
+        when(enrollmentRepository.countByTenantIdAndStatus(TENANT_ID, EnrollmentStatus.COMPLETED))
+                .thenReturn(6L);
+
+        assertThat(learningService.completionPct(TENANT_ID)).isEqualTo(75);
+
+        // The tile is one number; it must not pull the rows behind it. Loading
+        // the enrollments (and the courses, to label them) is what this replaced.
+        verify(enrollmentRepository, never()).findByTenantId(any());
+        verify(courseRepository, never()).findByTenantId(any());
+    }
+
+    @Test
+    void completionPctRoundsRatherThanTruncates() {
+        // 5/8 = 62.5%. Truncation would report 62 and quietly under-state it.
+        when(enrollmentRepository.countByTenantId(TENANT_ID)).thenReturn(8L);
+        when(enrollmentRepository.countByTenantIdAndStatus(TENANT_ID, EnrollmentStatus.COMPLETED))
+                .thenReturn(5L);
+
+        assertThat(learningService.completionPct(TENANT_ID)).isEqualTo(63);
+    }
+
+    @Test
+    void completionPctWithNobodyEnrolledIsZeroAndAsksNoFurtherQuestions() {
+        when(enrollmentRepository.countByTenantId(TENANT_ID)).thenReturn(0L);
+
+        assertThat(learningService.completionPct(TENANT_ID)).isZero();
+
+        // Nothing to divide by, so the second count is never issued — and the
+        // division that would have thrown never happens.
+        verify(enrollmentRepository, never()).countByTenantIdAndStatus(any(), any());
+    }
+
+    @Test
+    void completionPctIsOneHundredWhenEveryEnrollmentIsDone() {
+        when(enrollmentRepository.countByTenantId(TENANT_ID)).thenReturn(4L);
+        when(enrollmentRepository.countByTenantIdAndStatus(TENANT_ID, EnrollmentStatus.COMPLETED))
+                .thenReturn(4L);
+
+        assertThat(learningService.completionPct(TENANT_ID)).isEqualTo(100);
+    }
+
     private Enrollment enrollment(UUID userId, UUID courseId, EnrollmentStatus status) {
         return new Enrollment(UUID.randomUUID(), TENANT_ID, userId, courseId, status, null);
     }

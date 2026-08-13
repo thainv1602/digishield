@@ -220,6 +220,20 @@ public class LearningServiceImpl implements LearningService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public int completionPct(UUID tenantId) {
+        long total = enrollmentRepository.countByTenantId(tenantId);
+        // No enrollments is not 0% completed, it is nothing to report on — and
+        // returning early keeps the division away from a zero denominator.
+        if (total == 0) {
+            return 0;
+        }
+        long completed = enrollmentRepository.countByTenantIdAndStatus(
+                tenantId, EnrollmentStatus.COMPLETED);
+        return (int) Math.round(completed * 100.0 / total);
+    }
+
+    @Override
     public EnrollmentView updateProgress(UUID tenantId, UUID enrollmentId, int progress) {
         Enrollment enrollment = enrollmentRepository.findByTenantIdAndId(tenantId, enrollmentId)
                 .orElseThrow(() -> new IllegalArgumentException(

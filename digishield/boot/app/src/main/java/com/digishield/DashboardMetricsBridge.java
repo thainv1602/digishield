@@ -1,15 +1,11 @@
 package com.digishield;
 
 import com.digishield.analytics.api.DashboardMetricsProvider;
-import com.digishield.learning.api.EnrollmentView;
 import com.digishield.learning.api.LearningService;
 import com.digishield.reporting.api.ReportingService;
 import com.digishield.reporting.api.dto.OpenReportCountsDto;
 import com.digishield.shared.tenantcontext.TenantContext;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Wires the analytics module's {@link DashboardMetricsProvider} SPI to the
@@ -30,15 +26,10 @@ class DashboardMetricsBridge implements DashboardMetricsProvider {
 
     @Override
     public int trainingCompletionPct() {
-        UUID tenantId = TenantContext.requireUuid();
-        List<EnrollmentView> enrollments = learningService.listEnrollments(tenantId, null);
-        if (enrollments.isEmpty()) {
-            return 0;
-        }
-        long completed = enrollments.stream()
-                .filter(e -> "completed".equalsIgnoreCase(e.status()))
-                .count();
-        return (int) Math.round(completed * 100.0 / enrollments.size());
+        // Counted in the database by the learning module. This used to load
+        // every enrollment the tenant had — and every course, so the views it
+        // built could be labelled — to arrive at a single percentage.
+        return learningService.completionPct(TenantContext.requireUuid());
     }
 
     @Override
