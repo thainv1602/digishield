@@ -50,6 +50,18 @@ public interface LearningService {
     List<EnrollmentView> listEnrollments(UUID tenantId, String status);
 
     /**
+     * Share of a tenant's enrollments that are completed, 0..100.
+     *
+     * <p>Counted in the database. It exists so callers that want only the
+     * number do not have to load every enrollment — and every course, to label
+     * them — the way the admin dashboard's completion tile used to.
+     *
+     * @param tenantId tenant
+     * @return the rounded percentage, or 0 when nobody is enrolled
+     */
+    int completionPct(UUID tenantId);
+
+    /**
      * Updates the progress (and derived status) of an enrollment.
      *
      * @param tenantId     tenant

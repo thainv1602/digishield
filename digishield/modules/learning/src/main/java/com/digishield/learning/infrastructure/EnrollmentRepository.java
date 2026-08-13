@@ -23,6 +23,25 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
     long countDistinctUsers(@Param("tenantId") UUID tenantId);
 
     /**
+     * How many enrollments a tenant has, for the completion percentage.
+     *
+     * <p>The dashboard used to fetch every enrollment (and every course, to
+     * label them) and count in Java, so a tile showing one number cost two
+     * table loads that grew with the tenant.
+     */
+    long countByTenantId(UUID tenantId);
+
+    /**
+     * How many of a tenant's enrollments are in a given status.
+     *
+     * <p>Kept as a second count rather than folded into one query with a CASE:
+     * two derived counts read plainly, both are answered from
+     * {@code idx_enrollment_tenant_status}, and the caller can skip this one
+     * entirely when the tenant has no enrollments at all.
+     */
+    long countByTenantIdAndStatus(UUID tenantId, EnrollmentStatus status);
+
+    /**
      * Gets a user's enrollments within the scope of a tenant.
      */
     List<Enrollment> findByTenantIdAndUserId(UUID tenantId, UUID userId);
