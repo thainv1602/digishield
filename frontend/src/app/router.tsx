@@ -2,7 +2,14 @@ import { lazy, Suspense, type ComponentType, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from '@/shared/ui';
 import { RequireRole } from './auth/RequireRole';
-import { ROLES, ALL_ROLES, defaultRouteForRole, type Role } from './auth/roles';
+import {
+  ROLES,
+  ALL_ROLES,
+  ANALYTICS_ROLES,
+  MANAGER_ROLES,
+  defaultRouteForRole,
+  type Role,
+} from './auth/roles';
 import { useAuth } from './auth/useAuth';
 
 /* ── Auth (owned here) — login delegates to the Cognito hosted UI, which also
@@ -112,14 +119,17 @@ export function AppRouter() {
         {/* ── Public / Auth ── */}
         <Route path="/login" element={<LoginPage />} />
 
-        {/* ── Admin / Super ── */}
-        <Route path="/dashboard" element={guarded(ADMIN, AdminDashboardPage)} />
-        <Route path="/campaigns/new" element={guarded(ADMIN, CampaignWizardPage)} />
-        <Route path="/campaigns/:id" element={guarded(ADMIN, CampaignResultsPage)} />
+        {/* ── Admin / Super ──
+            ANALYTICS_ROLES and MANAGER_ROLES come from roles.ts, where each one
+            mirrors a backend @PreAuthorize. The sidebar filters its links by the
+            same lists, so a page is never linked to a role the API refuses. */}
+        <Route path="/dashboard" element={guarded(ANALYTICS_ROLES, AdminDashboardPage)} />
+        <Route path="/campaigns/new" element={guarded(MANAGER_ROLES, CampaignWizardPage)} />
+        <Route path="/campaigns/:id" element={guarded(MANAGER_ROLES, CampaignResultsPage)} />
         <Route path="/users" element={guarded(ORG_ADMIN_ROLES, UsersPage)} />
         <Route path="/groups" element={guarded(ORG_ADMIN_ROLES, GroupsPage)} />
         <Route path="/profile" element={guarded(ALL_ROLES, ProfilePage)} />
-        <Route path="/compliance" element={guarded(ADMIN, CompliancePage)} />
+        <Route path="/compliance" element={guarded(MANAGER_ROLES, CompliancePage)} />
         <Route path="/content/studio" element={guarded(ADMIN, ContentStudioPage)} />
         <Route path="/settings/org" element={guarded(ORG_ADMIN_ROLES, OrgSettingsPage)} />
         <Route path="/gamification" element={guarded(ADMIN, GamificationPage)} />

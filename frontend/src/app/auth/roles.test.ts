@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   ADMIN_ROLES,
   ALL_ROLES,
+  ANALYTICS_ROLES,
+  MANAGER_ROLES,
   NAV_BY_PERSONA,
   ROLES,
+  defaultRouteForRole,
+  navForRole,
   roleToPersona,
   type Persona,
   type Role,
@@ -115,6 +119,70 @@ describe('NAV_BY_PERSONA', () => {
       if (persona === 'admin') continue;
       const flagged = NAV_BY_PERSONA[persona].filter((i) => i.orgAdminOnly);
       expect(flagged).toEqual([]);
+    }
+  });
+});
+
+/**
+ * These mirror backend @PreAuthorize annotations. The backend expands them
+ * through the role hierarchy in MethodSecurityConfig
+ * (SUPER_ADMIN > ORG_ADMIN > {MANAGER, ANALYST, CONTENT_EDITOR}), so the lists
+ * here must be the expanded form. Getting them wrong does not fail loudly: the
+ * page opens and only then does the API answer 403.
+ */
+describe('backend gate mirrors', () => {
+  it('admits the roles AnalyticsController accepts', () => {
+    // hasAnyRole('ANALYST','MANAGER'), plus everything above them.
+    expect(new Set(ANALYTICS_ROLES)).toEqual(
+      new Set([ROLES.SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.MANAGER, ROLES.ANALYST]),
+    );
+  });
+
+  it('admits the roles a hasRole(MANAGER) endpoint accepts', () => {
+    expect(new Set(MANAGER_ROLES)).toEqual(
+      new Set([ROLES.SUPER_ADMIN, ROLES.ORG_ADMIN, ROLES.MANAGER]),
+    );
+  });
+
+  it('excludes content_editor from both', () => {
+    // content_editor inherits only LEARNER, so it satisfies neither gate — the
+    // mismatch that let it open pages whose first request came back 403.
+    expect(ANALYTICS_ROLES).not.toContain(ROLES.CONTENT_EDITOR);
+    expect(MANAGER_ROLES).not.toContain(ROLES.CONTENT_EDITOR);
+  });
+
+  it('lets an analyst reach analytics but not manager-gated pages', () => {
+    expect(ANALYTICS_ROLES).toContain(ROLES.ANALYST);
+    expect(MANAGER_ROLES).not.toContain(ROLES.ANALYST);
+  });
+});
+
+describe('navForRole', () => {
+  it('offers the overview to every role the analytics gate admits', () => {
+    for (const role of ANALYTICS_ROLES) {
+      const paths = navForRole(role).map((i) => i.path);
+      expect(paths).toContain('/dashboard');
+    }
+  });
+
+  it('hides pages a role would be refused by the API', () => {
+    const paths = navForRole(ROLES.CONTENT_EDITOR).map((i) => i.path);
+    expect(paths).not.toContain('/dashboard');
+    expect(paths).not.toContain('/campaigns/new');
+    expect(paths).not.toContain('/compliance');
+  });
+
+  it('leaves the content editor a page to work on', () => {
+    expect(navForRole(ROLES.CONTENT_EDITOR).length).toBeGreaterThan(0);
+  });
+
+  it('never lands a role on a page its own nav will not show', () => {
+    // The `/` redirect and the post-login redirect both use this, so a landing
+    // page the role cannot open turns a successful sign-in into a 403.
+    for (const role of ALL_ROLES) {
+      const home = defaultRouteForRole(role);
+      const paths = navForRole(role).map((i) => i.path);
+      expect(paths).toContain(home);
     }
   });
 });
