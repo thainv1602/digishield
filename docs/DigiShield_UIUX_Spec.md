@@ -172,8 +172,10 @@ Goal: grasp the overall risk picture within 5 seconds.
 
 ```
 ┌── Campaign: "Tuition refund" ───────────────────── Status: Completed ──────────┐
-│  Funnel:  Sent 1,000 -> Opened 540 -> Clicked 132 -> Submitted 41 -> Reported 88 │
-│           ##########   ######          ###            #             ####         │
+│  Funnel:  Sent 1,000 -> Opened 540 -> Clicked 132 -> Submitted 41               │
+│           ##########   ######          ###            #                         │
+│  ── Positive outcome ─────────────────────────────────────────────────────       │
+│  Reported 88 (8.8% of sent)  ####                                               │
 │  Fail rate: 4.1% down  |   Auto-enrolled 41 people in a lesson                   │
 │  ┌── List ─────────────────────────────────────────────────────────────────┐    │
 │  │ User           Department  Action      Trained?                          │    │
@@ -183,7 +185,14 @@ Goal: grasp the overall risk picture within 5 seconds.
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Funnel** open→click→submit→report; individuals who fail are **not publicly displayed** beyond the scope of management.
+- **Funnel** is the failure path only — sent→open→click→submit — where each stage
+  is a subset of the one before it, so the bars only ever shrink.
+- **Reporting is a separate outcome, not a fifth stage.** Somebody can report a
+  simulation without ever opening it, so "reported" is not a subset of
+  "submitted": the numbers above (41 submitted, 88 reported) would draw a funnel
+  that widens at the bottom. It is measured against *sent*, which is a real
+  denominator, and shown below a divider so it never reads as a later stage.
+- Individuals who fail are **not publicly displayed** beyond the scope of management.
 - **Source:** `GET /sim/campaigns/{id}` + `sim_events`.
 
 ### 5.4. Users & Groups (Admin)

@@ -6,11 +6,16 @@ import type { ColumnDef } from '@/shared/ui';
 import {
   useCampaign,
   useSendCampaign,
-  type CampaignDetail,
   type CampaignResultRow,
   type SendResult,
 } from './api';
 import { downloadCsv } from '@/shared/lib/csv';
+import {
+  toFunnel,
+  toReported,
+  VALUE_FITS_INSIDE_PCT,
+  type FunnelBar,
+} from './funnel';
 
 /** Absolute origin the tracking links resolve against (the API host). */
 function trackOrigin(): string {
@@ -37,38 +42,82 @@ function qrSrc(absoluteUrl: string, size = 120): string {
  * derived from the response; loading/error/empty states handled inline.
  */
 
-type FunnelBar = {
-  label: string;
-  value: string;
-  pct: number;
-  width: number;
-  minWidth?: number;
-  color: string;
-  pctColor: string;
-};
-
-const FUNNEL_FALLBACK: FunnelBar[] = [
-  { label: 'Gửi', value: '0', pct: 0, width: 0, color: 'var(--color-blue)', pctColor: 'var(--color-muted)' },
-  { label: 'Mở', value: '0', pct: 0, width: 0, color: '#4D86F7', pctColor: 'var(--color-muted)' },
-  { label: 'Bấm', value: '0', pct: 0, width: 0, minWidth: 80, color: 'var(--color-amber)', pctColor: 'var(--color-amber)' },
-  { label: 'Nhập liệu', value: '0', pct: 0, width: 0, minWidth: 60, color: 'var(--color-red)', pctColor: 'var(--color-red)' },
-  { label: 'Báo cáo', value: '0', pct: 0, width: 0, minWidth: 60, color: 'var(--color-teal)', pctColor: 'var(--color-teal)' },
-];
-
-/** Build the funnel bars from the campaign detail (percent of delivered). */
-function toFunnel(detail: CampaignDetail | undefined): FunnelBar[] {
-  const f = detail?.funnel;
-  if (!f) return FUNNEL_FALLBACK;
-  const base = f.delivered > 0 ? f.delivered : 1;
-  const pct = (n: number) => Math.round((n / base) * 1000) / 10;
-  const fmt = (n: number) => n.toLocaleString('en-US');
-  return [
-    { label: 'Gửi', value: fmt(f.delivered), pct: pct(f.delivered), width: pct(f.delivered), color: 'var(--color-blue)', pctColor: 'var(--color-muted)' },
-    { label: 'Mở', value: fmt(f.open), pct: pct(f.open), width: pct(f.open), color: '#4D86F7', pctColor: 'var(--color-muted)' },
-    { label: 'Bấm', value: fmt(f.click), pct: pct(f.click), width: pct(f.click), minWidth: 80, color: 'var(--color-amber)', pctColor: 'var(--color-amber)' },
-    { label: 'Nhập liệu', value: fmt(f.submit), pct: pct(f.submit), width: pct(f.submit), minWidth: 60, color: 'var(--color-red)', pctColor: 'var(--color-red)' },
-    { label: 'Báo cáo', value: fmt(f.report), pct: pct(f.report), width: pct(f.report), minWidth: 60, color: 'var(--color-teal)', pctColor: 'var(--color-teal)' },
-  ];
+/**
+ * One labelled bar.
+ *
+ * The bar's length is the value and nothing else. The previous version gave the
+ * short bars a `minWidth` so the number printed inside them stayed readable,
+ * which meant a 4% bar and a 9% bar could be drawn the same length — the one
+ * thing a bar chart is supposed to get right. Now a value that does not fit
+ * sits outside the bar in ink instead, and the bar keeps its true length.
+ */
+function FunnelRow({ bar, label }: { bar: FunnelBar; label: string }) {
+  const insideBar = bar.width >= VALUE_FITS_INSIDE_PCT;
+  const value = (
+    <span
+      style={{
+        fontSize: 13,
+        fontWeight: 700,
+        color: insideBar ? 'white' : 'var(--color-text)',
+        fontFamily: "'JetBrains Mono', monospace",
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {bar.value}
+    </span>
+  );
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div
+        style={{
+          width: 100,
+          fontSize: 13,
+          color: 'var(--color-muted)',
+          textAlign: 'right',
+          flexShrink: 0,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          flex: 1,
+          background: 'var(--color-bg)',
+          borderRadius: 4,
+          height: 28,
+          display: 'flex',
+          alignItems: 'center',
+        }}
+      >
+        <div
+          style={{
+            background: bar.color,
+            height: '100%',
+            width: `${bar.width}%`,
+            borderRadius: 4,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: insideBar ? 12 : 0,
+            flexShrink: 0,
+          }}
+        >
+          {insideBar && value}
+        </div>
+        {!insideBar && <div style={{ paddingLeft: 8 }}>{value}</div>}
+      </div>
+      <div
+        style={{
+          width: 44,
+          textAlign: 'right',
+          fontSize: 12,
+          color: bar.pctColor,
+          fontWeight: bar.pctColor === 'var(--color-muted)' ? 400 : 600,
+        }}
+      >
+        {bar.pctText}
+      </div>
+    </div>
+  );
 }
 
 type ResultRow = {
@@ -153,6 +202,7 @@ export default function CampaignResultsPage() {
   }
 
   const funnel = toFunnel(detail);
+  const reported = toReported(detail);
   const rows = (detail?.results ?? []).map(toResultRow);
   const isCompleted = (detail?.status ?? '').toLowerCase() === 'completed';
   const channelLabel = detail?.channel ? detail.channel.toUpperCase() : '';
@@ -331,63 +381,27 @@ export default function CampaignResultsPage() {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {funnel.map((f) => (
-              <div key={f.label} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <div
-                  style={{
-                    width: 100,
-                    fontSize: 13,
-                    color: 'var(--color-muted)',
-                    textAlign: 'right',
-                    flexShrink: 0,
-                  }}
-                >
-                  {t(f.label)}
-                </div>
-                <div
-                  style={{
-                    flex: 1,
-                    background: 'var(--color-bg)',
-                    borderRadius: 4,
-                    height: 28,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      background: f.color,
-                      height: '100%',
-                      width: `${f.width}%`,
-                      minWidth: f.minWidth,
-                      display: 'flex',
-                      alignItems: 'center',
-                      paddingLeft: 12,
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: 'white',
-                        fontFamily: "'JetBrains Mono', monospace",
-                      }}
-                    >
-                      {f.value}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  style={{
-                    width: 44,
-                    textAlign: 'right',
-                    fontSize: 12,
-                    color: f.pctColor,
-                    fontWeight: f.pctColor === 'var(--color-muted)' ? 400 : 600,
-                  }}
-                >
-                  {f.pct}%
-                </div>
-              </div>
+              <FunnelRow key={f.label} bar={f} label={t(f.label)} />
             ))}
+          </div>
+
+          {/* Reporting sits below a rule, outside the funnel: it is a separate
+              outcome, not a later stage, so it must not read as one. */}
+          <div
+            style={{
+              marginTop: 16,
+              paddingTop: 16,
+              borderTop: '1px solid var(--color-border)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <div style={{ ...labelStyle, marginLeft: 114 }}>{t('Kết quả tích cực')}</div>
+            <FunnelRow bar={reported} label={t(reported.label)} />
+            <div style={{ fontSize: 12, color: 'var(--color-muted)', marginLeft: 114 }}>
+              {t('Tính trên số email đã gửi. Một người có thể báo cáo mà không mở hoặc bấm, nên đây không phải chặng tiếp theo của phễu.')}
+            </div>
           </div>
           <div
             style={{
