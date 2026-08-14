@@ -186,6 +186,72 @@ Grafana is **not** funnelled. The `tailscale.com/funnel: "true"` annotation
 would make it public, and with it every metric and every application log in
 Loki, behind one password and no MFA.
 
+### 7.1 Rotating the operator's OAuth client
+
+The client created in step 2 above is not an ordinary password. It mints
+Tailscale auth keys for `tag:k8s-operator`, and the ACL gives that tag ownership
+of `tag:k8s` — so whoever holds it can join a device to this tailnet under
+either tag, and inherit whatever those tags are granted. Treat any exposure of
+it (a pasted terminal, a chat log, a screenshot, a CI log) as a reason to
+rotate, not as something to watch.
+
+**Revoking the client does not remove the devices it already created.** Node
+keys are issued once and outlive the client that authorised them, so a device
+joined with a leaked client stays on the tailnet after the client is gone.
+Auditing the device list is part of the rotation, not an optional extra.
+
+1. **Audit first, before changing anything.** In the admin console, or with
+   `tailscale status`, list every device and account for each one. This cluster
+   should show exactly two tagged devices:
+
+   ```
+   digishield-k8s-operator   tag:k8s-operator    the operator itself
+   grafana                   tag:k8s             created by the operator for the Grafana Ingress
+   ```
+
+   Anything else carrying `tag:k8s-operator` or `tag:k8s` was not put there by
+   this repo. Remove it, and treat the rotation as an incident rather than
+   housekeeping.
+
+2. **Generate the replacement**: Settings → OAuth clients → Generate, scope
+   `Devices: Core` (write), tag `tag:k8s-operator` — the same shape as the
+   original. Keep the old one alive for now; the operator is using it.
+
+3. **Replace the Secret in place.** `create ... --dry-run` piped into `apply` so
+   the operator sees an update rather than a delete and a re-create:
+
+   ```bash
+   kubectl -n tailscale create secret generic operator-oauth \
+     --from-literal=client_id="<new-id>" \
+     --from-literal=client_secret="<new-secret>" \
+     --dry-run=client -o yaml | kubectl apply -f -
+   ```
+
+4. **Restart the operator** so it picks the new credentials up — it reads them
+   at startup, not on change:
+
+   ```bash
+   kubectl -n tailscale rollout restart deploy/operator
+   kubectl -n tailscale rollout status deploy/operator
+   ```
+
+5. **Verify before revoking.** Both devices must still be online and Grafana
+   still reachable on its tailnet name. The operator re-authenticating is what
+   proves the new client works:
+
+   ```bash
+   kubectl -n tailscale logs deploy/operator --tail=30
+   kubectl -n digishield get ingress grafana   # ADDRESS still resolves
+   ```
+
+6. **Revoke the old client** in the admin console — last, and not before step 5
+   passes. Until this happens the leaked credential is still valid and the
+   rotation has achieved nothing.
+
+The existing devices survive all of this: their node keys were issued at join
+time and do not depend on the client that authorised them. Rotation only
+changes what can mint the *next* key.
+
 ## 8. CoreDNS runs two replicas
 
 k3s ships CoreDNS with one replica, which makes whichever node happens to hold

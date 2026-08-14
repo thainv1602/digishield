@@ -36,6 +36,12 @@
 # Without that Secret the operator Pod stays unable to start with a clear
 # reason, which is the failure mode to want — the same shape as Grafana
 # without grafana-admin.
+#
+# This client can join devices to the tailnet under `tag:k8s-operator`, and the
+# ACL gives that tag ownership of `tag:k8s`. If it is ever exposed — a pasted
+# terminal, a chat log, a CI log — rotate it: JETSON_SETUP.md § 7.1. Revoking
+# does not remove devices the leaked client already created, so that runbook
+# starts by auditing the device list rather than by issuing a new key.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
