@@ -2138,6 +2138,15 @@ components:
         blacklistMatch: { type: boolean }
         status: { type: string, enum: [submitted, triaging, confirmed, quarantined, dismissed] }
         channel: { type: string, enum: [email, sms] }
+        reportedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >
+            When the report was submitted. Null on rows written before the
+            column existed. ageLabel is derived from this, but a relative label
+            cannot be grouped, sorted or plotted — anything charting reports
+            over time needs the instant.
         ageLabel: { type: string, description: Human-readable age, e.g. "2 gio truoc" }
     BlacklistEntry:
       type: object

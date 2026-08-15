@@ -316,6 +316,7 @@ public class ReportingServiceImpl implements ReportingService {
                 r.isBlacklistMatch(),
                 r.getStatus() != null ? r.getStatus().name().toLowerCase() : null,
                 r.getChannel(),
+                r.getReportedAt(),
                 ageLabel(r.getReportedAt(), now));
     }
 
