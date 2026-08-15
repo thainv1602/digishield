@@ -3,6 +3,7 @@ package com.digishield.interception.application;
 import com.digishield.interception.api.dto.AccountWatchEntryView;
 import com.digishield.interception.api.dto.EvaluateRequest;
 import com.digishield.interception.api.dto.InterventionDecision;
+import com.digishield.interception.api.dto.InterventionEventView;
 import com.digishield.interception.domain.AccountWatchEntry;
 import com.digishield.interception.domain.Decision;
 import com.digishield.interception.domain.InterventionEvent;
@@ -21,10 +22,13 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -32,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -99,7 +104,7 @@ class InterceptionServiceImplTest {
         // asserting the implementation's own expression cannot catch the
         // spelling changing, which is exactly what went wrong here.
         assertThat(decision.decision()).isEqualTo("pause");
-        assertThat(decision.signals()).containsExactly("ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT");
+        assertThat(decision.signals()).containsExactly("on_call", "new_payee", "watchlist_hit");
         assertThat(decision.message()).isNotBlank();
 
         // Assert: persisted intervention event payload
@@ -130,7 +135,7 @@ class InterceptionServiceImplTest {
 
         // Assert
         assertThat(decision.decision()).isEqualTo("warn");
-        assertThat(decision.signals()).containsExactly("WATCHLIST_HIT");
+        assertThat(decision.signals()).containsExactly("watchlist_hit");
 
         verify(eventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getDecision()).isEqualTo(Decision.WARN);
@@ -151,7 +156,7 @@ class InterceptionServiceImplTest {
 
         // Assert: without a watchlist hit the rule falls through to ALLOW
         assertThat(decision.decision()).isEqualTo("allow");
-        assertThat(decision.signals()).containsExactly("ON_CALL", "NEW_PAYEE");
+        assertThat(decision.signals()).containsExactly("on_call", "new_payee");
 
         verify(eventRepository).save(eventCaptor.capture());
         assertThat(eventCaptor.getValue().getDecision()).isEqualTo(Decision.ALLOW);
@@ -177,6 +182,47 @@ class InterceptionServiceImplTest {
         InterventionEvent persisted = eventCaptor.getValue();
         assertThat(persisted.getDecision()).isEqualTo(Decision.ALLOW);
         assertThat(persisted.getSignals()).isEmpty();
+    }
+
+    @Test
+    void theSameEventIsSpelledTheSameWayByBothEndpoints() {
+        // The defect: evaluate() answered ["ON_CALL"] while GET /interventions
+        // answered ["on_call"] for the very same event, so anything counting
+        // signals across both saw two populations instead of one.
+        UUID userId = UUID.randomUUID();
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
+                .thenReturn(Optional.empty());
+
+        InterventionDecision written = interceptionService.evaluate(
+                new EvaluateRequest(userId, new BigDecimal("1000000"), DEST_ACCOUNT, true, true));
+
+        // Read the persisted row back the way listInterventions does.
+        verify(eventRepository).save(eventCaptor.capture());
+        when(eventRepository.findByTenantIdOrderByTsDesc(eq(TENANT_ID), any(Pageable.class)))
+                .thenReturn(List.of(eventCaptor.getValue()));
+
+        List<InterventionEventView> readBack = interceptionService.listInterventions(1, 20);
+
+        assertThat(readBack).singleElement().satisfies(view ->
+                assertThat(view.signals()).isEqualTo(written.signals()));
+        assertThat(written.signals()).containsExactly("on_call", "new_payee");
+    }
+
+    @Test
+    void aRowWrittenBeforeTheEnumExistedStillReadsBackLowerCase() {
+        // Older rows hold the same upper-case spellings; the read path
+        // normalises them, which is why the persisted form did not need
+        // rewriting when InterventionSignal was introduced.
+        InterventionEvent legacy = new InterventionEvent(
+                UUID.randomUUID(), TENANT_ID, UUID.randomUUID(),
+                "ON_CALL,WATCHLIST_HIT", Decision.WARN, Instant.now());
+        when(eventRepository.findByTenantIdOrderByTsDesc(eq(TENANT_ID), any(Pageable.class)))
+                .thenReturn(List.of(legacy));
+
+        assertThat(interceptionService.listInterventions(1, 20))
+                .singleElement()
+                .satisfies(view -> assertThat(view.signals())
+                        .containsExactly("on_call", "watchlist_hit"));
     }
 
     @Test
