@@ -8,6 +8,7 @@ import com.digishield.interception.api.dto.InterventionEventView;
 import com.digishield.interception.domain.AccountWatchEntry;
 import com.digishield.interception.domain.Decision;
 import com.digishield.interception.domain.InterventionEvent;
+import com.digishield.interception.domain.InterventionSignal;
 import com.digishield.interception.domain.RiskLevel;
 import com.digishield.interception.domain.WatchType;
 import com.digishield.interception.infrastructure.AccountWatchEntryRepository;
@@ -20,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -54,18 +56,18 @@ public class InterceptionServiceImpl implements InterceptionService {
     public InterventionDecision evaluate(EvaluateRequest request) {
         UUID tenantId = TenantContext.requireUuid();
 
-        List<String> signals = new ArrayList<>();
+        List<InterventionSignal> signals = new ArrayList<>();
         if (request.onCall()) {
-            signals.add("ON_CALL");
+            signals.add(InterventionSignal.ON_CALL);
         }
         if (request.newPayee()) {
-            signals.add("NEW_PAYEE");
+            signals.add(InterventionSignal.NEW_PAYEE);
         }
 
         Optional<AccountWatchEntry> hit = watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(tenantId, request.destAccount());
         boolean watchlistHit = hit.isPresent();
         if (watchlistHit) {
-            signals.add("WATCHLIST_HIT");
+            signals.add(InterventionSignal.WATCHLIST_HIT);
         }
 
         Decision decision;
@@ -81,16 +83,23 @@ public class InterceptionServiceImpl implements InterceptionService {
             message = messages.get("intervention.clear");
         }
 
-        // Record the intervention event.
+        // Persisted by enum name, upper case, exactly as the rows written before
+        // InterventionSignal existed — so nothing has to be rewritten, and the
+        // read path below keeps normalising either spelling.
         InterventionEvent event = new InterventionEvent(
                 UUID.randomUUID(), tenantId, request.userId(),
-                String.join(",", signals), decision, Instant.now());
+                signals.stream().map(Enum::name).collect(Collectors.joining(",")),
+                decision, Instant.now());
         eventRepository.save(event);
 
-        // Lower case, like InterventionEventView below and like the spec: the
-        // same enum was leaving this class spelled two different ways.
+        // Lower case, like InterventionEventView below and like the spec. The
+        // decision was already fixed this way; the signals beside it were not,
+        // so one event came back ["ON_CALL"] here and ["on_call"] from
+        // GET /interventions.
         return new InterventionDecision(
-                decision.name().toLowerCase(Locale.ROOT), signals, message);
+                decision.name().toLowerCase(Locale.ROOT),
+                signals.stream().map(InterventionSignal::wireName).toList(),
+                message);
     }
 
     @Override
