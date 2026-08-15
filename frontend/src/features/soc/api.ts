@@ -26,6 +26,12 @@ export interface PhishingReport {
   blacklistMatch: boolean;
   status: string | null;
   channel: string | null;
+  /**
+   * ISO-8601 instant, or null on rows written before the column existed.
+   * `ageLabel` is the same moment rendered for a human; this one is what can be
+   * grouped, sorted or plotted.
+   */
+  reportedAt: string | null;
   ageLabel: string | null;
 }
 

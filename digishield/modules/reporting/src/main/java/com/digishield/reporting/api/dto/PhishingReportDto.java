@@ -2,6 +2,7 @@ package com.digishield.reporting.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.Instant;
 import java.util.UUID;
 
 /**
@@ -22,6 +23,11 @@ import java.util.UUID;
  * @param blacklistMatch whether the message matched a blacklist source
  * @param status         processing status (lowercase)
  * @param channel        channel the report came from (email | sms; may be null)
+ * @param reportedAt     when the report was submitted; null on rows that
+ *                       predate the column. {@code ageLabel} is derived from
+ *                       this, but a relative label cannot be grouped, sorted or
+ *                       plotted, so anything asking "how many threats last
+ *                       week" needs the instant itself
  * @param ageLabel       relative age label (e.g. "2p", "8p")
  */
 public record PhishingReportDto(
@@ -37,5 +43,6 @@ public record PhishingReportDto(
         @JsonProperty("blacklistMatch") boolean blacklistMatch,
         @JsonProperty("status") String status,
         @JsonProperty("channel") String channel,
+        @JsonProperty("reportedAt") Instant reportedAt,
         @JsonProperty("ageLabel") String ageLabel) {
 }

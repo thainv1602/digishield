@@ -176,6 +176,37 @@ class ReportingQueriesTest {
     }
 
     @Test
+    @DisplayName("the SOC inbox carries the timestamp, not only the age label")
+    void reportsExposeTheInstantTheyWereFiled() {
+        // ageLabel ("2p", "3h") is the same moment rendered for a human, and a
+        // relative label cannot be grouped, sorted or plotted. Anything asking
+        // "how many threats last week" needs the instant, which this DTO used
+        // to drop on the floor.
+        Instant filedAt = Instant.parse("2026-08-14T09:30:00Z");
+        when(reportRepository.findByTenantIdOrderByReportedAtDesc(TENANT))
+                .thenReturn(List.of(reportedAt(filedAt)));
+
+        PhishingReportDto dto = service.listReports(null).getFirst();
+
+        assertThat(dto.reportedAt()).isEqualTo(filedAt);
+        assertThat(dto.ageLabel()).isNotNull();
+    }
+
+    @Test
+    @DisplayName("a report with no timestamp reports none, rather than inventing one")
+    void reportsWithoutATimestampCarryNull() {
+        // The column is nullable for rows written before it existed; a fabricated
+        // instant would put them somewhere real on a chart.
+        when(reportRepository.findByTenantIdOrderByReportedAtDesc(TENANT))
+                .thenReturn(List.of(reportedAt(null)));
+
+        PhishingReportDto dto = service.listReports(null).getFirst();
+
+        assertThat(dto.reportedAt()).isNull();
+        assertThat(dto.ageLabel()).isNull();
+    }
+
+    @Test
     @DisplayName("the recent panel asks the database for its handful, not for everything")
     void recentReportsAreLimitedInTheQuery() {
         ArgumentCaptor<Pageable> pageable = ArgumentCaptor.forClass(Pageable.class);
