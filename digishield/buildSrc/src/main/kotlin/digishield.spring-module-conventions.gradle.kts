@@ -42,16 +42,9 @@ tasks.named("check") {
 }
 
 // Pin BOM-managed versions past fixable HIGH CVEs (Trivy image gate in cd.yml):
-// netty 4.2.16 — CVE-2026-59901/55831/55833/56745; pgjdbc 42.7.12 — CVE-2026-54291;
-// httpcore5 5.4.3 — CVE-2026-54399.
+// netty 4.2.16 — CVE-2026-59901/55831/55833/56745; pgjdbc 42.7.12 — CVE-2026-54291.
 extra["netty.version"] = "4.2.16.Final"
 extra["postgresql.version"] = "42.7.12"
-// httpcore5 reaches the image transitively from the Claude SDK
-// (anthropic-java -> ... -> httpclient5 -> httpcore5), so there is nothing to
-// upgrade directly and waiting on an SDK release would leave every build
-// unshippable. The BOM manages httpcore5-h2 from the same property, so both
-// move together — httpclient5 assumes the pair matches.
-extra["httpcore5.version"] = "5.4.3"
 
 dependencyManagement {
     imports {
