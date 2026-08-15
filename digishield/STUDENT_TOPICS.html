@@ -305,7 +305,8 @@
 
   <h4 style="font-size:15px;font-weight:640;margin:10px 0 0">Mỗi nhóm một PR</h4>
   <p>
-    Cả bốn phần việc đi chung <b>một nhánh, một PR</b> — 19 nhóm là 19 PR, không phải bảy chục.
+    Cả bốn phần việc đi chung <b>một nhánh, một PR</b> — mỗi đề tài một nhóm, nên 19 PR chứ
+    không phải bảy chục.
     Mỗi phần việc là một chuỗi commit riêng để người duyệt đọc được từng phần.
   </p>
   <p>
@@ -350,10 +351,8 @@
 
   <h3><span class="num">0.7</span>Test &amp; CI/CD — chạy ở đâu</h3>
   <div class="note warn">
-    <p><b>Phần này khác hẳn bản trước.</b> Repo <em>không còn</em> sáu workflow riêng
-    (<code>backend-ci</code>, <code>frontend-ci</code>, <code>security-ci</code>,
-    <code>automation-ci</code>, <code>cd</code>, <code>commit-lint</code>). Tất cả đã gộp vào
-    <b>một file duy nhất</b>: <code>.github/workflows/ci-cd.yml</code> ở gốc monorepo.</p>
+    <p>Toàn bộ CI/CD nằm trong <b>một file duy nhất</b>:
+    <code>.github/workflows/ci-cd.yml</code> ở gốc monorepo.</p>
   </div>
 
   <p><b>Năm lớp test bắt buộc cho mọi đề tài</b> — thiếu bất kỳ lớp nào coi như chưa xong:</p>
@@ -573,16 +572,14 @@
     nhận xét chéo qua loa hoặc bỏ qua ý người khác nêu.
   </p>
   <p style="font-size:14px;color:var(--muted)">
-    1 điểm của <i>Nhận xét chéo</i> lấy nửa từ <i>Chức năng chạy đúng</i> (2.5→2.0) và nửa từ
-    <i>Pipeline xanh</i> (1.5→1.0). Lý do đứng ngay ở mục 0.10: đây là môn kiểm thử, chức năng chỉ
-    là phương tiện — còn “pipeline xanh” là việc gần như nhị phân, đã xanh thì xanh.
+    <i>Chức năng chạy đúng</i> chỉ đáng 2.0 vì đây là môn kiểm thử — chức năng là đối tượng để
+    kiểm thử, không phải sản phẩm chính. <i>Pipeline xanh</i> chỉ đáng 1.0 vì nó gần như nhị phân:
+    đã xanh thì xanh.
   </p>
 
     <div class="note warn">
-    <p><b>Lưu ý khi giao đề.</b> Không đề tài nào phụ thuộc đề tài nào — mọi thứ chúng dựa vào đều
-    đã có trên <code>main</code> (xem mục 0.8). Trước đây ĐT1, ĐT2, ĐT3 và ĐT9 mang nhãn “cần ĐT6”,
-    trong khi <code>GET /api/v1/sim/track/{token}</code> đã ghi CLICK từ lâu; nhãn đó đã gỡ, giao
-    song song được cả 19.</p>
+    <p><b>Lưu ý khi giao đề.</b> Giao song song được cả 19 — không đề tài nào phụ thuộc đề tài nào
+    (mục 0.8).</p>
     <p>Thứ còn cần canh là <b>ĐT18 (song ngữ) và ĐT19 (RBAC)</b>: không chờ ai, nhưng chạm gần hết
     màn hình và endpoint nên sẽ đụng merge với mọi nhóm khác. Giao sớm, cho nhóm chắc tay.</p>
   </div>
@@ -594,7 +591,7 @@
 <section>
   <div class="shead">
     <p class="eyebrow">Tổng quan</p>
-    <h2>19 đề tài, 6 nhóm</h2>
+    <h2>19 đề tài, xếp theo 6 mảng</h2>
   </div>
   <p>
     <b>Mọi đề tài đều giao một chức năng mới, và chức năng đó phải được chứng minh
