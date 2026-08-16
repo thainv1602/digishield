@@ -213,17 +213,18 @@
 %---------------------------------------------------------------------
 % SLIDE 4
 %---------------------------------------------------------------------
-\begin{frame}[fragile]{Ôn buổi 3: logic của \texttt{evaluate()} --- can thiệp giao dịch}
+\begin{frame}[fragile,shrink=8]{Ôn buổi 3: logic của \texttt{evaluate()} --- can thiệp giao dịch}
   \vspace{-0.35em}
   \begin{block}{\texttt{modules/interception/.../InterceptionServiceImpl.java}}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
-List<String> signals = new ArrayList<>();
-if (request.onCall())   signals.add("ON_CALL");
-if (request.newPayee()) signals.add("NEW_PAYEE");
+// import static ...domain.InterventionSignal.*;
+List<InterventionSignal> signals = new ArrayList<>();
+if (request.onCall())   signals.add(ON_CALL);
+if (request.newPayee()) signals.add(NEW_PAYEE);
 boolean watchlistHit = watchRepository
-    .findByTenantIdAndValue(tenantId,
-        request.destAccount()).isPresent();
-if (watchlistHit) signals.add("WATCHLIST_HIT");
+    .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+        tenantId, request.destAccount()).isPresent();
+if (watchlistHit)       signals.add(WATCHLIST_HIT);
 
 if (request.onCall() && request.newPayee()
         && watchlistHit) {
@@ -482,7 +483,7 @@ var req = new EvaluateRequest(userId,
     false, true);   // onCall=false, newPayee=true
 // stub watchRepository tra ve hit
 var decision = service.evaluate(req);
-assertThat(decision.decision()).isEqualTo("WARN");
+assertThat(decision.decision()).isEqualTo("warn");
 \end{lstlisting}
 \end{frame}
 
@@ -908,20 +909,21 @@ private int computeScore(UUID tenantId,
 %---------------------------------------------------------------------
 % SLIDE 24
 %---------------------------------------------------------------------
-\begin{frame}[fragile]{Ví dụ 1: biến \texttt{signals} trong \texttt{evaluate()}}
+\begin{frame}[fragile,shrink=8]{Ví dụ 1: biến \texttt{signals} trong \texttt{evaluate()}}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\footnotesize]
-List<String> signals = new ArrayList<>();  // d1: DEF
+List<InterventionSignal> signals = new ArrayList<>(); // d1
 if (request.onCall())
-    signals.add("ON_CALL");        // d2: c-USE + DEF lai
+    signals.add(ON_CALL);          // d2: c-USE + DEF lai
 if (request.newPayee())
-    signals.add("NEW_PAYEE");      // d3: c-USE + DEF lai
+    signals.add(NEW_PAYEE);        // d3: c-USE + DEF lai
 if (watchlistHit)
-    signals.add("WATCHLIST_HIT");  // d4: c-USE + DEF lai
+    signals.add(WATCHLIST_HIT);    // d4: c-USE + DEF lai
 // ... quyet dinh PAUSE/WARN/ALLOW ...
-new InterventionEvent(...,
-    String.join(",", signals), ...);       // u1: c-USE
-return new InterventionDecision(
-    decision.name(), signals, message);    // u2: c-USE
+new InterventionEvent(..., signals.stream()
+    .map(Enum::name).collect(joining(",")), ...); // u1
+return new InterventionDecision(decision.name()   // u2
+    .toLowerCase(Locale.ROOT), signals.stream()
+    .map(InterventionSignal::wireName).toList(), message);
 \end{lstlisting}
 
   \begin{itemize}
@@ -1240,9 +1242,9 @@ tasks.jacocoTestCoverageVerification {
             limit {
                 counter = "LINE"
                 value = "COVEREDRATIO"
-                // TODO raise threshold as coverage
-                // grows (target 0.50).
-                minimum = "0.10".toBigDecimal()
+                // A ratchet, not a target: raised as
+                // coverage grew (0.10 -> 0.30 -> 0.50).
+                minimum = "0.50".toBigDecimal()
             }
         }
     }
@@ -1254,13 +1256,13 @@ tasks.named("check") {
 \end{lstlisting}
 
   {\small \texttt{./gradlew check} \textbf{fail} nếu line coverage của module
-  xuống dưới 10\% --- chạy trong CI cho mọi pull request.}
+  xuống dưới 50\% --- chạy trong CI cho mọi pull request.}
 \end{frame}
 
 %---------------------------------------------------------------------
 % SLIDE 36
 %---------------------------------------------------------------------
-\begin{frame}{Thảo luận: vì sao ngưỡng chỉ 0.10?}
+\begin{frame}{Thảo luận: ngưỡng đi từ 0.10 lên 0.50 thế nào?}
   \setbeamerfont{itemize/enumerate body}{size=\small}
   \begin{columns}[T]
     \column{0.5\textwidth}
@@ -1270,15 +1272,16 @@ tasks.named("check") {
               $\Rightarrow$ build luôn xanh.
         \item Ngưỡng chặn \textbf{tụt lùi}: code mới không test
               sẽ kéo tỉ lệ xuống và fail.
-        \item Coverage tăng dần $\Rightarrow$ \textbf{nâng ngưỡng theo}
-              (TODO trong code: 0.50).
+        \item Coverage tăng dần $\Rightarrow$ \textbf{nâng ngưỡng theo}.
+              DigiShield đã đi 0.10 $\to$ 0.30 $\to$ 0.50
+              qua hai PR riêng.
       \end{enumerate}
     \end{block}
 
     \column{0.46\textwidth}
     \begin{alertblock}{Vì sao không đặt 0.80 ngay?}
       \begin{itemize}
-        \item Dự án đang phát triển, 375 test / 9 module ---
+        \item Dự án đang phát triển, 398 test / 9 module ---
               ép 80\% ngay là \textbf{chặn mọi PR}.
         \item Đội sẽ viết test đối phó (không assertion)
               chỉ để qua cổng --- phản tác dụng.
@@ -1369,7 +1372,7 @@ val jacocoExclusions = listOf(
       \item \small \textbf{Branches}: nhánh (if, \texttt{\&\&}, switch)
       \item \small \textbf{Cxty}: độ phức tạp cyclomatic!
       \item \small \textbf{Lines}: dòng nguồn --- cột mà
-            ngưỡng 0.10 đang đo
+            ngưỡng 0.50 đang đo
       \item \small \textbf{Methods / Classes}: đã được gọi / nạp
     \end{itemize}
 
@@ -1619,7 +1622,7 @@ jacoco/test/html/index.html
               ageLabel = 4, computeScore = 1
         \item \small Data flow: def / c-use / p-use, DU-pair,
               all-defs / all-uses / all-DU-paths, anomaly
-        \item \small JaCoCo: convention plugin, ngưỡng 0.10,
+        \item \small JaCoCo: convention plugin, ngưỡng 0.50,
               đọc màu và cột report
       \end{itemize}
     \end{block}

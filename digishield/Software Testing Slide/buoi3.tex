@@ -286,7 +286,7 @@
         (buổi 5--6 sẽ cài đặt bằng JUnit/Mockito)
       \item Code review: chỉ ra nhánh chưa được test
       \item Nâng độ phủ theo yêu cầu dự án
-        (DigiShield đang ép line coverage $\geq$ 10\%, mục tiêu 50\%)
+        (DigiShield đang ép line coverage $\geq$ 50\%)
       \item Kiểm thử logic nghiệp vụ nhiều rẽ nhánh:
         chấm điểm rủi ro, quyết định can thiệp giao dịch
     \end{itemize}
@@ -758,14 +758,16 @@ private String ageLabel(Instant reportedAt, Instant now) {
 %--- SLIDE 19 ---------------------------------------------------------
 \begin{frame}[fragile,shrink=12]{\texttt{evaluate()} --- code thật (rút gọn)}
 \begin{lstlisting}[language=java]
+// import static ...domain.InterventionSignal.*;
 public InterventionDecision evaluate(EvaluateRequest req) {
-    List<String> signals = new ArrayList<>();
-    if (req.onCall())   signals.add("ON_CALL");     // S1
-    if (req.newPayee()) signals.add("NEW_PAYEE");   // S2
+    List<InterventionSignal> signals = new ArrayList<>();
+    if (req.onCall())   signals.add(ON_CALL);       // S1
+    if (req.newPayee()) signals.add(NEW_PAYEE);     // S2
     boolean watchlistHit = watchRepository
-        .findByTenantIdAndValue(tenantId, req.destAccount())
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            tenantId, req.destAccount())
         .isPresent();
-    if (watchlistHit) signals.add("WATCHLIST_HIT"); // S3
+    if (watchlistHit)   signals.add(WATCHLIST_HIT); // S3
     Decision decision;
     if (req.onCall() && req.newPayee() && watchlistHit) {
         decision = Decision.PAUSE;                  // D1
@@ -774,9 +776,12 @@ public InterventionDecision evaluate(EvaluateRequest req) {
     } else {
         decision = Decision.ALLOW;
     }
-    eventRepository.save(event);  // ghi su kien can thiep
-    return new InterventionDecision(decision.name(),
-            signals, message);
+    eventRepository.save(event);  // luu: name() -> CHU HOA
+    return new InterventionDecision(   // tra ve: chu thuong
+            decision.name().toLowerCase(Locale.ROOT),
+            signals.stream()
+                .map(InterventionSignal::wireName).toList(),
+            message);
 }
 \end{lstlisting}
 \end{frame}
@@ -1253,12 +1258,13 @@ if (reasons.size() >= 2) {
 
 %--- SLIDE 33 ---------------------------------------------------------
 \begin{frame}[fragile,shrink=12]{Test thật T1 --- nhánh PAUSE (rút gọn)}
-\begin{lstlisting}[language=java]
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pauses() {
+void evaluateWhenOnCallAndNewPayeeAndWatchlistHitPausesWithEducationalMessage() {
     // Arrange: tai khoan dich nam trong watchlist
-    when(watchRepository.findByTenantIdAndValue(
-            TENANT_ID, DEST_ACCOUNT))
+    when(watchRepository
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+                TENANT_ID, DEST_ACCOUNT))
         .thenReturn(Optional.of(watchHit));
     EvaluateRequest request = new EvaluateRequest(
         userId, new BigDecimal("5000000"),
@@ -1267,22 +1273,24 @@ void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pauses() {
     // Act
     InterventionDecision d = service.evaluate(request);
 
-    // Assert: di dung duong PAUSE (node 3)
-    assertThat(d.decision()).isEqualTo("PAUSE");
+    // Assert: di dung duong PAUSE (node 3).
+    // Chu thuong: day la gia tri tren API.
+    assertThat(d.decision()).isEqualTo("pause");
     assertThat(d.signals()).containsExactly(
-        "ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT");
+        "on_call", "new_payee", "watchlist_hit");
 }
 \end{lstlisting}
 \end{frame}
 
 %--- SLIDE 34 ---------------------------------------------------------
 \begin{frame}[fragile,shrink=12]{Test thật T4 --- nhánh ALLOW, không tín hiệu (rút gọn)}
-\begin{lstlisting}[language=java]
+\begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
+void evaluateWhenNoSignalsAllowsAndPersistsEmptySignals() {
     // Arrange: khong trung watchlist
-    when(watchRepository.findByTenantIdAndValue(
-            TENANT_ID, DEST_ACCOUNT))
+    when(watchRepository
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+                TENANT_ID, DEST_ACCOUNT))
         .thenReturn(Optional.empty());
     EvaluateRequest request = new EvaluateRequest(
         userId, new BigDecimal("10"),
@@ -1290,7 +1298,7 @@ void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
 
     InterventionDecision d = service.evaluate(request);
 
-    assertThat(d.decision()).isEqualTo("ALLOW");
+    assertThat(d.decision()).isEqualTo("allow");
     assertThat(d.signals()).isEmpty();
     // Bat su kien duoc luu de kiem tra du lieu
     verify(eventRepository).save(eventCaptor.capture());
@@ -1617,7 +1625,7 @@ public int benchmark(RiskScope scope) {
   \begin{block}{Việc cần làm trước}
     \begin{itemize}
       \item Hoàn thành bài nộp buổi 3
-      \item Clone và chạy được: \texttt{./gradlew test} (375 test PASS)
+      \item Clone và chạy được: \texttt{./gradlew test} (398 test PASS)
       \item Đọc trước Ammann \& Offutt, chương 2 (Graph Coverage) ---
         mục 2.1--2.2
       \item Suy nghĩ: điều kiện \texttt{A \&\& B \&\& C} cần bao nhiêu test

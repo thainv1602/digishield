@@ -534,7 +534,7 @@
                            # can Docker (Testcontainers)
 \end{lstlisting}
 
-  \small Hiện có \textbf{375 test / 48 class} (JUnit 5, Mockito, AssertJ,
+  \small Hiện có \textbf{398 test / 50 class} (JUnit 5, Mockito, AssertJ,
   Testcontainers). Đây là ``hiện trường'' để ta quan sát mọi khái niệm của buổi học hôm nay.
 \end{frame}
 
@@ -860,7 +860,7 @@ docker-compose.prodlike.yml up --build
       \begin{itemize}
         \item Test \textbf{một class/method}, mock mọi dependency
         \item Nằm trong \texttt{modules/*/src/test}, tên \texttt{*Test.java}
-        \item JUnit 5 + Mockito + AssertJ; hiện có \textbf{375 test}
+        \item JUnit 5 + Mockito + AssertJ; hiện có \textbf{398 test}
         \item Không cần Docker, chạy trong mili-giây
       \end{itemize}
     \end{block}
@@ -880,8 +880,9 @@ class InterceptionServiceImplTest {
   @Test
   void evaluate_allSignals_pauses() {
     // Arrange: dich den nam trong watchlist
-    when(watchRepo.findByTenantIdAndValue(
-        TENANT_ID, DEST))
+    when(watchRepo
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+          TENANT_ID, DEST))
       .thenReturn(Optional.of(watchHit));
     // Act
     var d = svc.evaluate(
@@ -889,7 +890,7 @@ class InterceptionServiceImplTest {
         DEST, true, true));
     // Assert: nhanh PAUSE duoc chon
     assertThat(d.decision())
-      .isEqualTo("PAUSE");
+      .isEqualTo("pause");
   }
 }
 \end{lstlisting}
@@ -996,7 +997,7 @@ class InterceptionServiceImplTest {
     \textbf{Mức} & \textbf{Trên DigiShield} & \textbf{Công cụ / vị trí} & \textbf{Buổi học} \\
     \midrule
     Unit &
-    \texttt{./gradlew test} --- 375 test trong \texttt{modules/*} &
+    \texttt{./gradlew test} --- 398 test trong \texttt{modules/*} &
     JUnit 5 + Mockito, \texttt{*Test.java} &
     3--6 \\
     \midrule
@@ -1088,7 +1089,7 @@ class InterceptionServiceImplTest {
   \begin{exampleblock}{Ví dụ DigiShield}
     \small Dev sửa lỗi trong \texttt{evaluate()} khiến WARN trả về sai.
     \textbf{Re-test}: chạy lại test WARN đã fail. \textbf{Regression}: chạy lại
-    \textbf{toàn bộ} \texttt{./gradlew test} (375 test) --- đảm bảo các nhánh
+    \textbf{toàn bộ} \texttt{./gradlew test} (398 test) --- đảm bảo các nhánh
     PAUSE/ALLOW và 8 module còn lại không bị ảnh hưởng.
   \end{exampleblock}
 \end{frame}
@@ -1155,8 +1156,8 @@ class InterceptionServiceImplTest {
     \toprule
     \textbf{Tầng} & \textbf{Hiện trạng DigiShield} & \textbf{Nhận xét} \\
     \midrule
-    Unit & 375 test, 48 class, chạy bằng \texttt{./gradlew test} & Đáy tháp đã có nền \\
-    Integration & 9 file \texttt{*IT.java} (30 test, Testcontainers): RLS, controller, module & Mỏng hơn --- đúng hình tháp \\
+    Unit & 398 test, 50 class, chạy bằng \texttt{./gradlew test} & Đáy tháp đã có nền \\
+    Integration & 10 file \texttt{*IT.java} (38 test, Testcontainers): RLS, controller, module & Mỏng hơn --- đúng hình tháp \\
     E2E / UI & Selenium \texttt{:e2e} mới có \textbf{1 kịch bản} & \textbf{Sinh viên mở rộng bằng Selenium (BTL)} \\
     \bottomrule
   \end{tabular}
