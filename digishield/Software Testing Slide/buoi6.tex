@@ -515,7 +515,8 @@ AccountWatchEntry watchHit = new AccountWatchEntry(
     DEST_ACCOUNT, RiskLevel.CONFIRMED, "fraud-feed");
 
 when(watchRepository
-        .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            TENANT_ID, DEST_ACCOUNT))
     .thenReturn(Optional.of(watchHit));
 \end{lstlisting}
 \end{frame}
@@ -525,7 +526,8 @@ when(watchRepository
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 // Kich ban B: khong co trong watchlist
 when(watchRepository
-        .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            TENANT_ID, DEST_ACCOUNT))
     .thenReturn(Optional.empty());
 \end{lstlisting}
 
@@ -541,12 +543,16 @@ when(watchRepository
 \begin{frame}[fragile]{\texttt{thenThrow}, \texttt{thenAnswer}, stub nhiều lần gọi}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 // Gia lap DB loi: lan goi nao cung nem exception
-when(watchRepository.findByTenantIdAndValue(any(), any()))
+when(watchRepository
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            any(), any()))
     .thenThrow(new DataAccessResourceFailureException(
         "connection lost"));
 
 // Lan 1 loi, lan 2 tra ve rong (mo phong retry)
-when(watchRepository.findByTenantIdAndValue(any(), any()))
+when(watchRepository
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            any(), any()))
     .thenThrow(new RuntimeException("timeout"))
     .thenReturn(Optional.empty());
 
@@ -597,7 +603,8 @@ doReturn(Optional.empty())
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 // Gia tri cu the: chi khop dung tham so nay
 when(watchRepository
-        .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            TENANT_ID, DEST_ACCOUNT))
     .thenReturn(Optional.of(watchHit));
 
 // Matcher: khop moi gia tri
@@ -630,20 +637,20 @@ when(riskSignalRepository
 public InterventionDecision evaluate(EvaluateRequest request) {
     UUID tenantId = TenantContext.requireUuid();
 
-    List<String> signals = new ArrayList<>();
+    List<InterventionSignal> signals = new ArrayList<>();
     if (request.onCall()) {          // dang nghe dien thoai?
-        signals.add("ON_CALL");
+        signals.add(InterventionSignal.ON_CALL);
     }
     if (request.newPayee()) {        // nguoi nhan moi?
-        signals.add("NEW_PAYEE");
+        signals.add(InterventionSignal.NEW_PAYEE);
     }
 
     Optional<AccountWatchEntry> hit = watchRepository
-        .findByTenantIdAndValue(tenantId,
-                                request.destAccount());
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            tenantId, request.destAccount());
     boolean watchlistHit = hit.isPresent();
     if (watchlistHit) {
-        signals.add("WATCHLIST_HIT");
+        signals.add(InterventionSignal.WATCHLIST_HIT);
     }
 \end{lstlisting}
 \end{frame}
@@ -712,7 +719,7 @@ public InterventionDecision evaluate(EvaluateRequest request) {
   Trích nguyên văn test thật:
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pausesWithEducationalMessage() {
+void evaluateWhenOnCallAndNewPayeeAndWatchlistHitPausesWithEducationalMessage() {
     // Arrange
     UUID userId = UUID.randomUUID();
     AccountWatchEntry watchHit = new AccountWatchEntry(
@@ -720,7 +727,8 @@ void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pausesWithEducationalMessage(
         WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
         RiskLevel.CONFIRMED, "fraud-feed");
     when(watchRepository
-            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+                TENANT_ID, DEST_ACCOUNT))
         .thenReturn(Optional.of(watchHit));
     EvaluateRequest request = new EvaluateRequest(
         userId, new BigDecimal("5000000"),
@@ -736,10 +744,9 @@ void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pausesWithEducationalMessage(
 \begin{frame}[fragile]{Test R1 --- PAUSE (2/2): Assert hai tầng}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
     // Assert 1: gia tri tra ve (state verification)
-    assertThat(decision.decision())
-        .isEqualTo(Decision.PAUSE.name());
+    assertThat(decision.decision()).isEqualTo("pause");
     assertThat(decision.signals()).containsExactly(
-        "ON_CALL", "NEW_PAYEE", "WATCHLIST_HIT");
+        "on_call", "new_payee", "watchlist_hit");
     assertThat(decision.message()).isNotBlank();
 
     // Assert 2: su kien duoc luu (behaviour verification)
@@ -754,16 +761,20 @@ void evaluate_whenOnCallAndNewPayeeAndWatchlistHit_pausesWithEducationalMessage(
 }
 \end{lstlisting}
 
-  \begin{block}{Một test --- hai góc nhìn}
-    Kết quả trả về đúng \textbf{và} dữ liệu ghi xuống DB đúng.
-  \end{block}
+  \vspace{-0.3em}
+  {\scriptsize \textbf{Một test --- hai góc nhìn.} API trả
+  \texttt{"pause"}/\texttt{"on\_call"}, cột \texttt{signals} lưu
+  \texttt{"ON\_CALL"} theo \texttt{enum.name()} --- chốt cả hai vì
+  chúng từng lệch nhau. Đối chiếu hằng số chứ đừng dùng
+  \texttt{Decision.PAUSE.name()}: assert bằng chính biểu thức của
+  implementation thì đổi tên sẽ không bị bắt.}
 \end{frame}
 
 %--- SLIDE 23 ---------------------------------------------------------
 \begin{frame}[fragile]{Test R2 --- WARN: hit nhưng không đủ điều kiện PAUSE}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize,aboveskip=0pt,belowskip=0pt,framesep=1pt]
 @Test
-void evaluate_whenWatchlistHitButNotOnCallNorNewPayee_warns() {
+void evaluateWhenWatchlistHitButNotOnCallNorNewPayeeWarns() {
     // Arrange: van hit watchlist, nhung onCall=false,
     // newPayee=false
     UUID userId = UUID.randomUUID();
@@ -772,17 +783,17 @@ void evaluate_whenWatchlistHitButNotOnCallNorNewPayee_warns() {
         WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
         RiskLevel.HIGH, "fraud-feed");
     when(watchRepository
-            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+                TENANT_ID, DEST_ACCOUNT))
         .thenReturn(Optional.of(watchHit));
     EvaluateRequest request = new EvaluateRequest(
         userId, new BigDecimal("100"),
         DEST_ACCOUNT, false, false);
     InterventionDecision decision =
         interceptionService.evaluate(request);
-    assertThat(decision.decision())
-        .isEqualTo(Decision.WARN.name());
+    assertThat(decision.decision()).isEqualTo("warn");
     assertThat(decision.signals())
-        .containsExactly("WATCHLIST_HIT");
+        .containsExactly("watchlist_hit");
 }
 \end{lstlisting}
 \end{frame}
@@ -792,11 +803,12 @@ void evaluate_whenWatchlistHitButNotOnCallNorNewPayee_warns() {
   \vspace*{-0.2em}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void evaluate_whenOnCallAndNewPayeeButNoWatchlistHit_warnsIsNotTriggeredAndAllows() {
+void evaluateWhenOnCallAndNewPayeeButNoWatchlistHitWarnsIsNotTriggeredAndAllows() {
     // Arrange: tin hieu cao nhung KHONG nam trong watchlist
     UUID userId = UUID.randomUUID();
     when(watchRepository
-            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+                TENANT_ID, DEST_ACCOUNT))
         .thenReturn(Optional.empty());
     EvaluateRequest request = new EvaluateRequest(
         userId, new BigDecimal("9999"),
@@ -804,10 +816,9 @@ void evaluate_whenOnCallAndNewPayeeButNoWatchlistHit_warnsIsNotTriggeredAndAllow
     InterventionDecision decision =
         interceptionService.evaluate(request);
     // Khong hit -> roi xuong nhanh ALLOW
-    assertThat(decision.decision())
-        .isEqualTo(Decision.ALLOW.name());
+    assertThat(decision.decision()).isEqualTo("allow");
     assertThat(decision.signals())
-        .containsExactly("ON_CALL", "NEW_PAYEE");
+        .containsExactly("on_call", "new_payee");
 }
 \end{lstlisting}
 
@@ -821,10 +832,11 @@ void evaluate_whenOnCallAndNewPayeeButNoWatchlistHit_warnsIsNotTriggeredAndAllow
 \begin{frame}[fragile]{Test R3b --- ALLOW: không tín hiệu, signals rỗng}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
+void evaluateWhenNoSignalsAllowsAndPersistsEmptySignals() {
     UUID userId = UUID.randomUUID();
     when(watchRepository
-            .findByTenantIdAndValue(TENANT_ID, DEST_ACCOUNT))
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+                TENANT_ID, DEST_ACCOUNT))
         .thenReturn(Optional.empty());
     InterventionDecision decision = interceptionService
         .evaluate(new EvaluateRequest(userId,
@@ -842,17 +854,19 @@ void evaluate_whenNoSignals_allowsAndPersistsEmptySignals() {
 \begin{frame}[fragile]{Test \texttt{checkAccount} --- ủy quyền đúng tenant}
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 @Test
-void checkAccount_delegatesToRepositoryScopedByTenant() {
+void checkAccountDelegatesToRepositoryScopedByTenant() {
     AccountWatchEntry entry = new AccountWatchEntry(
         UUID.randomUUID(), TENANT_ID, WatchType.PHONE,
         "+84900000000", RiskLevel.WATCH, "user-report");
-    when(watchRepository.findByTenantIdAndValue(
+    when(watchRepository
+            .findFirstByTenantIdAndValueOrderByAddedAtDesc(
             TENANT_ID, "+84900000000"))
         .thenReturn(Optional.of(entry));
     assertThat(interceptionService
         .checkAccount("+84900000000")).containsSame(entry);
     verify(watchRepository)
-        .findByTenantIdAndValue(TENANT_ID, "+84900000000");
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+            TENANT_ID, "+84900000000");
 }
 \end{lstlisting}
 \end{frame}
@@ -901,9 +915,11 @@ verify(eventRepository).save(any(InterventionEvent.class));
 verify(eventRepository, times(1)).save(any());
 verify(eventRepository, never()).deleteById(any());
 verify(watchRepository, atLeastOnce())
-    .findByTenantIdAndValue(any(), anyString());
+    .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+        any(), anyString());
 verify(watchRepository, atMost(2))
-    .findByTenantIdAndValue(any(), anyString());
+    .findFirstByTenantIdAndValueOrderByAddedAtDesc(
+        any(), anyString());
 \end{lstlisting}
 
   \begin{center}
@@ -1278,7 +1294,8 @@ class InterceptionServiceImplTest {
     class WhenWatchlistHit {
         @BeforeEach            // chi chay cho nhom nay
         void stubHit() {
-            when(watchRepository.findByTenantIdAndValue(
+            when(watchRepository
+                    .findFirstByTenantIdAndValueOrderByAddedAtDesc(
                     TENANT_ID, DEST_ACCOUNT))
                 .thenReturn(Optional.of(watchHit));
         }
@@ -1468,7 +1485,8 @@ assertThat(result.getValue()).isEqualTo(55);
 \begin{lstlisting}[language=java,basicstyle=\ttfamily\scriptsize]
 // XAU: any() moi noi -> test khong con kiem tra
 // service truyen DUNG tenant/tai khoan hay khong
-when(watchRepository.findByTenantIdAndValue(
+when(watchRepository
+        .findFirstByTenantIdAndValueOrderByAddedAtDesc(
         any(), any())).thenReturn(Optional.of(hit));
 \end{lstlisting}
     Test thật của DigiShield stub với \texttt{TENANT\_ID, DEST\_ACCOUNT} cụ thể:
@@ -1695,8 +1713,9 @@ public ImportResult importUsers(List<UserUpsert> users) {
       vai trò nào ở test PAUSE?
     \item Vì sao \texttt{@BeforeEach} của test đó phải dùng
       \texttt{lenient()}? Bỏ đi thì test nào sẽ fail và với exception gì?
-    \item Viết lại \texttt{when(repo.findByTenantIdAndValue(TENANT\_ID,
-      any()))} cho đúng quy tắc matcher.
+    \item Lời gọi stub sau trộn giá trị raw với matcher:\\
+      \texttt{when(repo.findFirstByTenantId\-AndValue\-OrderByAddedAtDesc(}\\
+      \texttt{\ \ \ \ TENANT\_ID, any()))} --- viết lại cho đúng quy tắc.
     \item Khi nào bắt buộc dùng \texttt{ArgumentCaptor} thay vì assert
       giá trị trả về? Cho ví dụ từ \texttt{evaluate()}.
     \item Test "dismiss không publish event" bảo vệ chúng ta khỏi bug
