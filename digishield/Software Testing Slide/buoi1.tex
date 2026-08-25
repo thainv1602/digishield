@@ -1056,9 +1056,14 @@ public InterventionDecision evaluate(EvaluateRequest req) {
   \begin{block}{Bước 1: Clone repository (theo link GV cung cấp)}
 \begin{lstlisting}[language=bash]
 git clone <repo-digishield>
-cd digishield
+cd digishield/digishield   # backend nam trong repo
 \end{lstlisting}
   \end{block}
+
+  \vspace{-0.3em}
+  {\footnotesize Repo chứa \texttt{digishield/} (backend), \texttt{frontend/}
+  và \texttt{docs/}. Chỉ trong \texttt{digishield/} mới có \texttt{gradlew} ---
+  đứng ở thư mục gốc của repo thì lệnh \texttt{./gradlew} sẽ báo không tìm thấy.}
 
   \begin{block}{Bước 2: Khởi động backend với profile dev}
 \begin{lstlisting}[language=bash]
@@ -1078,7 +1083,7 @@ cd digishield
 
 %---------------------------------------------------------------------
 \begin{frame}[fragile]{Chạy frontend và đăng nhập demo}
-  \begin{block}{Khởi động frontend (thư mục \texttt{frontend/} nằm \textbf{ngang hàng} với repo)}
+  \begin{block}{Khởi động frontend (\texttt{frontend/} ngang hàng với \texttt{digishield/})}
 \begin{lstlisting}[language=bash]
 cd ../frontend # tu trong repo digishield
 npm install    # lan dau tien
@@ -1089,13 +1094,9 @@ npm run dev    # mo http://localhost:5173
   \vspace{0.2em}
   \begin{columns}
     \column{0.52\textwidth}
-    \begin{block}{Tài khoản seed (profile dev)}
-      \small
-      \begin{itemize}
-        \item \texttt{admin@}, \texttt{manager@}, \texttt{editor@},
-              \texttt{analyst@}, \texttt{learner@coquan.gov.vn}
-        \item \texttt{superadmin@digishield.vn} (SUPER\_ADMIN)
-      \end{itemize}
+    \begin{block}{Đăng nhập dev}
+      \small Chọn \textbf{Vai trò} rồi bấm \textbf{Đăng nhập (dev)}.
+      Không có ô mật khẩu và không kiểm tra gì cả --- Cognito chưa cấu hình.
     \end{block}
 
     \column{0.44\textwidth}
@@ -1106,8 +1107,11 @@ npm run dev    # mo http://localhost:5173
   \end{columns}
 
   \vspace{0.2em}
-  \small Đăng nhập xong hãy dạo quanh: Dashboard, SOC Inbox, Watchlist,
-  Campaigns --- đây là các trang sẽ kiểm thử bằng Selenium ở Buổi 10--11.
+  {\footnotesize Tài khoản seed (\texttt{admin@}, \texttt{analyst@},
+  \texttt{learner@coquan.gov.vn}\dots) là \textbf{dữ liệu demo} ở màn Người dùng,
+  không phải thông tin đăng nhập. Đăng nhập xong hãy dạo quanh: Dashboard,
+  SOC Inbox, Watchlist, Campaigns --- các trang sẽ kiểm thử bằng Selenium
+  ở Buổi 10--11.}
 \end{frame}
 
 %---------------------------------------------------------------------
@@ -1125,14 +1129,15 @@ npm run dev    # mo http://localhost:5173
 > Task :modules:ai:test
 > Task :boot:app:test
 
-BUILD SUCCESSFUL
-398 tests completed, 0 failed
+BUILD SUCCESSFUL in 32s
+80 actionable tasks: 80 executed
 \end{lstlisting}
   \end{block}
 
-  \small Báo cáo chi tiết dạng HTML:
-  \texttt{build/reports/tests/test/index.html} trong từng module ---
-  mở bằng trình duyệt để xem từng test case pass/fail.
+  \small Chạy thành công thì \textbf{không in ra số test} --- Gradle chỉ in
+  \texttt{N tests completed, X failed} khi có test hỏng. Muốn xem số lượng và
+  từng test case, mở \texttt{build/reports/tests/test/index.html} trong từng
+  module (397 test ở thời điểm biên soạn).
 \end{frame}
 
 %---------------------------------------------------------------------
@@ -1168,8 +1173,8 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
     \midrule
     \texttt{Unsupported class file major version} & Sai phiên bản JDK --- cài JDK 25,
       kiểm tra \texttt{java -version} và \texttt{JAVA\_HOME} \\
-    \texttt{Port 8080 already in use} & Tắt tiến trình đang chiếm cổng
-      hoặc đổi cổng bằng \texttt{--server.port=8081} \\
+    \texttt{Port 8080 already in use} & Tắt tiến trình đang chiếm cổng, hoặc đổi cổng:
+      \texttt{-{}-args='-{}-spring.profiles.active=dev -{}-server.port=8081'} \\
     \texttt{npm install} lỗi mạng & Dùng mạng khác / cấu hình lại registry npm \\
     Trang \texttt{localhost:5173} trắng & Kiểm tra backend 8080 đã chạy chưa;
       xem Console của trình duyệt \\
