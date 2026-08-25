@@ -17,8 +17,45 @@ x-app-env: &app-env
   #   AI_CLAUDE_ENABLED=true ANTHROPIC_API_KEY=sk-ant-... docker compose up
   AI_CLAUDE_ENABLED: ${AI_CLAUDE_ENABLED:-false}
   ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  # Email. The stack ships a fake SES (service `mail`), so a send is actually
+  # delivered and readable at http://localhost:8005 instead of only being logged
+  # — the SES client is redirected purely by AWS_ENDPOINT_URL_SESV2, which the
+  # AWS SDK honours, so no code differs from a real deployment. The credentials
+  # are dummies the SDK needs in order to sign; nothing leaves the machine.
+  # To send through real AWS SES instead, override on the host before `up`:
+  #   AWS_ENDPOINT_URL_SESV2= NOTIFICATIONS_EMAIL_FROM=<verified@identity> \
+  #   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... docker compose up
+  NOTIFICATIONS_SES_ENABLED: ${NOTIFICATIONS_SES_ENABLED:-true}
+  NOTIFICATIONS_EMAIL_FROM: ${NOTIFICATIONS_EMAIL_FROM:-noreply@digishield.local}
+  AWS_ENDPOINT_URL_SESV2: ${AWS_ENDPOINT_URL_SESV2-http://mail:8005}
+  AWS_REGION: ${AWS_REGION:-ap-southeast-1}
+  AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+  AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+  # Absolute origin woven into simulation tracking links. Must be the API, not
+  # the frontend dev server: Vite answers every path with the SPA's index.html,
+  # so a link pointing there returns 200 and the click is never recorded.
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
 
 services:
+  # Applies the Flyway migrations, then exits — the same split as the deployment,
+  # whose Helm chart runs this exact image and profile as its own Job rather than
+  # migrating on app startup. Flyway is off in every other profile, so without
+  # this step the app meets an empty database and dies on `ddl-auto: validate`
+  # ("missing table ..."). The container stops on its own: the `flyway` profile
+  # contributes a runner that exits once the context (and so the migration) is
+  # done — see DigishieldApplication#flywayMigrateAndExit.
+  migrate:
+    <<: *app-image
+    container_name: digishield-migrate
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: flyway
+    command: ["--spring.profiles.active=flyway"]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     <<: *app-image
     container_name: digishield-api
@@ -35,6 +72,10 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_started
+      mail:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   worker:
     <<: *app-image
@@ -48,6 +89,10 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_started
+      mail:
+        condition: service_started
+      migrate:
+        condition: service_completed_successfully
 
   scheduler:
     <<: *app-image
@@ -59,6 +104,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   postgres:
     image: postgres:16-alpine
@@ -89,6 +136,15 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  mail:
+    # Fake SES: speaks the SES v2 API and keeps what it receives in memory,
+    # with a web mailbox on the same port (GET / for the viewer, GET /store for
+    # JSON). Local only — it is never part of a deployed stack.
+    image: ghcr.io/domdomegg/aws-ses-v2-local:latest
+    container_name: digishield-mail
+    ports:
+      - "8005:8005"
 
 volumes:
   postgres-data:
