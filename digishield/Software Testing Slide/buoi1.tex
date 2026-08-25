@@ -1202,25 +1202,24 @@ void pausesWhenOnCallNewPayeeAndWatchlisted() {
       \item Cài JDK 25, Node 20+, clone repo DigiShield
       \item Chạy backend profile dev, xác nhận \texttt{localhost:8080/api/v1}
       \item Chạy frontend, dev sign-in: chọn vai trò rồi bấm Đăng nhập
-            (không có ô mật khẩu; email tự điền theo vai trò)
+            (không có ô mật khẩu)
       \item Dạo quanh ứng dụng: Dashboard, SOC Inbox, Watchlist
     \end{enumerate}
   \end{block}
 
   \begin{block}{Phần 2: Chạy và quan sát bộ test (25 phút)}
     \begin{enumerate}
-      \item Chạy \texttt{./gradlew test}, \textbf{đếm số test pass}
-      \item Mở báo cáo HTML của module \texttt{interception};
-            liệt kê tên 5 test của \texttt{InterceptionServiceImplTest}
+      \item Chạy \texttt{./gradlew test}, xác nhận \textbf{BUILD SUCCESSFUL}
+      \item Mở báo cáo HTML của module \texttt{interception}: \textbf{đếm số
+            test pass} và liệt kê 5 test của \texttt{InterceptionServiceImplTest}
       \item Thử \textbf{làm hỏng} một test: sửa tạm một assertion, chạy lại,
             quan sát báo cáo fail, rồi hoàn tác (\texttt{git checkout .})
     \end{enumerate}
   \end{block}
 
-  {\scriptsize \textbf{Ghi chú}: bản deploy đăng nhập qua Cognito, nhưng
-  \texttt{npm run dev} không đặt \texttt{VITE\_COGNITO\_*} nên
-  \texttt{/login} hiện dev sign-in form --- làm việc thẳng trên
-  \texttt{main}.\par}
+  {\scriptsize \textbf{Ghi chú}: \texttt{npm run dev} không đặt
+  \texttt{VITE\_COGNITO\_*} nên \texttt{/login} hiện dev sign-in form
+  (bản deploy thì qua Cognito). Làm việc thẳng trên \texttt{main}.\par}
 \end{frame}
 
 %---------------------------------------------------------------------
