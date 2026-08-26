@@ -39,7 +39,15 @@ public class DevSecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
-                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
+                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+                // permitAll() lets a request through without authenticating it, so the
+                // SecurityContext stays empty -- and checks that read authorities rather
+                // than rely on @PreAuthorize (inert here, since @EnableMethodSecurity is
+                // @Profile("!dev")) fail. PlatformScope is one: the Super Tenant Console
+                // died with "A platform-scoped read requires ROLE_SUPER_ADMIN". Dev already
+                // grants every screen, so hand the anonymous principal the top role instead
+                // of teaching a shared production check about profiles.
+                .anonymous(anon -> anon.principal("dev").authorities("ROLE_SUPER_ADMIN"));
         // Same headers as production so the two cannot drift, but framing is
         // allowed from the same origin: the H2 console this profile exists to
         // serve renders inside a frameset.
