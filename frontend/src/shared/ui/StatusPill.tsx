@@ -19,13 +19,3 @@ export function StatusPill({ variant, children, dot = false }: StatusPillProps) 
     </span>
   );
 }
-
-/**
- * Map a numeric risk score (0-100) to a pill variant per the UI/UX spec:
- * 0-39 -> safe (green), 40-69 -> warning (amber), 70-100 -> threat (red).
- */
-export function riskToVariant(score: number): StatusVariant {
-  if (score >= 70) return 'threat';
-  if (score >= 40) return 'warning';
-  return 'safe';
-}

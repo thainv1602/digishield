@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { ROLES } from '@/app/auth/roles';
 import { useCreateUser, useUpdateUser, type UserRow, type UserUpsert } from './api';
 

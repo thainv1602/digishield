@@ -1,23 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { I18nContext, type I18nContextValue } from './i18nContext';
 import { translate, type Lang } from './messages';
 
 const STORAGE_KEY = 'digishield.lang';
 
-interface I18nContextValue {
-  lang: Lang;
-  setLang: (lang: Lang) => void;
-  /**
-   * Apply the language from the signed-in user's profile locale. Only takes
-   * effect when the user has NOT made an explicit choice via the switcher
-   * (nothing persisted yet), and is not persisted itself — so an explicit pick
-   * always wins and the profile is re-applied each session until then.
-   */
-  applyProfileLocale: (locale: string | null | undefined) => void;
-  /** Translate a Vietnamese source string (with optional `{name}` vars). */
-  t: (key: string, vars?: Record<string, string | number>) => string;
-}
 
-const I18nContext = createContext<I18nContextValue | null>(null);
 
 function hasStoredChoice(): boolean {
   return typeof localStorage !== 'undefined' && localStorage.getItem(STORAGE_KEY) != null;
@@ -60,16 +47,4 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
-}
-
-/** Access the translator and current language. */
-export function useI18n(): I18nContextValue {
-  const ctx = useContext(I18nContext);
-  if (!ctx) throw new Error('useI18n must be used within <I18nProvider>');
-  return ctx;
-}
-
-/** Shorthand: just the `t` function. */
-export function useT(): I18nContextValue['t'] {
-  return useI18n().t;
 }

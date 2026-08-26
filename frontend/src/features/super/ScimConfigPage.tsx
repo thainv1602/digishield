@@ -1,7 +1,7 @@
 import { Button, StatusPill, useToast } from '@/shared/ui';
 import { Copy } from 'lucide-react';
 import { useScimConfig, type ScimConfig } from './api';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 
 /**
  * ScimConfigPage — Super Admin SCIM & SSO identity-provider configuration.

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, DataTable, Select } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { useAuditLogs, type AuditLogEntry } from './api';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { downloadCsv } from '@/shared/lib/csv';
 
 /**

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { Button, DataTable, StatusPill, useToast } from '@/shared/ui';
 import type { ColumnDef, StatusVariant } from '@/shared/ui';
 import { useNavigate } from 'react-router-dom';

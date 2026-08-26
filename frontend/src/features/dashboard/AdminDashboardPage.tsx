@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { ProgressBar, RiskGauge, StatusPill, riskColor, riskLabel } from '@/shared/ui';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useDashboard } from './api';
 import { RiskTrendChart, TrendAxis } from './RiskTrendChart';
 import { shortDate, sliceByDays } from './trend';

@@ -4,7 +4,7 @@ import { useAuth } from '@/app/auth/useAuth';
 import { queryKeys } from '@/shared/api/queryKeys';
 import { DEMO_TENANT_ID } from '@/shared/api/tenant';
 import { useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import type { Notification } from './api';
 
 /** Envelope pushed by the backend `WebSocketRealtimeNotifier`. */

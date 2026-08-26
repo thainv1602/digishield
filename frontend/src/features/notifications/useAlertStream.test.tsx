@@ -18,7 +18,7 @@ const toast = vi.hoisted(() => vi.fn());
 
 vi.mock('@/app/auth/useAuth', () => ({ useAuth: () => auth }));
 vi.mock('@/shared/ui', () => ({ useToast: () => toast }));
-vi.mock('@/shared/i18n/I18nProvider', () => ({ useT: () => (s: string) => s }));
+vi.mock('@/shared/i18n/i18nContext', () => ({ useT: () => (s: string) => s }));
 
 const { useAlertStream } = await import('./useAlertStream');
 const { queryKeys } = await import('@/shared/api/queryKeys');

@@ -1,5 +1,6 @@
 import { useContext } from 'react';
-import { AuthContext, type AuthContextValue } from './AuthContext';
+import { AuthContext } from './context';
+import type { AuthContextValue } from './AuthContext';
 
 /** Access the current auth state + helpers. Must be used within <AuthProvider>. */
 export function useAuth(): AuthContextValue {

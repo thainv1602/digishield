@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n/i18nContext';
 import styles from './UserMenu.module.css';
 
 /** Human-readable label per role; falls back to the raw value. */

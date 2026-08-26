@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, DataTable, Input, Select, StatusPill, riskToVariant, useToast } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import { Search } from 'lucide-react';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { ROLES } from '@/app/auth/roles';
 import { useUsers, useDeleteUser, useSetUserSuspension, type UserRow } from './api';
 import { UserFormDrawer } from './UserFormDrawer';

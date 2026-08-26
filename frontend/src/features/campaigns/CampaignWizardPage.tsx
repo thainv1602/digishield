@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, MessageSquare, QrCode, Smartphone, Sparkles } from 'lucide-react';
 import { Button, Stepper, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useCreateCampaign, useGroups, type SmartGroup } from './api';
 import { useTemplates, type SimTemplate } from '../content/api';
 

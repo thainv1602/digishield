@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { useToast } from '@/shared/ui';
 import { useQuiz, useSubmitResponses, type QuizQuestion } from './api';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 
 /**
  * QuizPage — interactive quiz (`/learn/quiz/:id`).

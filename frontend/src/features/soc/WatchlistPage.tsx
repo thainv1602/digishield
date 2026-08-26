@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useBlacklist, useAddBlacklist, useDeleteBlacklist, type BlacklistEntry } from './watchlistApi';
 
 const ADD_TYPES = ['phone', 'domain', 'url', 'email', 'ip'] as const;

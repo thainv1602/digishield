@@ -1,4 +1,4 @@
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n/i18nContext';
 import type { Lang } from '@/shared/i18n/messages';
 
 /** Compact VI/EN toggle for the top bar. */

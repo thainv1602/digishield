@@ -1,7 +1,7 @@
 import { useLocation } from 'react-router-dom';
 import { useNotifications, useMarkAllNotificationsRead } from '@/features/notifications/api';
-import { useI18n } from '@/shared/i18n/I18nProvider';
-import { useToast } from './Toast';
+import { useI18n } from '@/shared/i18n/i18nContext';
+import { useToast } from './toastContext';
 import { NotificationBell } from './NotificationBell';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { SearchBox } from './SearchBox';

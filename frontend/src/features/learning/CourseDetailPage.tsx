@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, PlayCircle, HelpCircle, Clock } from 'lucide-react';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useCourses, useLessons, type LessonSummary } from './api';
 
 /**

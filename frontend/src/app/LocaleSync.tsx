@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAuth } from './auth/useAuth';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n/i18nContext';
 
 /**
  * Bridges the signed-in user's profile locale into the i18n language. Renders

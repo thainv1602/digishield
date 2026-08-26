@@ -12,7 +12,7 @@ import {
   type SimTemplate,
   type Attachment,
 } from './api';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 
 /**
  * ContentStudioPage — author, AI-generate, edit, submit and delete simulation

@@ -5,7 +5,7 @@ import { useAuth } from '@/app/auth/useAuth';
 import { navForRole, type NavItem } from '@/app/auth/roles';
 import { Logo } from './Logo';
 import { NavIcon } from './navIcons';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import styles from './Sidebar.module.css';
 
 function initialsOf(name?: string, email?: string): string {

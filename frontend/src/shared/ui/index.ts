@@ -1,7 +1,8 @@
 export { Button } from './Button';
 export type { ButtonProps, ButtonVariant, ButtonSize } from './Button';
 
-export { StatusPill, riskToVariant } from './StatusPill';
+export { StatusPill } from './StatusPill';
+export { riskToVariant } from './statusVariant';
 export type { StatusPillProps, StatusVariant } from './StatusPill';
 
 export { Card } from './Card';
@@ -26,7 +27,8 @@ export type { DataTableProps, ColumnDef } from './DataTable';
 export { Drawer } from './Drawer';
 export type { DrawerProps } from './Drawer';
 
-export { ToastProvider, useToast } from './Toast';
+export { ToastProvider } from './Toast';
+export { useToast } from './toastContext';
 export type { ToastVariant, ToastApi, ToastInput } from './Toast';
 
 export { AlertBanner } from './AlertBanner';
