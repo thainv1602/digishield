@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button, Input, useToast } from '@/shared/ui';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n/i18nContext';
 import type { Lang } from '@/shared/i18n/messages';
 import { useAuth } from '@/app/auth/useAuth';
 import { useMyProfile, useUpdateProfile } from './api';

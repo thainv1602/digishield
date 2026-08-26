@@ -1,5 +1,5 @@
+import { AuthContext } from './context';
 import {
-  createContext,
   useCallback,
   useEffect,
   useMemo,
@@ -44,7 +44,6 @@ export interface AuthContextValue extends AuthState {
   signinRedirect: () => void;
 }
 
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;

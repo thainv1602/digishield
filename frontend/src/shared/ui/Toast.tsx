@@ -1,12 +1,12 @@
 import {
-  createContext,
   useCallback,
-  useContext,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from 'react';
+
+import { ToastContext } from './toastContext';
 
 export type ToastVariant = 'info' | 'success' | 'warning' | 'error';
 
@@ -27,8 +27,6 @@ export interface ToastApi {
   (input: ToastInput): void;
   push: (input: ToastInput) => void;
 }
-
-const ToastContext = createContext<ToastApi | undefined>(undefined);
 
 const DOT_COLOR: Record<ToastVariant, string> = {
   info: 'var(--color-blue)',
@@ -107,10 +105,4 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       </div>
     </ToastContext.Provider>
   );
-}
-
-export function useToast(): ToastApi {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used within a <ToastProvider>.');
-  return ctx;
 }

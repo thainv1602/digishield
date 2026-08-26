@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Check, X, ChevronDown } from 'lucide-react';
 import { Button } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import type { AssessmentResult } from './api';
 
 /**

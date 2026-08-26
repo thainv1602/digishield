@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom';
 import { Button, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useCertificate } from '../learning/api';
 
 /**

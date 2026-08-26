@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Drawer, Input, Select, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useCreateTenant, useUpdateTenant, type Tenant } from './api';
 
 // Lower case, like the status list below and like the values the API

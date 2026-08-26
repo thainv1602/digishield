@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { Button, DataTable, StatusPill, useToast } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
 import {

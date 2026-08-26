@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { ShieldAlert } from 'lucide-react';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import {
   clearActingTenant,
   getActingTenant,

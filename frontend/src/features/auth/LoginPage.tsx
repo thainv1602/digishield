@@ -5,7 +5,7 @@ import { useAuth } from '@/app/auth/useAuth';
 import { cognitoEnabled } from '@/app/auth/cognito';
 import { ALL_ROLES, defaultRouteForRole, ROLES, type Role } from '@/app/auth/roles';
 import { DEMO_TENANT_ID } from '@/shared/api/tenant';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { AuthScreen, AuthCard } from './authShared';
 
 const ROLE_LABELS: Record<Role, string> = {

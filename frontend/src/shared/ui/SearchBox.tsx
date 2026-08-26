@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';
 import { navForRole } from '@/app/auth/roles';
-import { useI18n } from '@/shared/i18n/I18nProvider';
+import { useI18n } from '@/shared/i18n/i18nContext';
 import { NavIcon } from './navIcons';
 import styles from './SearchBox.module.css';
 

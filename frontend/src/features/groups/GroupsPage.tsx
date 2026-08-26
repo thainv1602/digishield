@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, DataTable, StatusPill, useToast } from '@/shared/ui';
 import type { ColumnDef } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useGroups, useEvaluateGroup, useDeleteGroup, type GroupDto } from './api';
 import { GroupFormDrawer } from './GroupFormDrawer';
 import { GroupMembersDrawer } from './GroupMembersDrawer';

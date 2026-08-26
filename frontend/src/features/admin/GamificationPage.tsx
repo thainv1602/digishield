@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { Award, ShieldCheck, Target, Zap, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAuth } from '@/app/auth/useAuth';

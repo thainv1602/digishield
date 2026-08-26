@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button, Drawer, useToast } from '@/shared/ui';
-import { useT } from '@/shared/i18n/I18nProvider';
+import { useT } from '@/shared/i18n/i18nContext';
 import { useImportUsers, type UserUpsert } from './api';
 
 /** Parse pasted CSV lines of `email,role` (role optional → learner). */
