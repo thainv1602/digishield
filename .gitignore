@@ -11,3 +11,8 @@ Thumbs.db
 
 # Python bytecode from the contract-check scripts
 __pycache__/
+
+# Course slide deck (LaTeX sources, built PDFs, handout docs). Kept local only:
+# it is teaching material rather than part of the product, and the built PDFs
+# make every edit an 8-9 MB binary churn in the repo.
+digishield/Software Testing Slide/
