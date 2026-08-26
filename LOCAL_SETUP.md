@@ -215,7 +215,8 @@ endpoints never fail because of the model.
 
 ## 8. Mode B — Docker Compose (full infra)
 
-Brings up api + worker + scheduler + PostgreSQL + Redis:
+Brings up seven services — `migrate`, `api`, `worker`, `scheduler`, PostgreSQL,
+Redis and `mail`:
 
 ```bash
 cd digishield
@@ -225,8 +226,30 @@ docker compose -f deploy/compose/docker-compose.yml up --build
 - API: `http://localhost:8080` (health: `/actuator/health`)
 - PostgreSQL: `localhost:5432` (db/user/pass = `digishield`)
 - Redis: `localhost:6379`
+- Mailbox (fake SES): `http://localhost:8005`
 
-For the real migration path (PostgreSQL + Flyway) see **`digishield/RUN_PRODLIKE.md`**.
+`migrate` runs first and exits: it applies the Flyway migrations, and the app
+roles wait for it (`service_completed_successfully`). Flyway is off in every
+other profile, so without that step the app meets an empty database.
+
+**This stack answers `403` to the API.** It runs the `api`/`worker`/`scheduler`
+profiles — the production security chain — and with no JWT issuer configured
+that chain fails closed: only `/actuator/**` and the simulation tracking page
+are reachable. That is deliberate, not a broken setup. To click through the app
+locally, use the dev profile (§4) or the prod-like stack below, both of which
+keep the permissive dev chain.
+
+**Port 5432 must be free.** A PostgreSQL installed on the host holds it and the
+stack will fail with `bind: address already in use`. Stop it, or drop the
+published port for the run:
+
+```bash
+printf 'services:\n  postgres:\n    ports: !reset []\n' > /tmp/no-pg-port.yml
+docker compose -f deploy/compose/docker-compose.yml -f /tmp/no-pg-port.yml up --build
+```
+
+For the real migration path with a usable API (PostgreSQL + Flyway + dev
+security) see **`digishield/RUN_PRODLIKE.md`**.
 
 ---
 
