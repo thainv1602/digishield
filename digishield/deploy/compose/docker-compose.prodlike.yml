@@ -31,7 +31,6 @@ x-app-env: &app-env
   DB_URL: jdbc:postgresql://postgres:5432/digishield
   DB_USERNAME: digishield
   DB_PASSWORD: digishield
-  SPRING_RABBITMQ_HOST: rabbitmq
   # App reads REDIS_HOST/PORT (application.yml), matching the Helm chart.
   REDIS_HOST: redis
   REDIS_PORT: "6379"
@@ -68,8 +67,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      rabbitmq:
-        condition: service_started
       mail:
         condition: service_started
 
@@ -95,13 +92,6 @@ services:
     container_name: digishield-prodlike-redis
     ports:
       - "6379:6379"
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: digishield-prodlike-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
 
   mail:
     # Fake SES: the SES v2 API plus a web mailbox on the same port (GET / to

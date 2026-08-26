@@ -1,4 +1,4 @@
-# Backing services (Postgres/Redis/RabbitMQ) as plain manifests. Synced before
+# Backing services (Postgres/Redis) as plain manifests. Synced before
 # the app (sync-wave -1) so the database exists when the Flyway hook runs.
 apiVersion: argoproj.io/v1alpha1
 kind: Application

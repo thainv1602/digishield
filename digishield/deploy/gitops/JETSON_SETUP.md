@@ -9,7 +9,7 @@ multi-arch image (amd64 + arm64) and bumps the tag in
 Jetson #1 (server)                     Jetson #2 (agent)
 ├─ k3s control-plane + worker          ├─ k3s worker
 ├─ ArgoCD (ns: argocd)                 ├─ api/worker pods
-├─ postgres / redis / rabbitmq         └─ ...
+├─ postgres / redis                    └─ ...
 └─ Traefik (bundled with k3s) :80/:443
 ```
 
@@ -78,10 +78,6 @@ kubectl create namespace digishield
 
 kubectl -n digishield create secret generic digishield-db \
   --from-literal=password='<strong-db-password>'
-
-kubectl -n digishield create secret generic digishield-rabbit \
-  --from-literal=username='digishield' \
-  --from-literal=password='<strong-rabbit-password>'
 ```
 
 If the GHCR package `ghcr.io/thainv1602/digishield/app` is **private**, also:
@@ -102,8 +98,8 @@ kubectl apply -f digishield/deploy/gitops/jetson/root-app.yaml
 
 The root app pulls `deploy/gitops/jetson/apps/`, which creates:
 
-- **digishield-infra** — Postgres (20 Gi PVC), Redis, RabbitMQ (plain
-  manifests, arm64-native images, k3s `local-path` storage).
+- **digishield-infra** — Postgres (20 Gi PVC) and Redis (plain manifests,
+  arm64-native images, k3s `local-path` storage).
 - **digishield** — the Helm chart with `values-jetson.yaml`; the Flyway
   migration Job runs as a PreSync hook before each rollout.
 
@@ -142,7 +138,6 @@ the `github-actions[bot]` to bypass it, or switch the bump to a PR flow.
 - **LAN-only for now**: no TLS/ingress hostname on Traefik. To expose publicly
   later, reuse the dev pattern (DuckDNS + Let's Encrypt) but terminate on
   Traefik.
-- **RabbitMQ UI**: `kubectl -n digishield port-forward svc/rabbitmq 15672:15672`.
 
 ## 7. Grafana on the tailnet
 

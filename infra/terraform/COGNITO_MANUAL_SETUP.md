@@ -3,7 +3,7 @@
 Manual, CLI-based alternative to `cognito.tf` when you want **only** the Cognito
 user pool and don't want to `terraform apply` the whole stack (CloudFront / EKS /
 RDS). This is the right path for the **Jetson k3s deployment**: the app runs
-on-prem (Postgres/Redis/RabbitMQ in-cluster, Traefik ingress), so Cognito is the
+on-prem (Postgres/Redis in-cluster, Traefik ingress), so Cognito is the
 only AWS resource still needed — everything else in `infra/terraform/` (EKS, RDS,
 ElastiCache, CloudFront, ALB) does **not** apply. See "Jetson notes" at the end.
 

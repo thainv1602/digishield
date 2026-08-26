@@ -274,13 +274,12 @@ config lives in `config/checkstyle/checkstyle.xml` with suppressions in
 ## Run with Docker Compose
 
 ```bash
-# Build the image + bring up api/worker/scheduler + postgres/redis/rabbitmq
+# Build the image + bring up api/worker/scheduler + postgres/redis
 docker compose -f deploy/compose/docker-compose.yml up --build
 ```
 
 - API: http://localhost:8080 (actuator: `/actuator/health`)
 - Postgres: `localhost:5432` (db/user/pass = `digishield`)
-- RabbitMQ UI: http://localhost:15672
 - Redis: `localhost:6379`
 
 ### Prod-like (real Postgres + Flyway)

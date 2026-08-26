@@ -10,7 +10,6 @@ x-app-env: &app-env
   DB_URL: jdbc:postgresql://postgres:5432/digishield
   DB_USERNAME: digishield
   DB_PASSWORD: digishield
-  SPRING_RABBITMQ_HOST: rabbitmq
   SPRING_DATA_REDIS_HOST: redis
   # AI (Claude). Off by default → deterministic StubAiClient. To route
   # classify/moderate/generate through Claude, set both on the host before `up`:
@@ -62,8 +61,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-      rabbitmq:
-        condition: service_started
       mail:
         condition: service_started
       migrate:
@@ -79,8 +76,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      rabbitmq:
-        condition: service_started
       mail:
         condition: service_started
       migrate:
@@ -121,13 +116,6 @@ services:
     container_name: digishield-redis
     ports:
       - "6379:6379"
-
-  rabbitmq:
-    image: rabbitmq:3-management-alpine
-    container_name: digishield-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
 
   mail:
     # Fake SES: the SES v2 API plus a web mailbox on the same port (GET / to
