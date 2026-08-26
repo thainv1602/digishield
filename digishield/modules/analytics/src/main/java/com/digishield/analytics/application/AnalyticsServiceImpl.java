@@ -19,6 +19,8 @@ import com.digishield.contracts.events.RiskRecomputedEvent;
 import com.digishield.shared.messaging.EventPublisher;
 import com.digishield.shared.tenantcontext.Messages;
 import com.digishield.shared.tenantcontext.TenantContext;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -67,16 +69,19 @@ public class AnalyticsServiceImpl implements AnalyticsService {
     }
 
     @Override
+    @CacheEvict(cacheNames = DASHBOARD_CACHE, allEntries = true)
     public RiskScore recomputeRisk(UUID userId) {
         return doRecompute(TenantContext.requireUuid(), userId);
     }
 
     @Override
+    @CacheEvict(cacheNames = DASHBOARD_CACHE, allEntries = true)
     public RiskScore recordSimulationClick(UUID tenantId, UUID userId) {
         return recordSignal(tenantId, userId, RiskSignalType.SIMULATION_CLICK);
     }
 
     @Override
+    @CacheEvict(cacheNames = DASHBOARD_CACHE, allEntries = true)
     public RiskScore recordConfirmedReport(UUID tenantId, UUID userId) {
         return recordSignal(tenantId, userId, RiskSignalType.PHISHING_REPORT_CONFIRMED);
     }
@@ -170,6 +175,7 @@ public class AnalyticsServiceImpl implements AnalyticsService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = DASHBOARD_CACHE, keyGenerator = "tenantLocaleKeyGenerator")
     public DashboardDto dashboard() {
         UUID tenantId = TenantContext.requireUuid();
 

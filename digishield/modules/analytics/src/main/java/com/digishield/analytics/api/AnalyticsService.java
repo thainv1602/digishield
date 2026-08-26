@@ -14,6 +14,14 @@ import java.util.UUID;
 public interface AnalyticsService {
 
     /**
+     * Cache region for {@link #dashboard()}. Declared here rather than in the
+     * boot module's cache configuration because the annotation that fills it
+     * lives in this module, and a cache name written twice is a cache that
+     * silently stops being read the day the two spellings drift.
+     */
+    String DASHBOARD_CACHE = "analytics:dashboard";
+
+    /**
      * Recomputes the risk score for a user and emits
      * {@code RiskRecomputedEvent}.
      *
