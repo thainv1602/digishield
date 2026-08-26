@@ -197,6 +197,15 @@ digishield:
       base-url: ${AI_ML_BASE_URL:http://localhost:8085}
       min-confidence: ${AI_ML_MIN_CONFIDENCE:0.6}
       timeout-ms: ${AI_ML_TIMEOUT_MS:2000}
+  cache:
+    # How long a cached entry may lag the database. Every region expires: the
+    # deployed Redis has a container memory limit but no maxmemory of its own,
+    # so it never evicts, and an immortal region ends as an OOMKill.
+    default-ttl: ${CACHE_DEFAULT_TTL:10m}
+    # The dashboard is recomputed from four modules, so it is cached hardest --
+    # and the writes that move its numbers evict it anyway, which is why this
+    # can be short without the screen going stale.
+    dashboard-ttl: ${CACHE_DASHBOARD_TTL:60s}
   analytics:
     # Peer phish-prone rates the dashboard draws next to the organisation's own.
     #

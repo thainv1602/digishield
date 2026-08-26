@@ -6,6 +6,7 @@ import com.digishield.shared.tenantcontext.TenantContext;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
 import org.springframework.boot.cache.autoconfigure.RedisCacheManagerBuilderCustomizer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
@@ -28,8 +29,6 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 @EnableCaching
 public class CacheConfig {
 
-    /** How long a cached dashboard may lag the database. */
-    public static final Duration DASHBOARD_TTL = Duration.ofSeconds(60);
 
     /**
      * Keys every cached entry by tenant <em>and</em> request locale.
@@ -63,12 +62,27 @@ public class CacheConfig {
      * turns a writable cache into remote code execution.
      */
     @Bean
-    RedisCacheManagerBuilderCustomizer digishieldCacheCustomizer(ObjectMapper objectMapper) {
-        RedisCacheConfiguration dashboard = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(DASHBOARD_TTL)
-                .disableCachingNullValues()
+    RedisCacheManagerBuilderCustomizer digishieldCacheCustomizer(
+            ObjectMapper objectMapper,
+            @Value("${digishield.cache.default-ttl:10m}") Duration defaultTtl,
+            @Value("${digishield.cache.dashboard-ttl:60s}") Duration dashboardTtl) {
+
+        // Every region expires, including ones added later. Redis is deployed
+        // with a memory limit but no maxmemory of its own, so it never evicts:
+        // a cache region created without a TTL grows until the container is
+        // OOMKilled. A default that is merely conservative beats one that is
+        // absent.
+        RedisCacheConfiguration defaults = RedisCacheConfiguration.defaultCacheConfig()
+                .entryTtl(defaultTtl)
+                .disableCachingNullValues();
+
+        RedisCacheConfiguration dashboard = defaults
+                .entryTtl(dashboardTtl)
                 .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(
                         new Jackson2JsonRedisSerializer<>(objectMapper, DashboardDto.class)));
-        return builder -> builder.withCacheConfiguration(AnalyticsService.DASHBOARD_CACHE, dashboard);
+
+        return builder -> builder
+                .cacheDefaults(defaults)
+                .withCacheConfiguration(AnalyticsService.DASHBOARD_CACHE, dashboard);
     }
 }
