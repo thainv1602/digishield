@@ -155,7 +155,8 @@ framework configuration classes, and `package-info`. Nothing is excluded because
 merely inconvenient to test.
 
 > **Distributing the work.** Reaching 0.90 is not one team's task. Each of the nineteen
-> capstone topics (`digishield/STUDENT_TOPICS.html`) owns one or more modules; the floor
+> capstone topics (listed in the lecturer's STUDENT_TOPICS handout, which is kept
+> outside this repository) owns one or more modules; the floor
 > is an acceptance criterion of the topic that touches the module. Maintaining the gate
 > itself belonged to a quality topic that has since been dropped, so nobody currently
 > stops the floor slipping back.

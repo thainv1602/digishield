@@ -268,4 +268,4 @@ For the real migration path (PostgreSQL + Flyway) see **`digishield/RUN_PRODLIKE
 - `digishield/README.md` — backend build, dev profile, run modes, Docker Compose, tests.
 - `digishield/RUN_PRODLIKE.md` — prod-like PostgreSQL + Flyway.
 - `frontend/README.md` — frontend toolchain, scripts, project structure.
-- `digishield/STUDENT_TOPICS.html` — the 20 capstone topics, contribution workflow, the 5 test layers. Open in a browser.
+- **STUDENT_TOPICS.html** — the 20 capstone topics, contribution workflow, the 5 test layers. Handed out by the lecturer and kept outside this repository; open it in a browser from wherever you received it.

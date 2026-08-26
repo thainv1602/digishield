@@ -113,7 +113,8 @@ Budget accordingly.
 ## 4. Who raises what
 
 The floor is an **acceptance criterion of the topic that touches the module** — not a task
-assigned to one group. Topics from `digishield/STUDENT_TOPICS.html`:
+assigned to one group. Topics from the lecturer's STUDENT_TOPICS handout, kept outside
+this repository:
 
 | Subproject | Topics that own it |
 |---|---|
