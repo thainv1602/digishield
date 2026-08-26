@@ -35,23 +35,18 @@ x-app-env: &app-env
   # App reads REDIS_HOST/PORT (application.yml), matching the Helm chart.
   REDIS_HOST: redis
   REDIS_PORT: "6379"
-  # Email. The stack ships a fake SES (service `mail`), so a campaign send is
-  # actually delivered and readable at http://localhost:8005 instead of only
-  # being logged. The SES client is redirected purely by AWS_ENDPOINT_URL_SESV2,
-  # which the AWS SDK honours, so nothing differs from a real deployment except
-  # the endpoint; the credentials are dummies the SDK needs in order to sign.
-  # To send through real AWS SES instead, override on the host before `up`:
-  #   AWS_ENDPOINT_URL_SESV2= NOTIFICATIONS_EMAIL_FROM=<verified@identity> \
-  #   AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... docker compose -f ... up
+  # Email goes to the fake SES (service `mail`), readable at localhost:8005.
+  # Only the endpoint differs from a real deployment; the credentials are
+  # dummies the SDK needs in order to sign. For real SES, override these on the
+  # host: AWS_ENDPOINT_URL_SESV2= plus a verified NOTIFICATIONS_EMAIL_FROM.
   NOTIFICATIONS_SES_ENABLED: ${NOTIFICATIONS_SES_ENABLED:-true}
   NOTIFICATIONS_EMAIL_FROM: ${NOTIFICATIONS_EMAIL_FROM:-noreply@digishield.local}
   AWS_ENDPOINT_URL_SESV2: ${AWS_ENDPOINT_URL_SESV2-http://mail:8005}
   AWS_REGION: ${AWS_REGION:-ap-southeast-1}
   AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
   AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
-  # Absolute origin woven into simulation tracking links. Must be the API, not
-  # the Vite dev server: Vite answers every path with the SPA's index.html, so a
-  # link pointing there returns 200 and the click is never recorded.
+  # Origin for simulation tracking links. Must be the API: Vite answers every
+  # path with the SPA's index.html, so a link there is never tracked.
   PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
 
 services:
@@ -109,9 +104,8 @@ services:
       - "15672:15672"
 
   mail:
-    # Fake SES: speaks the SES v2 API and keeps what it receives in memory, with
-    # a web mailbox on the same port (GET / for the viewer, GET /store for JSON).
-    # Local only — it is never part of a deployed stack.
+    # Fake SES: the SES v2 API plus a web mailbox on the same port (GET / to
+    # view, GET /store for JSON). Local only, never part of a deployed stack.
     image: ghcr.io/domdomegg/aws-ses-v2-local:latest
     container_name: digishield-prodlike-mail
     ports:

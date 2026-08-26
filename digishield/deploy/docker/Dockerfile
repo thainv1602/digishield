@@ -18,9 +18,8 @@ COPY boot boot
 RUN chmod +x ./gradlew \
     && ./gradlew :boot:app:bootJar --no-daemon
 
-# The module builds two artifacts: the executable boot jar and Gradle's plain
-# `-plain.jar` of the classes alone. "-" sorts before "." so a bare `ls | head`
-# picks the plain one, and the container dies with "no main manifest attribute".
+# Two jars are built and "-" sorts before ".", so a bare `ls | head` picks the
+# classes-only `-plain.jar` and the container dies with "no main manifest".
 RUN cp "$(ls boot/app/build/libs/*.jar | grep -v -- '-plain\.jar$' | head -n 1)" /workspace/app.jar
 
 # ---- Runtime stage -------------------------------------------------------

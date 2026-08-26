@@ -13,8 +13,10 @@ import java.util.UUID;
 /**
  * Public API of the AI module.
  * <p>
- * The current implementation uses deterministic, dependency-free stubs (no LLM
- * SDK). Every method marks the real model call as TODO.
+ * Calls are served by whichever client is enabled: the self-hosted classifier
+ * ({@code digishield.ai.ml.enabled}), Claude ({@code digishield.ai.claude.enabled}),
+ * or the deterministic stub when neither is on. The stub is also the fallback
+ * for any error or timeout, so these methods never fail because of a model.
  */
 public interface AiService {
 
@@ -72,9 +74,10 @@ public interface AiService {
     ModerationView moderate(String content);
 
     /**
-     * Runs the AIDA orchestration flow (recompute risk and auto-enroll) for the
-     * given scope and records the run for the admin console. The real pipeline is
-     * still TODO; the run record is created so history is available.
+     * Runs the AIDA orchestration flow for the given scope and records the run
+     * for the admin console. The call returns as soon as the run is recorded:
+     * the work itself is asynchronous, with analytics recomputing risk and
+     * learning auto-enrolling before a completion event finalises the run.
      */
     void runOrchestration(String scope, UUID scopeId);
 
