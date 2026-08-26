@@ -274,13 +274,20 @@ config lives in `config/checkstyle/checkstyle.xml` with suppressions in
 ## Run with Docker Compose
 
 ```bash
-# Build the image + bring up api/worker/scheduler + postgres/redis
+# Build the image + bring up migrate/api/worker/scheduler + postgres/redis/mail
 docker compose -f deploy/compose/docker-compose.yml up --build
 ```
 
 - API: http://localhost:8080 (actuator: `/actuator/health`)
 - Postgres: `localhost:5432` (db/user/pass = `digishield`)
 - Redis: `localhost:6379`
+- Mailbox (fake SES): http://localhost:8005
+
+`migrate` applies the Flyway migrations and exits before the app roles start.
+The API itself answers `403` to everything but actuator here: these are the
+`api`/`worker`/`scheduler` profiles, so the production chain runs, and it fails
+closed without a JWT issuer. Use the dev profile or the prod-like stack when you
+want to drive the app. Port 5432 must be free of a host PostgreSQL.
 
 ### Prod-like (real Postgres + Flyway)
 
