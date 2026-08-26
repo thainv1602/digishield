@@ -1,7 +1,9 @@
 package com.digishield.tenancy.application;
 
+import com.digishield.shared.tenantcontext.DemoGroups;
 import com.digishield.shared.tenantcontext.DemoTenants;
 import com.digishield.tenancy.domain.Group;
+import com.digishield.tenancy.domain.GroupMember;
 import com.digishield.tenancy.domain.Plan;
 import com.digishield.tenancy.domain.ScimConfig;
 import com.digishield.tenancy.domain.Subscription;
@@ -11,6 +13,7 @@ import com.digishield.tenancy.domain.TenantStatus;
 import com.digishield.tenancy.domain.TenantTier;
 import com.digishield.tenancy.domain.UsageMetering;
 import com.digishield.tenancy.infrastructure.AuditLogRepository;
+import com.digishield.tenancy.infrastructure.GroupMemberRepository;
 import com.digishield.tenancy.infrastructure.GroupRepository;
 import com.digishield.tenancy.infrastructure.PlanRepository;
 import com.digishield.tenancy.infrastructure.ScimConfigRepository;
@@ -20,6 +23,7 @@ import com.digishield.tenancy.infrastructure.TenantSettingsRepository;
 import com.digishield.tenancy.infrastructure.UsageMeteringRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -27,6 +31,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -59,9 +64,11 @@ class TenancyDevSeeder implements CommandLineRunner {
     private final ScimConfigRepository scimConfigRepository;
     private final TenantSettingsRepository tenantSettingsRepository;
     private final GroupRepository groupRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final PlanRepository planRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final UsageMeteringRepository usageMeteringRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
     TenancyDevSeeder(TenantRepository tenantRepository,
@@ -69,18 +76,22 @@ class TenancyDevSeeder implements CommandLineRunner {
                      ScimConfigRepository scimConfigRepository,
                      TenantSettingsRepository tenantSettingsRepository,
                      GroupRepository groupRepository,
+                     GroupMemberRepository groupMemberRepository,
                      PlanRepository planRepository,
                      SubscriptionRepository subscriptionRepository,
                      UsageMeteringRepository usageMeteringRepository,
+                     JdbcTemplate jdbcTemplate,
                      ObjectMapper objectMapper) {
         this.tenantRepository = tenantRepository;
         this.auditLogRepository = auditLogRepository;
         this.scimConfigRepository = scimConfigRepository;
         this.tenantSettingsRepository = tenantSettingsRepository;
         this.groupRepository = groupRepository;
+        this.groupMemberRepository = groupMemberRepository;
         this.planRepository = planRepository;
         this.subscriptionRepository = subscriptionRepository;
         this.usageMeteringRepository = usageMeteringRepository;
+        this.jdbcTemplate = jdbcTemplate;
         this.objectMapper = objectMapper;
     }
 
@@ -154,23 +165,48 @@ class TenancyDevSeeder implements CommandLineRunner {
         }
         Map<String, Object> highRisk = new LinkedHashMap<>();
         highRisk.put("risk_score_gte", 70);
-        Group g1 = new Group(UUID.randomUUID(), TENANT, "Nhân sự rủi ro cao",
+        Group g1 = new Group(DemoGroups.HIGH_RISK_GROUP_ID, TENANT, "Nhân sự rủi ro cao",
                 writeJson(highRisk), null);
-        g1.setMemberCount(126);
 
         Map<String, Object> finance = new LinkedHashMap<>();
         finance.put("department", "ke-toan");
         finance.put("risk_score_gte", 50);
-        Group g2 = new Group(UUID.randomUUID(), TENANT, "Phòng Kế toán",
+        Group g2 = new Group(DemoGroups.FINANCE_GROUP_ID, TENANT, "Phòng Kế toán",
                 writeJson(finance), null);
-        g2.setMemberCount(48);
 
         // A static group (no rule).
-        Group g3 = new Group(UUID.randomUUID(), TENANT, "Ban Lãnh đạo", null, 12);
+        Group g3 = new Group(DemoGroups.LEADERSHIP_GROUP_ID, TENANT, "Ban Lãnh đạo", null, 0);
 
         groupRepository.save(g1);
         groupRepository.save(g2);
         groupRepository.save(g3);
+
+        // Membership is seeded, not invented. These groups used to carry a
+        // hand-written member_count (126 / 48 / 12) with no group_member row
+        // behind it, so the Groups screen advertised an audience that
+        // GET /groups/{id}/members reported as empty -- and the campaign
+        // wizard, which builds its recipient list from exactly that endpoint,
+        // launched to nobody.
+        seedMembers(g1, "SELECT id FROM app_user WHERE tenant_id = ? AND risk_score >= 70");
+        seedMembers(g2, "SELECT id FROM app_user WHERE tenant_id = ? AND department = N'Kế toán'"
+                + " AND risk_score >= 50");
+        seedMembers(g3, "SELECT id FROM app_user WHERE tenant_id = ? AND role IN ('ORG_ADMIN', 'MANAGER')");
+    }
+
+    /**
+     * Fills a group from the demo users the query selects and stores the real
+     * count. The rules are applied here rather than read from {@code rule_json}
+     * because the seeder only has to describe six known users -- evaluating the
+     * stored rule is the smart-group engine's job, not a fixture's.
+     */
+    private void seedMembers(Group group, String sql) {
+        List<UUID> userIds = jdbcTemplate.queryForList(sql, UUID.class, TENANT);
+        for (UUID userId : userIds) {
+            groupMemberRepository.save(
+                    new GroupMember(UUID.randomUUID(), TENANT, group.getId(), userId));
+        }
+        group.setMemberCount(userIds.size());
+        groupRepository.save(group);
     }
 
     private void seedPlans() {
