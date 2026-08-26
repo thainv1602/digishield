@@ -1,5 +1,6 @@
 package com.digishield.simulation.application;
 
+import com.digishield.shared.tenantcontext.DemoGroups;
 import com.digishield.simulation.domain.CampaignStatus;
 import com.digishield.simulation.domain.Channel;
 import com.digishield.simulation.domain.LearningStatus;
@@ -50,9 +51,12 @@ public class SimulationDevSeeder implements CommandLineRunner {
 
         // 1) Completed campaign with a full funnel (1000 -> 540 -> 132 -> 41 -> 88).
         UUID completedId = UUID.randomUUID();
+        // Carries a real audience: the wizard's Send builds its recipient list
+        // from the campaign's group, so a null groupId is what made the button
+        // report "sent to 0 recipients" against seeded data.
         campaignRepository.save(new SimCampaign(
                 completedId, DEMO_TENANT, Channel.EMAIL, CampaignStatus.COMPLETED,
-                UUID.randomUUID(), "Hoàn tiền học phí"));
+                UUID.randomUUID(), DemoGroups.HIGH_RISK_GROUP_ID, "Hoàn tiền học phí"));
         funnelRepository.save(new SimCampaignFunnel(
                 completedId, DEMO_TENANT, 1000, 540, 132, 41, 88));
 
@@ -69,11 +73,11 @@ public class SimulationDevSeeder implements CommandLineRunner {
         // 2) A campaign currently running.
         campaignRepository.save(new SimCampaign(
                 UUID.randomUUID(), DEMO_TENANT, Channel.SMS, CampaignStatus.RUNNING,
-                UUID.randomUUID(), "Cập nhật bảo mật ngân hàng"));
+                UUID.randomUUID(), DemoGroups.FINANCE_GROUP_ID, "Cập nhật bảo mật ngân hàng"));
 
         // 3) A draft campaign awaiting scheduling.
         campaignRepository.save(new SimCampaign(
                 UUID.randomUUID(), DEMO_TENANT, Channel.ZALO, CampaignStatus.DRAFT,
-                UUID.randomUUID(), "Khuyến mãi nội bộ Q3"));
+                UUID.randomUUID(), DemoGroups.LEADERSHIP_GROUP_ID, "Khuyến mãi nội bộ Q3"));
     }
 }
