@@ -3,7 +3,7 @@
 # Prometheus scraped exactly one thing before this: the app's /actuator/prometheus.
 # That answers "what is the JVM doing" but not "is the board out of memory", which
 # is the question that actually matters on a 7.4 GB Jetson running Postgres, Redis,
-# RabbitMQ, Loki, Prometheus and the app side by side.
+# Loki, Prometheus and the app side by side.
 #
 # hostNetwork is required, not incidental: without it the network and connection
 # metrics describe the pod's namespace rather than the node's, which is not the

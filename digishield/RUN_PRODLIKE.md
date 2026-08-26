@@ -13,7 +13,7 @@ From `digishield/`:
 docker compose -f deploy/compose/docker-compose.prodlike.yml up --build
 ```
 
-This starts `postgres` (16-alpine), `redis`, `rabbitmq`, and `api`. The api waits
+This starts `postgres` (16-alpine), `redis` and `api`. The api waits
 for Postgres to be healthy, then:
 
 - runs with the combined profile **`dev,pgdemo`**;
@@ -30,7 +30,6 @@ row-level security** (even FORCE RLS). That is intentional: this is a
 work.
 
 API base URL: `http://localhost:8080/api/v1`
-(RabbitMQ management UI: `http://localhost:15672`.)
 
 ## 2. Run the frontend
 

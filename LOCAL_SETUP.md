@@ -48,7 +48,7 @@ docker --version
 | Mode | Command entry | DB | Docker? | Use when |
 |---|---|---|---|---|
 | **A. Dev (recommended)** | §4 | H2 in-memory | No | Day-to-day feature work; fastest loop |
-| **B. Docker Compose** | §8 | PostgreSQL + Redis + RabbitMQ | Yes | Exercise the full infra locally |
+| **B. Docker Compose** | §8 | PostgreSQL + Redis | Yes | Exercise the full infra locally |
 | **C. Prod-like** | `RUN_PRODLIKE.md` | Real PostgreSQL + Flyway | Yes | Verify the actual migration path |
 
 Most work uses **Mode A**. The steps below cover it end to end.
@@ -215,7 +215,7 @@ endpoints never fail because of the model.
 
 ## 8. Mode B — Docker Compose (full infra)
 
-Brings up api + worker + scheduler + PostgreSQL + Redis + RabbitMQ:
+Brings up api + worker + scheduler + PostgreSQL + Redis:
 
 ```bash
 cd digishield
@@ -224,7 +224,6 @@ docker compose -f deploy/compose/docker-compose.yml up --build
 
 - API: `http://localhost:8080` (health: `/actuator/health`)
 - PostgreSQL: `localhost:5432` (db/user/pass = `digishield`)
-- RabbitMQ UI: `http://localhost:15672`
 - Redis: `localhost:6379`
 
 For the real migration path (PostgreSQL + Flyway) see **`digishield/RUN_PRODLIKE.md`**.

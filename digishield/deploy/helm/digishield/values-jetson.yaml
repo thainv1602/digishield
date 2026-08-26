@@ -73,11 +73,6 @@ redis:
   tls: false
   existingSecret: ""
 
-rabbitmq:
-  host: rabbitmq
-  port: 5672
-  existingSecret: digishield-rabbit
-
 externalSecrets:
   enabled: false # secrets are created manually on the cluster (see JETSON_SETUP.md)
 

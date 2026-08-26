@@ -33,7 +33,7 @@ spec:
       # against 0.31s on a pod that did not.
       #
       # ndots:1 tries anything with a dot as an absolute name first. In-cluster
-      # names used here (postgres, redis, rabbitmq, digishield-api) have no dots
+      # names used here (postgres, redis, digishield-api) have no dots
       # and still go through the search list.
       dnsConfig:
         options:
@@ -102,7 +102,6 @@ spec:
           env:
             {{- include "digishield.dbEnv" . | nindent 12 }}
             {{- include "digishield.redisEnv" . | nindent 12 }}
-            {{- include "digishield.rabbitEnv" . | nindent 12 }}
             {{- include "digishield.authEnv" . | nindent 12 }}
             {{- include "digishield.aiEnv" . | nindent 12 }}
             {{- include "digishield.loggingEnv" . | nindent 12 }}
