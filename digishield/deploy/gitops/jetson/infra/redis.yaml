@@ -39,6 +39,16 @@ spec:
       containers:
         - name: redis
           image: redis:7-alpine
+          # Redis does not read the container limit, so without maxmemory it
+          # keeps accepting writes until the cgroup kills it. Capped below the
+          # 256Mi limit, with room for the process itself, and told to drop the
+          # least recently used key instead of failing the write -- everything
+          # in here is a cache and can be recomputed.
+          args:
+            - "--maxmemory"
+            - "200mb"
+            - "--maxmemory-policy"
+            - "allkeys-lru"
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true
