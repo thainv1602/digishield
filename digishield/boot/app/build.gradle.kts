@@ -30,6 +30,10 @@ dependencies {
     // H2 in-memory database for the `dev` profile (schema built from JPA entities,
     // no Flyway). Production keeps using PostgreSQL + Flyway, unchanged.
     runtimeOnly("com.h2database:h2")
+    // The H2 web console the dev profile configures and DevSecurityConfig frames
+    // for. Boot 4 split it out of spring-boot-autoconfigure, so without this the
+    // `spring.h2.console.*` settings are read by nobody and /h2-console is a 404.
+    runtimeOnly("org.springframework.boot:spring-boot-h2console")
     implementation("org.flywaydb:flyway-core")
     // Flyway 10+ (Spring Boot 4.x) splits per-database support into modules; the
     // PostgreSQL one is required or Flyway silently no-ops and JPA schema
