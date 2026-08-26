@@ -48,7 +48,7 @@ docker --version
 | Mode | Command entry | DB | Docker? | Use when |
 |---|---|---|---|---|
 | **A. Dev (recommended)** | §4 | H2 in-memory | No | Day-to-day feature work; fastest loop |
-| **B. Docker Compose** | §7 | PostgreSQL + Redis + RabbitMQ | Yes | Exercise the full infra locally |
+| **B. Docker Compose** | §8 | PostgreSQL + Redis + RabbitMQ | Yes | Exercise the full infra locally |
 | **C. Prod-like** | `RUN_PRODLIKE.md` | Real PostgreSQL + Flyway | Yes | Verify the actual migration path |
 
 Most work uses **Mode A**. The steps below cover it end to end.
@@ -105,13 +105,13 @@ Open **http://localhost:5173** and log in with a demo user.
 With the backend running, dev security is permissive so no token is needed:
 
 ```bash
-# Login (dev returns static tokens; `role` picks the demo persona)
+# Login (dev returns static tokens; no credentials are checked)
 curl -sX POST http://localhost:8080/api/v1/auth/login \
   -H 'content-type: application/json' \
-  -d '{"email":"admin@demo.local","password":"x","role":"org_admin"}'
+  -d '{"email":"admin@coquan.gov.vn","password":"x"}'
 
-# Current user — switch persona with the X-Demo-Role header
-curl -s http://localhost:8080/api/v1/auth/me -H 'X-Demo-Role: analyst'
+# Current user
+curl -s http://localhost:8080/api/v1/auth/me
 
 # Users list (Users screen data)
 curl -s http://localhost:8080/api/v1/users | head
@@ -119,9 +119,85 @@ curl -s http://localhost:8080/api/v1/users | head
 
 Then confirm the frontend at `http://localhost:5173` loads and the login flow works.
 
+**There is no persona switch in `dev`.** The stub tokens carry no identity, so
+`/auth/me` always answers with the *first* user of the demo tenant
+(`superadmin@digishield.vn`) — see `AuthServiceImpl#currentUser`. The role picked
+in the frontend's dev login form is client-side only; the backend never sees it.
+
+To exercise real per-role behaviour, run the **`dev-secure`** profile instead
+(`dev` makes every `@PreAuthorize` inert, since method security is
+`@Profile("!dev")`):
+
+```bash
+cd digishield
+./gradlew :boot:app:bootRun --args='--spring.profiles.active=dev-secure'
+```
+
+It mints locally signed JWTs (role derived from the email local part) and prints
+one Bearer token per role at startup. Note it runs on its own H2 database and has
+**no seed data** — every `*DevSeeder` is `@Profile("dev")`.
+
 ---
 
-## 6. Optional — real Claude AI
+## 6. Local email delivery (fake SES)
+
+By default nothing leaves the machine: no transport is enabled, so
+`RoutingNotificationGateway` only logs the would-be delivery
+(`No gateway enabled for channel EMAIL — … persisted but not sent`) while the
+notification row is still written. To see real emails without an AWS account,
+point the SES v2 client at a local server.
+
+```bash
+# terminal 3 — fake SES, web mailbox at http://localhost:8005
+npx aws-ses-v2-local
+```
+
+Restart the backend with SES enabled and the endpoint overridden:
+
+```bash
+cd digishield
+NOTIFICATIONS_SES_ENABLED=true \
+NOTIFICATIONS_EMAIL_FROM=noreply@digishield.local \
+AWS_ENDPOINT_URL_SESV2=http://localhost:8005 \
+AWS_REGION=ap-southeast-1 \
+AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test \
+PUBLIC_BASE_URL=http://localhost:8080 \
+  ./gradlew bootRun --args='--spring.profiles.active=dev'
+```
+
+- `AWS_ENDPOINT_URL_SESV2` is honoured by the AWS SDK (2.31.x), so no code change
+  is needed to redirect delivery.
+- The dummy credentials are still required — the SDK signs every request.
+- `PUBLIC_BASE_URL` must be the **backend** origin (`:8080`). Pointing it at Vite
+  (`:5173`) still answers `200`, but with the SPA's `index.html`, so the click is
+  never tracked.
+
+Trigger a send. Note that `POST /notifications` only *persists* a notification —
+the delivery path runs on a campaign launch:
+
+```bash
+CID=$(curl -s localhost:8080/api/v1/sim/campaigns \
+  | python3 -c "import json,sys;print([c['id'] for c in json.load(sys.stdin) if c['channel']=='email'][0])")
+
+curl -sX POST localhost:8080/api/v1/sim/campaigns/$CID/send \
+  -H 'content-type: application/json' \
+  -d '{"userIds":["00000000-0000-0000-0000-000000000005"]}'
+```
+
+The mail shows up at `http://localhost:8005` (or as JSON at `GET /store`).
+Recipients are resolved from `AppUser.email`, so send to a seeded demo user or
+change that user's email first. Campaigns on channels without a transport
+(`zalo`, `teams`, `slack`, …) are skipped with a warning; `qr` is delivered over
+email by design.
+
+For **real** AWS SES, drop `AWS_ENDPOINT_URL_SESV2` and supply credentials with
+`ses:SendEmail`. `NOTIFICATIONS_EMAIL_FROM` must be an identity verified in SES
+(it has no default — an empty value makes the notification `FAILED`), and while
+the account is in the SES sandbox the recipient must be verified too.
+
+---
+
+## 7. Optional — real Claude AI
 
 By default the AI module uses `StubAiClient` (deterministic, offline, no cost).
 To exercise the real Anthropic path:
@@ -137,7 +213,7 @@ endpoints never fail because of the model.
 
 ---
 
-## 7. Mode B — Docker Compose (full infra)
+## 8. Mode B — Docker Compose (full infra)
 
 Brings up api + worker + scheduler + PostgreSQL + Redis + RabbitMQ:
 
@@ -155,7 +231,7 @@ For the real migration path (PostgreSQL + Flyway) see **`digishield/RUN_PRODLIKE
 
 ---
 
-## 8. Running the tests
+## 9. Running the tests
 
 | Layer | Where | Command |
 |---|---|---|
@@ -170,7 +246,7 @@ For the real migration path (PostgreSQL + Flyway) see **`digishield/RUN_PRODLIKE
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Symptom | Cause / fix |
 |---|---|
@@ -181,10 +257,13 @@ For the real migration path (PostgreSQL + Flyway) see **`digishield/RUN_PRODLIKE
 | Port 8080 / 5173 already in use | Stop the other process, or change the port (`server.port`, Vite `--port`). |
 | Login returns 401 in dev | You are not on the `dev` profile — re-run with `--spring.profiles.active=dev`. |
 | H2 console empty | Use JDBC URL `jdbc:h2:mem:digishield`, user `sa`, empty password. |
+| `/auth/me` always returns `superadmin` | Expected in `dev`: stub tokens carry no identity, so the first tenant user is returned. Use the `dev-secure` profile for per-role behaviour. |
+| No mail in the fake SES mailbox | `NOTIFICATIONS_SES_ENABLED` not set, or the notification was created with `POST /notifications` (persist only) instead of a campaign launch. |
+| Tracking link in the email opens the SPA | `PUBLIC_BASE_URL` points at Vite (`:5173`); set it to `http://localhost:8080`. |
 
 ---
 
-## 10. Related docs
+## 11. Related docs
 
 - `digishield/README.md` — backend build, dev profile, run modes, Docker Compose, tests.
 - `digishield/RUN_PRODLIKE.md` — prod-like PostgreSQL + Flyway.
