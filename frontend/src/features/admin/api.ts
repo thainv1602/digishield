@@ -136,10 +136,12 @@ export function useLeaderboard() {
   });
 }
 
-export function useUserBadges(userId: string) {
+/** Badges of a user (enabled once the id is known — the API binds it to a UUID). */
+export function useUserBadges(userId: string | null | undefined) {
   return useQuery({
-    queryKey: queryKeys.userBadges(userId),
-    queryFn: ({ signal }) => fetchUserBadges(userId, signal),
+    queryKey: queryKeys.userBadges(userId ?? 'none'),
+    queryFn: ({ signal }) => fetchUserBadges(userId as string, signal),
+    enabled: Boolean(userId),
   });
 }
 
@@ -204,10 +206,12 @@ export function useDeleteBadge() {
   });
 }
 
-export function useUserPoints(userId: string) {
+/** Total points of a user (enabled once the id is known — the API binds it to a UUID). */
+export function useUserPoints(userId: string | null | undefined) {
   return useQuery({
-    queryKey: queryKeys.userPoints(userId),
-    queryFn: ({ signal }) => fetchUserPoints(userId, signal),
+    queryKey: queryKeys.userPoints(userId ?? 'none'),
+    queryFn: ({ signal }) => fetchUserPoints(userId as string, signal),
+    enabled: Boolean(userId),
   });
 }
 

@@ -6,6 +6,7 @@ import com.digishield.notification.domain.NotificationStatus;
 import com.digishield.notification.domain.NotificationType;
 import com.digishield.notification.infrastructure.NotificationRepository;
 import com.digishield.shared.tenantcontext.DemoTenants;
+import com.digishield.shared.tenantcontext.DemoUsers;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -26,7 +27,7 @@ import java.util.UUID;
 class NotificationDevSeeder implements CommandLineRunner {
 
     private static final UUID TENANT = DemoTenants.DEMO_TENANT_ID;
-    private static final UUID DEMO_USER = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID DEMO_USER = DemoUsers.LEARNER;
 
     private final NotificationRepository repository;
 

@@ -26,6 +26,7 @@ import com.digishield.learning.infrastructure.LessonRepository;
 import com.digishield.learning.infrastructure.PointRuleRepository;
 import com.digishield.learning.infrastructure.QuizQuestionRepository;
 import com.digishield.shared.tenantcontext.DemoTenants;
+import com.digishield.shared.tenantcontext.DemoUsers;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -48,7 +49,7 @@ import java.util.UUID;
 class LearningDevSeeder implements CommandLineRunner {
 
     /** Fixed demo learner ("Minh") used by the Learner portal seeds. */
-    static final UUID DEMO_USER_ID = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    static final UUID DEMO_USER_ID = DemoUsers.LEARNER;
 
     private static final UUID TENANT = DemoTenants.DEMO_TENANT_ID;
 

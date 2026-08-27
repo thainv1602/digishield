@@ -8,6 +8,7 @@ import com.digishield.interception.domain.WatchType;
 import com.digishield.interception.infrastructure.AccountWatchEntryRepository;
 import com.digishield.interception.infrastructure.InterventionEventRepository;
 import com.digishield.shared.tenantcontext.DemoTenants;
+import com.digishield.shared.tenantcontext.DemoUsers;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -29,7 +30,7 @@ import java.util.UUID;
 public class InterceptionDevSeeder implements CommandLineRunner {
 
     private static final UUID DEMO_TENANT = DemoTenants.DEMO_TENANT_ID;
-    private static final UUID DEMO_USER = UUID.fromString("22222222-2222-2222-2222-222222222222");
+    private static final UUID DEMO_USER = DemoUsers.LEARNER;
 
     private final AccountWatchEntryRepository watchRepository;
     private final InterventionEventRepository eventRepository;
