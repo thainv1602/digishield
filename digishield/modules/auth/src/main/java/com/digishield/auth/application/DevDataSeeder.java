@@ -5,6 +5,7 @@ import com.digishield.auth.domain.Role;
 import com.digishield.auth.domain.UserStatus;
 import com.digishield.auth.infrastructure.AppUserRepository;
 import com.digishield.shared.tenantcontext.DemoTenants;
+import com.digishield.shared.tenantcontext.DemoUsers;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -44,37 +45,40 @@ public class DevDataSeeder implements CommandLineRunner {
         }
         UUID tenant = DemoTenants.DEMO_TENANT_ID;
         List<AppUser> demoUsers = List.of(
-                user("00000000-0000-0000-0000-000000000001", tenant,
+                user(DemoUsers.SUPER_ADMIN, tenant,
                         "superadmin@digishield.vn", "Super Admin",
                         Role.SUPER_ADMIN, "Platform", 12),
-                user("00000000-0000-0000-0000-000000000002", tenant,
+                user(DemoUsers.ORG_ADMIN, tenant,
                         "admin@coquan.gov.vn", "Nguyễn Tuấn",
                         Role.ORG_ADMIN, "Ban Giám đốc", 18),
-                user("00000000-0000-0000-0000-000000000003", tenant,
+                user(DemoUsers.MANAGER, tenant,
                         "manager@coquan.gov.vn", "Trần Thị Bình",
                         Role.MANAGER, "Kinh doanh", 64),
-                user("00000000-0000-0000-0000-000000000004", tenant,
+                user(DemoUsers.CONTENT_EDITOR, tenant,
                         "editor@coquan.gov.vn", "Lê Văn Cường",
                         Role.CONTENT_EDITOR, "Đào tạo", 27),
-                user("00000000-0000-0000-0000-000000000005", tenant,
+                user(DemoUsers.ANALYST, tenant,
                         "analyst@coquan.gov.vn", "Phạm Thu Hà",
                         Role.ANALYST, "An ninh mạng", 22),
-                user("00000000-0000-0000-0000-000000000006", tenant,
+                user(DemoUsers.LEARNER, tenant,
                         "learner@coquan.gov.vn", "Nguyễn Minh An",
                         Role.LEARNER, "Kế toán", 78));
 
+        // Demo phones (E.164), unique per user, so SMS delivery is exercisable
+        // in dev/prod-like.
+        for (int i = 0; i < demoUsers.size(); i++) {
+            demoUsers.get(i).setPhone("+8490123456" + (i + 1));
+        }
         userRepository.saveAll(demoUsers);
         LOG.info("[dev] Seeded {} demo users for tenant {}", demoUsers.size(), tenant);
     }
 
-    private static AppUser user(String id, UUID tenant, String email, String name,
+    private static AppUser user(UUID id, UUID tenant, String email, String name,
                                 Role role, String department, int riskScore) {
         AppUser u = new AppUser(
-                UUID.fromString(id), tenant, email, role, UserStatus.ACTIVE,
+                id, tenant, email, role, UserStatus.ACTIVE,
                 name, department, riskScore);
         u.setLocale("vi");
-        // Demo phone (E.164) so SMS delivery is exercisable in dev/prod-like.
-        u.setPhone("+8490123456" + id.charAt(id.length() - 1));
         return u;
     }
 }

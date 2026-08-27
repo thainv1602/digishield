@@ -17,6 +17,23 @@ const ROLE_LABELS: Record<Role, string> = {
   [ROLES.LEARNER]: 'Learner',
 };
 
+/**
+ * Dev principal ids, mirroring the demo users the backend `dev` profile seeds
+ * (`DemoUsers` / `DevDataSeeder`). They must be real UUIDs: endpoints such as
+ * `GET /users/{id}/points` bind the path variable to `java.util.UUID`, so a
+ * placeholder like `dev-learner` comes back 400. The learner id is the one all
+ * learner-scoped demo data (enrollments, certificates, badges, points) hangs
+ * off, so signing in as Learner lands on a populated portal.
+ */
+const DEV_USER_IDS: Record<Role, string> = {
+  [ROLES.SUPER_ADMIN]: '00000000-0000-0000-0000-000000000001',
+  [ROLES.ORG_ADMIN]: '00000000-0000-0000-0000-000000000002',
+  [ROLES.MANAGER]: '00000000-0000-0000-0000-000000000003',
+  [ROLES.CONTENT_EDITOR]: '00000000-0000-0000-0000-000000000004',
+  [ROLES.ANALYST]: '00000000-0000-0000-0000-000000000005',
+  [ROLES.LEARNER]: '22222222-2222-2222-2222-222222222222',
+};
+
 const fieldStyle = {
   width: '100%',
   padding: '10px 12px',
@@ -51,7 +68,7 @@ function DevLoginForm() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     login(
-      { id: `dev-${role}`, tenantId: DEMO_TENANT_ID, role, email, name: email },
+      { id: DEV_USER_IDS[role], tenantId: DEMO_TENANT_ID, role, email, name: email },
       'dev-token',
     );
     const from = (location.state as { from?: string } | null)?.from;
