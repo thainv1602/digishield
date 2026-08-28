@@ -224,6 +224,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: prometheus-data
   namespace: digishield
+  annotations:
+    # ArgoCD must never prune this: it holds the only copy of the data, and a
+    # prune (a rename in git, a mistyped path) would delete the volume with it.
+    argocd.argoproj.io/sync-options: Prune=false
   labels:
     app.kubernetes.io/name: prometheus
 spec:
