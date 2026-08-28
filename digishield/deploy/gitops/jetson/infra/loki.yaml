@@ -118,8 +118,12 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             runAsNonRoot: true
-            # /loki is the PVC below and nothing else is written — verified by
-            # running this image read-only with only /loki writable, no /tmp.
+            # /loki (the PVC) and /tmp (the emptyDir) are the only writable
+            # paths. /tmp is NOT optional: the compactor's retention pass writes
+            # a marker-view temp file per marker, so without it every pass fails
+            # with `open /tmp/marker-view-...: read-only file system`, retention
+            # deletes nothing, and the warn-per-marker log feeds back through
+            # promtail into Loki itself.
             readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
@@ -145,6 +149,8 @@ spec:
               mountPath: /etc/loki
             - name: data
               mountPath: /loki
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: config
           configMap:
@@ -152,6 +158,10 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: loki-data
+        - name: tmp
+          emptyDir:
+            # Only short-lived compactor scratch files land here.
+            sizeLimit: 256Mi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
