@@ -5,7 +5,7 @@
 image:
   repository: ghcr.io/thainv1602/digishield/app
   # jetson-image-tag — rewritten by the cd.yml deploy-jetson job on each main build.
-  tag: "latest"
+  tag: "sha-d81c746"
   pullPolicy: Always
 
 # The GHCR package must be public, or create this pull secret on the cluster:
@@ -57,7 +57,7 @@ frontend:
   replicaCount: 1
   image:
     repository: ghcr.io/thainv1602/digishield/frontend
-    tag: latest
+    tag: "sha-d81c746"
     pullPolicy: Always
 
 # In-cluster infra (deploy/gitops/jetson/infra), same namespace → short DNS names.
