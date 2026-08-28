@@ -1,14 +1,12 @@
-# Backing services (Postgres/Redis) as plain manifests, plus the Traefik
-# HelmChartConfig. Synced before the app (sync-wave -1) so the database exists
-# when the Flyway hook runs. The monitoring stack does not need that ordering
-# and lives in digishield-observability.
+# Prometheus, Loki, Grafana and their exporters. Split out of digishield-infra,
+# which is a sync-wave -1 app for the backing services the Flyway hook needs:
+# the monitoring stack has no such ordering constraint, and at 26 of that app's
+# 31 resources it buried the four that do.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: digishield-infra
+  name: digishield-observability
   namespace: argocd
-  annotations:
-    argocd.argoproj.io/sync-wave: "-1"
   finalizers:
     - resources-finalizer.argocd.argoproj.io
 spec:
@@ -16,7 +14,7 @@ spec:
   source:
     repoURL: https://github.com/thainv1602/digishield.git
     targetRevision: main
-    path: digishield/deploy/gitops/jetson/infra
+    path: digishield/deploy/gitops/jetson/infra/observability
   destination:
     server: https://kubernetes.default.svc
     namespace: digishield
