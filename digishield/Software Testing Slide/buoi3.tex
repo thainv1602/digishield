@@ -742,6 +742,9 @@ public InterventionDecision evaluate(EvaluateRequest req) {
             message);
 }
 \end{lstlisting}
+{\scriptsize \textbf{Ký hiệu:}
+S = \textbf{Signal} (tín hiệu đầu vào); D = \textbf{Decision} (quyết định).
+S1--S3 là 3 tín hiệu, D1--D2 là 2 điểm quyết định.}
 \end{frame}
 
 %--- SLIDE 20 ---------------------------------------------------------
@@ -773,8 +776,8 @@ public InterventionDecision evaluate(EvaluateRequest req) {
       \draw[arr] (n6) -- (n7);
     \end{tikzpicture}
     \end{center}
-    {\scriptsize \textbf{Lưu ý:} đang gộp S1--S3 để học 3 nhánh PAUSE / WARN /
-    ALLOW trước; slide sau mở S1--S3 $\Rightarrow$ số nhánh và $V(G)$ tăng.}
+    {\scriptsize \textbf{Lưu ý:} CFG này chỉ vẽ phần \textbf{ra quyết định chính}
+    (PAUSE / WARN / ALLOW), nên chỉ có 2 node quyết định: 2 và 4.}
 
     \column{0.53\textwidth}
     {\small
