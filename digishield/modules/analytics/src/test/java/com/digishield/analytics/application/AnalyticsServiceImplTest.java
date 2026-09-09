@@ -288,7 +288,7 @@ class AnalyticsServiceImplTest {
         when(dashboardMetricsProvider.openAlerts())
                 .thenReturn(new com.digishield.analytics.api.DashboardMetricsProvider.OpenAlertCounts(0, 0, 0));
         when(recentReportsProvider.recentReports(anyInt())).thenReturn(List.of(
-                new RecentReportsProvider.RecentReportView("id-1", "Khoa tai khoan", "Nguyen A", "2p", "threat")));
+                new RecentReportsProvider.RecentReportView("id-1", "Khoa tai khoan", "Nguyen A", "2m", "threat")));
 
         // Act
         DashboardDto dto = analyticsService.dashboard();
@@ -298,7 +298,7 @@ class AnalyticsServiceImplTest {
             assertThat(r.id()).isEqualTo("id-1");
             assertThat(r.title()).isEqualTo("Khoa tai khoan");
             assertThat(r.who()).isEqualTo("Nguyen A");
-            assertThat(r.age()).isEqualTo("2p");
+            assertThat(r.age()).isEqualTo("2m");
             assertThat(r.aiLabel()).isEqualTo("threat");
         });
     }
