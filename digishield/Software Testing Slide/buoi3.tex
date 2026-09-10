@@ -876,7 +876,7 @@ S1--S3 là 3 tín hiệu, D1--D2 là 2 điểm quyết định.}
     \begin{alertblock}{So sánh với Statement Coverage (SC)}
       \small
       \begin{itemize}
-        \item \textbf{100\% BC $\Rightarrow$ 100\% SC}: Đi hết mọi ngã rẽ thì chắc chắn ghé qua mọi dòng code.
+        \item \textbf{100\% BC $\Rightarrow$ 100\% SC}: Nếu đã test đủ cả nhánh True và False, các câu lệnh thực thi được trong CFG cũng đã chạy.
         \item \textbf{Ngược lại KHÔNG đúng}: 100\% SC vẫn có thể bỏ sót nhánh False của câu \texttt{if} không có \texttt{else}.
       \end{itemize}
     \end{alertblock}
