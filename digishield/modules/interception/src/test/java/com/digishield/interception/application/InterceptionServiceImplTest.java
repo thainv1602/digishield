@@ -163,6 +163,29 @@ class InterceptionServiceImplTest {
     }
 
     @Test
+    void evaluateWhenOnCallAndNewPayeeAndWatchlistHitPausesEvenForSmallAmount() {
+        // Arrange: all three intervention signals are present
+        UUID userId = UUID.randomUUID();
+        AccountWatchEntry watchHit = new AccountWatchEntry(
+            UUID.randomUUID(), TENANT_ID, WatchType.BANK_ACCOUNT, DEST_ACCOUNT,
+            RiskLevel.CONFIRMED, "fraud-feed");
+        when(watchRepository.findFirstByTenantIdAndValueOrderByAddedAtDesc(TENANT_ID, DEST_ACCOUNT))
+            .thenReturn(Optional.of(watchHit));
+        EvaluateRequest request = new EvaluateRequest(
+            userId, new BigDecimal("9999"), DEST_ACCOUNT, true, true);
+
+        // Act
+        InterventionDecision decision = interceptionService.evaluate(request);
+
+        // Assert: PAUSE depends on the three signals, not on the transfer amount
+        assertThat(decision.decision()).isEqualTo("pause");
+        assertThat(decision.signals()).containsExactly("on_call", "new_payee", "watchlist_hit");
+
+        verify(eventRepository).save(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getDecision()).isEqualTo(Decision.PAUSE);
+    }
+
+    @Test
     void evaluateWhenNoSignalsAllowsAndPersistsEmptySignals() {
         // Arrange
         UUID userId = UUID.randomUUID();

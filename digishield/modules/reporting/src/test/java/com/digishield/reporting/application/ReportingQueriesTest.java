@@ -101,18 +101,18 @@ class ReportingQueriesTest {
         List<UserReportDto> reports = service.listUserReports(userId);
 
         assertThat(reports).extracting(UserReportDto::ageLabel)
-                .containsExactly("5p", "3h", "2d");
+                .containsExactly("5m", "3h", "2d");
     }
 
     @Test
     @DisplayName("a report from the future reads as new, not as a negative age")
     void clockSkewDoesNotProduceANegativeAge() {
         UUID userId = UUID.randomUUID();
-        // A recipient's clock can run ahead; "-3p ago" would be worse than "0p".
+        // A recipient's clock can run ahead; "-3m ago" would be worse than "0m".
         when(reportRepository.findByTenantIdAndUserIdOrderByReportedAtDesc(TENANT, userId))
                 .thenReturn(List.of(reportedAt(Instant.now().plus(Duration.ofMinutes(3)))));
 
-        assertThat(service.listUserReports(userId).getFirst().ageLabel()).isEqualTo("0p");
+        assertThat(service.listUserReports(userId).getFirst().ageLabel()).isEqualTo("0m");
     }
 
     @Test
@@ -178,7 +178,7 @@ class ReportingQueriesTest {
     @Test
     @DisplayName("the SOC inbox carries the timestamp, not only the age label")
     void reportsExposeTheInstantTheyWereFiled() {
-        // ageLabel ("2p", "3h") is the same moment rendered for a human, and a
+        // ageLabel ("2m", "3h") is the same moment rendered for a human, and a
         // relative label cannot be grouped, sorted or plotted. Anything asking
         // "how many threats last week" needs the instant, which this DTO used
         // to drop on the floor.

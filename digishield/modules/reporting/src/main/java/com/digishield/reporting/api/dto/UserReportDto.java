@@ -15,7 +15,7 @@ import java.util.UUID;
  * @param channel    channel it came from (email | sms; may be null)
  * @param status     processing status (lowercase: submitted|triaging|confirmed|dismissed)
  * @param reportedAt when it was submitted
- * @param ageLabel   relative age label (e.g. "2p", "3h")
+ * @param ageLabel   relative age label (e.g. "2m", "3h")
  */
 public record UserReportDto(
         @JsonProperty("id") UUID id,

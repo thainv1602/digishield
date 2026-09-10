@@ -27,7 +27,7 @@ public interface RecentReportsProvider {
      * @param id      report identifier (string form)
      * @param title   subject line of the reported message
      * @param who     reporting user's display name
-     * @param age     relative age label (e.g. {@code "2p"})
+     * @param age     relative age label (e.g. {@code "2m"})
      * @param aiLabel AI classification (clean|spam|threat)
      */
     record RecentReportView(String id, String title, String who, String age, String aiLabel) {

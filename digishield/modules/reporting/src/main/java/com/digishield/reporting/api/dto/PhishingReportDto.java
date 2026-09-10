@@ -28,7 +28,7 @@ import java.util.UUID;
  *                       this, but a relative label cannot be grouped, sorted or
  *                       plotted, so anything asking "how many threats last
  *                       week" needs the instant itself
- * @param ageLabel       relative age label (e.g. "2p", "8p")
+ * @param ageLabel       relative age label (e.g. "2m", "8m")
  */
 public record PhishingReportDto(
         @JsonProperty("id") UUID id,

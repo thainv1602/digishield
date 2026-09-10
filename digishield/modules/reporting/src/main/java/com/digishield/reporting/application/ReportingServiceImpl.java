@@ -329,8 +329,7 @@ public class ReportingServiceImpl implements ReportingService {
     }
 
     /**
-     * Builds a compact relative-age label (e.g. "2p", "3h", "1d"). The minute
-     * suffix uses "p" (phút) to match the Vietnamese frontend.
+     * Builds a compact relative-age label (e.g. "2m", "3h", "1d").
      */
     private String ageLabel(Instant reportedAt, Instant now) {
         if (reportedAt == null) {
@@ -339,7 +338,7 @@ public class ReportingServiceImpl implements ReportingService {
         Duration d = Duration.between(reportedAt, now);
         long mins = Math.max(0, d.toMinutes());
         if (mins < 60) {
-            return mins + "p";
+            return mins + "m";
         }
         long hours = d.toHours();
         if (hours < 24) {
